@@ -1,0 +1,18 @@
+## This file is an example of local configuration.
+## Copy to 'local.properties' and set your own development credentials.
+# sdk.dir=C:\\Users\\Admin\\AppData\\Local\\Android\\Sdk
+
+# Gemini API Key (Can also be set in-app under Settings -> AI)
+GEMINI_API_KEY=
+
+# Telegram Bot Token & Default Chat ID (Can also be set in-app)
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=
+
+# Google Calendar OAuth 2.0 Web/Android Client ID
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# Zalo Official Account App ID & Secret
+ZALO_APP_ID=
+ZALO_APP_SECRET=

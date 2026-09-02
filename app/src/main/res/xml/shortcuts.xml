@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="add_schedule"
+        android:enabled="true"
+        android:icon="@drawable/ic_launcher_foreground"
+        android:shortcutShortLabel="@string/shortcut_add_schedule"
+        android:shortcutLongLabel="@string/shortcut_add_schedule">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.smartteacher.schedule"
+            android:targetClass="com.smartteacher.schedule.MainActivity"
+            android:data="smartteacher://schedule/add" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="ai_assistant"
+        android:enabled="true"
+        android:icon="@drawable/ic_launcher_foreground"
+        android:shortcutShortLabel="@string/shortcut_ai_assistant"
+        android:shortcutLongLabel="@string/shortcut_ai_assistant">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.smartteacher.schedule"
+            android:targetClass="com.smartteacher.schedule.MainActivity"
+            android:data="smartteacher://schedule/ai" />
+    </shortcut>
+</shortcuts>

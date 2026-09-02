@@ -30,6 +30,6 @@
     <string name="shortcut_today">Lịch hôm nay</string>
 
     <!-- Widget -->
-    <string name="widget_title">Lớp học kế tiếp</string>
+    <string name="widget_title">Lịch dạy &amp; Công việc giáo viên</string>
     <string name="widget_no_class">Không có lịch học sắp tới</string>
 </resources>

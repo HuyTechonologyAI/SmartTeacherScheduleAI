@@ -198,6 +198,50 @@ fun TodayScreen(
                 }
             }
 
+            // 1.2 Add Home Screen Widget Banner
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Dashboard,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Tiện ích Màn hình chính (Widget)",
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Hiển thị lịch dạy và việc cần làm ngay khi mở khóa máy.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(6.dp))
+                        OutlinedButton(
+                            onClick = {
+                                com.smartteacher.schedule.feature.widget.ScheduleWidgetReceiver.pinWidgetToHomeScreen(context)
+                            },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Text("Ghim Widget", fontSize = 11.sp)
+                        }
+                    }
+                }
+            }
+
             // 2. AI Risk / Warning Banner
             if (aiWarnings.isNotEmpty()) {
                 item {

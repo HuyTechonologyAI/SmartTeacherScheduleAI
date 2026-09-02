@@ -6,15 +6,20 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.os.Build
+import android.view.View
 import android.widget.RemoteViews
+import android.widget.Toast
 import com.smartteacher.schedule.MainActivity
 import com.smartteacher.schedule.R
 import com.smartteacher.schedule.core.database.SmartTeacherDatabase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
 class ScheduleWidgetReceiver : AppWidgetProvider() {
@@ -40,6 +45,31 @@ class ScheduleWidgetReceiver : AppWidgetProvider() {
             }
         }
 
+        fun pinWidgetToHomeScreen(context: Context) {
+            val appWidgetManager = AppWidgetManager.getInstance(context)
+            val myProvider = ComponentName(context, ScheduleWidgetReceiver::class.java)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (appWidgetManager.isRequestPinAppWidgetSupported) {
+                    val pinnedWidgetCallbackIntent = Intent(context, ScheduleWidgetReceiver::class.java)
+                    val successCallback = PendingIntent.getBroadcast(
+                        context, 0,
+                        pinnedWidgetCallbackIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+                    appWidgetManager.requestPinAppWidget(myProvider, null, successCallback)
+                    Toast.makeText(context, "Đang mở hộp thoại thêm tiện ích ra Màn hình chính...", Toast.LENGTH_SHORT).show()
+                    return
+                }
+            }
+
+            Toast.makeText(
+                context,
+                "Nhấn giữ khoảng trống trên Màn hình chính > Chọn 'Tiện ích' (Widgets) > Thêm Smart Teacher",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+
         private fun updateAppWidget(
             context: Context,
             appWidgetManager: AppWidgetManager,
@@ -47,8 +77,10 @@ class ScheduleWidgetReceiver : AppWidgetProvider() {
         ) {
             val views = RemoteViews(context.packageName, R.layout.widget_next_class)
 
-            // Intent to open app when clicked
-            val openIntent = Intent(context, MainActivity::class.java)
+            // 1. Click on widget opens MainActivity
+            val openIntent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
             val pendingIntent = PendingIntent.getActivity(
                 context,
                 0,
@@ -57,11 +89,39 @@ class ScheduleWidgetReceiver : AppWidgetProvider() {
             )
             views.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
 
-            // Load data asynchronously from Room
+            // 2. Click on Refresh Button updates this widget immediately
+            val refreshIntent = Intent(context, ScheduleWidgetReceiver::class.java).apply {
+                action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, intArrayOf(appWidgetId))
+            }
+            val refreshPendingIntent = PendingIntent.getBroadcast(
+                context,
+                appWidgetId + 200000,
+                refreshIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            views.setOnClickPendingIntent(R.id.widget_refresh_btn, refreshPendingIntent)
+
+            // 3. Current Vietnamese formatted date
+            val today = LocalDate.now()
+            val dayOfWeekVi = when (today.dayOfWeek) {
+                DayOfWeek.MONDAY -> "Thứ 2"
+                DayOfWeek.TUESDAY -> "Thứ 3"
+                DayOfWeek.WEDNESDAY -> "Thứ 4"
+                DayOfWeek.THURSDAY -> "Thứ 5"
+                DayOfWeek.FRIDAY -> "Thứ 6"
+                DayOfWeek.SATURDAY -> "Thứ 7"
+                DayOfWeek.SUNDAY -> "Chủ Nhật"
+            }
+            val dateFormatted = "$dayOfWeekVi, ${today.format(DateTimeFormatter.ofPattern("dd/MM"))}"
+            views.setTextViewText(R.id.widget_date, dateFormatted)
+
+            // 4. Load data asynchronously from Room Database
             CoroutineScope(Dispatchers.IO).launch {
                 val db = SmartTeacherDatabase.getInstance(context)
-                val todayStr = LocalDate.now().toString()
+                val todayStr = today.toString()
                 val events = db.calendarEventDao().getEventsForDateList(todayStr)
+                val tasks = db.taskDao().getIncompleteTasksList()
                 val now = LocalTime.now()
 
                 val nextEvent = events.firstOrNull {
@@ -75,19 +135,42 @@ class ScheduleWidgetReceiver : AppWidgetProvider() {
                     }.getOrDefault(0L)
 
                     val countdownText = if (remainingMins > 0) "Còn $remainingMins phút" else "Đang diễn ra"
-                    val roomText = if (nextEvent.room.isNotBlank()) "Phòng ${nextEvent.room}" else ""
+                    val roomText = if (nextEvent.room.isNotBlank()) "P.${nextEvent.room}" else "Chưa xếp phòng"
                     val classText = if (nextEvent.className.isNotBlank()) "Lớp ${nextEvent.className}" else ""
                     val detailsText = "${nextEvent.startTime} - ${nextEvent.endTime} • $roomText • $classText"
 
                     views.setTextViewText(R.id.widget_subject, nextEvent.title)
                     views.setTextViewText(R.id.widget_countdown, countdownText)
                     views.setTextViewText(R.id.widget_details, detailsText)
-                    views.setTextViewText(R.id.widget_next_reminder, "⏰ Báo động 60m & 15m trước giờ dạy")
                 } else {
-                    views.setTextViewText(R.id.widget_subject, "Hôm nay không còn lớp")
-                    views.setTextViewText(R.id.widget_countdown, "")
-                    views.setTextViewText(R.id.widget_details, "Tất cả các buổi dạy hôm nay đã hoàn thành")
-                    views.setTextViewText(R.id.widget_next_reminder, "Chạm để mở ứng dụng")
+                    views.setTextViewText(R.id.widget_subject, "Hôm nay không còn tiết dạy")
+                    views.setTextViewText(R.id.widget_countdown, "Xong ca")
+                    views.setTextViewText(R.id.widget_details, "Thầy/Cô đã hoàn thành tất cả giờ giảng hôm nay")
+                }
+
+                // 5. Populate Tasks Section
+                if (tasks.isNotEmpty()) {
+                    views.setTextViewText(R.id.widget_tasks_count, "${tasks.size} việc")
+                    val task1 = tasks.getOrNull(0)
+                    val task2 = tasks.getOrNull(1)
+
+                    if (task1 != null) {
+                        val due = if (task1.dueDate == todayStr) "Hôm nay" else task1.dueDate
+                        views.setTextViewText(R.id.widget_task1, "📌 ${task1.title} ($due)")
+                        views.setViewVisibility(R.id.widget_task1, View.VISIBLE)
+                    }
+
+                    if (task2 != null) {
+                        val due = if (task2.dueDate == todayStr) "Hôm nay" else task2.dueDate
+                        views.setTextViewText(R.id.widget_task2, "📌 ${task2.title} ($due)")
+                        views.setViewVisibility(R.id.widget_task2, View.VISIBLE)
+                    } else {
+                        views.setViewVisibility(R.id.widget_task2, View.GONE)
+                    }
+                } else {
+                    views.setTextViewText(R.id.widget_tasks_count, "0 việc")
+                    views.setTextViewText(R.id.widget_task1, "✨ Không có nhiệm vụ nào cần làm")
+                    views.setViewVisibility(R.id.widget_task2, View.GONE)
                 }
 
                 appWidgetManager.updateAppWidget(appWidgetId, views)

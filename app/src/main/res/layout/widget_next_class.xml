@@ -7,20 +7,63 @@
     android:orientation="vertical"
     android:padding="12dp">
 
+    <!-- Header: Logo, Title, Date, Refresh Button -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/app_logo"
+            android:contentDescription="Logo" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:text="SMART TEACHER AI"
+            android:textColor="#818CF8"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Hôm nay"
+            android:textColor="#94A3B8"
+            android:textSize="10sp" />
+
+        <ImageButton
+            android:id="@+id/widget_refresh_btn"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginStart="6dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:src="@android:drawable/ic_popup_sync"
+            android:contentDescription="Làm mới" />
+    </LinearLayout>
+
+    <!-- SECTION 1: LỊCH DẠY TIẾP THEO -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
         <TextView
             android:id="@+id/widget_label"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="LỚP HỌC KẾ TIẾP"
-            android:textColor="#94A3B8"
-            android:textSize="11sp"
+            android:text="LỊCH DẠY TIẾP THEO"
+            android:textColor="#CBD5E1"
+            android:textSize="10sp"
             android:textStyle="bold" />
 
         <TextView
@@ -28,7 +71,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Còn 45 phút"
-            android:textColor="#00F0FF"
+            android:textColor="#FBBF24"
             android:textSize="11sp"
             android:textStyle="bold" />
     </LinearLayout>
@@ -37,10 +80,10 @@
         android:id="@+id/widget_subject"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="Module CAD/CAM"
+        android:layout_marginTop="2dp"
+        android:text="Lập trình &amp; Vận hành CNC"
         android:textColor="#FFFFFF"
-        android:textSize="15sp"
+        android:textSize="14sp"
         android:textStyle="bold"
         android:maxLines="1"
         android:ellipsize="end" />
@@ -49,27 +92,68 @@
         android:id="@+id/widget_details"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
+        android:layout_marginTop="1dp"
         android:text="08:00 - 10:00 • Phòng C202 • Lớp CĐCK01"
-        android:textColor="#CBD5E1"
-        android:textSize="12sp"
+        android:textColor="#94A3B8"
+        android:textSize="11sp"
         android:maxLines="1"
         android:ellipsize="end" />
 
+    <!-- Thin Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="6dp"
+        android:background="#334155" />
+
+    <!-- SECTION 2: NHIỆM VỤ SƯ PHẠM CẦN LÀM -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
         <TextView
-            android:id="@+id/widget_next_reminder"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="⏰ Nhắc lúc 07:00 &amp; 07:45"
-            android:textColor="#38BDF8"
-            android:textSize="11sp" />
+            android:text="CÔNG VIỆC CẦN LÀM"
+            android:textColor="#CBD5E1"
+            android:textSize="10sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_tasks_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="2 việc"
+            android:textColor="#34D399"
+            android:textSize="10sp"
+            android:textStyle="bold" />
     </LinearLayout>
+
+    <!-- Task Item 1 -->
+    <TextView
+        android:id="@+id/widget_task1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="3dp"
+        android:text="📌 In đề thi thực hành phay CNC (Hôm nay)"
+        android:textColor="#E2E8F0"
+        android:textSize="11sp"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <!-- Task Item 2 -->
+    <TextView
+        android:id="@+id/widget_task2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="📌 Chấm bài tập lớn CAD/CAM lớp CĐCK02"
+        android:textColor="#94A3B8"
+        android:textSize="11sp"
+        android:maxLines="1"
+        android:ellipsize="end" />
 </LinearLayout>

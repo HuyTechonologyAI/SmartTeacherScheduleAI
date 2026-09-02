@@ -28,6 +28,43 @@
 
 ---
 
+## 📥 TẢI VỀ & CÀI ĐẶT ỨNG DỤNG (DOWNLOAD APP)
+
+> 💡 **Thầy/Cô có thể bấm trực tiếp vào các nút bên dưới để tải về điện thoại hoặc máy tính:**
+
+<p align="center">
+  <a href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.0/SmartTeacherSchedule_v1.2.0_Release.apk">
+    <img src="https://img.shields.io/badge/📲%20TẢI%20VỀ%20APK%20v1.2.0-15.1%20MB-success?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" height="42">
+  </a>
+  &nbsp;
+  <a href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.0/SmartTeacherSchedule_v1.2.0_Release.aab">
+    <img src="https://img.shields.io/badge/📦%20TẢI%20VỀ%20AAB%20v1.2.0-14.8%20MB-informational?style=for-the-badge&logo=googleplay&logoColor=white" alt="Download AAB" height="42">
+  </a>
+  &nbsp;
+  <a href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases">
+    <img src="https://img.shields.io/badge/🏷️%20TẤT%20CẢ%20PHIÊN%20BẢN-Releases-blueviolet?style=for-the-badge&logo=github&logoColor=white" alt="All Releases" height="42">
+  </a>
+</p>
+
+### 📋 Bảng tổng hợp các phiên bản phát hành:
+
+| Phiên bản | Ngày phát hành | Định dạng | Dung lượng | Tải nhanh | Nội dung nâng cấp nổi bật |
+| :---: | :---: | :---: | :---: | :---: | :--- |
+| 🟢 **v1.2.0** *(Mới nhất)* | 02/09/2026 | `.apk` | **15.1 MB** | [⬇️ **Tải APK v1.2.0**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.0/SmartTeacherSchedule_v1.2.0_Release.apk) | • **Tiện ích Màn hình chính (Widget 2-trong-1)** hiển thị lịch dạy & việc cần làm<br>• Nút **Ghim Widget 1 Chạm** trực tiếp ra màn hình chính<br>• Cơ chế chống tắt ngầm khi dọn dẹp RAM (`AlarmClock` + `WakeLock`)<br>• Bộ nhận diện thương hiệu AI mới & Chỉnh sửa / Xóa lịch dạy |
+| 📦 **v1.2.0 (Play Store)** | 02/09/2026 | `.aab` | **14.8 MB** | [⬇️ **Tải AAB v1.2.0**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.0/SmartTeacherSchedule_v1.2.0_Release.aab) | Gói Android App Bundle đã ký số sẵn sàng đăng lên Google Play Console |
+
+### 📲 Hướng dẫn 3 bước cài đặt APK trên điện thoại Android:
+
+1. **Bước 1: Tải về**: Bấm vào nút màu xanh **[📲 TẢI VỀ APK v1.2.0]** ở trên. Trình duyệt sẽ tải tệp tin `SmartTeacherSchedule_v1.2.0_Release.apk`.
+2. **Bước 2: Mở và Cho phép cài đặt**: 
+   - Khi có thông báo *"Tệp có thể gây hại"* (đây là cảnh báo tiêu chuẩn của Android đối với mọi file APK tải ngoài CH Play), Thầy/Cô hãy chọn **"Vẫn tải xuống"** (Download anyway).
+   - Tải xong, bấm **"Mở"** ➔ Chọn **"Cài đặt"** (Install). Nếu máy hỏi *"Cho phép cài đặt từ nguồn này"*, hãy gạt bật Cho phép.
+3. **Bước 3: Mở ứng dụng & Sử dụng**:
+   - Bật ứng dụng, chọn **"Cho phép"** thông báo để nhận chuông báo giờ dạy.
+   - Bấm nút **"Ghim Widget"** tại màn hình chính để đưa lịch dạy và công việc ra màn hình khóa/màn hình chính điện thoại.
+
+---
+
 ## 🌟 Tính năng nổi bật
 
 1. **Quản lý lịch dạy học linh hoạt**:

@@ -99,6 +99,16 @@
             </intent-filter>
         </receiver>
 
+        <!-- Daily 00:00 Midnight Auto-Refresh Receiver -->
+        <receiver
+            android:name=".core.alarms.DailyMidnightReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.smartteacher.schedule.ACTION_DAILY_MIDNIGHT_REFRESH" />
+            </intent-filter>
+        </receiver>
+
         <!-- Home Screen App Widget -->
         <receiver
             android:name=".feature.widget.ScheduleWidgetReceiver"

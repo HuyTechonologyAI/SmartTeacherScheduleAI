@@ -209,7 +209,7 @@ fun AIImportScheduleView(
     aiService: AIService,
     onConfirm: (TeachingScheduleEntity) -> Unit
 ) {
-    var rawText by remember { mutableStateOf("Thứ 2 8h đến 10h dạy CNC lớp CĐCK01 phòng C202") }
+    var rawText by remember { mutableStateOf("") }
     var parsedResult by remember { mutableStateOf<ScheduleParseResult?>(null) }
     var isAnalyzing by remember { mutableStateOf(false) }
     var saveSuccessMessage by remember { mutableStateOf<String?>(null) }
@@ -235,7 +235,7 @@ fun AIImportScheduleView(
         OutlinedTextField(
             value = rawText,
             onValueChange = { rawText = it },
-            placeholder = { Text("Nhập hoặc dán nội dung lịch dạy...") },
+            placeholder = { Text("Dán nội dung lịch dạy của Thầy/Cô vào đây (ví dụ: Thứ 2 từ 8h đến 10h dạy Toán lớp 10A1 phòng 201)...") },
             modifier = Modifier.fillMaxWidth(),
             minLines = 3
         )

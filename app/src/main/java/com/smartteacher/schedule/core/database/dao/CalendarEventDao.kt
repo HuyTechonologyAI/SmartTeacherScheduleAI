@@ -34,6 +34,12 @@ interface CalendarEventDao {
     @Query("SELECT * FROM calendar_events WHERE teachingScheduleId = :scheduleId AND date >= :fromDate")
     suspend fun getEventsByScheduleId(scheduleId: Long, fromDate: String): List<CalendarEventEntity>
 
+    @Query("SELECT * FROM calendar_events WHERE teachingScheduleId = :scheduleId AND date = :date LIMIT 1")
+    suspend fun getEventByScheduleIdAndDate(scheduleId: Long, date: String): CalendarEventEntity?
+
+    @Query("DELETE FROM calendar_events WHERE title IN ('Dạy Module CAD/CAM', 'Thực hành gia công CNC') AND notes LIKE '%Xưởng thực hành cơ khí CNC%'")
+    suspend fun deleteDemoEvents()
+
     @Query("SELECT * FROM calendar_events WHERE title LIKE '%' || :query || '%' OR room LIKE '%' || :query || '%' OR className LIKE '%' || :query || '%'")
     fun searchEvents(query: String): Flow<List<CalendarEventEntity>>
 

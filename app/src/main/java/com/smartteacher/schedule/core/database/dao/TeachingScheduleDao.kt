@@ -15,6 +15,9 @@ interface TeachingScheduleDao {
     @Query("SELECT * FROM teaching_schedules WHERE dayOfWeek = :dayOfWeek AND isArchived = 0 ORDER BY startTime ASC")
     fun getSchedulesByDay(dayOfWeek: Int): Flow<List<TeachingScheduleEntity>>
 
+    @Query("SELECT * FROM teaching_schedules WHERE dayOfWeek = :dayOfWeek AND isArchived = 0 ORDER BY startTime ASC")
+    suspend fun getSchedulesByDayList(dayOfWeek: Int): List<TeachingScheduleEntity>
+
     @Query("SELECT * FROM teaching_schedules WHERE id = :id")
     suspend fun getScheduleById(id: Long): TeachingScheduleEntity?
 

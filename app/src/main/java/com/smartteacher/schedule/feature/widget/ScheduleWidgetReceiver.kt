@@ -159,7 +159,13 @@ class ScheduleWidgetReceiver : AppWidgetProvider() {
                         if (now.isBefore(start)) ChronoUnit.MINUTES.between(now, start) else 0L
                     }.getOrDefault(0L)
 
-                    val countdownText = if (remainingMins > 0) "Còn $remainingMins phút" else "Đang diễn ra"
+                    val countdownText = if (remainingMins >= 60) {
+                        "Còn ${remainingMins / 60}h ${remainingMins % 60}p"
+                    } else if (remainingMins > 0) {
+                        "Còn $remainingMins phút"
+                    } else {
+                        "Đang diễn ra"
+                    }
                     val roomText = if (nextEvent.room.isNotBlank()) "P.${nextEvent.room}" else "Chưa xếp phòng"
                     val classText = if (nextEvent.className.isNotBlank()) "Lớp ${nextEvent.className}" else ""
                     val detailsText = "${nextEvent.startTime} - ${nextEvent.endTime} • $roomText • $classText"

@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/Language-Kotlin_2.0-7F52FF?logo=kotlin&logoColor=white" alt="Language">
   <img src="https://img.shields.io/badge/UI-Jetpack_Compose_Material_3-4285F4?logo=jetpackcompose&logoColor=white" alt="UI">
   <img src="https://img.shields.io/badge/AI-Google_Gemini_Grounded-blue?logo=google" alt="AI">
-  <img src="https://img.shields.io/badge/Version-v1.2.0-brightgreen" alt="Version">
+  <img src="https://img.shields.io/badge/Version-v1.2.5-brightgreen" alt="Version">
   <img src="https://img.shields.io/badge/License-MIT-orange" alt="License">
 </p>
 
@@ -33,12 +33,12 @@
 > 💡 **Thầy/Cô có thể bấm trực tiếp vào các nút bên dưới để tải về điện thoại hoặc máy tính:**
 
 <p align="center">
-  <a href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.0/SmartTeacherSchedule_v1.2.0_Release.apk">
-    <img src="https://img.shields.io/badge/📲%20TẢI%20VỀ%20APK%20v1.2.0-15.1%20MB-success?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" height="42">
+  <a href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.5/SmartTeacherSchedule_v1.2.5_Release.apk">
+    <img src="https://img.shields.io/badge/📲%20TẢI%20VỀ%20APK%20v1.2.5-15.1%20MB-success?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" height="42">
   </a>
   &nbsp;
-  <a href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.0/SmartTeacherSchedule_v1.2.0_Release.aab">
-    <img src="https://img.shields.io/badge/📦%20TẢI%20VỀ%20AAB%20v1.2.0-14.8%20MB-informational?style=for-the-badge&logo=googleplay&logoColor=white" alt="Download AAB" height="42">
+  <a href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.5/SmartTeacherSchedule_v1.2.5_Release.aab">
+    <img src="https://img.shields.io/badge/📦%20TẢI%20VỀ%20AAB%20v1.2.5-14.8%20MB-informational?style=for-the-badge&logo=googleplay&logoColor=white" alt="Download AAB" height="42">
   </a>
   &nbsp;
   <a href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases">
@@ -50,12 +50,13 @@
 
 | Phiên bản | Ngày phát hành | Định dạng | Dung lượng | Tải nhanh | Nội dung nâng cấp nổi bật |
 | :---: | :---: | :---: | :---: | :---: | :--- |
-| 🟢 **v1.2.0** *(Mới nhất)* | 02/09/2026 | `.apk` | **15.1 MB** | [⬇️ **Tải APK v1.2.0**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.0/SmartTeacherSchedule_v1.2.0_Release.apk) | • **Tiện ích Màn hình chính (Widget 2-trong-1)** hiển thị lịch dạy & việc cần làm<br>• Nút **Ghim Widget 1 Chạm** trực tiếp ra màn hình chính<br>• Cơ chế chống tắt ngầm khi dọn dẹp RAM (`AlarmClock` + `WakeLock`)<br>• Bộ nhận diện thương hiệu AI mới & Chỉnh sửa / Xóa lịch dạy |
-| 📦 **v1.2.0 (Play Store)** | 02/09/2026 | `.aab` | **14.8 MB** | [⬇️ **Tải AAB v1.2.0**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.0/SmartTeacherSchedule_v1.2.0_Release.aab) | Gói Android App Bundle đã ký số sẵn sàng đăng lên Google Play Console |
+| 🟢 **v1.2.5** *(Mới nhất)* | 03/09/2026 | `.apk` | **15.1 MB** | [⬇️ **Tải APK v1.2.5**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.5/SmartTeacherSchedule_v1.2.5_Release.apk) | • **Tự động làm mới 00:00 hàng ngày**: Khởi tạo lịch dạy mới, kích hoạt chuông báo nhắc giờ và làm mới Widget mỗi nửa đêm.<br>• **Tắt toàn bộ dữ liệu mẫu / demo**: App hoạt động 100% bằng dữ liệu thực tế do thầy/cô tự quản lý.<br>• **Đồng bộ thời gian thực theo từng giây** với đồng hồ điện thoại giáo viên.<br>• Giao diện tiếng Việt chuẩn hóa và sửa lỗi hiển thị Widget. |
+| 📦 **v1.2.5 (Play Store)** | 03/09/2026 | `.aab` | **14.8 MB** | [⬇️ **Tải AAB v1.2.5**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.5/SmartTeacherSchedule_v1.2.5_Release.aab) | Gói Android App Bundle đã ký số sẵn sàng đăng lên Google Play Console |
+| ⚪ **v1.2.0** | 02/09/2026 | `.apk` | 15.1 MB | [⬇️ **Tải APK v1.2.0**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.0/SmartTeacherSchedule_v1.2.0_Release.apk) | Phiên bản ra mắt Widget Màn hình chính và thông tin tác giả Made in Huy Technology AI |
 
 ### 📲 Hướng dẫn 3 bước cài đặt APK trên điện thoại Android:
 
-1. **Bước 1: Tải về**: Bấm vào nút màu xanh **[📲 TẢI VỀ APK v1.2.0]** ở trên. Trình duyệt sẽ tải tệp tin `SmartTeacherSchedule_v1.2.0_Release.apk`.
+1. **Bước 1: Tải về**: Bấm vào nút màu xanh **[📲 TẢI VỀ APK v1.2.5]** ở trên. Trình duyệt sẽ tải tệp tin `SmartTeacherSchedule_v1.2.5_Release.apk`.
 2. **Bước 2: Mở và Cho phép cài đặt**: 
    - Khi có thông báo *"Tệp có thể gây hại"* (đây là cảnh báo tiêu chuẩn của Android đối với mọi file APK tải ngoài CH Play), Thầy/Cô hãy chọn **"Vẫn tải xuống"** (Download anyway).
    - Tải xong, bấm **"Mở"** ➔ Chọn **"Cài đặt"** (Install). Nếu máy hỏi *"Cho phép cài đặt từ nguồn này"*, hãy gạt bật Cho phép.

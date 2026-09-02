@@ -21,11 +21,14 @@ import androidx.compose.ui.unit.sp
 import com.smartteacher.schedule.core.database.entity.CalendarEventEntity
 import com.smartteacher.schedule.core.database.entity.TaskEntity
 import com.smartteacher.schedule.core.model.TaskStatus
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -132,12 +135,26 @@ fun TodayScreen(
         )
     }
 
-    val currentTime = remember { LocalTime.now() }
-    val nextEvent = remember(todayEvents) {
+    var liveTime by remember { mutableStateOf(LocalTime.now()) }
+    var liveDate by remember { mutableStateOf(LocalDate.now()) }
+
+    // Synchronize live clock and date with teacher's phone time
+    LaunchedEffect(Unit) {
+        while (isActive) {
+            liveTime = LocalTime.now()
+            val now = LocalDate.now()
+            if (now != liveDate) {
+                liveDate = now
+            }
+            delay(1000L)
+        }
+    }
+
+    val nextEvent = remember(todayEvents, liveTime) {
         todayEvents.firstOrNull { event ->
             runCatching {
                 val end = LocalTime.parse(event.endTime)
-                end.isAfter(currentTime)
+                end.isAfter(liveTime)
             }.getOrDefault(false)
         }
     }
@@ -147,13 +164,38 @@ fun TodayScreen(
             TopAppBar(
                 title = {
                     Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Hôm nay",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer
+                            ) {
+                                Text(
+                                    text = liveTime.format(DateTimeFormatter.ofPattern("HH:mm:ss")),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
+                        val formattedDate = liveDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                        val dayOfWeekVi = when (liveDate.dayOfWeek) {
+                            DayOfWeek.MONDAY -> "Thứ Hai"
+                            DayOfWeek.TUESDAY -> "Thứ Ba"
+                            DayOfWeek.WEDNESDAY -> "Thứ Tư"
+                            DayOfWeek.THURSDAY -> "Thứ Năm"
+                            DayOfWeek.FRIDAY -> "Thứ Sáu"
+                            DayOfWeek.SATURDAY -> "Thứ Bảy"
+                            DayOfWeek.SUNDAY -> "Chủ Nhật"
+                        }
                         Text(
-                            text = "Today",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = dayOfWeekName.replaceFirstChar { it.uppercase() },
+                            text = "$dayOfWeekVi, ngày $formattedDate",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
@@ -190,7 +232,7 @@ fun TodayScreen(
         ) {
             // 1. Next Upcoming Class Hero Banner
             item {
-                NextClassHeroBanner(nextEvent = nextEvent)
+                NextClassHeroBanner(nextEvent = nextEvent, liveTime = liveTime)
             }
 
             // 1.1 OEM Battery Saver / RAM Cleaner Protection Banner
@@ -392,7 +434,7 @@ fun TodayScreen(
 }
 
 @Composable
-fun NextClassHeroBanner(nextEvent: CalendarEventEntity?) {
+fun NextClassHeroBanner(nextEvent: CalendarEventEntity?, liveTime: LocalTime = LocalTime.now()) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -416,7 +458,7 @@ fun NextClassHeroBanner(nextEvent: CalendarEventEntity?) {
                 )
 
                 if (nextEvent != null) {
-                    val countdownText = calculateRemainingText(nextEvent.startTime, nextEvent.endTime)
+                    val countdownText = calculateRemainingText(nextEvent.startTime, nextEvent.endTime, liveTime)
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = MaterialTheme.colorScheme.primary
@@ -755,9 +797,8 @@ fun EmptyStateCard(message: String, actionLabel: String, onAction: () -> Unit) {
     }
 }
 
-private fun calculateRemainingText(startTimeStr: String, endTimeStr: String): String {
+private fun calculateRemainingText(startTimeStr: String, endTimeStr: String, now: LocalTime = LocalTime.now()): String {
     return runCatching {
-        val now = LocalTime.now()
         val start = LocalTime.parse(startTimeStr)
         val end = LocalTime.parse(endTimeStr)
 

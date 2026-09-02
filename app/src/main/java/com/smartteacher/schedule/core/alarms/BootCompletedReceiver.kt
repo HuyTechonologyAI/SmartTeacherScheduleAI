@@ -34,6 +34,10 @@ class BootCompletedReceiver : BroadcastReceiver() {
                         )
                     )
 
+                    // Arm 00:00 midnight alarm and perform refresh
+                    DailyRefreshManager.scheduleNextMidnightAlarm(context)
+                    DailyRefreshManager.performDailyMidnightRefresh(context)
+
                     // Enqueue RescheduleWorker immediately
                     val workRequest = OneTimeWorkRequestBuilder<RescheduleWorker>().build()
                     WorkManager.getInstance(context).enqueue(workRequest)

@@ -37,6 +37,11 @@ import com.smartteacher.schedule.feature.today.TodayScreen
 import com.smartteacher.schedule.feature.widget.ScheduleWidgetReceiver
 import com.smartteacher.schedule.ui.navigation.Screen
 import com.smartteacher.schedule.ui.navigation.bottomNavScreens
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import com.smartteacher.schedule.core.alarms.DailyRefreshManager
 import com.smartteacher.schedule.ui.theme.SmartTeacherScheduleTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -79,8 +84,35 @@ class MainActivity : ComponentActivity() {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route
 
-                // Reactive DB State flows
-                val todayStr = remember { LocalDate.now().toString() }
+                // Reactive DB State flows synchronized with live phone date
+                var currentDate by remember { mutableStateOf(LocalDate.now()) }
+                val todayStr = remember(currentDate) { currentDate.toString() }
+
+                val context = this@MainActivity
+                DisposableEffect(Unit) {
+                    val filter = IntentFilter().apply {
+                        addAction(Intent.ACTION_TIME_TICK)
+                        addAction(Intent.ACTION_TIME_CHANGED)
+                        addAction(Intent.ACTION_DATE_CHANGED)
+                        addAction(Intent.ACTION_TIMEZONE_CHANGED)
+                    }
+                    val timeReceiver = object : BroadcastReceiver() {
+                        override fun onReceive(c: Context?, intent: Intent?) {
+                            val now = LocalDate.now()
+                            if (now != currentDate) {
+                                currentDate = now
+                                lifecycleScope.launch(Dispatchers.IO) {
+                                    DailyRefreshManager.performDailyMidnightRefresh(context)
+                                }
+                            }
+                        }
+                    }
+                    context.registerReceiver(timeReceiver, filter)
+                    onDispose {
+                        context.unregisterReceiver(timeReceiver)
+                    }
+                }
+
                 val todayEvents by database.calendarEventDao().getEventsForDate(todayStr).collectAsState(initial = emptyList())
                 val allEvents by database.calendarEventDao().getAllEvents().collectAsState(initial = emptyList())
                 val todayTasks by database.taskDao().getTasksForDate(todayStr).collectAsState(initial = emptyList())
@@ -210,8 +242,13 @@ class MainActivity : ComponentActivity() {
                                 onOpenReliabilityCenter = {
                                     navController.navigate(Screen.ReliabilityCenter.route)
                                 },
-                                onOpenNotificationTest = {
-                                    navController.navigate(Screen.NotificationTest.route)
+                                onTriggerDailyRefresh = {
+                                    lifecycleScope.launch(Dispatchers.IO) {
+                                        DailyRefreshManager.performDailyMidnightRefresh(this@MainActivity)
+                                        withContext(Dispatchers.Main) {
+                                            Toast.makeText(this@MainActivity, "Đã làm mới lịch dạy, công việc và Widget hôm nay!", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
                                 },
                                 onExportJson = {
                                     lifecycleScope.launch(Dispatchers.IO) {
@@ -287,19 +324,31 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        lifecycleScope.launch(Dispatchers.IO) {
+            DailyRefreshManager.scheduleNextMidnightAlarm(this@MainActivity)
+            ScheduleWidgetReceiver.updateAllWidgets(this@MainActivity)
+        }
+    }
+
     private fun saveTeachingSchedule(schedule: com.smartteacher.schedule.core.database.entity.TeachingScheduleEntity) {
         lifecycleScope.launch(Dispatchers.IO) {
             val scheduleId = database.teachingScheduleDao().insertSchedule(schedule)
 
-            // Convert to concrete CalendarEventEntity for today / recurrence
-            val todayStr = LocalDate.now().toString()
+            // Calculate date matching the target dayOfWeek (1 = Monday, 7 = Sunday)
+            val today = LocalDate.now()
+            val daysUntilTarget = (schedule.dayOfWeek - today.dayOfWeek.value + 7) % 7
+            val targetDate = if (daysUntilTarget == 0) today else today.plusDays(daysUntilTarget.toLong())
+            val targetDateStr = targetDate.toString()
+
             val event = CalendarEventEntity(
                 teachingScheduleId = scheduleId,
                 title = schedule.subject,
                 subject = schedule.subject,
                 className = schedule.className,
                 room = schedule.room,
-                date = todayStr,
+                date = targetDateStr,
                 startTime = schedule.startTime,
                 endTime = schedule.endTime,
                 notes = schedule.notes,

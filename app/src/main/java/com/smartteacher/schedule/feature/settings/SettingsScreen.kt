@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SettingsScreen(
     onOpenReliabilityCenter: () -> Unit,
-    onOpenNotificationTest: () -> Unit,
+    onTriggerDailyRefresh: () -> Unit,
     onExportJson: () -> Unit,
     onExportCsv: () -> Unit,
     telegramEnabled: Boolean,
@@ -65,12 +65,12 @@ fun SettingsScreen(
                         icon = Icons.Default.HealthAndSafety,
                         onClick = onOpenReliabilityCenter
                     )
-                    Divider()
+                    HorizontalDivider()
                     SettingsItem(
-                        title = "Kiểm tra thông báo tức thì (Test Bench)",
-                        subtitle = "Thử nghiệm báo động trong 10s, 1 phút",
-                        icon = Icons.Default.NotificationsActive,
-                        onClick = onOpenNotificationTest
+                        title = "Tự động làm mới 00:00 hằng ngày",
+                        subtitle = "Tự động kích hoạt lịch hẹn, công việc và Widget mỗi ngày (Chạm để làm mới ngay)",
+                        icon = Icons.Default.Autorenew,
+                        onClick = onTriggerDailyRefresh
                     )
                 }
             }
@@ -164,7 +164,7 @@ fun SettingsScreen(
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                "Phiên bản 1.2.0 • Android 15 Ready",
+                                "Phiên bản 1.2.5 • Android 15 Ready",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
@@ -174,7 +174,7 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Text(
-                                "v1.2.0",
+                                "v1.2.5",
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,

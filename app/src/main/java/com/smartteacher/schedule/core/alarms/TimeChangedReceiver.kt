@@ -32,6 +32,9 @@ class TimeChangedReceiver : BroadcastReceiver() {
                         )
                     )
 
+                    DailyRefreshManager.scheduleNextMidnightAlarm(context)
+                    DailyRefreshManager.performDailyMidnightRefresh(context)
+
                     val workRequest = OneTimeWorkRequestBuilder<RescheduleWorker>().build()
                     WorkManager.getInstance(context).enqueue(workRequest)
                 } catch (e: Exception) {

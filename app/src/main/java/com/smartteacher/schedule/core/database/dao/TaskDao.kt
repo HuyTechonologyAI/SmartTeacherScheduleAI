@@ -45,4 +45,7 @@ interface TaskDao {
 
     @Query("UPDATE tasks SET dueDate = :newDate WHERE dueDate = :oldDate AND status != 'COMPLETED' AND status != 'CANCELLED'")
     suspend fun moveUnfinishedTasksToDate(oldDate: String, newDate: String): Int
+
+    @Query("DELETE FROM tasks WHERE title IN ('Soạn giáo án Module CAD/CAM', 'Chuẩn bị phôi nhôm thực hành CNC')")
+    suspend fun deleteDemoTasks()
 }

@@ -124,3 +124,16 @@ Xem chi tiết tại:
 - [GEMINI_SETUP.md](GEMINI_SETUP.md): Hướng dẫn cài đặt Gemini API Key.
 - [TELEGRAM_SETUP.md](TELEGRAM_SETUP.md): Hướng dẫn tạo Telegram Bot và lấy Chat ID.
 - [ZALO_SETUP.md](ZALO_SETUP.md): Hướng dẫn cấu hình Zalo Official Account.
+
+---
+
+## 👨‍💻 THÔNG TIN NHÀ PHÁT TRIỂN & HỖ TRỢ KỸ THUẬT
+
+- **Bản quyền & Phát triển**: **Made in Huy Technology AI**
+- **Hotline / Zalo hỗ trợ**: [**0961364600**](tel:0961364600)
+- **Email liên hệ**: [**huytechnologyai2025@gmail.com**](mailto:huytechnologyai2025@gmail.com)
+- **Kho lưu trữ chính thức**: [https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI)
+
+<p align="center">
+  <em>Được phát triển với niềm đam mê công nghệ giáo dục và trí tuệ nhân tạo bởi <strong>Huy Technology AI</strong></em>
+</p>

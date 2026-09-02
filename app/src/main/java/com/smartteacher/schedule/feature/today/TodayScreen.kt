@@ -92,6 +92,46 @@ fun TodayScreen(
         )
     }
 
+    var showWidgetHelpDialog by remember { mutableStateOf(false) }
+
+    if (showWidgetHelpDialog) {
+        AlertDialog(
+            onDismissRequest = { showWidgetHelpDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Dashboard, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Cách thêm Tiện ích ra màn hình", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("1️⃣ Ra màn hình chính của điện thoại.", style = MaterialTheme.typography.bodyMedium)
+                    Text("2️⃣ Nhấn giữ vào khoảng trống trên màn hình khoảng 2 giây.", style = MaterialTheme.typography.bodyMedium)
+                    Text("3️⃣ Chọn biểu tượng 'Tiện ích' (Widgets) ở thanh công cụ dưới cùng.", style = MaterialTheme.typography.bodyMedium)
+                    Text("4️⃣ Cuộn tìm ứng dụng 'Smart Teacher Schedule AI'.", style = MaterialTheme.typography.bodyMedium)
+                    Text("5️⃣ Nhấn giữ và kéo tiện ích ra màn hình chính theo vị trí mong muốn.", style = MaterialTheme.typography.bodyMedium)
+                    Text("💡 Mẹo cho Tecno Spark Go: Mở app 'Phone Master' > 'Quản lý quyền' > Bật 'Tạo lối tắt trên màn hình' cho Smart Teacher.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showWidgetHelpDialog = false
+                        com.smartteacher.schedule.feature.widget.ScheduleWidgetReceiver.pinWidgetToHomeScreen(context)
+                    }
+                ) {
+                    Text("Thử Ghim tự động")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWidgetHelpDialog = false }) {
+                    Text("Đã hiểu")
+                }
+            }
+        )
+    }
+
     val currentTime = remember { LocalTime.now() }
     val nextEvent = remember(todayEvents) {
         todayEvents.firstOrNull { event ->
@@ -231,6 +271,7 @@ fun TodayScreen(
                         Spacer(modifier = Modifier.width(6.dp))
                         OutlinedButton(
                             onClick = {
+                                showWidgetHelpDialog = true
                                 com.smartteacher.schedule.feature.widget.ScheduleWidgetReceiver.pinWidgetToHomeScreen(context)
                             },
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),

@@ -29,9 +29,23 @@ class ScheduleWidgetReceiver : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        for (appWidgetId in appWidgetIds) {
-            updateAppWidget(context, appWidgetManager, appWidgetId)
+        val pendingResult = goAsync()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                for (appWidgetId in appWidgetIds) {
+                    updateAppWidget(context, appWidgetManager, appWidgetId)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                pendingResult.finish()
+            }
         }
+    }
+
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        updateAllWidgets(context)
     }
 
     companion object {
@@ -40,8 +54,12 @@ class ScheduleWidgetReceiver : AppWidgetProvider() {
             val ids = appWidgetManager.getAppWidgetIds(
                 ComponentName(context, ScheduleWidgetReceiver::class.java)
             )
-            for (id in ids) {
-                updateAppWidget(context, appWidgetManager, id)
+            if (ids.isNotEmpty()) {
+                CoroutineScope(Dispatchers.IO).launch {
+                    for (id in ids) {
+                        updateAppWidget(context, appWidgetManager, id)
+                    }
+                }
             }
         }
 
@@ -51,26 +69,30 @@ class ScheduleWidgetReceiver : AppWidgetProvider() {
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 if (appWidgetManager.isRequestPinAppWidgetSupported) {
-                    val pinnedWidgetCallbackIntent = Intent(context, ScheduleWidgetReceiver::class.java)
+                    val pinnedWidgetCallbackIntent = Intent(context, ScheduleWidgetReceiver::class.java).apply {
+                        action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                    }
                     val successCallback = PendingIntent.getBroadcast(
                         context, 0,
                         pinnedWidgetCallbackIntent,
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
-                    appWidgetManager.requestPinAppWidget(myProvider, null, successCallback)
-                    Toast.makeText(context, "Đang mở hộp thoại thêm tiện ích ra Màn hình chính...", Toast.LENGTH_SHORT).show()
-                    return
+                    val success = appWidgetManager.requestPinAppWidget(myProvider, null, successCallback)
+                    if (success) {
+                        Toast.makeText(context, "Hệ thống đang mở hộp thoại ghim Widget. Vui lòng bấm 'Thêm'!", Toast.LENGTH_SHORT).show()
+                        return
+                    }
                 }
             }
 
             Toast.makeText(
                 context,
-                "Nhấn giữ khoảng trống trên Màn hình chính > Chọn 'Tiện ích' (Widgets) > Thêm Smart Teacher",
+                "Vui lòng ra Màn hình chính > Nhấn giữ khoảng trống > Chọn 'Tiện ích' (Widgets) > Kéo Smart Teacher ra màn hình",
                 Toast.LENGTH_LONG
             ).show()
         }
 
-        private fun updateAppWidget(
+        private suspend fun updateAppWidget(
             context: Context,
             appWidgetManager: AppWidgetManager,
             appWidgetId: Int
@@ -116,8 +138,11 @@ class ScheduleWidgetReceiver : AppWidgetProvider() {
             val dateFormatted = "$dayOfWeekVi, ${today.format(DateTimeFormatter.ofPattern("dd/MM"))}"
             views.setTextViewText(R.id.widget_date, dateFormatted)
 
-            // 4. Load data asynchronously from Room Database
-            CoroutineScope(Dispatchers.IO).launch {
+            // Push base view immediately so widget renders synchronously
+            appWidgetManager.updateAppWidget(appWidgetId, views)
+
+            // 4. Load data from Room Database
+            try {
                 val db = SmartTeacherDatabase.getInstance(context)
                 val todayStr = today.toString()
                 val events = db.calendarEventDao().getEventsForDateList(todayStr)
@@ -174,6 +199,8 @@ class ScheduleWidgetReceiver : AppWidgetProvider() {
                 }
 
                 appWidgetManager.updateAppWidget(appWidgetId, views)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }

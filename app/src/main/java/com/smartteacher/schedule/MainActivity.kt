@@ -71,6 +71,7 @@ class MainActivity : ComponentActivity() {
         aiService = GeminiAIServiceImpl(this) { geminiApiKey }
 
         checkNotificationPermission()
+        ScheduleWidgetReceiver.updateAllWidgets(this)
 
         setContent {
             SmartTeacherScheduleTheme {

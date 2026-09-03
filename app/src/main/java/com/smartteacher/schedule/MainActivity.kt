@@ -67,6 +67,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private val requestCalendarPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val writeGranted = permissions[android.Manifest.permission.WRITE_CALENDAR] == true
+        if (writeGranted) {
+            syncAllEventsToGoogleCalendar()
+        } else {
+            Toast.makeText(this, "Cần cấp quyền Lịch để đồng bộ với Google Calendar!", Toast.LENGTH_LONG).show()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -117,6 +128,7 @@ class MainActivity : ComponentActivity() {
                 val allEvents by database.calendarEventDao().getAllEvents().collectAsState(initial = emptyList())
                 val todayTasks by database.taskDao().getTasksForDate(todayStr).collectAsState(initial = emptyList())
                 val allTasks by database.taskDao().getAllTasks().collectAsState(initial = emptyList())
+                val allSchedules by database.teachingScheduleDao().getAllActiveSchedules().collectAsState(initial = emptyList())
                 val notificationLogs by database.notificationLogDao().getRecentLogs().collectAsState(initial = emptyList())
 
                 var aiWarnings by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -270,7 +282,8 @@ class MainActivity : ComponentActivity() {
                                 onToggleTelegram = { },
                                 onSaveTelegramCreds = { token, chatId -> },
                                 geminiApiKey = geminiApiKey,
-                                onSaveGeminiApiKey = { key -> geminiApiKey = key }
+                                onSaveGeminiApiKey = { key -> geminiApiKey = key },
+                                onSyncGoogleCalendar = { syncAllEventsToGoogleCalendar() }
                             )
                         }
 
@@ -278,6 +291,7 @@ class MainActivity : ComponentActivity() {
                         composable(Screen.AddSchedule.route) {
                             AddTeachingScheduleScreen(
                                 onBack = { navController.popBackStack() },
+                                existingSchedules = allSchedules,
                                 onSave = { schedule ->
                                     saveTeachingSchedule(schedule)
                                     navController.popBackStack()
@@ -372,12 +386,14 @@ class MainActivity : ComponentActivity() {
     private fun updateEventAndReschedule(event: CalendarEventEntity) {
         lifecycleScope.launch(Dispatchers.IO) {
             database.calendarEventDao().updateEvent(event)
-            // If linked to teachingSchedule, also update parent
+            // If linked to teachingSchedule, also update parent (including new day of week!)
             if (event.teachingScheduleId != null) {
+                val newDayOfWeek = try { LocalDate.parse(event.date).dayOfWeek.value } catch (e: Exception) { null }
                 val schedule = database.teachingScheduleDao().getScheduleById(event.teachingScheduleId)
                 if (schedule != null) {
                     database.teachingScheduleDao().updateSchedule(
                         schedule.copy(
+                            dayOfWeek = newDayOfWeek ?: schedule.dayOfWeek,
                             subject = event.subject,
                             className = event.className,
                             room = event.room,
@@ -398,6 +414,26 @@ class MainActivity : ComponentActivity() {
             ScheduleWidgetReceiver.updateAllWidgets(this@MainActivity)
             withContext(Dispatchers.Main) {
                 Toast.makeText(this@MainActivity, "Đã cập nhật lịch dạy thành công!", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun syncAllEventsToGoogleCalendar() {
+        if (!com.smartteacher.schedule.core.sync.GoogleCalendarManager.hasCalendarPermissions(this)) {
+            requestCalendarPermissionLauncher.launch(
+                arrayOf(android.Manifest.permission.READ_CALENDAR, android.Manifest.permission.WRITE_CALENDAR)
+            )
+            return
+        }
+        lifecycleScope.launch(Dispatchers.IO) {
+            val manager = com.smartteacher.schedule.core.sync.GoogleCalendarManager(this@MainActivity)
+            val count = manager.exportAllEvents()
+            withContext(Dispatchers.Main) {
+                if (count > 0) {
+                    Toast.makeText(this@MainActivity, "Đã đồng bộ thành công $count ca dạy sang Google Calendar!", Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(this@MainActivity, "Tất cả lịch dạy đã được đồng bộ lên Google Calendar!", Toast.LENGTH_LONG).show()
+                }
             }
         }
     }

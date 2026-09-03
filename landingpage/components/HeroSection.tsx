@@ -20,9 +20,9 @@ export default function HeroSection() {
   const [showQr, setShowQr] = useState(false);
 
   const apkUrl =
-    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.5/SmartTeacherSchedule_v1.2.5_Release.apk";
+    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.6/SmartTeacherSchedule_v1.2.6_Release.apk";
   const aabUrl =
-    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.5/SmartTeacherSchedule_v1.2.5_Release.aab";
+    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.6/SmartTeacherSchedule_v1.2.6_Release.aab";
 
   return (
     <section
@@ -43,9 +43,9 @@ export default function HeroSection() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              <span>Phiên bản v1.2.5 chính thức phát hành</span>
+              <span>Phiên bản v1.2.6 chính thức phát hành</span>
               <span className="text-slate-500">•</span>
-              <span className="text-cyan-300">Tự động làm mới 00:00</span>
+              <span className="text-cyan-300">Cảnh báo trùng lịch & Khung giờ chuẩn</span>
             </div>
 
             {/* Main Headline */}
@@ -82,7 +82,7 @@ export default function HeroSection() {
                   </div>
                 </div>
                 <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">
-                  Bản v1.2.5 (15.1 MB)
+                  Bản v1.2.6 (15.1 MB)
                 </span>
               </div>
 

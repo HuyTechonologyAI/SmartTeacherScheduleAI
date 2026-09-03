@@ -41,11 +41,12 @@ export default function AIAssistantWidget() {
       text: "Xin chào Thầy/Cô! Em là Trợ lý AI hỗ trợ 24/7 của Smart Teacher Schedule AI (Made in Huy Technology AI). Em có thể hướng dẫn Thầy/Cô cài đặt app, bật chuông báo kép, ghim Widget ra màn hình chính, hoặc tư vấn các gói Pro. Thầy/Cô cần em hỗ trợ điều gì ạ?",
       timestamp: "Vừa xong",
       quickActions: [
+        { label: "🚀 Tính năng mới bản v1.2.6?", action: "tinh_nang_moi" },
+        { label: "⚠️ Cảnh báo trùng lịch dạy?", action: "canh_bao_trung_lich" },
+        { label: "⏰ Khung giờ cố định (45p & 60p)?", action: "khung_gio_chuan" },
+        { label: "📅 Lịch trình tổng thể (Không bấm từng ngày)?", action: "lich_trinh_tong_the" },
+        { label: "🔄 Đồng bộ Google Calendar & Smartwatch?", action: "dong_bo_google" },
         { label: "📱 Cách cài đặt APK trên máy?", action: "huong_dan_cai_dat" },
-        { label: "🔋 Chống tắt ngầm (Xiaomi/Samsung)?", action: "chong_tat_ngam" },
-        { label: "🖼️ Cách bật Widget ra màn hình?", action: "bat_widget" },
-        { label: "⏰ Báo thức kép 60m & 15m là gì?", action: "bao_thuc_kep" },
-        { label: "💎 Quyền lợi Gói Giáo Viên Pro?", action: "goi_pro" },
         { label: "📞 Gặp trực tiếp chuyên gia Zalo", action: "lien_he_chuyen_gia" },
       ],
     },
@@ -71,9 +72,61 @@ export default function AIAssistantWidget() {
   const generateAIResponse = (userQuery: string): { text: string; quickActions?: { label: string; action: string }[] } => {
     const query = userQuery.toLowerCase();
 
+    // v1.2.6 New Features
+    if (query.includes("mới") || query.includes("v1.2.6") || query.includes("tinh_nang_moi")) {
+      return {
+        text: `Dạ, phiên bản **v1.2.6** vừa phát hành mang đến 4 cải tiến đột phá theo đúng đóng góp của quý Thầy/Cô:\n\n1️⃣ **Cảnh báo trùng lịch dạy & phòng học**: Hệ thống tự động phát hiện khi ca dạy mới bị trùng giờ hoặc trùng phòng với môn khác, cảnh báo màu cam nổi bật tức thì.\n2️⃣ **Khung giờ cố định chuẩn 1-chạm**: Có sẵn các tiết Lý thuyết chuẩn 45 phút (Tiết 1-2, 3-4, 5-6, 7-8...) và ca Thực hành 60 phút (Ca xưởng 4 tiếng 07:30-11:30, 13:00-17:00), kèm các nút cộng nhanh +45p, +90p, +60p, +120p, +240p.\n3️⃣ **Xem Lịch trình tổng thể liên tục (Agenda)**: Nhấp vào tab Lịch là thấy ngay dòng thời gian tất cả các ca dạy sắp tới cuộn một mạch, không cần phải bấm từng ngày như trước!\n4️⃣ **Đồng bộ Google Calendar 2 chiều**: Xuất toàn bộ ca dạy sang Google Calendar trên máy và rung chuông nhắc nhở trực tiếp trên Đồng hồ thông minh (Smartwatch).\n5️⃣ **Đổi ngày trực tiếp trên lịch cũ**: Cho phép dời lịch sang Hôm nay, Ngày mai, +7 ngày hoặc chọn Thứ trong tuần chỉ với 1 chạm!`,
+        quickActions: [
+          { label: "⚠️ Cảnh báo trùng lịch hoạt động ra sao?", action: "canh_bao_trung_lich" },
+          { label: "🔄 Cách đồng bộ Google Calendar?", action: "dong_bo_google" },
+          { label: "📥 Tải ngay bản v1.2.6 (15.1 MB)", action: "huong_dan_cai_dat" }
+        ],
+      };
+    }
+
+    if (query.includes("trùng") || query.includes("xung đột") || query.includes("canh_bao_trung_lich")) {
+      return {
+        text: `Dạ, trong bản v1.2.6, tính năng **Cảnh báo trùng lịch** bảo vệ Thầy/Cô tuyệt đối khỏi sai sót khi nhập thời khóa biểu:\n\n• **Tự động quét thời gian thực**: Ngay khi Thầy/Cô chọn Thứ, Giờ vào lớp - Giờ tan lớp và Phòng học, ứng dụng sẽ so sánh với toàn bộ lịch dạy hiện có.\n• **Phân loại rõ ràng**: Báo rõ là **Trùng giờ dạy** (Thầy/Cô đã có ca khác cùng giờ) hay **Trùng phòng học** (phòng đó đã có lớp khác học).\n• **Cảnh báo trực quan**: Thẻ màu cam xuất hiện nêu rõ tên môn và phòng đang bị trùng.\n• **Quyền chủ động**: Thầy/Cô có thể điều chỉnh lại giờ, hoặc nếu là chủ đích (ví dụ dạy ghép 2 lớp) thì chỉ cần bật công tắc *"Vẫn lưu dù trùng lịch"* là xong ạ!`,
+        quickActions: [
+          { label: "⏰ Khung giờ chuẩn 45p và 60p?", action: "khung_gio_chuan" },
+          { label: "📅 Lịch trình tổng thể liên tục?", action: "lich_trinh_tong_the" }
+        ],
+      };
+    }
+
+    if (query.includes("khung giờ") || query.includes("tiết") || query.includes("45") || query.includes("60") || query.includes("khung_gio_chuan")) {
+      return {
+        text: `Dạ, để Thầy/Cô không phải quay số chọn từng phút khi nhập lịch, bản v1.2.6 tích hợp sẵn hệ thống **Khung giờ cố định chuẩn sư phạm**:\n\n📘 **Tiết Lý Thuyết (45 phút / tiết):**\n• Tiết 1-2: 07:00 - 08:30 (Sáng)\n• Tiết 3-4: 08:45 - 10:15 (Sáng)\n• Tiết 5-6: 10:30 - 12:00 (Trưa)\n• Tiết 7-8: 13:00 - 14:30 (Chiều)\n• Tiết 9-10: 14:45 - 16:15 (Chiều)\n• Tiết 11-12: 16:30 - 18:00 (Tối)\n\n🛠️ **Tiết Thực Hành / Xưởng (60 phút / tiết):**\n• Ca Sáng (4 tiết): 07:30 - 11:30 (4 tiếng)\n• Ca Chiều (4 tiết): 13:00 - 17:00 (4 tiếng)\n• Ca Tối (3 tiết): 18:00 - 21:00 (3 tiếng)\n\n⚡ **Cộng nhanh thời lượng:** Chỉ cần chọn giờ bắt đầu, Thầy/Cô bấm nút: \`+45p\`, \`+90p\`, \`+60p\`, \`+120p\`, \`+240p\` là máy tự động tính giờ kết thúc chuẩn xác 100%!`,
+        quickActions: [
+          { label: "📅 Lịch trình tổng thể ra sao?", action: "lich_trinh_tong_the" },
+          { label: "🔄 Đồng bộ Google Calendar?", action: "dong_bo_google" }
+        ],
+      };
+    }
+
+    if (query.includes("lịch trình") || query.includes("tổng thể") || query.includes("từng ngày") || query.includes("lich_trinh_tong_the")) {
+      return {
+        text: `Dạ, bắt đầu từ bản v1.2.6, khi Thầy/Cô nhấp vào tab **Lịch**, màn hình sẽ hiển thị ngay **Dòng thời gian Lịch trình tổng thể (Agenda)** mà không bắt Thầy/Cô phải bấm từng ngày nữa ạ!\n\n✨ **Những điểm tiện lợi:**\n• **Hiển thị cuộn một mạch**: Danh sách tất cả các ca dạy từ Hôm nay, Ngày mai, Thứ Sáu, Thứ Bảy... cuộn xem mượt mà cả tuần, cả tháng.\n• **Gom nhóm theo ngày sắc nét**: Phân biệt rõ HÔM NAY (xanh nổi bật), NGÀY MAI và các ngày tiếp theo.\n• **Bộ lọc 1-chạm**: Lọc nhanh ca dạy *"Tuần này"*, *"Tuần tới"*, *"Lý thuyết"* hoặc *"Thực hành"*.\n• **Thao tác nhanh trên từng ca**: Có sẵn nút ✏️ Sửa / Đổi ngày, 🗑️ Xóa và 🔄 Đồng bộ Google Calendar ngay trên thẻ lịch!`,
+        quickActions: [
+          { label: "🔄 Đồng bộ Google Calendar & Smartwatch?", action: "dong_bo_google" },
+          { label: "📥 Tải APK v1.2.6 ngay", action: "huong_dan_cai_dat" }
+        ],
+      };
+    }
+
+    if (query.includes("google") || query.includes("calendar") || query.includes("đồng bộ") || query.includes("smartwatch") || query.includes("dong_bo_google")) {
+      return {
+        text: `Dạ, tính năng liên kết **Google Calendar** trong bản v1.2.6 đã được kích hoạt hoàn hảo:\n\n1. **Đồng bộ toàn bộ lịch dạy sang Google Calendar**:\n• Vào mục **Cài đặt ➔ Google Calendar** ➔ Bấm **"Đồng bộ toàn bộ lịch dạy ngay"**.\n• Tất cả các ca dạy sẽ được đưa vào Google Calendar trên điện thoại kèm 2 mốc nhắc nhở (60m & 15m).\n2. **Rung báo trên Đồng hồ thông minh (Smartwatch)**:\n• Nhờ đồng bộ với Google Calendar, khi đến giờ báo thức 60m & 15m, đồng hồ thông minh (Apple Watch, Samsung Galaxy Watch, Xiaomi Band) của Thầy/Cô sẽ rung và hiện tên môn, phòng học ngay trên cổ tay!\n3. **Đồng bộ từng ca dạy riêng lẻ**: Ngay trên từng thẻ lịch dạy có biểu tượng đồng bộ 🔄 để đưa nhanh ca dạy đó vào Google Calendar.`,
+        quickActions: [
+          { label: "📥 Tải bản cài đặt v1.2.6", action: "huong_dan_cai_dat" },
+          { label: "📞 Gặp chuyên gia hỗ trợ", action: "lien_he_chuyen_gia" }
+        ],
+      };
+    }
+
     if (query.includes("cài") || query.includes("tải") || query.includes("apk") || query.includes("huong_dan_cai_dat")) {
       return {
-        text: `Dạ, để cài đặt bản v1.2.5 trên điện thoại Android, Thầy/Cô làm theo 3 bước đơn giản sau ạ:\n\n1️⃣ **Bước 1: Tải file APK**: Bấm nút **[TẢI FILE APK (15.1 MB)]** ở đầu trang hoặc quét mã QR.\n2️⃣ **Bước 2: Cho phép tải xuống**: Nếu trình duyệt báo "Tệp có thể gây hại", Thầy/Cô chọn **"Vẫn tải xuống"** (đây là cảnh báo bảo mật mặc định của Android khi cài file ngoài CH Play, ứng dụng đã được ký số SHA-256 an toàn 100%).\n3️⃣ **Bước 3: Cài đặt**: Mở tệp vừa tải ➔ Chọn **Cài đặt (Install)** ➔ Bật cho phép nguồn này nếu máy hỏi.\n\nSau khi cài xong, Thầy/Cô mở app lên là sử dụng được ngay ạ!`,
+        text: `Dạ, để cài đặt bản v1.2.6 trên điện thoại Android, Thầy/Cô làm theo 3 bước đơn giản sau ạ:\n\n1️⃣ **Bước 1: Tải file APK**: Bấm nút **[TẢI FILE APK v1.2.6 (15.1 MB)]** ở đầu trang hoặc quét mã QR.\n2️⃣ **Bước 2: Cho phép tải xuống**: Nếu trình duyệt báo "Tệp có thể gây hại", Thầy/Cô chọn **"Vẫn tải xuống"** (đây là cảnh báo mặc định của Android khi cài file ngoài CH Play, ứng dụng đã được ký số SHA-256 an toàn 100%).\n3️⃣ **Bước 3: Cài đặt**: Mở tệp vừa tải ➔ Chọn **Cài đặt (Install)** ➔ Mở app là trải nghiệm được ngay!`,
         quickActions: [
           { label: "🔋 Làm sao để app không bị tắt ngầm?", action: "chong_tat_ngam" },
           { label: "🖼️ Cách bật Widget màn hình chính?", action: "bat_widget" },

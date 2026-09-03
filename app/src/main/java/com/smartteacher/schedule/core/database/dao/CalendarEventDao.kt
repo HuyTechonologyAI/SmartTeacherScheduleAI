@@ -10,6 +10,9 @@ interface CalendarEventDao {
     @Query("SELECT * FROM calendar_events ORDER BY date ASC, startTime ASC")
     fun getAllEvents(): Flow<List<CalendarEventEntity>>
 
+    @Query("SELECT * FROM calendar_events ORDER BY date ASC, startTime ASC")
+    suspend fun getAllEventsSync(): List<CalendarEventEntity>
+
     @Query("SELECT * FROM calendar_events WHERE date = :date ORDER BY startTime ASC")
     fun getEventsForDate(date: String): Flow<List<CalendarEventEntity>>
 

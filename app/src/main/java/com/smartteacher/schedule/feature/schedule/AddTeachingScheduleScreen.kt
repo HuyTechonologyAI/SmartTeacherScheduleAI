@@ -1,11 +1,13 @@
 package com.smartteacher.schedule.feature.schedule
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,20 +18,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.smartteacher.schedule.core.database.entity.TeachingScheduleEntity
 import com.smartteacher.schedule.core.model.RecurrenceType
+import com.smartteacher.schedule.core.util.ScheduleConflictChecker
+import com.smartteacher.schedule.core.util.TeachingPeriodPresets
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTeachingScheduleScreen(
     onBack: () -> Unit,
-    onSave: (TeachingScheduleEntity) -> Unit
+    onSave: (TeachingScheduleEntity) -> Unit,
+    existingSchedules: List<TeachingScheduleEntity> = emptyList()
 ) {
     var subject by remember { mutableStateOf("") }
     var className by remember { mutableStateOf("") }
     var classCode by remember { mutableStateOf("") }
     var dayOfWeek by remember { mutableStateOf(1) } // 1 = Monday
-    var startTime by remember { mutableStateOf("08:00") }
-    var endTime by remember { mutableStateOf("10:00") }
+    var startTime by remember { mutableStateOf("07:00") }
+    var endTime by remember { mutableStateOf("08:30") }
     var room by remember { mutableStateOf("") }
     var campus by remember { mutableStateOf("Cơ sở chính") }
     var sessionType by remember { mutableStateOf("Lý thuyết") }
@@ -42,7 +47,24 @@ fun AddTeachingScheduleScreen(
     var reminder1Enabled by remember { mutableStateOf(true) }
     var reminder2Enabled by remember { mutableStateOf(true) }
 
+    var selectedPresetTab by remember { mutableStateOf(0) } // 0 = Lý thuyết, 1 = Thực hành
+    var allowSaveConflict by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    // Kiểm tra trùng lịch theo thời gian thực
+    val conflictResult = remember(dayOfWeek, startTime, endTime, room, existingSchedules) {
+        if (startTime.isNotBlank() && endTime.isNotBlank()) {
+            ScheduleConflictChecker.checkScheduleConflict(
+                dayOfWeek = dayOfWeek,
+                startTime = startTime,
+                endTime = endTime,
+                room = room,
+                existingSchedules = existingSchedules
+            )
+        } else {
+            null
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -64,6 +86,7 @@ fun AddTeachingScheduleScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            // Cảnh báo lỗi xác thực form
             if (errorMessage != null) {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = Color(0xFFFEE2E2)),
@@ -80,11 +103,57 @@ fun AddTeachingScheduleScreen(
                 }
             }
 
+            // =========================================================================
+            // ⚠️ CẢNH BÁO TRÙNG LỊCH THỜI GIAN THỰC
+            // =========================================================================
+            AnimatedVisibility(visible = conflictResult != null && conflictResult.hasConflict) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBEB)),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.WarningAmber, contentDescription = null, tint = Color(0xFFD97706))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "CẢNH BÁO TRÙNG LỊCH DẠY",
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFB45309),
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = conflictResult?.warningMessage ?: "",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF92400E)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                "Vẫn tiếp tục lưu dù trùng lịch",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color(0xFF78350F)
+                            )
+                            Switch(
+                                checked = allowSaveConflict,
+                                onCheckedChange = { allowSaveConflict = it }
+                            )
+                        }
+                    }
+                }
+            }
+
             OutlinedTextField(
                 value = subject,
                 onValueChange = { subject = it },
                 label = { Text("Tên môn học / Module *") },
-                placeholder = { Text("Ví dụ: Module CAD/CAM") },
+                placeholder = { Text("Ví dụ: Lập trình Phay CNC") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -102,13 +171,14 @@ fun AddTeachingScheduleScreen(
                     value = classCode,
                     onValueChange = { classCode = it },
                     label = { Text("Mã lớp") },
+                    placeholder = { Text("CK2026") },
                     modifier = Modifier.weight(1f),
                     singleLine = true
                 )
             }
 
             // Day of week selector
-            Text("Thứ trong tuần:", style = MaterialTheme.typography.labelMedium)
+            Text("Thứ trong tuần:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
             val dayNames = listOf("T2", "T3", "T4", "T5", "T6", "T7", "CN")
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -120,18 +190,113 @@ fun AddTeachingScheduleScreen(
                     FilterChip(
                         selected = isSelected,
                         onClick = { dayOfWeek = dayNum },
-                        label = { Text(name) }
+                        label = { Text(name) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                        )
                     )
                 }
             }
 
-            // Time Range
+            // =========================================================================
+            // ⏰ KHUNG GIỜ CỐ ĐỊNH CHỌN NHANH (LÝ THUYẾT 45P & THỰC HÀNH 60P)
+            // =========================================================================
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Khung giờ cố định chuẩn",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        // Tab switcher
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            FilterChip(
+                                selected = selectedPresetTab == 0,
+                                onClick = {
+                                    selectedPresetTab = 0
+                                    sessionType = "Lý thuyết"
+                                },
+                                label = { Text("📘 Lý thuyết (45p/T)") }
+                            )
+                            FilterChip(
+                                selected = selectedPresetTab == 1,
+                                onClick = {
+                                    selectedPresetTab = 1
+                                    sessionType = "Thực hành"
+                                },
+                                label = { Text("🛠️ Thực hành (60p/T)") }
+                            )
+                        }
+                    }
+
+                    // Danh sách preset khung giờ
+                    val presets = if (selectedPresetTab == 0) TeachingPeriodPresets.THEORY_PRESETS else TeachingPeriodPresets.PRACTICAL_PRESETS
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        presets.forEach { preset ->
+                            val isChosen = startTime == preset.startTime && endTime == preset.endTime
+                            FilterChip(
+                                selected = isChosen,
+                                onClick = {
+                                    startTime = preset.startTime
+                                    endTime = preset.endTime
+                                    sessionType = preset.type
+                                },
+                                label = {
+                                    Text("${preset.name}: ${preset.startTime}-${preset.endTime}", fontSize = 11.sp, fontWeight = if (isChosen) FontWeight.Bold else FontWeight.Normal)
+                                }
+                            )
+                        }
+                    }
+
+                    // Nút cộng dồn thời lượng nhanh
+                    Text("Cộng nhanh thời lượng từ giờ bắt đầu ($startTime):", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        listOf(
+                            "+45p (1 tiết LT)" to 45,
+                            "+90p (2 tiết LT)" to 90,
+                            "+135p (3 tiết LT)" to 135,
+                            "+60p (1 tiết TH)" to 60,
+                            "+120p (2 tiết TH)" to 120,
+                            "+240p (Ca 4 tiếng)" to 240
+                        ).forEach { (label, minutes) ->
+                            AssistChip(
+                                onClick = {
+                                    endTime = TeachingPeriodPresets.calculateEndTime(startTime, minutes)
+                                },
+                                label = { Text(label, fontSize = 11.sp) }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Time Range Inputs
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = startTime,
                     onValueChange = { startTime = it },
                     label = { Text("Giờ bắt đầu *") },
-                    placeholder = { Text("08:00") },
+                    placeholder = { Text("07:00") },
                     modifier = Modifier.weight(1f),
                     singleLine = true
                 )
@@ -139,7 +304,7 @@ fun AddTeachingScheduleScreen(
                     value = endTime,
                     onValueChange = { endTime = it },
                     label = { Text("Giờ kết thúc *") },
-                    placeholder = { Text("10:00") },
+                    placeholder = { Text("08:30") },
                     modifier = Modifier.weight(1f),
                     singleLine = true
                 )
@@ -150,8 +315,8 @@ fun AddTeachingScheduleScreen(
                 OutlinedTextField(
                     value = room,
                     onValueChange = { room = it },
-                    label = { Text("Phòng học *") },
-                    placeholder = { Text("C202") },
+                    label = { Text("Phòng học / Xưởng *") },
+                    placeholder = { Text("Xưởng CNC A1") },
                     modifier = Modifier.weight(1f),
                     singleLine = true
                 )
@@ -221,7 +386,7 @@ fun AddTeachingScheduleScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Nhắc trước $reminder1Minutes phút")
+                        Text("Nhắc trước 60 phút (Chuẩn bị giáo án)")
                         Switch(
                             checked = reminder1Enabled,
                             onCheckedChange = { reminder1Enabled = it }
@@ -233,7 +398,7 @@ fun AddTeachingScheduleScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Nhắc trước $reminder2Minutes phút")
+                        Text("Nhắc trước 15 phút (Di chuyển vào lớp)")
                         Switch(
                             checked = reminder2Enabled,
                             onCheckedChange = { reminder2Enabled = it }
@@ -245,8 +410,8 @@ fun AddTeachingScheduleScreen(
             OutlinedTextField(
                 value = notes,
                 onValueChange = { notes = it },
-                label = { Text("Ghi chú / Chuẩn bị dụng cụ") },
-                placeholder = { Text("Ví dụ: Mang chìa khóa xưởng, kiểm tra máy tính...") },
+                label = { Text("Ghi chú / Bài giảng") },
+                placeholder = { Text("Chuẩn bị phôi nhôm 50x50, dao phay ngón phi 10...") },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 2
             )
@@ -265,6 +430,12 @@ fun AddTeachingScheduleScreen(
                     }
                     if (room.isBlank()) {
                         errorMessage = "Vui lòng nhập phòng học."
+                        return@Button
+                    }
+
+                    // Chặn nếu có trùng lịch và giáo viên chưa bật switch cho phép
+                    if (conflictResult != null && conflictResult.hasConflict && !allowSaveConflict) {
+                        errorMessage = "Lịch dạy đang trùng với môn khác! Vui lòng điều chỉnh giờ hoặc bật công tắc 'Vẫn tiếp tục lưu dù trùng lịch'."
                         return@Button
                     }
 

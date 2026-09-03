@@ -2,6 +2,7 @@ package com.smartteacher.schedule.feature.settings
 
 import android.content.Intent
 import android.net.Uri
+import com.smartteacher.schedule.core.sync.GoogleCalendarManager
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -30,11 +31,14 @@ fun SettingsScreen(
     onToggleTelegram: (Boolean) -> Unit,
     onSaveTelegramCreds: (token: String, chatId: String) -> Unit,
     geminiApiKey: String,
-    onSaveGeminiApiKey: (String) -> Unit
+    onSaveGeminiApiKey: (String) -> Unit,
+    onSyncGoogleCalendar: () -> Unit = {}
 ) {
+    var showGoogleCalendarDialog by remember { mutableStateOf(false) }
     var showTelegramDialog by remember { mutableStateOf(false) }
     var showGeminiDialog by remember { mutableStateOf(false) }
     var showZaloDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -85,9 +89,9 @@ fun SettingsScreen(
                 Column {
                     SettingsItem(
                         title = "Google Calendar",
-                        subtitle = "Đồng bộ hai chiều với tài khoản Google",
+                        subtitle = "Đồng bộ hai chiều với tài khoản Google & Smartwatch",
                         icon = Icons.Default.Sync,
-                        onClick = { /* Google Calendar OAuth flow */ }
+                        onClick = { showGoogleCalendarDialog = true }
                     )
                     Divider()
                     SettingsItem(
@@ -148,7 +152,6 @@ fun SettingsScreen(
             }
 
             // Group 5: App Info & Developer Contact
-            val context = LocalContext.current
             SettingsGroupHeader("THÔNG TIN ỨNG DỤNG & NHÀ PHÁT TRIỂN")
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -164,7 +167,7 @@ fun SettingsScreen(
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                "Phiên bản 1.2.5 • Android 15 Ready",
+                                "Phiên bản 1.2.6 • Android 15 Ready",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
@@ -174,7 +177,7 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Text(
-                                "v1.2.5",
+                                "v1.2.6",
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
@@ -315,6 +318,20 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+
+    if (showGoogleCalendarDialog) {
+        GoogleCalendarSyncDialog(
+            onDismiss = { showGoogleCalendarDialog = false },
+            onSyncAll = {
+                showGoogleCalendarDialog = false
+                onSyncGoogleCalendar()
+            },
+            onOpenCalendarApp = {
+                showGoogleCalendarDialog = false
+                GoogleCalendarManager.openGoogleCalendarApp(context)
+            }
+        )
     }
 
     if (showTelegramDialog) {
@@ -467,6 +484,60 @@ fun GeminiApiKeyDialog(currentKey: String, onDismiss: () -> Unit, onSave: (Strin
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("Hủy")
+            }
+        }
+    )
+}
+
+@Composable
+fun GoogleCalendarSyncDialog(
+    onDismiss: () -> Unit,
+    onSyncAll: () -> Unit,
+    onOpenCalendarApp: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(Icons.Default.Sync, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Text("Đồng bộ Google Calendar", fontWeight = FontWeight.Bold)
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    "Đồng bộ toàn bộ lịch dạy sang Google Calendar trên máy để nhận nhắc nhở 60m & 15m và hiển thị lên Đồng hồ thông minh (Smartwatch).",
+                    style = MaterialTheme.typography.bodySmall
+                )
+
+                Button(
+                    onClick = onSyncAll,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.CloudSync, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Đồng bộ toàn bộ lịch dạy ngay")
+                }
+
+                OutlinedButton(
+                    onClick = onOpenCalendarApp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.CalendarMonth, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Mở ứng dụng Google Calendar")
+                }
+
+                Text(
+                    "💡 Mẹo: Khi tạo hoặc sửa lịch dạy, Thầy/Cô cũng có thể bấm biểu tượng đồng bộ để đưa từng ca dạy vào Google Calendar.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Đóng")
             }
         }
     )

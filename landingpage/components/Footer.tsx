@@ -104,12 +104,12 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/tag/v1.2.7"
+                  href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/tag/v1.2.8"
                   target="_blank"
                   rel="noreferrer"
                   className="hover:text-white transition-colors"
                 >
-                  Phiên Bản v1.2.7 (Release)
+                  Phiên Bản v1.2.8 (Release)
                 </a>
               </li>
               <li>

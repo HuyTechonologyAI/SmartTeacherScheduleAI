@@ -20,9 +20,9 @@ export default function HeroSection() {
   const [showQr, setShowQr] = useState(false);
 
   const apkUrl =
-    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.7/SmartTeacherSchedule_v1.2.7_Release.apk";
+    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.8/SmartTeacherSchedule_v1.2.8_Release.apk";
   const aabUrl =
-    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.7/SmartTeacherSchedule_v1.2.7_Release.aab";
+    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.8/SmartTeacherSchedule_v1.2.8_Release.aab";
 
   return (
     <section
@@ -43,9 +43,9 @@ export default function HeroSection() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              <span>Phiên bản v1.2.7 chính thức phát hành</span>
+              <span>Phiên bản v1.2.8 chính thức phát hành</span>
               <span className="text-slate-500">•</span>
-              <span className="text-cyan-300">Widget Màn hình khóa Live Glance</span>
+              <span className="text-cyan-300">Tối ưu Tecno Spark Go & Màn hình khóa</span>
             </div>
 
             {/* Main Headline */}
@@ -82,7 +82,7 @@ export default function HeroSection() {
                   </div>
                 </div>
                 <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">
-                  Bản v1.2.7 (15.2 MB)
+                  Bản v1.2.8 (15.2 MB)
                 </span>
               </div>
 

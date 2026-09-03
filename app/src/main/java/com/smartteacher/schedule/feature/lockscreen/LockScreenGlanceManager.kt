@@ -113,6 +113,17 @@ object LockScreenGlanceManager {
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
 
+                // 2.1 PendingIntent Mở Đồng hồ Bục giảng toàn màn hình (LockScreenClockActivity)
+                val clockIntent = Intent(context, LockScreenClockActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                }
+                val clockPendingIntent = PendingIntent.getActivity(
+                    context,
+                    9993,
+                    clockIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+
                 // 3. Xây dựng nội dung hiển thị trên Màn hình khóa
                 val title: String
                 val summaryText: String
@@ -197,23 +208,30 @@ object LockScreenGlanceManager {
                     }
                 }
 
-                // 4. Tạo Notification với VISIBILITY_PUBLIC hiển thị ngay trên màn hình khóa
+                // 4. Tạo Notification với PRIORITY_MAX và VISIBILITY_PUBLIC hiển thị ngay trên màn hình khóa Tecno & Android
                 val notification = NotificationCompat.Builder(context, NotificationHelper.CHANNEL_LOCKSCREEN_GLANCE)
                     .setSmallIcon(R.mipmap.ic_launcher)
                     .setContentTitle(title)
                     .setContentText(summaryText)
                     .setSubText(subText)
                     .setStyle(NotificationCompat.BigTextStyle().bigText(bigTextBuilder.toString()))
-                    .setContentIntent(contentPendingIntent)
+                    .setContentIntent(clockPendingIntent) // Nhấp vào thông báo sẽ mở ngay Đồng hồ màn hình khóa to rõ
                     .setOngoing(true) // Ghim cố định không bị gạt mất
-                    .setNotificationSilent() // Im lặng hoàn toàn để không phiền giáo viên
+                    .setOnlyAlertOnce(true) // CỰC KỲ QUAN TRỌNG: Không kêu, không rung lại khi cập nhật đếm ngược
                     .setVisibility(NotificationCompat.VISIBILITY_PUBLIC) // Hiển thị đầy đủ trên màn hình khóa kể cả khi chưa mở khóa
-                    .setPriority(NotificationCompat.PRIORITY_LOW)
+                    .setPriority(NotificationCompat.PRIORITY_MAX) // BẮT BUỘC MAX để Tecno HiOS không xếp vào loại "Im lặng" và không giấu đi
                     .setCategory(NotificationCompat.CATEGORY_EVENT)
+                    .setSound(null)
+                    .setVibrate(longArrayOf(0))
                     .addAction(
                         R.drawable.ic_widget_refresh,
                         context.getString(R.string.lockscreen_action_refresh),
                         refreshPendingIntent
+                    )
+                    .addAction(
+                        R.mipmap.ic_launcher,
+                        "Đồng hồ bục giảng",
+                        clockPendingIntent
                     )
                     .addAction(
                         R.mipmap.ic_launcher,
@@ -230,19 +248,29 @@ object LockScreenGlanceManager {
     }
 
     /**
-     * Hỗ trợ mở cài đặt Màn hình khóa của hệ thống (Samsung, Xiaomi, Oppo, Android)
+     * Mở Chế độ Đồng hồ Toàn màn hình khi Khóa máy
+     */
+    fun openLockScreenClock(context: Context) {
+        val intent = Intent(context, LockScreenClockActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        context.startActivity(intent)
+    }
+
+    /**
+     * Hỗ trợ mở cài đặt Màn hình khóa của Tecno Spark Go (HiOS) và hệ thống Android
      */
     fun openLockScreenSystemSettings(context: Context) {
         runCatching {
-            // Thử mở cài đặt màn hình khóa chuyên sâu
-            val intent = Intent("android.settings.LOCK_SCREEN_SETTINGS").apply {
+            // 1. Thử mở cài đặt thông báo ứng dụng (nơi Tecno Spark Go có mục "Hiển thị trên màn hình khóa")
+            val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
             context.startActivity(intent)
         }.recoverCatching {
-            // Fallback mở cài đặt thông báo ứng dụng
-            val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+            // 2. Thử mở cài đặt màn hình khóa chuyên sâu
+            val intent = Intent("android.settings.LOCK_SCREEN_SETTINGS").apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
             context.startActivity(intent)

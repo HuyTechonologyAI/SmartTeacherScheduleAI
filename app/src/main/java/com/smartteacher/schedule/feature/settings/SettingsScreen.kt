@@ -126,6 +126,24 @@ fun SettingsScreen(
                     }
                     HorizontalDivider()
                     SettingsItem(
+                        title = "Mở Chế độ Đồng hồ Bục giảng (Toàn màn hình)",
+                        subtitle = "Hiển thị đồng hồ to rõ và thời khóa biểu khi để máy trên bàn dạy học",
+                        icon = Icons.Default.HourglassBottom,
+                        onClick = {
+                            LockScreenGlanceManager.openLockScreenClock(context)
+                        }
+                    )
+                    HorizontalDivider()
+                    SettingsItem(
+                        title = "Cài đặt Màn hình khóa Tecno Spark Go (HiOS)",
+                        subtitle = "Mở cài đặt để bật quyền 'Hiển thị trên màn hình khóa' cho máy Tecno",
+                        icon = Icons.Default.PhoneAndroid,
+                        onClick = {
+                            LockScreenGlanceManager.openLockScreenSystemSettings(context)
+                        }
+                    )
+                    HorizontalDivider()
+                    SettingsItem(
                         title = "Ghim Widget ra Màn hình chính",
                         subtitle = "Hiển thị thời khóa biểu và việc cần làm (Kích thước 4x2)",
                         icon = Icons.Default.Widgets,
@@ -135,7 +153,7 @@ fun SettingsScreen(
                     )
                     HorizontalDivider()
                     SettingsItem(
-                        title = "Hướng dẫn Màn hình khóa (Samsung / Xiaomi / Oppo)",
+                        title = "Hướng dẫn Màn hình khóa (Tecno / Samsung / Xiaomi)",
                         subtitle = "Mẹo hiển thị rõ nội dung và widget trên từng dòng máy",
                         icon = Icons.Default.HelpOutline,
                         onClick = { showLockScreenGuideDialog = true }
@@ -231,7 +249,7 @@ fun SettingsScreen(
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                "Phiên bản 1.2.7 • Android 15 Ready",
+                                "Phiên bản 1.2.8 • Tecno HiOS & Android 15 Ready",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
@@ -241,7 +259,7 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Text(
-                                "v1.2.7",
+                                "v1.2.8",
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
@@ -644,13 +662,20 @@ fun LockScreenGuideDialog(
 
                 HorizontalDivider()
 
-                Text("📱 1. Samsung Galaxy (One UI 5 / 6 / 6.1):", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                Text("📱 1. Tecno Spark Go (HiOS 14 / 15 trên Android 15):", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge, color = Color(0xFF10B981))
+                Text("• Bước 1 (Hiển thị nội dung): Vào Cài đặt máy > Trung tâm thông báo > Màn hình khóa > Định dạng: Chọn 'Hiển thị thông báo và nội dung' (nếu để 'Ẩn nội dung' thì HiOS sẽ giấu chữ).", style = MaterialTheme.typography.bodySmall)
+                Text("• Bước 2 (Quyền ứng dụng): Vào Cài đặt > Ứng dụng > Smart Teacher Schedule AI > Thông báo > Bật 'Hiển thị trên màn hình khóa' và 'Biểu ngữ'.", style = MaterialTheme.typography.bodySmall)
+                Text("• Bước 3 (Chế độ Đồng hồ Bục giảng): Bấm nút 'Đồng hồ bục giảng' trong app để hiển thị đồng hồ to rõ và thời khóa biểu đè lên màn hình khóa mà không cần mở khóa!", style = MaterialTheme.typography.bodySmall)
+
+                HorizontalDivider()
+
+                Text("📱 2. Samsung Galaxy (One UI 5 / 6 / 6.1):", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                 Text("• Cách 1 (Widget Màn hình khóa): Vào Cài đặt máy > Màn hình khóa > Tiện ích (Widgets) > Bật Smart Teacher Schedule.", style = MaterialTheme.typography.bodySmall)
                 Text("• Cách 2 (Hiện thông báo): Cài đặt > Màn hình khóa > Thông báo > Chọn 'Hiển thị nội dung chi tiết'.", style = MaterialTheme.typography.bodySmall)
 
                 HorizontalDivider()
 
-                Text("📱 2. Xiaomi / Redmi / POCO (MIUI & HyperOS):", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                Text("📱 3. Xiaomi / Redmi / POCO (MIUI & HyperOS):", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                 Text("• Vào Cài đặt > Thông báo & Trung tâm điều khiển > Màn hình khóa > Định dạng: Chọn 'Hiển thị thông báo và nội dung'.", style = MaterialTheme.typography.bodySmall)
 
                 HorizontalDivider()

@@ -54,6 +54,15 @@
                 android:resource="@xml/shortcuts" />
         </activity>
 
+        <!-- Lock Screen & Desk Clock Activity (Show When Locked on Tecno & Android) -->
+        <activity
+            android:name=".feature.lockscreen.LockScreenClockActivity"
+            android:exported="false"
+            android:showWhenLocked="true"
+            android:turnScreenOn="false"
+            android:theme="@style/Theme.SmartTeacherSchedule"
+            android:windowSoftInputMode="stateHidden" />
+
         <!-- Alarm Trigger Receiver (Precision Reminders) -->
         <receiver
             android:name=".core.alarms.AlarmReceiver"

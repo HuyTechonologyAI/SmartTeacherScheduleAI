@@ -42,6 +42,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import com.smartteacher.schedule.core.alarms.DailyRefreshManager
+import com.smartteacher.schedule.feature.lockscreen.LockScreenGlanceManager
 import com.smartteacher.schedule.ui.theme.SmartTeacherScheduleTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -62,6 +63,8 @@ class MainActivity : ComponentActivity() {
     ) { isGranted: Boolean ->
         if (isGranted) {
             Toast.makeText(this, "Đã cấp quyền thông báo nhắc lịch!", Toast.LENGTH_SHORT).show()
+            LockScreenGlanceManager.updateLockScreenGlance(this)
+            ScheduleWidgetReceiver.updateAllWidgets(this)
         } else {
             Toast.makeText(this, "Lưu ý: Nếu không cấp quyền, điện thoại sẽ không thể nhắc trước giờ dạy.", Toast.LENGTH_LONG).show()
         }
@@ -87,6 +90,7 @@ class MainActivity : ComponentActivity() {
         aiService = GeminiAIServiceImpl(this) { geminiApiKey }
 
         checkNotificationPermission()
+        LockScreenGlanceManager.updateLockScreenGlance(this)
         ScheduleWidgetReceiver.updateAllWidgets(this)
 
         setContent {
@@ -340,9 +344,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        LockScreenGlanceManager.updateLockScreenGlance(this)
+        ScheduleWidgetReceiver.updateAllWidgets(this)
         lifecycleScope.launch(Dispatchers.IO) {
             DailyRefreshManager.scheduleNextMidnightAlarm(this@MainActivity)
-            ScheduleWidgetReceiver.updateAllWidgets(this@MainActivity)
         }
     }
 

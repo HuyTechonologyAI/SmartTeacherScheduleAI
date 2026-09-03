@@ -41,8 +41,10 @@ export default function AIAssistantWidget() {
       text: "Xin chào Thầy/Cô! Em là Trợ lý AI hỗ trợ 24/7 của Smart Teacher Schedule AI (Made in Huy Technology AI). Em có thể hướng dẫn Thầy/Cô cài đặt app, bật chuông báo kép, ghim Widget ra màn hình chính, hoặc tư vấn các gói Pro. Thầy/Cô cần em hỗ trợ điều gì ạ?",
       timestamp: "Vừa xong",
       quickActions: [
-        { label: "🚀 Tính năng mới bản v1.2.7?", action: "tinh_nang_moi" },
+        { label: "🚀 Tính năng mới bản v1.2.8?", action: "tinh_nang_moi" },
+        { label: "📱 Màn hình khóa Tecno Spark Go?", action: "tecno_spark_go" },
         { label: "🔒 Xem lịch trên Màn hình khóa?", action: "man_hinh_khoa" },
+        { label: "⏰ Chế độ Đồng hồ Bục giảng?", action: "dong_ho_buc_giang" },
         { label: "⚠️ Cảnh báo trùng lịch dạy?", action: "canh_bao_trung_lich" },
         { label: "⏰ Khung giờ cố định (45p & 60p)?", action: "khung_gio_chuan" },
         { label: "📅 Lịch trình tổng thể liên tục?", action: "lich_trinh_tong_the" },
@@ -73,24 +75,47 @@ export default function AIAssistantWidget() {
   const generateAIResponse = (userQuery: string): { text: string; quickActions?: { label: string; action: string }[] } => {
     const query = userQuery.toLowerCase();
 
-    // v1.2.7 New Features
-    if (query.includes("mới") || query.includes("v1.2.7") || query.includes("tinh_nang_moi")) {
+    // Tecno Spark Go (HiOS on Android 15.1.2) Lock Screen Guide
+    if (query.includes("tecno") || query.includes("spark go") || query.includes("hios") || query.includes("tecno_spark_go")) {
       return {
-        text: `Dạ, phiên bản **v1.2.7** mang đến cải tiến được mong đợi nhất của quý Thầy/Cô:\n\n1️⃣ 🔒 **Xem Lịch dạy ngay trên Màn hình khóa (Lock Screen Live Glance & Widget)**:\n• Giáo viên không cần mở khóa điện thoại, chỉ cần chạm sáng màn hình là thấy ngay dưới đồng hồ: Tên môn, Phòng học, Tên lớp và Đếm ngược giờ vào lớp (ví dụ: *"⏳ Còn 25 phút vào lớp"* hoặc *"🔴 Đang dạy"*).\n• Tương thích 100% tất cả các dòng máy Samsung, Xiaomi, Oppo, Vivo, Realme, Pixel.\n\n2️⃣ ⚠️ **Cảnh báo trùng lịch dạy & phòng học**: Hệ thống tự động phát hiện khi ca dạy mới bị trùng giờ hoặc trùng phòng với môn khác, cảnh báo màu cam nổi bật tức thì.\n3️⃣ ⏰ **Khung giờ cố định chuẩn 1-chạm**: Có sẵn các tiết Lý thuyết chuẩn 45 phút (Tiết 1-2, 3-4, 5-6, 7-8...) và ca Thực hành 60 phút (Ca xưởng 4 tiếng 07:30-11:30, 13:00-17:00), kèm các nút cộng nhanh +45p, +90p, +60p, +120p, +240p.\n4️⃣ 📋 **Xem Lịch trình tổng thể liên tục (Agenda)**: Dòng thời gian cuộn một mạch không ngắt quãng, không cần phải bấm từng ngày.\n5️⃣ 🔄 **Đồng bộ Google Calendar 2 chiều & Rung chuông trên Đồng hồ thông minh (Smartwatch)**.`,
+        text: `Dạ, đối với dòng máy **Tecno Spark Go (chạy giao diện HiOS trên Android 15)**, do hệ điều hành HiOS có chính sách bảo mật riêng đối với màn hình khóa, Thầy/Cô chỉ cần thực hiện 3 bước sau để hiển thị lịch 100%:\n\n1️⃣ **Bật hiển thị nội dung trên Màn hình khóa Tecno:**\n• Vào **Cài đặt** máy ➔ **Trung tâm thông báo (Notification Center)** ➔ **Màn hình khóa (Lock screen)**.\n• Tại mục **"Nội dung thông báo trên màn hình khóa"**: Thầy/Cô hãy chọn **"Hiển thị thông báo và nội dung"** (Show notification and content). Nếu để *"Ẩn nội dung"* thì máy Tecno sẽ giấu chữ đi ạ!\n\n2️⃣ **Cấp quyền thông báo cho Smart Teacher:**\n• Vào **Cài đặt** ➔ **Ứng dụng** ➔ **Quản lý ứng dụng** ➔ **Smart Teacher Schedule AI** ➔ **Thông báo**.\n• Bật công tắc **"Cho phép hiển thị trên màn hình khóa"** và **"Biểu ngữ"**.\n\n3️⃣ **Sử dụng Chế độ Đồng hồ Bục giảng Toàn màn hình khóa (Bản v1.2.8):**\n• Trong app bản v1.2.8, Thầy/Cô chỉ cần bấm nút **"Đồng hồ bục giảng"**.\n• Ứng dụng sẽ hiển thị đồng hồ to rõ toàn màn hình cùng ca dạy, phòng học, lớp học và đếm ngược giờ **ngay trên màn hình khóa mà không cần mở khóa điện thoại**!`,
         quickActions: [
-          { label: "🔒 Xem lịch màn hình khóa hoạt động ra sao?", action: "man_hinh_khoa" },
-          { label: "⚠️ Cảnh báo trùng lịch hoạt động ra sao?", action: "canh_bao_trung_lich" },
-          { label: "📥 Tải ngay bản v1.2.7 (15.2 MB)", action: "huong_dan_cai_dat" }
+          { label: "⏰ Chế độ Đồng hồ Bục giảng là gì?", action: "dong_ho_buc_giang" },
+          { label: "📥 Tải ngay bản v1.2.8 (15.2 MB)", action: "huong_dan_cai_dat" },
+          { label: "📞 Nhờ chuyên gia Zalo hỗ trợ", action: "lien_he_chuyen_gia" }
+        ],
+      };
+    }
+
+    // v1.2.8 New Features
+    if (query.includes("mới") || query.includes("v1.2.8") || query.includes("tinh_nang_moi")) {
+      return {
+        text: `Dạ, phiên bản **v1.2.8** tối ưu hóa chuyên sâu cho dòng máy **Tecno Spark Go (HiOS)** và Android 15:\n\n1️⃣ 🔒 **Nâng cấp Màn hình khóa Tecno & Android 15**: Tăng mức ưu tiên thông báo lên mức cao nhất, đảm bảo hiển thị nổi bật dưới đồng hồ màn hình khóa mà không bị hệ điều hành ẩn nội dung.\n2️⃣ 🕒 **Chế độ Đồng hồ Bục giảng Toàn màn hình khi khóa máy**: Hiển thị đồng hồ số siêu to rõ kèm thời khóa biểu chi tiết, phòng học, đếm ngược giờ và việc cần làm đè lên màn hình khóa mà không cần mở khóa điện thoại!\n3️⃣ ⚙️ **Nút cấu hình 1-chạm cho Tecno Spark Go**: Bổ sung nút chuyển thẳng vào Cài đặt màn hình khóa của máy Tecno.\n4️⃣ ⚠️ **Cảnh báo trùng lịch & Khung giờ chuẩn sư phạm 45p & 60p**.\n5️⃣ 🔄 **Đồng bộ Google Calendar 2 chiều & Rung chuông trên Smartwatch**.`,
+        quickActions: [
+          { label: "📱 Màn hình khóa Tecno Spark Go?", action: "tecno_spark_go" },
+          { label: "⏰ Chế độ Đồng hồ Bục giảng?", action: "dong_ho_buc_giang" },
+          { label: "📥 Tải ngay bản v1.2.8 (15.2 MB)", action: "huong_dan_cai_dat" }
+        ],
+      };
+    }
+
+    if (query.includes("đồng hồ bục giảng") || query.includes("dong_ho_buc_giang")) {
+      return {
+        text: `Dạ, tính năng **Chế độ Đồng hồ Bục giảng (Lock Screen & Desk Clock)** là sáng kiến độc quyền trong bản v1.2.8:\n\n✨ **Hiển thị trực tiếp khi khóa máy:**\n• Khi giáo viên đặt điện thoại lên bàn giáo viên / bục giảng, màn hình sẽ hiển thị đồng hồ kỹ thuật số to rõ nét từng giây (\`HH:mm:ss\`).\n• Hiển thị thẻ ca dạy hiện tại hoặc kế tiếp: Tên môn học, Số phòng, Tên lớp, và huy hiệu đếm ngược: *"⏳ Còn 25 phút vào lớp"* hoặc *"🔴 Đang lên lớp"*.\n• Liệt kê toàn bộ các ca dạy tiếp theo trong ngày và việc cần làm.\n• Có công tắc giữ màn hình luôn sáng để thầy cô tiện canh giờ kết thúc tiết học mà không bị tắt màn hình!`,
+        quickActions: [
+          { label: "📱 Màn hình khóa Tecno Spark Go?", action: "tecno_spark_go" },
+          { label: "📥 Tải file APK v1.2.8", action: "huong_dan_cai_dat" },
         ],
       };
     }
 
     if (query.includes("khóa") || query.includes("lockscreen") || query.includes("màn hình khóa") || query.includes("man_hinh_khoa")) {
       return {
-        text: `Dạ, tính năng **Lịch trên Màn hình khóa (Lock Screen Live Glance & Keyguard Widget)** của bản v1.2.7 là bước tiến đột phá giúp Thầy/Cô tiện lợi nhất:\n\n✨ **Không cần mở khóa điện thoại:**\n• Ngay dưới đồng hồ màn hình khóa, điện thoại sẽ hiển thị: Tên môn, Lớp học, Số phòng và Đồng hồ đếm ngược giờ vào lớp (ví dụ: *"⏳ Còn 25 phút vào lớp • P.Xưởng A1"*).\n• Khi đang trong giờ dạy, màn hình khóa chuyển sang trạng thái: *"🔴 Đang dạy (Tan: 11:30)"*.\n• Khi đã xong ca hôm nay, màn hình khóa tự động chuyển sang hiển thị ca dạy sáng mai hoặc số nhiệm vụ cần làm.\n\n⚙️ **Cách bật / cấu hình:**\n1. Mở app Smart Teacher Schedule ➔ Vào tab **Hôm nay** hoặc mục **Cài đặt**.\n2. Bật công tắc **"Hiển thị lịch trên Màn hình khóa"** (mặc định đã bật sẵn).\n3. Nếu điện thoại của Thầy/Cô có tính năng ẩn nội dung thông báo trên màn hình khóa (Samsung, Xiaomi, Oppo), Thầy/Cô vào Cài đặt máy ➔ Màn hình khóa ➔ Thông báo ➔ Chọn **"Hiển thị nội dung chi tiết"** là xong ạ!`,
+        text: `Dạ, tính năng **Lịch trên Màn hình khóa (Lock Screen Live Glance & Keyguard Widget)** của bản v1.2.8 là bước tiến đột phá giúp Thầy/Cô tiện lợi nhất:\n\n✨ **Không cần mở khóa điện thoại:**\n• Ngay dưới đồng hồ màn hình khóa, điện thoại sẽ hiển thị: Tên môn, Lớp học, Số phòng và Đồng hồ đếm ngược giờ vào lớp (ví dụ: *"⏳ Còn 25 phút vào lớp • P.Xưởng A1"*).\n• Khi đang trong giờ dạy, màn hình khóa chuyển sang trạng thái: *"🔴 Đang dạy (Tan: 11:30)"*.\n• Khi đã xong ca hôm nay, màn hình khóa tự động chuyển sang hiển thị ca dạy sáng mai hoặc số nhiệm vụ cần làm.\n\n⚙️ **Cách bật / cấu hình:**\n1. Mở app Smart Teacher Schedule ➔ Vào tab **Hôm nay** hoặc mục **Cài đặt**.\n2. Bật công tắc **"Lịch trên Màn hình khóa"** (mặc định đã bật sẵn).\n3. Nếu dùng Tecno Spark Go / Xiaomi / Oppo, Thầy/Cô vào Cài đặt máy ➔ Màn hình khóa ➔ Thông báo ➔ Chọn **"Hiển thị thông báo và nội dung"** là xong ạ!`,
         quickActions: [
-          { label: "🚀 Tính năng mới bản v1.2.7?", action: "tinh_nang_moi" },
-          { label: "📱 Tải file APK v1.2.7", action: "huong_dan_cai_dat" },
+          { label: "📱 Cài đặt cho Tecno Spark Go?", action: "tecno_spark_go" },
+          { label: "🚀 Tính năng mới bản v1.2.8?", action: "tinh_nang_moi" },
+          { label: "📱 Tải file APK v1.2.8", action: "huong_dan_cai_dat" },
         ],
       };
     }

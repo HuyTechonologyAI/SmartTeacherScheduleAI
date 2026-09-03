@@ -340,57 +340,91 @@ fun TodayScreen(
                         else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                     )
                 ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.LockClock,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Text(
-                                    text = "Lịch trên Màn hình khóa",
-                                    fontWeight = FontWeight.Bold,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                                if (lockScreenEnabled) {
-                                    Surface(
-                                        shape = RoundedCornerShape(4.dp),
-                                        color = Color(0xFF10B981).copy(alpha = 0.2f)
-                                    ) {
-                                        Text(
-                                            "Đang hiện",
-                                            color = Color(0xFF059669),
-                                            fontSize = 9.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                                        )
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.LockClock,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text(
+                                        text = "Lịch trên Màn hình khóa (Tecno & Android)",
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                    if (lockScreenEnabled) {
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = Color(0xFF10B981).copy(alpha = 0.2f)
+                                        ) {
+                                            Text(
+                                                "Đang ghim",
+                                                color = Color(0xFF059669),
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                            )
+                                        }
                                     }
                                 }
+                                Text(
+                                    text = "Hiện ca dạy và đếm ngược dưới đồng hồ màn hình khóa, không cần mở khóa điện thoại.",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                )
                             }
-                            Text(
-                                text = "Xem ngay tiết dạy, phòng học và đếm ngược giờ dưới đồng hồ màn hình khóa mà không cần mở khóa điện thoại.",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Switch(
+                                checked = lockScreenEnabled,
+                                onCheckedChange = { isChecked ->
+                                    lockScreenEnabled = isChecked
+                                    LockScreenGlanceManager.setLockScreenGlanceEnabled(context, isChecked)
+                                    if (isChecked) {
+                                        Toast.makeText(context, "Đã bật lịch dạy trên màn hình khóa!", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        Toast.makeText(context, "Đã tắt màn hình khóa", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
                             )
                         }
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Switch(
-                            checked = lockScreenEnabled,
-                            onCheckedChange = { isChecked ->
-                                lockScreenEnabled = isChecked
-                                LockScreenGlanceManager.setLockScreenGlanceEnabled(context, isChecked)
-                                if (isChecked) {
-                                    Toast.makeText(context, "Đã bật hiển thị lịch dạy trên màn hình khóa!", Toast.LENGTH_SHORT).show()
-                                } else {
-                                    Toast.makeText(context, "Đã tắt hiển thị màn hình khóa", Toast.LENGTH_SHORT).show()
-                                }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Nút mở Đồng hồ bục giảng & Cài đặt Màn hình khóa Tecno
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    LockScreenGlanceManager.openLockScreenClock(context)
+                                },
+                                modifier = Modifier.weight(1f).height(34.dp),
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Icon(Icons.Default.HourglassBottom, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Đồng hồ bục giảng", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                             }
-                        )
+
+                            Button(
+                                onClick = {
+                                    LockScreenGlanceManager.openLockScreenSystemSettings(context)
+                                },
+                                modifier = Modifier.weight(1f).height(34.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color.White)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Cài đặt Tecno HiOS", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                            }
+                        }
                     }
                 }
             }

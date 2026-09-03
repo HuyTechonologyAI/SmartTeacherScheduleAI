@@ -123,6 +123,16 @@
                 android:resource="@xml/schedule_widget_info" />
         </receiver>
 
+        <!-- Lock Screen Live Glance Receiver -->
+        <receiver
+            android:name=".feature.lockscreen.LockScreenGlanceReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.smartteacher.schedule.ACTION_UPDATE_LOCKSCREEN_GLANCE" />
+                <action android:name="com.smartteacher.schedule.ACTION_TOGGLE_LOCKSCREEN_GLANCE" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>

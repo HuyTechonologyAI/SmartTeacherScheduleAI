@@ -32,4 +32,10 @@
     <!-- Widget -->
     <string name="widget_title">Lịch dạy &amp; Công việc giáo viên</string>
     <string name="widget_no_class">Không có lịch học sắp tới</string>
+
+    <!-- Lock Screen Glance -->
+    <string name="channel_lockscreen_name">Màn hình khóa (Lock Screen Live Glance)</string>
+    <string name="channel_lockscreen_desc">Hiển thị lịch giảng dạy và đếm ngược giờ lên lớp ngay trên màn hình khóa điện thoại</string>
+    <string name="lockscreen_action_refresh">Cập nhật</string>
+    <string name="lockscreen_action_view">Xem lịch trình</string>
 </resources>

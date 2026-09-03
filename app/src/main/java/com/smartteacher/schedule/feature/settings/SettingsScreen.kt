@@ -3,6 +3,8 @@ package com.smartteacher.schedule.feature.settings
 import android.content.Intent
 import android.net.Uri
 import com.smartteacher.schedule.core.sync.GoogleCalendarManager
+import com.smartteacher.schedule.feature.lockscreen.LockScreenGlanceManager
+import com.smartteacher.schedule.feature.widget.ScheduleWidgetReceiver
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -39,6 +41,8 @@ fun SettingsScreen(
     var showGeminiDialog by remember { mutableStateOf(false) }
     var showZaloDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    var lockScreenGlanceEnabled by remember { mutableStateOf(LockScreenGlanceManager.isLockScreenGlanceEnabled(context)) }
+    var showLockScreenGuideDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -75,6 +79,66 @@ fun SettingsScreen(
                         subtitle = "Tự động kích hoạt lịch hẹn, công việc và Widget mỗi ngày (Chạm để làm mới ngay)",
                         icon = Icons.Default.Autorenew,
                         onClick = onTriggerDailyRefresh
+                    )
+                }
+            }
+
+            // Group: Lock Screen & Widgets
+            SettingsGroupHeader("MÀN HÌNH KHÓA & TIỆN ÍCH WIDGET")
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.LockClock,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Hiển thị lịch trên Màn hình khóa",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                "Hiện ca dạy tiếp theo, đếm ngược và phòng học ngay dưới đồng hồ màn hình khóa (không cần mở khóa máy)",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                        }
+                        Switch(
+                            checked = lockScreenGlanceEnabled,
+                            onCheckedChange = { isChecked ->
+                                lockScreenGlanceEnabled = isChecked
+                                LockScreenGlanceManager.setLockScreenGlanceEnabled(context, isChecked)
+                            }
+                        )
+                    }
+                    HorizontalDivider()
+                    SettingsItem(
+                        title = "Ghim Widget ra Màn hình chính",
+                        subtitle = "Hiển thị thời khóa biểu và việc cần làm (Kích thước 4x2)",
+                        icon = Icons.Default.Widgets,
+                        onClick = {
+                            ScheduleWidgetReceiver.pinWidgetToHomeScreen(context)
+                        }
+                    )
+                    HorizontalDivider()
+                    SettingsItem(
+                        title = "Hướng dẫn Màn hình khóa (Samsung / Xiaomi / Oppo)",
+                        subtitle = "Mẹo hiển thị rõ nội dung và widget trên từng dòng máy",
+                        icon = Icons.Default.HelpOutline,
+                        onClick = { showLockScreenGuideDialog = true }
                     )
                 }
             }
@@ -167,7 +231,7 @@ fun SettingsScreen(
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                "Phiên bản 1.2.6 • Android 15 Ready",
+                                "Phiên bản 1.2.7 • Android 15 Ready",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
@@ -177,7 +241,7 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Text(
-                                "v1.2.6",
+                                "v1.2.7",
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
@@ -318,6 +382,16 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+
+    if (showLockScreenGuideDialog) {
+        LockScreenGuideDialog(
+            onDismiss = { showLockScreenGuideDialog = false },
+            onOpenSystemSettings = {
+                showLockScreenGuideDialog = false
+                LockScreenGlanceManager.openLockScreenSystemSettings(context)
+            }
+        )
     }
 
     if (showGoogleCalendarDialog) {
@@ -538,6 +612,70 @@ fun GoogleCalendarSyncDialog(
         confirmButton = {
             TextButton(onClick = onDismiss) {
                 Text("Đóng")
+            }
+        }
+    )
+}
+
+@Composable
+fun LockScreenGuideDialog(
+    onDismiss: () -> Unit,
+    onOpenSystemSettings: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(Icons.Default.LockClock, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Text("Cài đặt Màn hình khóa", fontWeight = FontWeight.Bold)
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    "Smart Teacher Schedule AI sử dụng công nghệ Live Glance và Keyguard Widget để giáo viên xem lịch dạy ngay dưới đồng hồ màn hình khóa mà không cần mở khóa điện thoại.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+
+                HorizontalDivider()
+
+                Text("📱 1. Samsung Galaxy (One UI 5 / 6 / 6.1):", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                Text("• Cách 1 (Widget Màn hình khóa): Vào Cài đặt máy > Màn hình khóa > Tiện ích (Widgets) > Bật Smart Teacher Schedule.", style = MaterialTheme.typography.bodySmall)
+                Text("• Cách 2 (Hiện thông báo): Cài đặt > Màn hình khóa > Thông báo > Chọn 'Hiển thị nội dung chi tiết'.", style = MaterialTheme.typography.bodySmall)
+
+                HorizontalDivider()
+
+                Text("📱 2. Xiaomi / Redmi / POCO (MIUI & HyperOS):", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                Text("• Vào Cài đặt > Thông báo & Trung tâm điều khiển > Màn hình khóa > Định dạng: Chọn 'Hiển thị thông báo và nội dung'.", style = MaterialTheme.typography.bodySmall)
+
+                HorizontalDivider()
+
+                Text("📱 3. OPPO / Realme / OnePlus (ColorOS):", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                Text("• Vào Cài đặt > Thông báo & Thanh trạng thái > Màn hình khóa > Bật 'Hiển thị thông tin ứng dụng và nội dung'.", style = MaterialTheme.typography.bodySmall)
+
+                HorizontalDivider()
+
+                Text("📱 4. Vivo / iQOO (FuntouchOS):", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                Text("• Vào Cài đặt > Màn hình khóa & Hình nền > Cài đặt màn hình khóa > Mở thông báo.", style = MaterialTheme.typography.bodySmall)
+
+                Button(
+                    onClick = onOpenSystemSettings,
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                ) {
+                    Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Mở Cài đặt Màn hình khóa của máy")
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Đã hiểu")
             }
         }
     )

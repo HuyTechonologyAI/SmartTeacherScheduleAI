@@ -3,6 +3,7 @@ package com.smartteacher.schedule.feature.widget
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
+import android.appwidget.AppWidgetProviderInfo
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -13,6 +14,7 @@ import android.widget.Toast
 import com.smartteacher.schedule.MainActivity
 import com.smartteacher.schedule.R
 import com.smartteacher.schedule.core.database.SmartTeacherDatabase
+import com.smartteacher.schedule.feature.lockscreen.LockScreenGlanceManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -50,6 +52,9 @@ class ScheduleWidgetReceiver : AppWidgetProvider() {
 
     companion object {
         fun updateAllWidgets(context: Context) {
+            // Cập nhật cả Màn hình khóa và Widget màn hình chính
+            LockScreenGlanceManager.updateLockScreenGlance(context)
+
             val appWidgetManager = AppWidgetManager.getInstance(context)
             val ids = appWidgetManager.getAppWidgetIds(
                 ComponentName(context, ScheduleWidgetReceiver::class.java)
@@ -97,7 +102,14 @@ class ScheduleWidgetReceiver : AppWidgetProvider() {
             appWidgetManager: AppWidgetManager,
             appWidgetId: Int
         ) {
-            val views = RemoteViews(context.packageName, R.layout.widget_next_class)
+            val widgetOptions = appWidgetManager.getAppWidgetOptions(appWidgetId)
+            val category = widgetOptions.getInt(
+                AppWidgetManager.OPTION_APPWIDGET_HOST_CATEGORY,
+                AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN
+            )
+            val isKeyguard = category == AppWidgetProviderInfo.WIDGET_CATEGORY_KEYGUARD
+            val layoutId = if (isKeyguard) R.layout.widget_lockscreen_compact else R.layout.widget_next_class
+            val views = RemoteViews(context.packageName, layoutId)
 
             // 1. Click on widget opens MainActivity
             val openIntent = Intent(context, MainActivity::class.java).apply {

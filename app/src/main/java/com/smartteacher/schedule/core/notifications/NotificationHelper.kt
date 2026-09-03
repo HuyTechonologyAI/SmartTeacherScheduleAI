@@ -27,6 +27,7 @@ class NotificationHelper(private val context: Context) {
         const val CHANNEL_TEACHING = "channel_teaching_schedule"
         const val CHANNEL_TASKS = "channel_tasks"
         const val CHANNEL_AI = "channel_ai_insights"
+        const val CHANNEL_LOCKSCREEN_GLANCE = "channel_lockscreen_glance"
 
         const val ACTION_VIEW = "com.smartteacher.schedule.ACTION_VIEW"
         const val ACTION_ACKNOWLEDGE = "com.smartteacher.schedule.ACTION_ACKNOWLEDGE_NOTIFICATION"
@@ -85,8 +86,19 @@ class NotificationHelper(private val context: Context) {
                 description = context.getString(R.string.channel_ai_desc)
             }
 
+            // 4. Lock Screen Live Glance Channel (Low importance, silent, public lockscreen visibility)
+            val lockscreenChannel = NotificationChannel(
+                CHANNEL_LOCKSCREEN_GLANCE,
+                context.getString(R.string.channel_lockscreen_name),
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = context.getString(R.string.channel_lockscreen_desc)
+                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+                setShowBadge(false)
+            }
+
             notificationManager.createNotificationChannels(
-                listOf(teachingChannel, tasksChannel, aiChannel)
+                listOf(teachingChannel, tasksChannel, aiChannel, lockscreenChannel)
             )
         }
     }

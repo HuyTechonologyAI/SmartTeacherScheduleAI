@@ -41,10 +41,11 @@ export default function AIAssistantWidget() {
       text: "Xin chào Thầy/Cô! Em là Trợ lý AI hỗ trợ 24/7 của Smart Teacher Schedule AI (Made in Huy Technology AI). Em có thể hướng dẫn Thầy/Cô cài đặt app, bật chuông báo kép, ghim Widget ra màn hình chính, hoặc tư vấn các gói Pro. Thầy/Cô cần em hỗ trợ điều gì ạ?",
       timestamp: "Vừa xong",
       quickActions: [
-        { label: "🚀 Tính năng mới bản v1.2.6?", action: "tinh_nang_moi" },
+        { label: "🚀 Tính năng mới bản v1.2.7?", action: "tinh_nang_moi" },
+        { label: "🔒 Xem lịch trên Màn hình khóa?", action: "man_hinh_khoa" },
         { label: "⚠️ Cảnh báo trùng lịch dạy?", action: "canh_bao_trung_lich" },
         { label: "⏰ Khung giờ cố định (45p & 60p)?", action: "khung_gio_chuan" },
-        { label: "📅 Lịch trình tổng thể (Không bấm từng ngày)?", action: "lich_trinh_tong_the" },
+        { label: "📅 Lịch trình tổng thể liên tục?", action: "lich_trinh_tong_the" },
         { label: "🔄 Đồng bộ Google Calendar & Smartwatch?", action: "dong_bo_google" },
         { label: "📱 Cách cài đặt APK trên máy?", action: "huong_dan_cai_dat" },
         { label: "📞 Gặp trực tiếp chuyên gia Zalo", action: "lien_he_chuyen_gia" },
@@ -72,14 +73,24 @@ export default function AIAssistantWidget() {
   const generateAIResponse = (userQuery: string): { text: string; quickActions?: { label: string; action: string }[] } => {
     const query = userQuery.toLowerCase();
 
-    // v1.2.6 New Features
-    if (query.includes("mới") || query.includes("v1.2.6") || query.includes("tinh_nang_moi")) {
+    // v1.2.7 New Features
+    if (query.includes("mới") || query.includes("v1.2.7") || query.includes("tinh_nang_moi")) {
       return {
-        text: `Dạ, phiên bản **v1.2.6** vừa phát hành mang đến 4 cải tiến đột phá theo đúng đóng góp của quý Thầy/Cô:\n\n1️⃣ **Cảnh báo trùng lịch dạy & phòng học**: Hệ thống tự động phát hiện khi ca dạy mới bị trùng giờ hoặc trùng phòng với môn khác, cảnh báo màu cam nổi bật tức thì.\n2️⃣ **Khung giờ cố định chuẩn 1-chạm**: Có sẵn các tiết Lý thuyết chuẩn 45 phút (Tiết 1-2, 3-4, 5-6, 7-8...) và ca Thực hành 60 phút (Ca xưởng 4 tiếng 07:30-11:30, 13:00-17:00), kèm các nút cộng nhanh +45p, +90p, +60p, +120p, +240p.\n3️⃣ **Xem Lịch trình tổng thể liên tục (Agenda)**: Nhấp vào tab Lịch là thấy ngay dòng thời gian tất cả các ca dạy sắp tới cuộn một mạch, không cần phải bấm từng ngày như trước!\n4️⃣ **Đồng bộ Google Calendar 2 chiều**: Xuất toàn bộ ca dạy sang Google Calendar trên máy và rung chuông nhắc nhở trực tiếp trên Đồng hồ thông minh (Smartwatch).\n5️⃣ **Đổi ngày trực tiếp trên lịch cũ**: Cho phép dời lịch sang Hôm nay, Ngày mai, +7 ngày hoặc chọn Thứ trong tuần chỉ với 1 chạm!`,
+        text: `Dạ, phiên bản **v1.2.7** mang đến cải tiến được mong đợi nhất của quý Thầy/Cô:\n\n1️⃣ 🔒 **Xem Lịch dạy ngay trên Màn hình khóa (Lock Screen Live Glance & Widget)**:\n• Giáo viên không cần mở khóa điện thoại, chỉ cần chạm sáng màn hình là thấy ngay dưới đồng hồ: Tên môn, Phòng học, Tên lớp và Đếm ngược giờ vào lớp (ví dụ: *"⏳ Còn 25 phút vào lớp"* hoặc *"🔴 Đang dạy"*).\n• Tương thích 100% tất cả các dòng máy Samsung, Xiaomi, Oppo, Vivo, Realme, Pixel.\n\n2️⃣ ⚠️ **Cảnh báo trùng lịch dạy & phòng học**: Hệ thống tự động phát hiện khi ca dạy mới bị trùng giờ hoặc trùng phòng với môn khác, cảnh báo màu cam nổi bật tức thì.\n3️⃣ ⏰ **Khung giờ cố định chuẩn 1-chạm**: Có sẵn các tiết Lý thuyết chuẩn 45 phút (Tiết 1-2, 3-4, 5-6, 7-8...) và ca Thực hành 60 phút (Ca xưởng 4 tiếng 07:30-11:30, 13:00-17:00), kèm các nút cộng nhanh +45p, +90p, +60p, +120p, +240p.\n4️⃣ 📋 **Xem Lịch trình tổng thể liên tục (Agenda)**: Dòng thời gian cuộn một mạch không ngắt quãng, không cần phải bấm từng ngày.\n5️⃣ 🔄 **Đồng bộ Google Calendar 2 chiều & Rung chuông trên Đồng hồ thông minh (Smartwatch)**.`,
         quickActions: [
+          { label: "🔒 Xem lịch màn hình khóa hoạt động ra sao?", action: "man_hinh_khoa" },
           { label: "⚠️ Cảnh báo trùng lịch hoạt động ra sao?", action: "canh_bao_trung_lich" },
-          { label: "🔄 Cách đồng bộ Google Calendar?", action: "dong_bo_google" },
-          { label: "📥 Tải ngay bản v1.2.6 (15.1 MB)", action: "huong_dan_cai_dat" }
+          { label: "📥 Tải ngay bản v1.2.7 (15.2 MB)", action: "huong_dan_cai_dat" }
+        ],
+      };
+    }
+
+    if (query.includes("khóa") || query.includes("lockscreen") || query.includes("màn hình khóa") || query.includes("man_hinh_khoa")) {
+      return {
+        text: `Dạ, tính năng **Lịch trên Màn hình khóa (Lock Screen Live Glance & Keyguard Widget)** của bản v1.2.7 là bước tiến đột phá giúp Thầy/Cô tiện lợi nhất:\n\n✨ **Không cần mở khóa điện thoại:**\n• Ngay dưới đồng hồ màn hình khóa, điện thoại sẽ hiển thị: Tên môn, Lớp học, Số phòng và Đồng hồ đếm ngược giờ vào lớp (ví dụ: *"⏳ Còn 25 phút vào lớp • P.Xưởng A1"*).\n• Khi đang trong giờ dạy, màn hình khóa chuyển sang trạng thái: *"🔴 Đang dạy (Tan: 11:30)"*.\n• Khi đã xong ca hôm nay, màn hình khóa tự động chuyển sang hiển thị ca dạy sáng mai hoặc số nhiệm vụ cần làm.\n\n⚙️ **Cách bật / cấu hình:**\n1. Mở app Smart Teacher Schedule ➔ Vào tab **Hôm nay** hoặc mục **Cài đặt**.\n2. Bật công tắc **"Hiển thị lịch trên Màn hình khóa"** (mặc định đã bật sẵn).\n3. Nếu điện thoại của Thầy/Cô có tính năng ẩn nội dung thông báo trên màn hình khóa (Samsung, Xiaomi, Oppo), Thầy/Cô vào Cài đặt máy ➔ Màn hình khóa ➔ Thông báo ➔ Chọn **"Hiển thị nội dung chi tiết"** là xong ạ!`,
+        quickActions: [
+          { label: "🚀 Tính năng mới bản v1.2.7?", action: "tinh_nang_moi" },
+          { label: "📱 Tải file APK v1.2.7", action: "huong_dan_cai_dat" },
         ],
       };
     }

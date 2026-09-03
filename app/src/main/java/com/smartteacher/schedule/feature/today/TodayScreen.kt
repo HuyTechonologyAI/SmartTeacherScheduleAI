@@ -1,5 +1,7 @@
 package com.smartteacher.schedule.feature.today
 
+import android.widget.Toast
+import com.smartteacher.schedule.feature.lockscreen.LockScreenGlanceManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -321,6 +323,74 @@ fun TodayScreen(
                         ) {
                             Text("Ghim Widget", fontSize = 11.sp)
                         }
+                    }
+                }
+            }
+
+            // 1.3 Lock Screen Live Glance Banner (Màn hình khóa)
+            item {
+                var lockScreenEnabled by remember {
+                    mutableStateOf(LockScreenGlanceManager.isLockScreenGlanceEnabled(context))
+                }
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (lockScreenEnabled) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.LockClock,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(
+                                    text = "Lịch trên Màn hình khóa",
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                                if (lockScreenEnabled) {
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = Color(0xFF10B981).copy(alpha = 0.2f)
+                                    ) {
+                                        Text(
+                                            "Đang hiện",
+                                            color = Color(0xFF059669),
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            Text(
+                                text = "Xem ngay tiết dạy, phòng học và đếm ngược giờ dưới đồng hồ màn hình khóa mà không cần mở khóa điện thoại.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Switch(
+                            checked = lockScreenEnabled,
+                            onCheckedChange = { isChecked ->
+                                lockScreenEnabled = isChecked
+                                LockScreenGlanceManager.setLockScreenGlanceEnabled(context, isChecked)
+                                if (isChecked) {
+                                    Toast.makeText(context, "Đã bật hiển thị lịch dạy trên màn hình khóa!", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(context, "Đã tắt hiển thị màn hình khóa", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        )
                     }
                 }
             }

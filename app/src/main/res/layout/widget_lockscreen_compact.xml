@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:orientation="vertical"
+    android:padding="10dp">
+
+    <!-- Header: App Name, Countdown, Refresh -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@mipmap/ic_launcher"
+            android:contentDescription="Logo" />
+
+        <TextView
+            android:id="@+id/widget_date"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:layout_weight="1"
+            android:text="LỊCH DẠY TIẾP THEO"
+            android:textColor="#A5B4FC"
+            android:textSize="10sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_countdown"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Còn 25p"
+            android:textColor="#FBBF24"
+            android:textSize="10sp"
+            android:textStyle="bold" />
+
+        <ImageView
+            android:id="@+id/widget_refresh_btn"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:layout_marginStart="6dp"
+            android:padding="2dp"
+            android:src="@drawable/ic_widget_refresh"
+            android:contentDescription="Làm mới" />
+    </LinearLayout>
+
+    <!-- Subject Title -->
+    <TextView
+        android:id="@+id/widget_subject"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Lập trình &amp; Vận hành CNC"
+        android:textColor="#FFFFFF"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <!-- Details: Time, Room, Class -->
+    <TextView
+        android:id="@+id/widget_details"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="07:30 - 11:30 • P.Xưởng A1 • Lớp CĐCK01"
+        android:textColor="#94A3B8"
+        android:textSize="11sp"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <!-- Task snippet if space permits -->
+    <TextView
+        android:id="@+id/widget_task1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="📌 Chuẩn bị phôi nhôm 50x50"
+        android:textColor="#CBD5E1"
+        android:textSize="10sp"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+</LinearLayout>

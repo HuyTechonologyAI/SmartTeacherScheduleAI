@@ -56,8 +56,19 @@ export default function Navbar() {
             </a>
           </nav>
 
-          {/* CTA Download Button */}
-          <div className="hidden sm:flex items-center space-x-4">
+          {/* CTA Buttons */}
+          <div className="hidden sm:flex items-center space-x-3">
+            <button
+              onClick={() => {
+                const event = new CustomEvent("open-ai-assistant");
+                window.dispatchEvent(event);
+              }}
+              className="inline-flex items-center space-x-1.5 px-3.5 py-2.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/25 border border-indigo-500/30 text-cyan-300 hover:text-white font-semibold text-xs transition-all cursor-pointer shadow-sm hover:scale-105"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+              <span>Hỏi AI 24/7</span>
+            </button>
+
             <a
               href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.5/SmartTeacherSchedule_v1.2.5_Release.apk"
               className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-semibold text-sm shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all"
@@ -116,6 +127,17 @@ export default function Navbar() {
           >
             🎁 Nhận Hỗ Trợ & Prompt AI
           </a>
+          <button
+            onClick={() => {
+              setMobileMenuOpen(false);
+              const event = new CustomEvent("open-ai-assistant");
+              window.dispatchEvent(event);
+            }}
+            className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-base font-semibold text-cyan-300 hover:bg-indigo-500/10 transition-colors text-left"
+          >
+            <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" />
+            <span>Trợ Lý AI 24/7 (Giải đáp về App)</span>
+          </button>
           <div className="pt-2">
             <a
               href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.5/SmartTeacherSchedule_v1.2.5_Release.apk"

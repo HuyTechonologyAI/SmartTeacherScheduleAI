@@ -8,6 +8,7 @@ import ExpertSection from "@/components/ExpertSection";
 import PricingSection from "@/components/PricingSection";
 import SupportFormSection from "@/components/SupportFormSection";
 import Footer from "@/components/Footer";
+import AIAssistantWidget from "@/components/AIAssistantWidget";
 
 export default function HomePage() {
   const [selectedPlanForForm, setSelectedPlanForForm] = useState(
@@ -40,6 +41,9 @@ export default function HomePage() {
 
       {/* 7. Chân trang bản quyền và liên hệ */}
       <Footer />
+
+      {/* 8. Nút & Hộp thoại AI Hỗ Trợ 24/7 Giải Đáp Mọi Thắc Mắc Về App */}
+      <AIAssistantWidget />
     </main>
   );
 }

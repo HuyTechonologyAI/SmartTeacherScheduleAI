@@ -12,3 +12,8 @@ local.properties
 *.keystore
 *.jks
 google-services.json
+landingpage/node_modules/
+landingpage/.next/
+landingpage/out/
+node_modules/
+.next/

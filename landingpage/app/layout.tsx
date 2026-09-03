@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://smart-teacher-ai.vercel.app"),
+  metadataBase: new URL("https://gvcncdsai.io.vn"),
   title: "Smart Teacher Schedule AI - Dạy Đúng Giờ, Làm Đúng Việc, Không Bỏ Sót",
   description:
     "Ứng dụng Android chuyên nghiệp cho giáo viên với hệ thống nhắc lịch dạy kép 60m & 15m, chống tắt ngầm OEM, Tiện ích Widget màn hình chính 2-trong-1 và Trợ lý AI Gemini.",

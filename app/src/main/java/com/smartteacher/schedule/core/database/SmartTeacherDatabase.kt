@@ -16,9 +16,10 @@ import com.smartteacher.schedule.core.database.entity.*
         ReminderEntity::class,
         AIInsightEntity::class,
         NotificationLogEntity::class,
-        IntegrationConfigEntity::class
+        IntegrationConfigEntity::class,
+        LessonAttachmentEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -30,6 +31,7 @@ abstract class SmartTeacherDatabase : RoomDatabase() {
     abstract fun aiInsightDao(): AIInsightDao
     abstract fun notificationLogDao(): NotificationLogDao
     abstract fun integrationConfigDao(): IntegrationConfigDao
+    abstract fun lessonAttachmentDao(): LessonAttachmentDao
 
     companion object {
         @Volatile

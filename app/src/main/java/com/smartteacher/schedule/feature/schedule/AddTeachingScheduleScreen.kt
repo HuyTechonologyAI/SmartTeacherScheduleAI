@@ -16,17 +16,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.smartteacher.schedule.core.database.entity.LessonAttachmentEntity
 import com.smartteacher.schedule.core.database.entity.TeachingScheduleEntity
 import com.smartteacher.schedule.core.model.RecurrenceType
 import com.smartteacher.schedule.core.util.ScheduleConflictChecker
 import com.smartteacher.schedule.core.util.TeachingPeriodPresets
+import com.smartteacher.schedule.feature.schedule.components.LessonAttachmentSection
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTeachingScheduleScreen(
     onBack: () -> Unit,
-    onSave: (TeachingScheduleEntity) -> Unit,
+    onSave: (TeachingScheduleEntity, List<LessonAttachmentEntity>) -> Unit,
     existingSchedules: List<TeachingScheduleEntity> = emptyList()
 ) {
     var subject by remember { mutableStateOf("") }
@@ -50,6 +52,7 @@ fun AddTeachingScheduleScreen(
     var selectedPresetTab by remember { mutableStateOf(0) } // 0 = Lý thuyết, 1 = Thực hành
     var allowSaveConflict by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var attachments by remember { mutableStateOf<List<LessonAttachmentEntity>>(emptyList()) }
 
     // Kiểm tra trùng lịch theo thời gian thực
     val conflictResult = remember(dayOfWeek, startTime, endTime, room, existingSchedules) {
@@ -416,6 +419,19 @@ fun AddTeachingScheduleScreen(
                 minLines = 2
             )
 
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Phần Đính Kèm Giáo Án & Tài Liệu Trực Tiếp
+            LessonAttachmentSection(
+                attachments = attachments,
+                onAddAttachments = { newItems ->
+                    attachments = attachments + newItems
+                },
+                onRemoveAttachment = { itemToRemove ->
+                    attachments = attachments - itemToRemove
+                }
+            )
+
             Spacer(modifier = Modifier.height(12.dp))
 
             Button(
@@ -458,7 +474,7 @@ fun AddTeachingScheduleScreen(
                         reminder1Enabled = reminder1Enabled,
                         reminder2Enabled = reminder2Enabled
                     )
-                    onSave(schedule)
+                    onSave(schedule, attachments)
                 },
                 modifier = Modifier
                     .fillMaxWidth()

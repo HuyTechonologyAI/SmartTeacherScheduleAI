@@ -41,9 +41,9 @@ export default function AIAssistantWidget() {
       text: "Xin chào Thầy/Cô! Em là Trợ lý AI hỗ trợ 24/7 của Smart Teacher Schedule AI (Made in Huy Technology AI). Em có thể hướng dẫn Thầy/Cô cài đặt app, bật chuông báo kép, ghim Widget ra màn hình chính, hoặc tư vấn các gói Pro. Thầy/Cô cần em hỗ trợ điều gì ạ?",
       timestamp: "Vừa xong",
       quickActions: [
-        { label: "🚀 Tính năng mới bản v1.2.8?", action: "tinh_nang_moi" },
+        { label: "📎 Đính kèm Giáo án & File dạy học (v1.2.9)?", action: "dinh_kem_giao_an" },
+        { label: "🚀 Tính năng mới bản v1.2.9?", action: "tinh_nang_moi" },
         { label: "📱 Màn hình khóa Tecno Spark Go?", action: "tecno_spark_go" },
-        { label: "🔒 Xem lịch trên Màn hình khóa?", action: "man_hinh_khoa" },
         { label: "⏰ Chế độ Đồng hồ Bục giảng?", action: "dong_ho_buc_giang" },
         { label: "⚠️ Cảnh báo trùng lịch dạy?", action: "canh_bao_trung_lich" },
         { label: "⏰ Khung giờ cố định (45p & 60p)?", action: "khung_gio_chuan" },
@@ -87,14 +87,27 @@ export default function AIAssistantWidget() {
       };
     }
 
-    // v1.2.8 New Features
-    if (query.includes("mới") || query.includes("v1.2.8") || query.includes("tinh_nang_moi")) {
+    // Lesson Attachments Knowledge (v1.2.9)
+    if (query.includes("đính kèm") || query.includes("giáo án") || query.includes("tài liệu") || query.includes("dinh_kem_giao_an")) {
       return {
-        text: `Dạ, phiên bản **v1.2.8** tối ưu hóa chuyên sâu cho dòng máy **Tecno Spark Go (HiOS)** và Android 15:\n\n1️⃣ 🔒 **Nâng cấp Màn hình khóa Tecno & Android 15**: Tăng mức ưu tiên thông báo lên mức cao nhất, đảm bảo hiển thị nổi bật dưới đồng hồ màn hình khóa mà không bị hệ điều hành ẩn nội dung.\n2️⃣ 🕒 **Chế độ Đồng hồ Bục giảng Toàn màn hình khi khóa máy**: Hiển thị đồng hồ số siêu to rõ kèm thời khóa biểu chi tiết, phòng học, đếm ngược giờ và việc cần làm đè lên màn hình khóa mà không cần mở khóa điện thoại!\n3️⃣ ⚙️ **Nút cấu hình 1-chạm cho Tecno Spark Go**: Bổ sung nút chuyển thẳng vào Cài đặt màn hình khóa của máy Tecno.\n4️⃣ ⚠️ **Cảnh báo trùng lịch & Khung giờ chuẩn sư phạm 45p & 60p**.\n5️⃣ 🔄 **Đồng bộ Google Calendar 2 chiều & Rung chuông trên Smartwatch**.`,
+        text: `Dạ, tính năng **Đính Kèm Giáo Án & Tài Liệu Trực Tiếp Vào Tiết Dạy** là nâng cấp lớn nhất của phiên bản **v1.2.9**:\n\n📁 **Hỗ trợ đầy đủ mọi định dạng giảng dạy:**\n• Giáo án Word (.docx, .doc), PDF bài giảng\n• Slide bài giảng PowerPoint (.pptx, .ppt)\n• Danh sách điểm danh / bảng điểm Excel (.xlsx, .xls)\n• Hình ảnh sơ đồ bài học, ảnh chụp tài liệu\n• Đường link Google Drive, Canva, OneDrive, Youtube học liệu\n\n🔒 **Hoạt động Offline 100% không lo mất mạng:**\n• File được sao lưu an toàn vào bộ nhớ riêng của app, không bao giờ bị mất link khi dọn dẹp máy hay đổi thư mục.\n\n⚡ **Thao tác 1-chạm siêu tiện lợi:**\n• **1-chạm mở tài liệu**: Bấm là app tự động mở file bằng Microsoft Office, WPS Office hoặc Google Drive để Thầy/Cô trình chiếu hoặc đọc ngay trên lớp.\n• **1-chạm gửi Zalo**: Gửi tài liệu thẳng vào nhóm Zalo của lớp chỉ với một nút bấm!\n• **Huy hiệu trực quan**: Thẻ tiết dạy trên trang 'Hôm nay' và 'Lịch trình' đều hiện rõ \`[📎 X tài liệu]\` để Thầy/Cô không bao giờ quên mang giáo án.`,
         quickActions: [
+          { label: "🚀 Xem các tính năng mới bản v1.2.9", action: "tinh_nang_moi" },
+          { label: "📥 Tải ngay bản v1.2.9 (15.5 MB)", action: "huong_dan_cai_dat" },
+          { label: "📱 Màn hình khóa Tecno Spark Go?", action: "tecno_spark_go" }
+        ],
+      };
+    }
+
+    // v1.2.9 New Features
+    if (query.includes("mới") || query.includes("v1.2.9") || query.includes("tinh_nang_moi")) {
+      return {
+        text: `Dạ, phiên bản **v1.2.9** mang đến bước tiến vượt bậc trong nghiệp vụ sư phạm của Thầy/Cô:\n\n1️⃣ 📎 **Đính Kèm Giáo Án & Tài Liệu Trực Tiếp Vào Tiết Dạy**: Gắn file Word, PDF, PowerPoint, Excel, ảnh và link Google Drive vào từng buổi dạy; mở 1 chạm bằng WPS/Word và gửi nhanh vào nhóm Zalo của lớp.\n2️⃣ 🔒 **Nâng cấp Màn hình khóa Tecno & Android 15**: Tối ưu Live Glance hiển thị ngay dưới đồng hồ màn hình khóa, không bị hệ điều hành ẩn nội dung.\n3️⃣ 🕒 **Chế độ Đồng hồ Bục giảng Toàn màn hình khi khóa máy**: Hiển thị đồng hồ số siêu to rõ kèm thời khóa biểu chi tiết, phòng học và đếm ngược giờ.\n4️⃣ ⚠️ **Cảnh báo trùng lịch dạy & trùng phòng học tự động**.\n5️⃣ ⏰ **Khung giờ cố định chuẩn sư phạm 45p lý thuyết & 60p thực hành**.\n6️⃣ 📅 **Chế độ xem Lịch trình liên tục & Đồng bộ Google Calendar 2 chiều**.`,
+        quickActions: [
+          { label: "📎 Đính kèm Giáo án hoạt động ra sao?", action: "dinh_kem_giao_an" },
           { label: "📱 Màn hình khóa Tecno Spark Go?", action: "tecno_spark_go" },
           { label: "⏰ Chế độ Đồng hồ Bục giảng?", action: "dong_ho_buc_giang" },
-          { label: "📥 Tải ngay bản v1.2.8 (15.2 MB)", action: "huong_dan_cai_dat" }
+          { label: "📥 Tải ngay bản v1.2.9 (15.5 MB)", action: "huong_dan_cai_dat" }
         ],
       };
     }

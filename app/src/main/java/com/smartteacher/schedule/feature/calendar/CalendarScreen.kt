@@ -19,10 +19,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.smartteacher.schedule.core.database.SmartTeacherDatabase
 import com.smartteacher.schedule.core.database.entity.CalendarEventEntity
 import com.smartteacher.schedule.core.model.EventSource
 import com.smartteacher.schedule.core.sync.GoogleCalendarManager
 import com.smartteacher.schedule.feature.schedule.EditEventDialog
+import com.smartteacher.schedule.feature.schedule.components.LessonDocumentViewerSheet
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -36,12 +40,40 @@ fun CalendarScreen(
     onDeleteEvent: (CalendarEventEntity) -> Unit
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val db = remember { SmartTeacherDatabase.getInstance(context) }
+    val allAttachments by db.lessonAttachmentDao().getAllAttachments().collectAsState(initial = emptyList())
+
     var viewMode by remember { mutableStateOf(0) } // 0 = Lịch trình tổng thể (Agenda Timeline), 1 = Xem theo ngày
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     var selectedFilter by remember { mutableStateOf("Tất cả") } // "Tất cả", "Tuần này", "Tuần tới", "Lý thuyết", "Thực hành"
 
     var editingEvent by remember { mutableStateOf<CalendarEventEntity?>(null) }
     var deletingEvent by remember { mutableStateOf<CalendarEventEntity?>(null) }
+    var viewingDocumentsEvent by remember { mutableStateOf<CalendarEventEntity?>(null) }
+
+    if (viewingDocumentsEvent != null) {
+        val currentDocEvent = viewingDocumentsEvent!!
+        val currentDocAttachments = allAttachments.filter {
+            it.eventId == currentDocEvent.id || (currentDocEvent.teachingScheduleId != null && it.teachingScheduleId == currentDocEvent.teachingScheduleId)
+        }
+        LessonDocumentViewerSheet(
+            event = currentDocEvent,
+            attachments = currentDocAttachments,
+            onDismiss = { viewingDocumentsEvent = null },
+            onAddAttachments = { newItems ->
+                coroutineScope.launch(Dispatchers.IO) {
+                    val toInsert = newItems.map { it.copy(eventId = currentDocEvent.id, teachingScheduleId = currentDocEvent.teachingScheduleId) }
+                    db.lessonAttachmentDao().insertAttachments(toInsert)
+                }
+            },
+            onDeleteAttachment = { item ->
+                coroutineScope.launch(Dispatchers.IO) {
+                    db.lessonAttachmentDao().deleteAttachment(item)
+                }
+            }
+        )
+    }
 
     if (editingEvent != null) {
         EditEventDialog(
@@ -279,8 +311,13 @@ fun CalendarScreen(
 
                             // Event items for this date
                             items(dayEventList) { event ->
+                                val eventAttachments = allAttachments.filter {
+                                    it.eventId == event.id || (event.teachingScheduleId != null && it.teachingScheduleId == event.teachingScheduleId)
+                                }
                                 ScheduleAgendaCard(
                                     event = event,
+                                    attachmentsCount = eventAttachments.size,
+                                    onViewAttachments = { viewingDocumentsEvent = event },
                                     onEdit = { editingEvent = event },
                                     onDelete = { deletingEvent = event },
                                     onSyncGoogle = {
@@ -342,8 +379,13 @@ fun CalendarScreen(
                         contentPadding = PaddingValues(vertical = 8.dp)
                     ) {
                         items(singleDayEvents) { event ->
+                            val eventAttachments = allAttachments.filter {
+                                it.eventId == event.id || (event.teachingScheduleId != null && it.teachingScheduleId == event.teachingScheduleId)
+                            }
                             ScheduleAgendaCard(
                                 event = event,
+                                attachmentsCount = eventAttachments.size,
+                                onViewAttachments = { viewingDocumentsEvent = event },
                                 onEdit = { editingEvent = event },
                                 onDelete = { deletingEvent = event },
                                 onSyncGoogle = {
@@ -361,6 +403,8 @@ fun CalendarScreen(
 @Composable
 fun ScheduleAgendaCard(
     event: CalendarEventEntity,
+    attachmentsCount: Int = 0,
+    onViewAttachments: () -> Unit = {},
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onSyncGoogle: () -> Unit
@@ -409,6 +453,14 @@ fun ScheduleAgendaCard(
 
                 // Quick Action buttons
                 Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                    IconButton(onClick = onViewAttachments, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            Icons.Default.AttachFile,
+                            contentDescription = "Tài liệu",
+                            tint = if (attachmentsCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                     IconButton(onClick = onSyncGoogle, modifier = Modifier.size(32.dp)) {
                         Icon(Icons.Default.Sync, contentDescription = "Đồng bộ Google Calendar", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                     }
@@ -448,6 +500,23 @@ fun ScheduleAgendaCard(
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary
                         )
+                    }
+                }
+            }
+
+            if (attachmentsCount > 0) {
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    modifier = Modifier.clickable(onClick = onViewAttachments)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(13.dp), tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("$attachmentsCount tài liệu bài giảng (Mở đọc)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }

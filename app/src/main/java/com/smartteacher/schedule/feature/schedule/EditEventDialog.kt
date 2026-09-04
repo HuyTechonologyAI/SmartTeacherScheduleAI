@@ -16,11 +16,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.smartteacher.schedule.core.database.SmartTeacherDatabase
 import com.smartteacher.schedule.core.database.entity.CalendarEventEntity
 import com.smartteacher.schedule.core.util.ScheduleConflictChecker
 import com.smartteacher.schedule.core.util.TeachingPeriodPresets
+import com.smartteacher.schedule.feature.schedule.components.LessonAttachmentSection
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -49,6 +54,11 @@ fun EditEventDialog(
     var allowSaveConflict by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val db = remember { SmartTeacherDatabase.getInstance(context) }
+    val attachments by db.lessonAttachmentDao().getAttachmentsForEvent(event.id).collectAsState(initial = emptyList())
 
     // Kiểm tra trùng lịch
     val conflictResult = remember(date, startTime, endTime, room, existingEvents) {
@@ -438,6 +448,24 @@ fun EditEventDialog(
                         label = { Text("Ghi chú giảng dạy / Bài giảng") },
                         modifier = Modifier.fillMaxWidth(),
                         maxLines = 3
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // Đính Kèm Giáo Án & Tài Liệu Trực Tiếp
+                    LessonAttachmentSection(
+                        attachments = attachments,
+                        onAddAttachments = { newItems ->
+                            coroutineScope.launch(Dispatchers.IO) {
+                                val toInsert = newItems.map { it.copy(eventId = event.id, teachingScheduleId = event.teachingScheduleId) }
+                                db.lessonAttachmentDao().insertAttachments(toInsert)
+                            }
+                        },
+                        onRemoveAttachment = { item ->
+                            coroutineScope.launch(Dispatchers.IO) {
+                                db.lessonAttachmentDao().deleteAttachment(item)
+                            }
+                        }
                     )
 
                     // Reminders

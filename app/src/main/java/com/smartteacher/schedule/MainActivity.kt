@@ -296,10 +296,10 @@ class MainActivity : ComponentActivity() {
                             AddTeachingScheduleScreen(
                                 onBack = { navController.popBackStack() },
                                 existingSchedules = allSchedules,
-                                onSave = { schedule ->
-                                    saveTeachingSchedule(schedule)
+                                onSave = { schedule, attachments ->
+                                    saveTeachingSchedule(schedule, attachments)
                                     navController.popBackStack()
-                                    Toast.makeText(this@MainActivity, "Đã tạo lịch và hẹn giờ nhắc 60m & 15m!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(this@MainActivity, "Đã tạo lịch và lưu giáo án đính kèm!", Toast.LENGTH_SHORT).show()
                                 }
                             )
                         }
@@ -351,7 +351,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun saveTeachingSchedule(schedule: com.smartteacher.schedule.core.database.entity.TeachingScheduleEntity) {
+    private fun saveTeachingSchedule(
+        schedule: com.smartteacher.schedule.core.database.entity.TeachingScheduleEntity,
+        attachments: List<com.smartteacher.schedule.core.database.entity.LessonAttachmentEntity> = emptyList()
+    ) {
         lifecycleScope.launch(Dispatchers.IO) {
             val scheduleId = database.teachingScheduleDao().insertSchedule(schedule)
 
@@ -380,11 +383,20 @@ class MainActivity : ComponentActivity() {
             val eventId = database.calendarEventDao().insertEvent(event)
             val insertedEvent = event.copy(id = eventId)
 
+            // Lưu các tệp giáo án & tài liệu đính kèm liên kết với cả eventId và scheduleId
+            if (attachments.isNotEmpty()) {
+                val toInsert = attachments.map {
+                    it.copy(eventId = eventId, teachingScheduleId = scheduleId)
+                }
+                database.lessonAttachmentDao().insertAttachments(toInsert)
+            }
+
             // Schedule dual reminders via AlarmManager
             alarmScheduler.scheduleEventReminders(insertedEvent)
 
-            // Update Home Screen Widget
+            // Update Home Screen Widget & Lock Screen Glance
             ScheduleWidgetReceiver.updateAllWidgets(this@MainActivity)
+            LockScreenGlanceManager.updateLockScreenGlance(this@MainActivity)
         }
     }
 

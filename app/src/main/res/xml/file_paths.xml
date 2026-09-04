@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Thư mục lưu trữ tệp giáo án nội bộ an toàn và offline -->
+    <files-path name="lesson_attachments" path="lesson_attachments/" />
+    <!-- Hỗ trợ chia sẻ file trong filesDir -->
+    <files-path name="app_files" path="." />
+    <!-- Hỗ trợ chia sẻ file tạm trong cacheDir -->
+    <cache-path name="app_cache" path="." />
+</paths>

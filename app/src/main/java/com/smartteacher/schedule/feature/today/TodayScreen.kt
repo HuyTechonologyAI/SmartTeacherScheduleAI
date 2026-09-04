@@ -28,9 +28,13 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
-import java.util.Locale
+import com.smartteacher.schedule.core.database.SmartTeacherDatabase
+import com.smartteacher.schedule.feature.schedule.components.LessonDocumentViewerSheet
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,10 +56,38 @@ fun TodayScreen(
     }
 
     val context = androidx.compose.ui.platform.LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val db = remember { SmartTeacherDatabase.getInstance(context) }
+    val allAttachments by db.lessonAttachmentDao().getAllAttachments().collectAsState(initial = emptyList())
+
     var isBatteryIgnored by remember { mutableStateOf(com.smartteacher.schedule.core.reliability.OEMReliabilityHelper.isIgnoringBatteryOptimizations(context)) }
 
     var editingEvent by remember { mutableStateOf<CalendarEventEntity?>(null) }
     var deletingEvent by remember { mutableStateOf<CalendarEventEntity?>(null) }
+    var viewingDocumentsEvent by remember { mutableStateOf<CalendarEventEntity?>(null) }
+
+    if (viewingDocumentsEvent != null) {
+        val currentDocEvent = viewingDocumentsEvent!!
+        val currentDocAttachments = allAttachments.filter {
+            it.eventId == currentDocEvent.id || (currentDocEvent.teachingScheduleId != null && it.teachingScheduleId == currentDocEvent.teachingScheduleId)
+        }
+        LessonDocumentViewerSheet(
+            event = currentDocEvent,
+            attachments = currentDocAttachments,
+            onDismiss = { viewingDocumentsEvent = null },
+            onAddAttachments = { newItems ->
+                coroutineScope.launch(Dispatchers.IO) {
+                    val toInsert = newItems.map { it.copy(eventId = currentDocEvent.id, teachingScheduleId = currentDocEvent.teachingScheduleId) }
+                    db.lessonAttachmentDao().insertAttachments(toInsert)
+                }
+            },
+            onDeleteAttachment = { item ->
+                coroutineScope.launch(Dispatchers.IO) {
+                    db.lessonAttachmentDao().deleteAttachment(item)
+                }
+            }
+        )
+    }
 
     if (editingEvent != null) {
         com.smartteacher.schedule.feature.schedule.EditEventDialog(
@@ -234,7 +266,15 @@ fun TodayScreen(
         ) {
             // 1. Next Upcoming Class Hero Banner
             item {
-                NextClassHeroBanner(nextEvent = nextEvent, liveTime = liveTime)
+                val nextAttachmentsCount = if (nextEvent != null) {
+                    allAttachments.count { it.eventId == nextEvent.id || (nextEvent.teachingScheduleId != null && it.teachingScheduleId == nextEvent.teachingScheduleId) }
+                } else 0
+                NextClassHeroBanner(
+                    nextEvent = nextEvent,
+                    liveTime = liveTime,
+                    attachmentsCount = nextAttachmentsCount,
+                    onOpenDocuments = { if (nextEvent != null) viewingDocumentsEvent = nextEvent }
+                )
             }
 
             // 1.1 OEM Battery Saver / RAM Cleaner Protection Banner
@@ -481,8 +521,13 @@ fun TodayScreen(
                 }
             } else {
                 items(todayEvents) { event ->
+                    val eventAttachments = allAttachments.filter {
+                        it.eventId == event.id || (event.teachingScheduleId != null && it.teachingScheduleId == event.teachingScheduleId)
+                    }
                     TimelineEventCard(
                         event = event,
+                        attachmentsCount = eventAttachments.size,
+                        onViewAttachments = { viewingDocumentsEvent = event },
                         onClick = { editingEvent = event },
                         onEdit = { editingEvent = event },
                         onDelete = { deletingEvent = event }
@@ -538,7 +583,12 @@ fun TodayScreen(
 }
 
 @Composable
-fun NextClassHeroBanner(nextEvent: CalendarEventEntity?, liveTime: LocalTime = LocalTime.now()) {
+fun NextClassHeroBanner(
+    nextEvent: CalendarEventEntity?,
+    liveTime: LocalTime = LocalTime.now(),
+    attachmentsCount: Int = 0,
+    onOpenDocuments: () -> Unit = {}
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -626,6 +676,43 @@ fun NextClassHeroBanner(nextEvent: CalendarEventEntity?, liveTime: LocalTime = L
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                     )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Huy hiệu tài liệu giáo án đính kèm
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (attachmentsCount > 0) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f) else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.08f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onOpenDocuments)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AttachFile,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (attachmentsCount > 0) "📎 $attachmentsCount tài liệu bài giảng (Chạm để mở đọc)" else "+ Đính kèm giáo án / slide bài giảng",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
             } else {
                 Text(
@@ -734,6 +821,8 @@ fun StatCard(
 @Composable
 fun TimelineEventCard(
     event: CalendarEventEntity,
+    attachmentsCount: Int = 0,
+    onViewAttachments: () -> Unit = {},
     onClick: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
@@ -802,10 +891,50 @@ fun TimelineEventCard(
                         )
                     }
                 }
+
+                if (attachmentsCount > 0) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        modifier = Modifier
+                            .padding(top = 4.dp)
+                            .clickable(onClick = onViewAttachments)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AttachFile,
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = "$attachmentsCount tài liệu (Mở đọc)",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
             }
 
-            // Edit & Delete Action Buttons
+            // Document, Edit & Delete Action Buttons
             Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                IconButton(
+                    onClick = onViewAttachments,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AttachFile,
+                        contentDescription = "Tài liệu",
+                        tint = if (attachmentsCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
                 IconButton(
                     onClick = onEdit,
                     modifier = Modifier.size(36.dp)

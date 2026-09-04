@@ -249,7 +249,7 @@ fun SettingsScreen(
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                "Phiên bản 1.2.8 • Tecno HiOS & Android 15 Ready",
+                                "Phiên bản 1.2.9 • Đính Kèm Giáo Án & Android 15 Ready",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )

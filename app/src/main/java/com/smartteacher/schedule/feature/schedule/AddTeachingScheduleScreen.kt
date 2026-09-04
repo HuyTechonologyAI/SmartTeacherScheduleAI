@@ -22,7 +22,11 @@ import com.smartteacher.schedule.core.model.RecurrenceType
 import com.smartteacher.schedule.core.util.ScheduleConflictChecker
 import com.smartteacher.schedule.core.util.TeachingPeriodPresets
 import com.smartteacher.schedule.feature.schedule.components.LessonAttachmentSection
+import android.app.DatePickerDialog
+import androidx.compose.ui.platform.LocalContext
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,6 +35,9 @@ fun AddTeachingScheduleScreen(
     onSave: (TeachingScheduleEntity, List<LessonAttachmentEntity>) -> Unit,
     existingSchedules: List<TeachingScheduleEntity> = emptyList()
 ) {
+    val context = LocalContext.current
+    val dateFormatter = remember { DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale("vi", "VN")) }
+
     var subject by remember { mutableStateOf("") }
     var className by remember { mutableStateOf("") }
     var classCode by remember { mutableStateOf("") }
@@ -44,6 +51,10 @@ fun AddTeachingScheduleScreen(
     var notes by remember { mutableStateOf("") }
     var recurrenceType by remember { mutableStateOf(RecurrenceType.WEEKLY) }
 
+    // Ngày bắt đầu và ngày kết thúc lịch dạy (v1.3.1)
+    var startDate by remember { mutableStateOf(LocalDate.now()) }
+    var endDate by remember { mutableStateOf<LocalDate?>(LocalDate.now().plusMonths(5)) }
+
     var reminder1Minutes by remember { mutableStateOf(60) }
     var reminder2Minutes by remember { mutableStateOf(15) }
     var reminder1Enabled by remember { mutableStateOf(true) }
@@ -53,6 +64,42 @@ fun AddTeachingScheduleScreen(
     var allowSaveConflict by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var attachments by remember { mutableStateOf<List<LessonAttachmentEntity>>(emptyList()) }
+
+    // DatePicker Dialogs
+    val startDatePickerDialog = remember(startDate) {
+        DatePickerDialog(
+            context,
+            { _, year, month, dayOfMonth ->
+                val picked = LocalDate.of(year, month + 1, dayOfMonth)
+                startDate = picked
+                if (endDate != null && endDate!!.isBefore(picked)) {
+                    endDate = picked.plusMonths(5)
+                }
+            },
+            startDate.year,
+            startDate.monthValue - 1,
+            startDate.dayOfMonth
+        )
+    }
+
+    val endDatePickerDialog = remember(endDate, startDate) {
+        val refDate = endDate ?: startDate.plusMonths(5)
+        DatePickerDialog(
+            context,
+            { _, year, month, dayOfMonth ->
+                val picked = LocalDate.of(year, month + 1, dayOfMonth)
+                if (picked.isBefore(startDate)) {
+                    errorMessage = "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu!"
+                } else {
+                    endDate = picked
+                    errorMessage = null
+                }
+            },
+            refDate.year,
+            refDate.monthValue - 1,
+            refDate.dayOfMonth
+        )
+    }
 
     // Kiểm tra trùng lịch theo thời gian thực
     val conflictResult = remember(dayOfWeek, startTime, endTime, room, existingSchedules) {
@@ -371,6 +418,116 @@ fun AddTeachingScheduleScreen(
                 )
             }
 
+            // =========================================================================
+            // 📅 KHOẢNG THỜI GIAN HIỆU LỰC LỊCH DẠY (NGÀY BẮT ĐẦU & NGÀY KẾT THÚC)
+            // =========================================================================
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)),
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.DateRange, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Thời gian diễn ra & Chu kỳ nhắc nhở",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Text(
+                        "Lịch dạy sẽ tự động lặp lại từ Ngày bắt đầu đến hết Ngày kết thúc. Sau ngày này, hệ thống tự động dừng nhắc nhở.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        // Nút bấm chọn Ngày Bắt Đầu
+                        OutlinedCard(
+                            onClick = { startDatePickerDialog.show() },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text("Ngày bắt đầu *", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = startDate.format(dateFormatter),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp
+                                    )
+                                }
+                            }
+                        }
+
+                        // Nút bấm chọn Ngày Kết Thúc
+                        OutlinedCard(
+                            onClick = { endDatePickerDialog.show() },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text("Ngày kết thúc", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.EventBusy, contentDescription = null, modifier = Modifier.size(16.dp), tint = if (endDate != null) MaterialTheme.colorScheme.primary else Color.Gray)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = endDate?.format(dateFormatter) ?: "Vô thời hạn",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        color = if (endDate != null) MaterialTheme.colorScheme.onSurface else Color.Gray
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Phím tắt chọn nhanh chu kỳ học kỳ
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        AssistChip(
+                            onClick = { endDate = startDate.plusMonths(5) },
+                            label = { Text("Học kỳ 1 (+5 tháng)", fontSize = 11.sp) }
+                        )
+                        AssistChip(
+                            onClick = { endDate = startDate.plusMonths(9) },
+                            label = { Text("Cả năm (+9 tháng)", fontSize = 11.sp) }
+                        )
+                        AssistChip(
+                            onClick = { endDate = null },
+                            label = { Text("Vô thời hạn", fontSize = 11.sp) }
+                        )
+                    }
+
+                    // Chuỗi tóm tắt trực quan
+                    val targetDayName = listOf("T2", "T3", "T4", "T5", "T6", "T7", "CN")[dayOfWeek - 1]
+                    val summary = if (recurrenceType == RecurrenceType.ONCE) {
+                        "Chỉ diễn ra 1 buổi vào ngày ${startDate.format(dateFormatter)}."
+                    } else if (endDate != null) {
+                        "Bắt đầu từ $targetDayName (${startDate.format(dateFormatter)}), lặp lại hàng tuần và dừng nhắc vào ngày ${endDate?.format(dateFormatter)}."
+                    } else {
+                        "Bắt đầu từ $targetDayName (${startDate.format(dateFormatter)}), lặp lại hàng tuần liên tục."
+                    }
+                    Text(
+                        text = "ℹ️ $summary",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
             // Reminders Configuration Section
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -455,13 +612,20 @@ fun AddTeachingScheduleScreen(
                         return@Button
                     }
 
+                    // Kiểm tra ngày kết thúc không được trước ngày bắt đầu
+                    if (endDate != null && endDate!!.isBefore(startDate)) {
+                        errorMessage = "Ngày kết thúc không được trước ngày bắt đầu!"
+                        return@Button
+                    }
+
                     val schedule = TeachingScheduleEntity(
                         subject = subject.trim(),
                         className = className.trim(),
                         classCode = classCode.trim(),
                         dayOfWeek = dayOfWeek,
                         recurrenceType = recurrenceType,
-                        startDate = LocalDate.now().toString(),
+                        startDate = startDate.toString(),
+                        endDate = if (recurrenceType == RecurrenceType.ONCE) startDate.toString() else endDate?.toString(),
                         startTime = startTime.trim(),
                         endTime = endTime.trim(),
                         room = room.trim(),

@@ -271,6 +271,58 @@ class NotificationHelper(private val context: Context) {
         logNotification("DELIVERED", "AI Insight: $title", message)
     }
 
+    fun showMorningMotivationNotification(title: String, message: String) {
+        val notificationId = 200002
+        val viewIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val viewPendingIntent = PendingIntent.getActivity(
+            context,
+            notificationId,
+            viewIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_AI)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("☀️ $title")
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .setContentIntent(viewPendingIntent)
+            .build()
+
+        notificationManager.notify(notificationId, notification)
+        logNotification("DELIVERED", "AI Động Lực Sáng: $title", message)
+    }
+
+    fun showEveningGratitudeNotification(title: String, message: String) {
+        val notificationId = 200003
+        val viewIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val viewPendingIntent = PendingIntent.getActivity(
+            context,
+            notificationId,
+            viewIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_AI)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("🌙 $title")
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .setContentIntent(viewPendingIntent)
+            .build()
+
+        notificationManager.notify(notificationId, notification)
+        logNotification("DELIVERED", "AI Cảm Ơn Tối: $title", message)
+    }
+
     fun cancelNotification(notificationId: Int) {
         notificationManager.cancel(notificationId)
     }

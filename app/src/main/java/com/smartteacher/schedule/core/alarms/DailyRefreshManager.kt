@@ -85,6 +85,19 @@ object DailyRefreshManager {
             var generatedCount = 0
 
             for (schedule in recurringSchedules) {
+                // Kiểm tra khoảng thời gian hiệu lực [startDate, endDate] (v1.3.1)
+                val start = try { LocalDate.parse(schedule.startDate) } catch (e: Exception) { null }
+                val end = schedule.endDate?.let { try { LocalDate.parse(it) } catch (e: Exception) { null } }
+
+                if (start != null && today.isBefore(start)) {
+                    // Chưa đến ngày bắt đầu của môn này
+                    continue
+                }
+                if (end != null && today.isAfter(end)) {
+                    // Đã qua ngày kết thúc - tự động dừng tạo sự kiện và nhắc nhở
+                    continue
+                }
+
                 val existingEvent = db.calendarEventDao().getEventByScheduleIdAndDate(schedule.id, todayStr)
                 if (existingEvent == null) {
                     val newEvent = CalendarEventEntity(

@@ -195,7 +195,8 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onOpenAIClick = {
                                     navController.navigate(Screen.AIAssistant.route)
-                                }
+                                },
+                                geminiApiKey = geminiApiKey
                             )
                         }
 
@@ -370,41 +371,55 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             val scheduleId = database.teachingScheduleDao().insertSchedule(schedule)
 
-            // Calculate date matching the target dayOfWeek (1 = Monday, 7 = Sunday)
+            // Calculate date matching the target dayOfWeek (1 = Monday, 7 = Sunday) respecting startDate and endDate
             val today = LocalDate.now()
-            val daysUntilTarget = (schedule.dayOfWeek - today.dayOfWeek.value + 7) % 7
-            val targetDate = if (daysUntilTarget == 0) today else today.plusDays(daysUntilTarget.toLong())
-            val targetDateStr = targetDate.toString()
+            val parsedStart = try { LocalDate.parse(schedule.startDate) } catch (e: Exception) { today }
+            val parsedEnd = schedule.endDate?.let { try { LocalDate.parse(it) } catch (e: Exception) { null } }
 
-            val event = CalendarEventEntity(
-                teachingScheduleId = scheduleId,
-                title = schedule.subject,
-                subject = schedule.subject,
-                className = schedule.className,
-                room = schedule.room,
-                date = targetDateStr,
-                startTime = schedule.startTime,
-                endTime = schedule.endTime,
-                notes = schedule.notes,
-                reminder1Minutes = schedule.reminder1Minutes,
-                reminder2Minutes = schedule.reminder2Minutes,
-                reminder1Enabled = schedule.reminder1Enabled,
-                reminder2Enabled = schedule.reminder2Enabled
-            )
+            // Tìm ngày đầu tiên phù hợp: nếu startDate ở tương lai thì bắt đầu từ startDate
+            val baseDate = if (parsedStart.isAfter(today)) parsedStart else today
+            val daysUntilTarget = (schedule.dayOfWeek - baseDate.dayOfWeek.value + 7) % 7
+            val targetDate = baseDate.plusDays(daysUntilTarget.toLong())
 
-            val eventId = database.calendarEventDao().insertEvent(event)
-            val insertedEvent = event.copy(id = eventId)
+            val shouldCreateFirstEvent = parsedEnd == null || !targetDate.isAfter(parsedEnd)
 
-            // Lưu các tệp giáo án & tài liệu đính kèm liên kết với cả eventId và scheduleId
-            if (attachments.isNotEmpty()) {
+            if (shouldCreateFirstEvent) {
+                val targetDateStr = targetDate.toString()
+                val event = CalendarEventEntity(
+                    teachingScheduleId = scheduleId,
+                    title = schedule.subject,
+                    subject = schedule.subject,
+                    className = schedule.className,
+                    room = schedule.room,
+                    date = targetDateStr,
+                    startTime = schedule.startTime,
+                    endTime = schedule.endTime,
+                    notes = schedule.notes,
+                    reminder1Minutes = schedule.reminder1Minutes,
+                    reminder2Minutes = schedule.reminder2Minutes,
+                    reminder1Enabled = schedule.reminder1Enabled,
+                    reminder2Enabled = schedule.reminder2Enabled
+                )
+
+                val eventId = database.calendarEventDao().insertEvent(event)
+                val insertedEvent = event.copy(id = eventId)
+
+                // Lưu các tệp giáo án & tài liệu đính kèm liên kết với cả eventId và scheduleId
+                if (attachments.isNotEmpty()) {
+                    val toInsert = attachments.map {
+                        it.copy(eventId = eventId, teachingScheduleId = scheduleId)
+                    }
+                    database.lessonAttachmentDao().insertAttachments(toInsert)
+                }
+
+                // Schedule dual reminders via AlarmManager
+                alarmScheduler.scheduleEventReminders(insertedEvent)
+            } else if (attachments.isNotEmpty()) {
                 val toInsert = attachments.map {
-                    it.copy(eventId = eventId, teachingScheduleId = scheduleId)
+                    it.copy(eventId = null, teachingScheduleId = scheduleId)
                 }
                 database.lessonAttachmentDao().insertAttachments(toInsert)
             }
-
-            // Schedule dual reminders via AlarmManager
-            alarmScheduler.scheduleEventReminders(insertedEvent)
 
             // Update Home Screen Widget & Lock Screen Glance
             ScheduleWidgetReceiver.updateAllWidgets(this@MainActivity)

@@ -16,10 +16,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.smartteacher.schedule.core.ai.TeacherMotivationHelper
 import com.smartteacher.schedule.core.database.entity.CalendarEventEntity
 import com.smartteacher.schedule.core.database.entity.TaskEntity
 import com.smartteacher.schedule.core.model.TaskStatus
@@ -47,7 +49,8 @@ fun TodayScreen(
     onDeleteEvent: (CalendarEventEntity) -> Unit,
     onTaskToggle: (TaskEntity) -> Unit,
     onAddScheduleClick: () -> Unit,
-    onOpenAIClick: () -> Unit
+    onOpenAIClick: () -> Unit,
+    geminiApiKey: String = ""
 ) {
     val currentDate = remember { LocalDate.now() }
     val dayOfWeekName = remember {
@@ -58,6 +61,24 @@ fun TodayScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val db = remember { SmartTeacherDatabase.getInstance(context) }
+
+    // AI Động lực sáng & Lời cảm ơn sư phạm cuối ngày (v1.3.1)
+    var motivationMessage by remember {
+        mutableStateOf(TeacherMotivationHelper.getRandomOfflineQuote())
+    }
+    var isRefreshingMotivation by remember { mutableStateOf(false) }
+
+    LaunchedEffect(todayEvents.size) {
+        if (geminiApiKey.isNotBlank()) {
+            coroutineScope.launch {
+                val fresh = TeacherMotivationHelper.getMotivationalQuote(
+                    apiKey = geminiApiKey,
+                    teachingCountToday = todayEvents.count { it.isTeachingEvent }
+                )
+                motivationMessage = fresh
+            }
+        }
+    }
     val allAttachments by db.lessonAttachmentDao().getAllAttachments().collectAsState(initial = emptyList())
 
     var isBatteryIgnored by remember { mutableStateOf(com.smartteacher.schedule.core.reliability.OEMReliabilityHelper.isIgnoringBatteryOptimizations(context)) }
@@ -274,6 +295,33 @@ fun TodayScreen(
                     liveTime = liveTime,
                     attachmentsCount = nextAttachmentsCount,
                     onOpenDocuments = { if (nextEvent != null) viewingDocumentsEvent = nextEvent }
+                )
+            }
+
+            // 1.0 AI Động lực sáng & Lời cảm ơn sư phạm cuối ngày (v1.3.1)
+            item {
+                AIMotivationCard(
+                    motivation = motivationMessage,
+                    isRefreshing = isRefreshingMotivation,
+                    onRefresh = {
+                        coroutineScope.launch {
+                            isRefreshingMotivation = true
+                            val nextMsg = if (geminiApiKey.isNotBlank()) {
+                                TeacherMotivationHelper.getMotivationalQuote(
+                                    apiKey = geminiApiKey,
+                                    teachingCountToday = todayEvents.count { it.isTeachingEvent }
+                                )
+                            } else {
+                                TeacherMotivationHelper.getRandomOfflineQuote()
+                            }
+                            motivationMessage = nextMsg
+                            isRefreshingMotivation = false
+                        }
+                    },
+                    onShare = {
+                        TeacherMotivationHelper.shareMotivationMessage(context, motivationMessage)
+                    },
+                    onOpenAIChat = onOpenAIClick
                 )
             }
 
@@ -1049,3 +1097,166 @@ private fun calculateRemainingText(startTimeStr: String, endTimeStr: String, now
         }
     }.getOrDefault("Sắp diễn ra")
 }
+
+@Composable
+fun AIMotivationCard(
+    motivation: TeacherMotivationHelper.MotivationMessage,
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit,
+    onShare: () -> Unit,
+    onOpenAIChat: () -> Unit
+) {
+    val gradientColors = when (motivation.timePhase) {
+        TeacherMotivationHelper.TimePhase.MORNING -> listOf(
+            Color(0xFFFFFBEB),
+            Color(0xFFFEF3C7),
+            Color(0xFFFDE68A).copy(alpha = 0.5f)
+        )
+        TeacherMotivationHelper.TimePhase.AFTERNOON -> listOf(
+            Color(0xFFF0FDF4),
+            Color(0xFFDCFCE7),
+            Color(0xFFBBF7D0).copy(alpha = 0.5f)
+        )
+        TeacherMotivationHelper.TimePhase.EVENING -> listOf(
+            Color(0xFFEEF2FF),
+            Color(0xFFE0E7FF),
+            Color(0xFFC7D2FE).copy(alpha = 0.5f)
+        )
+    }
+
+    val primaryColor = when (motivation.timePhase) {
+        TeacherMotivationHelper.TimePhase.MORNING -> Color(0xFFB45309)
+        TeacherMotivationHelper.TimePhase.AFTERNOON -> Color(0xFF047857)
+        TeacherMotivationHelper.TimePhase.EVENING -> Color(0xFF4338CA)
+    }
+
+    val textColor = when (motivation.timePhase) {
+        TeacherMotivationHelper.TimePhase.MORNING -> Color(0xFF78350F)
+        TeacherMotivationHelper.TimePhase.AFTERNOON -> Color(0xFF064E3B)
+        TeacherMotivationHelper.TimePhase.EVENING -> Color(0xFF312E81)
+    }
+
+    val badgeBg = when (motivation.timePhase) {
+        TeacherMotivationHelper.TimePhase.MORNING -> Color(0xFFFDE68A)
+        TeacherMotivationHelper.TimePhase.AFTERNOON -> Color(0xFFBBF7D0)
+        TeacherMotivationHelper.TimePhase.EVENING -> Color(0xFFC7D2FE)
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .background(Brush.linearGradient(gradientColors))
+                .padding(14.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(motivation.icon, fontSize = 20.sp)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = motivation.greetingTitle,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = primaryColor
+                        )
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = badgeBg
+                    ) {
+                        Text(
+                            text = motivation.badgeLabel,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = primaryColor,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
+                }
+
+                // Quote content
+                Text(
+                    text = "“${motivation.quoteContent}”",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                        lineHeight = 20.sp
+                    ),
+                    color = textColor,
+                    fontWeight = FontWeight.Normal
+                )
+
+                // Footer: Author & Action Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "— ${motivation.authorOrSource}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = primaryColor.copy(alpha = 0.85f),
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        IconButton(
+                            onClick = onRefresh,
+                            modifier = Modifier.size(28.dp),
+                            enabled = !isRefreshing
+                        ) {
+                            if (isRefreshing) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(14.dp),
+                                    strokeWidth = 2.dp,
+                                    color = primaryColor
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Default.Refresh,
+                                    contentDescription = "Đổi câu khác",
+                                    tint = primaryColor,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+
+                        IconButton(
+                            onClick = onShare,
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Share,
+                                contentDescription = "Chia sẻ",
+                                tint = primaryColor,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+
+                        IconButton(
+                            onClick = onOpenAIChat,
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.AutoAwesome,
+                                contentDescription = "Trò chuyện AI",
+                                tint = primaryColor,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+

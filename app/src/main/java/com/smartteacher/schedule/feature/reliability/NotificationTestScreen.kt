@@ -197,6 +197,40 @@ fun NotificationTestScreen(onBack: () -> Unit) {
             ) {
                 Text("Mô phỏng lời nhắc 15 phút")
             }
+
+            // 6. Test AI Morning Motivation Notification (v1.3.1)
+            Button(
+                onClick = {
+                    val quote = com.smartteacher.schedule.core.ai.TeacherMotivationHelper.getRandomOfflineQuote(com.smartteacher.schedule.core.ai.TeacherMotivationHelper.TimePhase.MORNING)
+                    val notif = NotificationHelper(context)
+                    notif.showMorningMotivationNotification(
+                        title = quote.greetingTitle,
+                        message = "${quote.quoteContent}\n— ${quote.authorOrSource}"
+                    )
+                    statusMessage = "☀️ Đã phát thông báo Động Lực Buổi Sáng lên màn hình!"
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD97706)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("☀️ Thử nghiệm Thông báo Động Lực Buổi Sáng")
+            }
+
+            // 7. Test AI Evening Gratitude Notification (v1.3.1)
+            Button(
+                onClick = {
+                    val quote = com.smartteacher.schedule.core.ai.TeacherMotivationHelper.getRandomOfflineQuote(com.smartteacher.schedule.core.ai.TeacherMotivationHelper.TimePhase.EVENING)
+                    val notif = NotificationHelper(context)
+                    notif.showEveningGratitudeNotification(
+                        title = quote.greetingTitle,
+                        message = "${quote.quoteContent}\n— ${quote.authorOrSource}"
+                    )
+                    statusMessage = "🌙 Đã phát thông báo Lời Cảm Ơn Buổi Tối lên màn hình!"
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4F46E5)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("🌙 Thử nghiệm Thông báo Cảm Ơn Buổi Tối")
+            }
         }
     }
 }

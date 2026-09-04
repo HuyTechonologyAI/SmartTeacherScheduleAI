@@ -20,9 +20,9 @@ export default function HeroSection() {
   const [showQr, setShowQr] = useState(false);
 
   const apkUrl =
-    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.9/SmartTeacherSchedule_v1.2.9_Release.apk";
+    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.3.0/SmartTeacherSchedule_v1.3.0_Release.apk";
   const aabUrl =
-    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.2.9/SmartTeacherSchedule_v1.2.9_Release.aab";
+    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.3.0/SmartTeacherSchedule_v1.3.0_Release.aab";
 
   return (
     <section
@@ -43,9 +43,9 @@ export default function HeroSection() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              <span>Phiên bản v1.2.9 chính thức phát hành</span>
+              <span>Phiên bản v1.3.0 chính thức phát hành</span>
               <span className="text-slate-500">•</span>
-              <span className="text-cyan-300">Đính Kèm Giáo Án & Tài Liệu Trực Tiếp</span>
+              <span className="text-cyan-300">Xuất Sổ Báo Giảng & Bảng Kê Chuẩn Bộ GD&ĐT</span>
             </div>
 
             {/* Main Headline */}

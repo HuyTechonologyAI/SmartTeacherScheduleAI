@@ -27,7 +27,7 @@ export default function Navbar() {
                   Smart Teacher AI
                 </span>
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                  v1.2.9
+                  v1.3.0
                 </span>
               </div>
               <p className="text-xs text-slate-400 flex items-center gap-1">

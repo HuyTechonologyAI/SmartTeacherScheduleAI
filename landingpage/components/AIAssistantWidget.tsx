@@ -41,8 +41,9 @@ export default function AIAssistantWidget() {
       text: "Xin chào Thầy/Cô! Em là Trợ lý AI hỗ trợ 24/7 của Smart Teacher Schedule AI (Made in Huy Technology AI). Em có thể hướng dẫn Thầy/Cô cài đặt app, bật chuông báo kép, ghim Widget ra màn hình chính, hoặc tư vấn các gói Pro. Thầy/Cô cần em hỗ trợ điều gì ạ?",
       timestamp: "Vừa xong",
       quickActions: [
-        { label: "📎 Đính kèm Giáo án & File dạy học (v1.2.9)?", action: "dinh_kem_giao_an" },
-        { label: "🚀 Tính năng mới bản v1.2.9?", action: "tinh_nang_moi" },
+        { label: "📄 Xuất Sổ Báo Giảng & Bảng Kê (v1.3.0)?", action: "xuat_so_bao_giang" },
+        { label: "📎 Đính kèm Giáo án & File dạy học?", action: "dinh_kem_giao_an" },
+        { label: "🚀 Tính năng mới bản v1.3.0?", action: "tinh_nang_moi" },
         { label: "📱 Màn hình khóa Tecno Spark Go?", action: "tecno_spark_go" },
         { label: "⏰ Chế độ Đồng hồ Bục giảng?", action: "dong_ho_buc_giang" },
         { label: "⚠️ Cảnh báo trùng lịch dạy?", action: "canh_bao_trung_lich" },
@@ -87,27 +88,39 @@ export default function AIAssistantWidget() {
       };
     }
 
+    // Sổ Báo Giảng & Bảng Kê Giờ Dạy Knowledge (v1.3.0)
+    if (query.includes("sổ báo giảng") || query.includes("bảng kê") || query.includes("giờ dạy") || query.includes("xuat_so_bao_giang")) {
+      return {
+        text: `Dạ, tính năng **Tự Động Xuất "Sổ Báo Giảng" & "Bảng Kê Giờ Dạy" Chuẩn Bộ GD&ĐT** là bước đột phá lớn nhất của phiên bản **v1.3.0**:\n\n📄 **1. Sổ Báo Giảng Tuần Chuẩn Bộ GD&ĐT:**\n• Tự động tổng hợp lịch dạy trong tuần thành bảng chuẩn: Thứ/Ngày, Tiết, Lớp, Môn/Module, Tên bài giảng, Phòng học, Ghi chú.\n• **Khổ A4 Ngang (Landscape)** in ấn cực đẹp, có sẵn Quốc hiệu tiêu ngữ và phần chữ ký duyệt của *Tổ trưởng chuyên môn* & *Giáo viên báo giảng*.\n\n📊 **2. Bảng Kê Khối Lượng Giờ Dạy & Thù Lao Thanh Toán:**\n• Thống kê chi tiết từng buổi dạy trong tháng, phân loại rõ ràng **Tiết Lý thuyết** (45p) và **Tiết Thực hành** (60p).\n• Tự động tính tổng số tiết quy chuẩn để Thầy/Cô nộp phòng đào tạo / kế toán thanh toán tiền vượt giờ mà không cần tự cộng tay!\n• **Khổ A4 Dọc (Portrait)** đầy đủ 3 chữ ký: *Trưởng khoa/Tổ trưởng*, *Phòng Đào tạo* và *Người kê khai*.\n\n⚡ **Hỗ trợ cả 2 định dạng:**\n• 🔴 **Xuất file PDF**: Chuẩn in ấn sắc nét, gửi Zalo cho Tổ trưởng duyệt trong 3 giây.\n• 🟢 **Xuất file Excel (.xls)**: Có sẵn bảng biểu kẻ viền, mở trực tiếp trên Excel hoặc WPS Office để chỉnh sửa số liệu linh hoạt!`,
+        quickActions: [
+          { label: "🚀 Xem các tính năng mới bản v1.3.0", action: "tinh_nang_moi" },
+          { label: "📥 Tải ngay bản v1.3.0 (15.5 MB)", action: "huong_dan_cai_dat" },
+          { label: "📎 Đính kèm Giáo án & File dạy học?", action: "dinh_kem_giao_an" }
+        ],
+      };
+    }
+
     // Lesson Attachments Knowledge (v1.2.9)
     if (query.includes("đính kèm") || query.includes("giáo án") || query.includes("tài liệu") || query.includes("dinh_kem_giao_an")) {
       return {
         text: `Dạ, tính năng **Đính Kèm Giáo Án & Tài Liệu Trực Tiếp Vào Tiết Dạy** là nâng cấp lớn nhất của phiên bản **v1.2.9**:\n\n📁 **Hỗ trợ đầy đủ mọi định dạng giảng dạy:**\n• Giáo án Word (.docx, .doc), PDF bài giảng\n• Slide bài giảng PowerPoint (.pptx, .ppt)\n• Danh sách điểm danh / bảng điểm Excel (.xlsx, .xls)\n• Hình ảnh sơ đồ bài học, ảnh chụp tài liệu\n• Đường link Google Drive, Canva, OneDrive, Youtube học liệu\n\n🔒 **Hoạt động Offline 100% không lo mất mạng:**\n• File được sao lưu an toàn vào bộ nhớ riêng của app, không bao giờ bị mất link khi dọn dẹp máy hay đổi thư mục.\n\n⚡ **Thao tác 1-chạm siêu tiện lợi:**\n• **1-chạm mở tài liệu**: Bấm là app tự động mở file bằng Microsoft Office, WPS Office hoặc Google Drive để Thầy/Cô trình chiếu hoặc đọc ngay trên lớp.\n• **1-chạm gửi Zalo**: Gửi tài liệu thẳng vào nhóm Zalo của lớp chỉ với một nút bấm!\n• **Huy hiệu trực quan**: Thẻ tiết dạy trên trang 'Hôm nay' và 'Lịch trình' đều hiện rõ \`[📎 X tài liệu]\` để Thầy/Cô không bao giờ quên mang giáo án.`,
         quickActions: [
-          { label: "🚀 Xem các tính năng mới bản v1.2.9", action: "tinh_nang_moi" },
-          { label: "📥 Tải ngay bản v1.2.9 (15.5 MB)", action: "huong_dan_cai_dat" },
-          { label: "📱 Màn hình khóa Tecno Spark Go?", action: "tecno_spark_go" }
+          { label: "📄 Xuất Sổ Báo Giảng & Bảng Kê (v1.3.0)?", action: "xuat_so_bao_giang" },
+          { label: "🚀 Xem các tính năng mới bản v1.3.0", action: "tinh_nang_moi" },
+          { label: "📥 Tải ngay bản v1.3.0 (15.5 MB)", action: "huong_dan_cai_dat" }
         ],
       };
     }
 
-    // v1.2.9 New Features
-    if (query.includes("mới") || query.includes("v1.2.9") || query.includes("tinh_nang_moi")) {
+    // v1.3.0 New Features
+    if (query.includes("mới") || query.includes("v1.3.0") || query.includes("tinh_nang_moi")) {
       return {
-        text: `Dạ, phiên bản **v1.2.9** mang đến bước tiến vượt bậc trong nghiệp vụ sư phạm của Thầy/Cô:\n\n1️⃣ 📎 **Đính Kèm Giáo Án & Tài Liệu Trực Tiếp Vào Tiết Dạy**: Gắn file Word, PDF, PowerPoint, Excel, ảnh và link Google Drive vào từng buổi dạy; mở 1 chạm bằng WPS/Word và gửi nhanh vào nhóm Zalo của lớp.\n2️⃣ 🔒 **Nâng cấp Màn hình khóa Tecno & Android 15**: Tối ưu Live Glance hiển thị ngay dưới đồng hồ màn hình khóa, không bị hệ điều hành ẩn nội dung.\n3️⃣ 🕒 **Chế độ Đồng hồ Bục giảng Toàn màn hình khi khóa máy**: Hiển thị đồng hồ số siêu to rõ kèm thời khóa biểu chi tiết, phòng học và đếm ngược giờ.\n4️⃣ ⚠️ **Cảnh báo trùng lịch dạy & trùng phòng học tự động**.\n5️⃣ ⏰ **Khung giờ cố định chuẩn sư phạm 45p lý thuyết & 60p thực hành**.\n6️⃣ 📅 **Chế độ xem Lịch trình liên tục & Đồng bộ Google Calendar 2 chiều**.`,
+        text: `Dạ, phiên bản **v1.3.0** là bản nâng cấp toàn diện nhất phục vụ hồ sơ nghiệp vụ sư phạm của Thầy/Cô:\n\n1️⃣ 📄 **Tự Động Xuất Sổ Báo Giảng & Bảng Kê Giờ Dạy Chuẩn Bộ GD&ĐT**: Xuất file PDF A4 sắc nét và bảng tính Excel, đầy đủ Quốc hiệu tiêu ngữ và nơi ký duyệt; tự động tính tổng tiết Lý thuyết và Thực hành.\n2️⃣ 📎 **Đính Kèm Giáo Án & Tài Liệu Trực Tiếp Vào Tiết Dạy**: Gắn file Word, PDF, PPT, Excel và link Drive; mở 1 chạm bằng WPS/Word và gửi thẳng Zalo lớp.\n3️⃣ 🔒 **Nâng cấp Màn hình khóa Tecno & Android 15**: Tối ưu Live Glance hiển thị dưới đồng hồ màn hình khóa, không bị hệ điều hành ẩn nội dung.\n4️⃣ 🕒 **Chế độ Đồng hồ Bục giảng Toàn màn hình khi khóa máy**: Hiển thị đồng hồ số siêu to rõ kèm thời khóa biểu chi tiết và đếm ngược giờ.\n5️⃣ ⚠️ **Cảnh báo trùng lịch dạy & trùng phòng học tự động**.\n6️⃣ ⏰ **Khung giờ cố định chuẩn sư phạm 45p lý thuyết & 60p thực hành**.\n7️⃣ 📅 **Dòng thời gian Lịch trình liên tục & Đồng bộ Google Calendar 2 chiều**.`,
         quickActions: [
+          { label: "📄 Xuất Sổ Báo Giảng & Bảng Kê ra sao?", action: "xuat_so_bao_giang" },
           { label: "📎 Đính kèm Giáo án hoạt động ra sao?", action: "dinh_kem_giao_an" },
           { label: "📱 Màn hình khóa Tecno Spark Go?", action: "tecno_spark_go" },
-          { label: "⏰ Chế độ Đồng hồ Bục giảng?", action: "dong_ho_buc_giang" },
-          { label: "📥 Tải ngay bản v1.2.9 (15.5 MB)", action: "huong_dan_cai_dat" }
+          { label: "📥 Tải ngay bản v1.3.0 (15.5 MB)", action: "huong_dan_cai_dat" }
         ],
       };
     }

@@ -24,6 +24,7 @@ import com.smartteacher.schedule.core.database.entity.CalendarEventEntity
 import com.smartteacher.schedule.core.model.EventSource
 import com.smartteacher.schedule.core.sync.GoogleCalendarManager
 import com.smartteacher.schedule.feature.schedule.EditEventDialog
+import com.smartteacher.schedule.feature.schedule.components.ExportPedagogicalReportDialog
 import com.smartteacher.schedule.feature.schedule.components.LessonDocumentViewerSheet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -51,6 +52,7 @@ fun CalendarScreen(
     var editingEvent by remember { mutableStateOf<CalendarEventEntity?>(null) }
     var deletingEvent by remember { mutableStateOf<CalendarEventEntity?>(null) }
     var viewingDocumentsEvent by remember { mutableStateOf<CalendarEventEntity?>(null) }
+    var showReportDialog by remember { mutableStateOf(false) }
 
     if (viewingDocumentsEvent != null) {
         val currentDocEvent = viewingDocumentsEvent!!
@@ -163,6 +165,14 @@ fun CalendarScreen(
                     }
                 },
                 actions = {
+                    // Nút xuất Sổ báo giảng & Bảng kê giờ dạy
+                    IconButton(onClick = { showReportDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Summarize,
+                            contentDescription = "Xuất Sổ báo giảng & Bảng kê giờ dạy",
+                            tint = Color(0xFF10B981)
+                        )
+                    }
                     // Nút chuyển chế độ xem
                     IconButton(onClick = { viewMode = if (viewMode == 0) 1 else 0 }) {
                         Icon(
@@ -175,6 +185,12 @@ fun CalendarScreen(
             )
         }
     ) { paddingValues ->
+        if (showReportDialog) {
+            ExportPedagogicalReportDialog(
+                onDismiss = { showReportDialog = false },
+                allEvents = events
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()

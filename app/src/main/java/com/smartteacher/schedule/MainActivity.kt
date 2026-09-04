@@ -254,6 +254,15 @@ class MainActivity : ComponentActivity() {
 
                         // 5. SETTINGS SCREEN
                         composable(Screen.Settings.route) {
+                            var showReportDialogInSettings by remember { mutableStateOf(false) }
+
+                            if (showReportDialogInSettings) {
+                                com.smartteacher.schedule.feature.schedule.components.ExportPedagogicalReportDialog(
+                                    onDismiss = { showReportDialogInSettings = false },
+                                    allEvents = allEvents
+                                )
+                            }
+
                             SettingsScreen(
                                 onOpenReliabilityCenter = {
                                     navController.navigate(Screen.ReliabilityCenter.route)
@@ -281,6 +290,9 @@ class MainActivity : ComponentActivity() {
                                             Toast.makeText(this@MainActivity, "Đã xuất CSV thời khóa biểu", Toast.LENGTH_SHORT).show()
                                         }
                                     }
+                                },
+                                onOpenReportDialog = {
+                                    showReportDialogInSettings = true
                                 },
                                 telegramEnabled = true,
                                 onToggleTelegram = { },

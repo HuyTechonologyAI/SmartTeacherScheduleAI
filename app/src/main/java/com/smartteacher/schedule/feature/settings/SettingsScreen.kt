@@ -29,6 +29,7 @@ fun SettingsScreen(
     onTriggerDailyRefresh: () -> Unit,
     onExportJson: () -> Unit,
     onExportCsv: () -> Unit,
+    onOpenReportDialog: () -> Unit = {},
     telegramEnabled: Boolean,
     onToggleTelegram: (Boolean) -> Unit,
     onSaveTelegramCreds: (token: String, chatId: String) -> Unit,
@@ -209,8 +210,32 @@ fun SettingsScreen(
                 }
             }
 
-            // Group 4: Data & Backup
-            SettingsGroupHeader("SAO LƯU & XUẤT DỮ LIỆU")
+            // Group 4: Pedagogical Reports (Sổ Báo Giảng & Bảng Kê Giờ Dạy Chuẩn Bộ GD&ĐT)
+            SettingsGroupHeader("HỒ SƠ CHUYÊN MÔN & BÁO CÁO GIẢNG DẠY (CHUẨN BỘ GD&ĐT)")
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column {
+                    SettingsItem(
+                        title = "Xuất Sổ Báo Giảng Tuần (PDF / Excel)",
+                        subtitle = "Khổ A4 ngang chuẩn Bộ GD&ĐT, đầy đủ thứ, tiết, lớp, môn, tên bài và chữ ký",
+                        icon = Icons.Default.Summarize,
+                        onClick = onOpenReportDialog
+                    )
+                    HorizontalDivider()
+                    SettingsItem(
+                        title = "Xuất Bảng Kê Giờ Dạy & Thù Lao (PDF / Excel)",
+                        subtitle = "Thống kê tiết Lý thuyết & Thực hành, tổng tiết quy chuẩn và bảng chữ ký duyệt",
+                        icon = Icons.Default.Assessment,
+                        onClick = onOpenReportDialog
+                    )
+                }
+            }
+
+            // Group 5: Data & Backup
+            SettingsGroupHeader("SAO LƯU & XUẤT DỮ LIỆU THÔ")
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
@@ -223,7 +248,7 @@ fun SettingsScreen(
                         icon = Icons.Default.FileDownload,
                         onClick = onExportJson
                     )
-                    Divider()
+                    HorizontalDivider()
                     SettingsItem(
                         title = "Xuất dữ liệu ra bảng tính CSV",
                         subtitle = "Dễ dàng mở bằng Microsoft Excel hoặc Google Sheets",
@@ -249,7 +274,7 @@ fun SettingsScreen(
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                "Phiên bản 1.2.9 • Đính Kèm Giáo Án & Android 15 Ready",
+                                "Phiên bản 1.3.0 • Sổ Báo Giảng & Bảng Kê Chuẩn Bộ GD&ĐT",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
@@ -259,7 +284,7 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Text(
-                                "v1.2.8",
+                                "v1.3.0",
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,

@@ -56,7 +56,7 @@ export default function Footer() {
             <ul className="space-y-2 text-sm text-slate-400">
               <li>
                 <a href="#download" className="hover:text-white transition-colors">
-                  Tải Bản Cài Đặt APK v1.2.9
+                  Tải Bản Cài Đặt APK v1.3.0
                 </a>
               </li>
               <li>

@@ -20,9 +20,9 @@ export default function HeroSection() {
   const [showQr, setShowQr] = useState(false);
 
   const apkUrl =
-    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.3.0/SmartTeacherSchedule_v1.3.0_Release.apk";
+    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.3.1/SmartTeacherSchedule_v1.3.1_Release.apk";
   const aabUrl =
-    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.3.0/SmartTeacherSchedule_v1.3.0_Release.aab";
+    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.3.1/SmartTeacherSchedule_v1.3.1_Release.aab";
 
   return (
     <section
@@ -43,9 +43,9 @@ export default function HeroSection() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              <span>Phiên bản v1.3.0 chính thức phát hành</span>
+              <span>Phiên bản v1.3.1 chính thức phát hành</span>
               <span className="text-slate-500">•</span>
-              <span className="text-cyan-300">Xuất Sổ Báo Giảng & Bảng Kê Chuẩn Bộ GD&ĐT</span>
+              <span className="text-cyan-300">Khoảng Ngày Lịch Dạy & AI Động Lực Sư Phạm</span>
             </div>
 
             {/* Main Headline */}
@@ -82,7 +82,7 @@ export default function HeroSection() {
                   </div>
                 </div>
                 <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">
-                  Bản v1.2.8 (15.2 MB)
+                  Bản v1.3.1 (15.3 MB)
                 </span>
               </div>
 
@@ -98,7 +98,7 @@ export default function HeroSection() {
                     <div className="text-[11px] font-normal uppercase tracking-wider text-emerald-100">
                       Cài trực tiếp lên điện thoại
                     </div>
-                    <div className="text-sm font-bold">TẢI FILE APK (15.1 MB)</div>
+                    <div className="text-sm font-bold">TẢI FILE APK v1.3.1 (15.3 MB)</div>
                   </div>
                 </a>
 
@@ -110,7 +110,7 @@ export default function HeroSection() {
                     title="Dành cho kỹ thuật viên hoặc xuất bản Google Play"
                   >
                     <Layers className="w-4 h-4 text-cyan-400" />
-                    <span>Gói AAB (14.8 MB)</span>
+                    <span>Gói AAB (14.5 MB)</span>
                   </a>
 
                   <button

@@ -118,7 +118,7 @@ export default function PricingSection({ onSelectPlan }: PricingSectionProps) {
               href="#download"
               className="mt-8 block w-full py-3.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-sm text-center border border-white/10 hover:border-indigo-500/40 transition-all"
             >
-              Tải Bản Miễn Phí (APK v1.2.5)
+              Tải Bản Miễn Phí (APK v1.3.1)
             </a>
           </div>
 

@@ -24,7 +24,7 @@ export default function FeatureSection() {
     {
       icon: LayoutGrid,
       color: "from-cyan-500 to-blue-600",
-      badge: "Mới trong v1.2.5",
+      badge: "Màn hình khóa & Widget",
       title: "Tiện Ích Widget Màn Hình Chính 2-Trong-1",
       description:
         "Chỉ cần bật sáng màn hình điện thoại là Thầy/Cô thấy ngay tên môn học, phòng học, lớp dạy và các đầu việc cần giải quyết mà không cần bấm mở ứng dụng.",
@@ -118,7 +118,7 @@ export default function FeatureSection() {
                 {/* Footer Checkmark */}
                 <div className="pt-4 border-t border-white/5 flex items-center text-xs text-emerald-400 font-semibold gap-1.5">
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Đã tối ưu trên bản v1.2.5</span>
+                  <span>Đã tối ưu trên bản v1.3.1</span>
                 </div>
               </div>
             );

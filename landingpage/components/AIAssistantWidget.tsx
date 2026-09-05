@@ -186,9 +186,19 @@ export default function AIAssistantWidget() {
       };
     }
 
+    if (query.includes("1.3.1") || query.includes("ngày bắt đầu") || query.includes("ngày kết thúc") || query.includes("động lực") || query.includes("cảm ơn") || query.includes("mới nhất")) {
+      return {
+        text: `Dạ, phiên bản mới nhất **v1.3.1** mang đến 2 nâng cấp sư phạm đột phá:\n\n1. 📅 **Khoảng thời gian lịch dạy (Ngày bắt đầu & Ngày kết thúc)**:\n• Thầy/Cô có thể đặt chính xác chu kỳ môn học (ví dụ: từ T2 07/09/2026 đến 25/01/2027).\n• Sau ngày kết thúc, app **tự động dừng nhắc nhở** mà không cần Thầy/Cô phải nhớ xóa lịch.\n• Có sẵn phím tắt chọn nhanh: *Học kỳ 1 (+5 tháng)*, *Cả năm (+9 tháng)* hoặc *Vô thời hạn*.\n\n2. ☀️🌙 **AI Động lực sáng & Lời cảm ơn sư phạm cuối ngày**:\n• **Buổi sáng**: Lời chúc ngày mới và danh ngôn sư phạm tiếp lửa nhiệt huyết bục giảng.\n• **Buổi tối**: Lời cảm ơn tri ân ấm áp, khích lệ Thầy/Cô gác lại giáo án, thư giãn tâm trí bên gia đình.\n• Kết hợp Gemini AI thông minh và cơ sở dữ liệu danh ngôn Việt Nam 100% offline!`,
+        quickActions: [
+          { label: "📥 Tải APK v1.3.1 ngay", action: "huong_dan_cai_dat" },
+          { label: "📋 Xuất Sổ Báo Giảng & Bảng Kê", action: "xuat_so_bao_giang" }
+        ],
+      };
+    }
+
     if (query.includes("cài") || query.includes("tải") || query.includes("apk") || query.includes("huong_dan_cai_dat")) {
       return {
-        text: `Dạ, để cài đặt bản v1.2.6 trên điện thoại Android, Thầy/Cô làm theo 3 bước đơn giản sau ạ:\n\n1️⃣ **Bước 1: Tải file APK**: Bấm nút **[TẢI FILE APK v1.2.6 (15.1 MB)]** ở đầu trang hoặc quét mã QR.\n2️⃣ **Bước 2: Cho phép tải xuống**: Nếu trình duyệt báo "Tệp có thể gây hại", Thầy/Cô chọn **"Vẫn tải xuống"** (đây là cảnh báo mặc định của Android khi cài file ngoài CH Play, ứng dụng đã được ký số SHA-256 an toàn 100%).\n3️⃣ **Bước 3: Cài đặt**: Mở tệp vừa tải ➔ Chọn **Cài đặt (Install)** ➔ Mở app là trải nghiệm được ngay!`,
+        text: `Dạ, để cài đặt bản v1.3.1 trên điện thoại Android, Thầy/Cô làm theo 3 bước đơn giản sau ạ:\n\n1️⃣ **Bước 1: Tải file APK**: Bấm nút **[TẢI FILE APK v1.3.1 (15.3 MB)]** ở đầu trang hoặc quét mã QR.\n2️⃣ **Bước 2: Cho phép tải xuống**: Nếu trình duyệt báo "Tệp có thể gây hại", Thầy/Cô chọn **"Vẫn tải xuống"** (đây là cảnh báo mặc định của Android khi cài file ngoài CH Play, ứng dụng đã được ký số SHA-256 an toàn 100%).\n3️⃣ **Bước 3: Cài đặt**: Mở tệp vừa tải ➔ Chọn **Cài đặt (Install)** ➔ Mở app là trải nghiệm được ngay!`,
         quickActions: [
           { label: "🔋 Làm sao để app không bị tắt ngầm?", action: "chong_tat_ngam" },
           { label: "🖼️ Cách bật Widget màn hình chính?", action: "bat_widget" },

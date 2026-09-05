@@ -274,7 +274,7 @@ fun SettingsScreen(
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                "Phiên bản 1.3.1 • Thời Gian Bắt Đầu - Kết Thúc & AI Động Lực Sư Phạm",
+                                "Phiên bản 1.3.2 • Hỗ Trợ Đầy Đủ iOS iPhone & Chuông Báo Sư Phạm",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
@@ -284,7 +284,7 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Text(
-                                "v1.3.1",
+                                "v1.3.2",
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,

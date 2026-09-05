@@ -1,6 +1,6 @@
 {
   "name": "smart-teacher-landingpage",
-  "version": "1.2.5",
+  "version": "1.3.2",
   "private": true,
   "scripts": {
     "dev": "next dev",

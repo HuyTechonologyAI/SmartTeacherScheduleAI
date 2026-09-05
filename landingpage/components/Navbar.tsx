@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Download, Menu, X, Sparkles, CheckCircle2, Shield } from "lucide-react";
+import Link from "next/link";
+import { Download, Menu, X, Sparkles, CheckCircle2, Shield, Apple } from "lucide-react";
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -68,6 +69,14 @@ export default function Navbar() {
               <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
               <span>Hỏi AI 24/7</span>
             </button>
+
+            <Link
+              href="/app"
+              className="inline-flex items-center space-x-1.5 px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-200 hover:text-white font-semibold text-xs transition-all shadow-sm hover:scale-105"
+            >
+              <Apple className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Bản iPhone (iOS)</span>
+            </Link>
 
             <a
               href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.3.1/SmartTeacherSchedule_v1.3.1_Release.apk"
@@ -138,7 +147,16 @@ export default function Navbar() {
             <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" />
             <span>Trợ Lý AI 24/7 (Giải đáp về App)</span>
           </button>
-          <div className="pt-2">
+          <div className="pt-2 space-y-2">
+            <Link
+              href="/app"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center justify-center space-x-2 w-full py-3 rounded-xl bg-slate-850 border border-indigo-500/40 text-white font-semibold text-center shadow-lg"
+            >
+              <Apple className="w-4 h-4 text-indigo-400" />
+              <span>Mở Bản Cho iPhone (iOS PWA)</span>
+            </Link>
+
             <a
               href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.3.1/SmartTeacherSchedule_v1.3.1_Release.apk"
               className="flex items-center justify-center space-x-2 w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-semibold text-center shadow-lg"

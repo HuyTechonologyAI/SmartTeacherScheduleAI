@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   Download,
   QrCode,
@@ -14,6 +15,7 @@ import {
   ExternalLink,
   Layers,
   ArrowRight,
+  Apple,
 } from "lucide-react";
 
 export default function HeroSection() {
@@ -88,69 +90,97 @@ export default function HeroSection() {
 
               {/* Action Buttons */}
               <div className="grid sm:grid-cols-2 gap-3.5 pt-1">
-                {/* Primary APK Download */}
+                {/* Primary APK Download for Android */}
                 <a
                   href={apkUrl}
-                  className="flex items-center justify-center space-x-3 px-6 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 hover:from-emerald-400 hover:to-indigo-500 text-white font-bold text-base shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all group"
+                  className="flex items-center justify-center space-x-3 px-5 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 hover:from-emerald-400 hover:to-indigo-500 text-white font-bold text-base shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all group"
                 >
-                  <Smartphone className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <Smartphone className="w-5 h-5 group-hover:scale-110 transition-transform text-emerald-100" />
                   <div className="text-left">
-                    <div className="text-[11px] font-normal uppercase tracking-wider text-emerald-100">
-                      Cài trực tiếp lên điện thoại
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-100">
+                      Dành Cho Android
                     </div>
-                    <div className="text-sm font-bold">TẢI FILE APK v1.3.1 (15.3 MB)</div>
+                    <div className="text-sm font-bold leading-tight">TẢI FILE APK v1.3.1</div>
                   </div>
                 </a>
 
-                {/* Secondary AAB Download / QR Code toggle */}
-                <div className="flex space-x-2">
-                  <a
-                    href={aabUrl}
-                    className="flex-1 flex items-center justify-center space-x-2 px-4 py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white font-semibold text-sm border border-white/10 hover:border-indigo-500/50 transition-all text-center"
-                    title="Dành cho kỹ thuật viên hoặc xuất bản Google Play"
-                  >
-                    <Layers className="w-4 h-4 text-cyan-400" />
-                    <span>Gói AAB (14.5 MB)</span>
-                  </a>
+                {/* Primary iOS App Link */}
+                <Link
+                  href="/app"
+                  className="flex items-center justify-center space-x-3 px-5 py-4 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-900 hover:from-slate-800 hover:to-purple-800 text-white font-bold text-base border-2 border-indigo-500/40 shadow-xl shadow-purple-950/40 hover:scale-[1.02] active:scale-[0.98] transition-all group"
+                >
+                  <Apple className="w-6 h-6 text-indigo-300 group-hover:scale-110 transition-transform" />
+                  <div className="text-left">
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-indigo-300">
+                      Dành Cho iPhone / iPad
+                    </div>
+                    <div className="text-sm font-bold leading-tight flex items-center gap-1.5">
+                      MỞ APP TRÊN iOS <ArrowRight className="w-3.5 h-3.5 text-indigo-300 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                </Link>
+              </div>
 
-                  <button
-                    onClick={() => setShowQr(!showQr)}
-                    className="px-4 py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white font-semibold text-sm border border-white/10 hover:border-indigo-500/50 transition-all flex items-center justify-center"
-                    title="Quét mã QR để tải về điện thoại"
-                  >
-                    <QrCode className="w-5 h-5 text-indigo-400" />
-                  </button>
-                </div>
+              {/* Secondary Actions: AAB & QR */}
+              <div className="flex space-x-2 pt-0.5">
+                <a
+                  href={aabUrl}
+                  className="flex-1 flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white font-medium text-xs border border-white/10 hover:border-indigo-500/50 transition-all text-center"
+                  title="Dành cho kỹ thuật viên hoặc xuất bản Google Play"
+                >
+                  <Layers className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Gói Android AAB (14.5 MB)</span>
+                </a>
+
+                <button
+                  onClick={() => setShowQr(!showQr)}
+                  className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white font-medium text-xs border border-white/10 hover:border-indigo-500/50 transition-all flex items-center justify-center gap-1.5"
+                  title="Quét mã QR để mở trên điện thoại"
+                >
+                  <QrCode className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Mã QR Điện Thoại</span>
+                </button>
               </div>
 
               {/* QR Code Collapsible Drawer */}
               {showQr && (
-                <div className="p-4 rounded-2xl bg-black/40 border border-white/10 flex flex-col sm:flex-row items-center gap-4 animate-in fade-in duration-300">
-                  <div className="p-2 bg-white rounded-xl shadow-md">
-                    {/* Generates standard QR Code link to APK */}
-                    <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(
-                        apkUrl
-                      )}`}
-                      alt="QR Code Tải App Smart Teacher Schedule AI"
-                      width={120}
-                      height={120}
-                      className="rounded-lg"
-                    />
+                <div className="p-4 rounded-2xl bg-black/50 border border-white/15 grid sm:grid-cols-2 gap-4 animate-in fade-in duration-300">
+                  <div className="flex items-center gap-3 p-2 bg-white/5 rounded-xl border border-white/10">
+                    <div className="p-1.5 bg-white rounded-lg shadow shrink-0">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(
+                          apkUrl
+                        )}`}
+                        alt="QR Android"
+                        width={90}
+                        height={90}
+                        className="rounded"
+                      />
+                    </div>
+                    <div className="text-xs text-slate-300 space-y-0.5">
+                      <p className="font-bold text-emerald-400 flex items-center gap-1">
+                        <Smartphone className="w-3.5 h-3.5" /> Quét Tải APK (Android)
+                      </p>
+                      <p className="text-[11px] text-slate-400">Mở Camera quét để tải file APK v1.3.1 trực tiếp về máy.</p>
+                    </div>
                   </div>
-                  <div className="text-xs text-slate-300 space-y-1 text-center sm:text-left">
-                    <p className="font-bold text-white text-sm">
-                      📱 Mở Camera điện thoại để quét mã QR:
-                    </p>
-                    <p>
-                      1. Mở ứng dụng Máy ảnh hoặc Zalo trên điện thoại.
-                    </p>
-                    <p>
-                      2. Hướng ống kính vào mã QR bên cạnh để tải trực tiếp file APK.
-                    </p>
-                    <p className="text-emerald-400 font-semibold">
-                      ✓ Đã quét virus an toàn & ký số SHA-256 bảo mật.
-                    </p>
+
+                  <div className="flex items-center gap-3 p-2 bg-white/5 rounded-xl border border-white/10">
+                    <div className="p-1.5 bg-white rounded-lg shadow shrink-0">
+                      <img
+                        src="https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=https%3A%2F%2Fgvcncdsai.io.vn%2Fapp"
+                        alt="QR iPhone"
+                        width={90}
+                        height={90}
+                        className="rounded"
+                      />
+                    </div>
+                    <div className="text-xs text-slate-300 space-y-0.5">
+                      <p className="font-bold text-indigo-300 flex items-center gap-1">
+                        <Apple className="w-3.5 h-3.5" /> Quét Mở Trên iPhone (iOS)
+                      </p>
+                      <p className="text-[11px] text-slate-400">Mở Camera iPhone quét ➔ Bấm Chia sẻ ➔ Thêm vào MH chính.</p>
+                    </div>
                   </div>
                 </div>
               )}

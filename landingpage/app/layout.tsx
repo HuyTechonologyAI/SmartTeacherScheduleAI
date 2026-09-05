@@ -39,6 +39,12 @@ export default function RootLayout({
     <html lang="vi" className="scroll-smooth">
       <head>
         <link rel="icon" href="/app_icon.jpg" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="SmartTeacher" />
+        <link rel="apple-touch-icon" href="/app_icon.jpg" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
       </head>
       <body className="antialiased selection:bg-indigo-500 selection:text-white">
         {children}

@@ -1,0 +1,14 @@
+{
+  "appId": "com.smartteacher.schedule.ios",
+  "appName": "Smart Teacher Schedule AI",
+  "webDir": "public",
+  "server": {
+    "url": "https://gvcncdsai.io.vn/app",
+    "cleartext": false
+  },
+  "ios": {
+    "contentInset": "always",
+    "allowsLinkPreview": false,
+    "scrollEnabled": true
+  }
+}

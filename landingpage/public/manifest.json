@@ -1,0 +1,25 @@
+﻿{
+  "name": "Smart Teacher Schedule AI",
+  "short_name": "SmartTeacher",
+  "description": "Trợ lý Lịch dạy, Nhắc việc & Sổ báo giảng thông minh dành cho Giáo viên",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#090D16",
+  "theme_color": "#4F46E5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/app_icon.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/app_icon.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}

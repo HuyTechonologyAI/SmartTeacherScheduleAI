@@ -45,6 +45,19 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="SmartTeacher" />
         <link rel="apple-touch-icon" href="/app_icon.jpg" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').catch(function(err) {
+                    console.log('SW registration error:', err);
+                  });
+                });
+              }
+            `,
+          }}
+        />
       </head>
       <body className="antialiased selection:bg-indigo-500 selection:text-white">
         {children}

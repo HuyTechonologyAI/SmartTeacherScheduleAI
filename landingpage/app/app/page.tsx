@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
   Calendar,
@@ -29,7 +29,15 @@ import {
   Users,
   Send,
   HelpCircle,
-  FileText
+  FileText,
+  Bell,
+  BellRing,
+  Volume2,
+  VolumeX,
+  Play,
+  Settings,
+  ShieldCheck,
+  AlertTriangle
 } from 'lucide-react';
 
 interface ScheduleItem {
@@ -130,12 +138,21 @@ const EVENING_QUOTES = [
 ];
 
 export default function IOSAppPage() {
-  const [activeTab, setActiveTab] = useState<'today' | 'schedule' | 'add' | 'reports' | 'ai'>('today');
+  const [activeTab, setActiveTab] = useState<'today' | 'schedule' | 'add' | 'notifications' | 'reports' | 'ai'>('today');
   const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
   const [selectedDay, setSelectedDay] = useState<number>(2); // Thứ 2
   const [isClient, setIsClient] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
   const [quoteIndex, setQuoteIndex] = useState(0);
+
+  // Notification States
+  const [permissionState, setPermissionState] = useState<'default' | 'granted' | 'denied'>('default');
+  const [notify60m, setNotify60m] = useState(true);
+  const [notify15m, setNotify15m] = useState(true);
+  const [notifyMorning, setNotifyMorning] = useState(true);
+  const [notifyEvening, setNotifyEvening] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [lastTestAlert, setLastTestAlert] = useState<string | null>(null);
 
   // Add form states
   const [newSubject, setNewSubject] = useState('');
@@ -161,7 +178,130 @@ export default function IOSAppPage() {
   const [inputMessage, setInputMessage] = useState('');
   const [isAiTyping, setIsAiTyping] = useState(false);
 
-  // Load from localStorage
+  // Audio Context Ref
+  const audioCtxRef = useRef<any>(null);
+
+  // Web Audio Synthesizer (Crystal Chime & Urgent Alarm)
+  const playAlarmSound = (type: 'bell' | 'urgent' = 'bell') => {
+    if (!soundEnabled) return;
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return;
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new AudioContextClass();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
+      if (type === 'urgent') {
+        // Urgent 15-minute alert: 3 distinct electronic chime pulses
+        [0, 0.22, 0.44].forEach((delay) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, ctx.currentTime + delay);
+          gain.gain.setValueAtTime(0.3, ctx.currentTime + delay);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.18);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + delay);
+          osc.stop(ctx.currentTime + delay + 0.18);
+        });
+      } else {
+        // 60-minute reminder: Gentle, rich school bell harmonic sequence
+        const freqs = [523.25, 659.25, 783.99, 1046.50]; // C5 - E5 - G5 - C6
+        freqs.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.14);
+          gain.gain.setValueAtTime(0.35, ctx.currentTime + idx * 0.14);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.14 + 0.7);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.14);
+          osc.stop(ctx.currentTime + idx * 0.14 + 0.7);
+        });
+      }
+    } catch (e) {
+      console.error('Audio play error:', e);
+    }
+  };
+
+  // Dispatch Notification (Both Service Worker & Native Notification API)
+  const triggerNotification = (title: string, body: string, type: 'bell' | 'urgent' = 'bell') => {
+    // 1. Play chime
+    playAlarmSound(type);
+
+    // 2. Vibration
+    if ('vibrate' in navigator) {
+      navigator.vibrate([300, 150, 300]);
+    }
+
+    setLastTestAlert(`${title}: ${body}`);
+
+    // 3. Show System Notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.ready.then((reg) => {
+          reg.showNotification(title, {
+            body,
+            icon: '/app_icon.jpg',
+            badge: '/app_icon.jpg',
+            tag: 'smart-teacher-' + Date.now(),
+            data: { url: '/app' }
+          });
+        });
+      } else {
+        try {
+          new Notification(title, {
+            body,
+            icon: '/app_icon.jpg'
+          });
+        } catch (e) {
+          console.log('Direct notification error:', e);
+        }
+      }
+    }
+  };
+
+  // Request iOS Notification Permission
+  const requestNotificationPermission = async () => {
+    if (!('Notification' in window)) {
+      alert('Trình duyệt hiện tại không hỗ trợ thông báo đẩy. Thầy/Cô vui lòng cập nhật iOS 16.4 trở lên hoặc thêm App vào Màn hình chính!');
+      return;
+    }
+
+    try {
+      // Warm up audio context upon user gesture (iOS requirement)
+      if (!audioCtxRef.current) {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContextClass) {
+          audioCtxRef.current = new AudioContextClass();
+          audioCtxRef.current.resume();
+        }
+      }
+
+      const permission = await Notification.requestPermission();
+      setPermissionState(permission);
+
+      if (permission === 'granted') {
+        triggerNotification(
+          '🔔 THÔNG BÁO ĐÃ ĐƯỢC KÍCH HOẠT',
+          'Smart Teacher AI đã sẵn sàng gửi chuông báo 60p, 15p và động lực sư phạm cho Thầy/Cô trên iPhone!',
+          'bell'
+        );
+      } else if (permission === 'denied') {
+        alert('Thầy/Cô đã từ chối quyền thông báo. Để bật lại: Vào Cài đặt iPhone ➔ Safari ➔ Nâng cao / Thông báo ➔ Bật cho phép gvcncdsai.io.vn.');
+      }
+    } catch (err) {
+      console.error('Permission request failed:', err);
+    }
+  };
+
+  // Load from localStorage & Register Service Worker
   useEffect(() => {
     setIsClient(true);
     const saved = localStorage.getItem('smart_teacher_schedules');
@@ -176,12 +316,60 @@ export default function IOSAppPage() {
       localStorage.setItem('smart_teacher_schedules', JSON.stringify(DEFAULT_SCHEDULES));
     }
 
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').then(
+        (reg) => console.log('SW registered successfully:', reg.scope),
+        (err) => console.error('SW registration failed:', err)
+      );
+    }
+
+    // Check Notification Permission
+    if ('Notification' in window) {
+      setPermissionState(Notification.permission);
+    }
+
     // Auto check if iOS
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
     if (isIOS && !isStandalone) {
       setShowIOSGuide(true);
     }
+
+    // Background interval check for upcoming teaching schedule (every 30 seconds)
+    const interval = setInterval(() => {
+      const now = new Date();
+      const currentDay = now.getDay() === 0 ? 8 : now.getDay() + 1; // 2 -> 8
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+      // Find today's classes
+      const todayClasses = schedules.filter(s => s.dayOfWeek === currentDay);
+      todayClasses.forEach(item => {
+        const [h, m] = item.startTime.split(':').map(Number);
+        const startTotalMinutes = h * 60 + m;
+        const diff = startTotalMinutes - currentMinutes;
+
+        // Trigger 60m reminder
+        if (diff === 60 && notify60m) {
+          triggerNotification(
+            `🔔 SẮP ĐẾN GIỜ DẠY (CÒN 60P): ${item.subject}`,
+            `Lớp ${item.className} • ${item.room} lúc ${item.startTime}. Thầy/Cô chuẩn bị giáo án và phôi vật tư nhé!`,
+            'bell'
+          );
+        }
+
+        // Trigger 15m reminder
+        if (diff === 15 && notify15m) {
+          triggerNotification(
+            `⚡ SẮP VÀO LỚP (CÒN 15P): ${item.subject}`,
+            `Khẩn trương di chuyển đến ${item.room}. Tiết học bắt đầu lúc ${item.startTime}!`,
+            'urgent'
+          );
+        }
+      });
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
   // Save to localStorage
@@ -295,10 +483,10 @@ export default function IOSAppPage() {
     setTimeout(() => {
       let aiReply = 'Dạ thưa Thầy/Cô, em đã ghi nhận yêu cầu. ';
       const lower = userText.toLowerCase();
-      if (lower.includes('giáo án') || lower.includes('bài giảng')) {
+      if (lower.includes('thông báo') || lower.includes('chuông')) {
+        aiReply += 'Hệ thống thông báo trên iPhone đã được trang bị hệ thống Báo thức kép 60p & 15p chuẩn như Android. Thầy/Cô có thể vào mục "Thông Báo" để thử chuông ngay nhé!';
+      } else if (lower.includes('giáo án') || lower.includes('bài giảng')) {
         aiReply += 'Em gợi ý cấu trúc bài dạy 5 bước chuẩn Công văn 5512/BGDĐT gồm: 1. Khởi động (5p) -> 2. Hình thành kiến thức (20p) -> 3. Luyện tập (12p) -> 4. Vận dụng (5p) -> 5. Giao nhiệm vụ về nhà (3p). Thầy/Cô muốn soạn chi tiết mục nào ạ?';
-      } else if (lower.includes('trùng lịch') || lower.includes('lịch')) {
-        aiReply += 'Tính năng kiểm tra trùng lịch tự động trên app giúp Thầy/Cô không bao giờ bị xếp lộn ca. Thầy/Cô có thể vào mục "Thêm Lịch" để nhập khoảng ngày từ lúc khai giảng đến kết thúc học kỳ nhé!';
       } else if (lower.includes('sổ báo giảng') || lower.includes('báo cáo')) {
         aiReply += 'Thầy/Cô có thể vào tab "Sổ Sách" bên dưới để tải file Sổ Báo Giảng hoặc Bảng Kê Giờ Dạy theo chuẩn mẫu quy định chỉ với 1 chạm!';
       } else {
@@ -354,10 +542,21 @@ export default function IOSAppPage() {
           </div>
           <div className="flex items-center gap-1.5">
             <button
+              onClick={() => setActiveTab('notifications')}
+              className={`p-1.5 rounded-xl border transition-all ${
+                permissionState === 'granted'
+                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                  : 'bg-amber-500/20 text-amber-400 border-amber-500/30 animate-pulse'
+              }`}
+              title="Quản lý chuông báo & thông báo iOS"
+            >
+              <BellRing className="w-4 h-4" />
+            </button>
+            <button
               onClick={() => setShowIOSGuide(true)}
               className="px-2 py-1 text-[11px] font-medium bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 rounded-lg flex items-center gap-1 transition-all"
             >
-              <Smartphone className="w-3 h-3" /> Cài vào iPhone
+              <Smartphone className="w-3 h-3" /> Ghim MH
             </button>
           </div>
         </div>
@@ -385,10 +584,44 @@ export default function IOSAppPage() {
                 <br />
                 2. Cuộn xuống chọn <strong>&ldquo;Thêm vào MH chính&rdquo; (Add to Home Screen)</strong>.
                 <br />
-                3. Trải nghiệm mượt mà toàn màn hình như App tải từ App Store!
+                3. Nhận thông báo đẩy lên màn hình khóa & Dynamic Island chuẩn iOS 16.4+!
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Quick Permission Banner if not granted */}
+      {permissionState !== 'granted' && (
+        <div className="mx-3 mt-2 p-3 bg-gradient-to-r from-amber-950/60 to-orange-950/60 border border-amber-500/40 rounded-2xl flex items-center justify-between gap-2 shadow-md">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 shrink-0">
+              <Bell className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-white">Chưa bật chuông báo iOS</p>
+              <p className="text-[10px] text-amber-200/80">Bật để nhận báo thức 60p & 15p trước giờ lên lớp</p>
+            </div>
+          </div>
+          <button
+            onClick={requestNotificationPermission}
+            className="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold rounded-xl shadow transition-all active:scale-95 shrink-0"
+          >
+            Bật ngay
+          </button>
+        </div>
+      )}
+
+      {/* Floating Alert Toast for Tests */}
+      {lastTestAlert && (
+        <div className="mx-3 mt-2 p-2.5 bg-slate-900 border border-indigo-500/50 rounded-xl flex items-center justify-between text-xs text-indigo-300 animate-in fade-in shadow-xl">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="line-clamp-1">{lastTestAlert}</span>
+          </div>
+          <button onClick={() => setLastTestAlert(null)} className="text-slate-400 hover:text-white p-1">
+            <X className="w-3 h-3" />
+          </button>
         </div>
       )}
 
@@ -455,42 +688,55 @@ export default function IOSAppPage() {
                 <span className="flex items-center gap-1.5 font-medium">
                   <Clock className="w-3.5 h-3.5" /> 45 phút (Lý thuyết)
                 </span>
-                <span className="bg-white text-blue-700 px-2.5 py-1 rounded-lg font-bold text-[11px] shadow-sm">
-                  Đã tải giáo án
-                </span>
+                <button
+                  onClick={() => triggerNotification('🔔 BÁO THỨC CA DẠY', 'Đang thử nghiệm chuông báo lớp Toán 11 lúc 07:00', 'bell')}
+                  className="bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded-lg font-semibold text-[11px] flex items-center gap-1 transition-colors"
+                >
+                  <Volume2 className="w-3 h-3" /> Thử chuông
+                </button>
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="grid grid-cols-3 gap-2.5">
+            {/* Quick Actions Bar */}
+            <div className="grid grid-cols-4 gap-2">
               <button
                 onClick={() => setActiveTab('add')}
-                className="p-3 bg-slate-900 border border-slate-800 hover:border-indigo-500/50 rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all text-center group"
+                className="p-2.5 bg-slate-900 border border-slate-800 hover:border-indigo-500/50 rounded-xl flex flex-col items-center justify-center gap-1 transition-all text-center group"
               >
-                <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-lg group-hover:scale-110 transition-transform">
-                  <Plus className="w-4 h-4" />
+                <div className="p-1.5 bg-indigo-500/20 text-indigo-400 rounded-lg group-hover:scale-110 transition-transform">
+                  <Plus className="w-3.5 h-3.5" />
                 </div>
-                <span className="text-xs font-semibold text-slate-200">Thêm ca dạy</span>
+                <span className="text-[11px] font-semibold text-slate-200">Thêm lịch</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('notifications')}
+                className="p-2.5 bg-slate-900 border border-slate-800 hover:border-amber-500/50 rounded-xl flex flex-col items-center justify-center gap-1 transition-all text-center group"
+              >
+                <div className="p-1.5 bg-amber-500/20 text-amber-400 rounded-lg group-hover:scale-110 transition-transform">
+                  <Bell className="w-3.5 h-3.5" />
+                </div>
+                <span className="text-[11px] font-semibold text-slate-200">Báo thức</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('reports')}
-                className="p-3 bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all text-center group"
+                className="p-2.5 bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-xl flex flex-col items-center justify-center gap-1 transition-all text-center group"
               >
-                <div className="p-2 bg-emerald-500/20 text-emerald-400 rounded-lg group-hover:scale-110 transition-transform">
-                  <FileSpreadsheet className="w-4 h-4" />
+                <div className="p-1.5 bg-emerald-500/20 text-emerald-400 rounded-lg group-hover:scale-110 transition-transform">
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
                 </div>
-                <span className="text-xs font-semibold text-slate-200">Sổ Báo Giảng</span>
+                <span className="text-[11px] font-semibold text-slate-200">Sổ sách</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('ai')}
-                className="p-3 bg-slate-900 border border-slate-800 hover:border-purple-500/50 rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all text-center group"
+                className="p-2.5 bg-slate-900 border border-slate-800 hover:border-purple-500/50 rounded-xl flex flex-col items-center justify-center gap-1 transition-all text-center group"
               >
-                <div className="p-2 bg-purple-500/20 text-purple-400 rounded-lg group-hover:scale-110 transition-transform">
-                  <Sparkles className="w-4 h-4" />
+                <div className="p-1.5 bg-purple-500/20 text-purple-400 rounded-lg group-hover:scale-110 transition-transform">
+                  <Sparkles className="w-3.5 h-3.5" />
                 </div>
-                <span className="text-xs font-semibold text-slate-200">Trợ lý AI</span>
+                <span className="text-[11px] font-semibold text-slate-200">Trợ lý AI</span>
               </button>
             </div>
 
@@ -500,7 +746,7 @@ export default function IOSAppPage() {
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
                   Lịch Giảng Dạy Thứ 2 (Hôm Nay)
                 </h3>
-                <span className="text-[11px] text-indigo-400 font-medium">3 tiết học</span>
+                <span className="text-[11px] text-indigo-400 font-medium">{todaySchedules.length} tiết học</span>
               </div>
 
               <div className="space-y-2.5">
@@ -536,7 +782,9 @@ export default function IOSAppPage() {
                       <div className="text-xs font-bold text-indigo-300 font-mono">
                         {item.startTime} - {item.endTime}
                       </div>
-                      <span className="text-[10px] text-slate-500">Đã lên lịch</span>
+                      <span className="text-[10px] text-emerald-400 flex items-center justify-end gap-1 mt-0.5">
+                        <Bell className="w-2.5 h-2.5" /> Chuông 60m/15m
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -831,7 +1079,202 @@ export default function IOSAppPage() {
           </div>
         )}
 
-        {/* TAB 4: SỔ SÁCH & BÁO CÁO (Export Excel/PDF) */}
+        {/* TAB 4: NOTIFICATIONS & ALARM LAB (Full Equivalence to Android) */}
+        {activeTab === 'notifications' && (
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <div>
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <BellRing className="w-4 h-4 text-amber-400" /> Hệ Thống Thông Báo & Báo Thức iOS
+              </h2>
+              <p className="text-xs text-slate-400">Đồng bộ chuẩn cơ chế Báo thức kép 60m & 15m như Android</p>
+            </div>
+
+            {/* Permission Control Card */}
+            <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-200">Trạng thái quyền thông báo iOS</span>
+                <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                  permissionState === 'granted'
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    : permissionState === 'denied'
+                    ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                    : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                }`}>
+                  {permissionState === 'granted' ? '✓ Đã kích hoạt' : permissionState === 'denied' ? '✗ Đã tắt' : 'Chưa cấp quyền'}
+                </span>
+              </div>
+
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Trên iOS 16.4+, ứng dụng cần được cấp quyền thông báo và thêm vào Màn hình chính để gửi chuông báo lên màn hình khóa và Dynamic Island.
+              </p>
+
+              {permissionState !== 'granted' && (
+                <button
+                  onClick={requestNotificationPermission}
+                  className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-black font-bold text-xs rounded-xl shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                >
+                  <Bell className="w-4 h-4" /> Cấp Quyền Thông Báo Ngay Trên iPhone
+                </button>
+              )}
+            </div>
+
+            {/* Notification Toggles */}
+            <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3.5">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Cấu Hình Các Mốc Báo Động</h3>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-semibold text-white">Báo thức trước 60 phút</div>
+                  <div className="text-[10px] text-slate-400">Nhắc chuẩn bị giáo án, phôi vật tư giảng dạy</div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={notify60m}
+                  onChange={(e) => setNotify60m(e.target.checked)}
+                  className="w-4 h-4 accent-indigo-500 rounded cursor-pointer"
+                />
+              </div>
+
+              <div className="flex items-center justify-between border-t border-slate-800/80 pt-3">
+                <div>
+                  <div className="text-xs font-semibold text-white">Báo thức trước 15 phút</div>
+                  <div className="text-[10px] text-slate-400">Nhắc khẩn trương di chuyển đến phòng/xưởng</div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={notify15m}
+                  onChange={(e) => setNotify15m(e.target.checked)}
+                  className="w-4 h-4 accent-indigo-500 rounded cursor-pointer"
+                />
+              </div>
+
+              <div className="flex items-center justify-between border-t border-slate-800/80 pt-3">
+                <div>
+                  <div className="text-xs font-semibold text-white">Chuông âm thanh sư phạm (Web Audio)</div>
+                  <div className="text-[10px] text-slate-400">Tiếng chuông trường ngân vang 4 nốt harmonic</div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={soundEnabled}
+                  onChange={(e) => setSoundEnabled(e.target.checked)}
+                  className="w-4 h-4 accent-indigo-500 rounded cursor-pointer"
+                />
+              </div>
+
+              <div className="flex items-center justify-between border-t border-slate-800/80 pt-3">
+                <div>
+                  <div className="text-xs font-semibold text-white">AI Động lực sáng (06:30)</div>
+                  <div className="text-[10px] text-slate-400">Khởi đầu ngày mới tràn đầy nhiệt huyết bục giảng</div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={notifyMorning}
+                  onChange={(e) => setNotifyMorning(e.target.checked)}
+                  className="w-4 h-4 accent-indigo-500 rounded cursor-pointer"
+                />
+              </div>
+
+              <div className="flex items-center justify-between border-t border-slate-800/80 pt-3">
+                <div>
+                  <div className="text-xs font-semibold text-white">AI Lời cảm ơn tối (19:00)</div>
+                  <div className="text-[10px] text-slate-400">Tri ân một ngày cống hiến & thư giãn tinh thần</div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={notifyEvening}
+                  onChange={(e) => setNotifyEvening(e.target.checked)}
+                  className="w-4 h-4 accent-indigo-500 rounded cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {/* Notification Test Lab (Phòng Thử Nghiệm Thông Báo Như Android) */}
+            <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  🧪 Phòng Thử Nghiệm Chuông Báo (Test Center)
+                </h3>
+                <span className="text-[10px] text-indigo-400">Bấm để kiểm tra</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  onClick={() => triggerNotification(
+                    '🔔 SẮP ĐẾN GIỜ DẠY (CÒN 60P)',
+                    'Toán Học 11 - Lớp 11A1 lúc 07:00 (P.204). Thầy/Cô chuẩn bị giáo án nhé!',
+                    'bell'
+                  )}
+                  className="p-3 bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-xl text-left transition-all active:scale-95 group"
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-bold text-blue-300">Chuông 60 phút</span>
+                    <Play className="w-3 h-3 text-blue-400 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                  <p className="text-[10px] text-slate-400">Chuông êm dịu nhắc chuẩn bị bài giảng</p>
+                </button>
+
+                <button
+                  onClick={() => triggerNotification(
+                    '⚡ KHẨN TRƯƠNG VÀO LỚP (CÒN 15P)',
+                    'Toán Học 11 - Di chuyển đến Phòng 204 ngay. Tiết học bắt đầu trong 15 phút!',
+                    'urgent'
+                  )}
+                  className="p-3 bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-xl text-left transition-all active:scale-95 group"
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-bold text-amber-300">Chuông 15 phút</span>
+                    <Play className="w-3 h-3 text-amber-400 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                  <p className="text-[10px] text-slate-400">Chuông dồn dập nhắc di chuyển vào lớp</p>
+                </button>
+
+                <button
+                  onClick={() => triggerNotification(
+                    '☀️ ĐỘNG LỰC SÁNG NAY (AI)',
+                    currentQuote,
+                    'bell'
+                  )}
+                  className="p-3 bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-xl text-left transition-all active:scale-95 group"
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-bold text-amber-400">Động lực sáng</span>
+                    <Play className="w-3 h-3 text-amber-400 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                  <p className="text-[10px] text-slate-400">Lời chúc khởi đầu ngày mới năng lượng</p>
+                </button>
+
+                <button
+                  onClick={() => triggerNotification(
+                    '🌙 CẢM ƠN THẦY/CÔ (AI)',
+                    EVENING_QUOTES[0],
+                    'bell'
+                  )}
+                  className="p-3 bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-xl text-left transition-all active:scale-95 group"
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-bold text-purple-400">Cảm ơn tối</span>
+                    <Play className="w-3 h-3 text-purple-400 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                  <p className="text-[10px] text-slate-400">Tri ân ngày cống hiến & thư giãn</p>
+                </button>
+              </div>
+            </div>
+
+            {/* iOS System Guide Note */}
+            <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1.5">
+              <div className="font-bold text-slate-300 flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" /> Đảm bảo thông báo hiển thị tốt nhất trên iPhone:
+              </div>
+              <ul className="list-disc pl-4 space-y-1 text-[10px]">
+                <li>Ghim app ra Màn hình chính qua tính năng <strong>Add to Home Screen</strong> của Safari.</li>
+                <li>Mở <strong>Cài đặt iPhone ➔ Thông báo ➔ Smart Teacher</strong> ➔ Bật Cho phép thông báo, Âm thanh và Biểu ngữ.</li>
+                <li>Không bật chế độ &ldquo;Không làm phiền&rdquo; (Do Not Disturb) trong giờ dạy.</li>
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 5: SỔ SÁCH & BÁO CÁO (Export Excel/PDF) */}
         {activeTab === 'reports' && (
           <div className="space-y-4 animate-in fade-in duration-300">
             <div>
@@ -925,7 +1368,7 @@ export default function IOSAppPage() {
           </div>
         )}
 
-        {/* TAB 5: TRỢ LÝ AI (AI ASSISTANT) */}
+        {/* TAB 6: TRỢ LÝ AI (AI ASSISTANT) */}
         {activeTab === 'ai' && (
           <div className="space-y-3 animate-in fade-in duration-300">
             <div>
@@ -980,10 +1423,10 @@ export default function IOSAppPage() {
                 ❓ Đặt câu hỏi trắc nghiệm
               </button>
               <button
-                onClick={() => setInputMessage('Cách xuất Sổ Báo Giảng ra Excel?')}
+                onClick={() => setInputMessage('Cách bật chuông báo 60p trên iPhone?')}
                 className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-lg text-[11px] text-slate-300 hover:text-white shrink-0"
               >
-                📊 Hướng dẫn xuất sổ
+                🔔 Hướng dẫn bật chuông
               </button>
             </div>
 
@@ -1039,6 +1482,16 @@ export default function IOSAppPage() {
         </button>
 
         <button
+          onClick={() => setActiveTab('notifications')}
+          className={`flex flex-col items-center gap-1 transition-all ${
+            activeTab === 'notifications' ? 'text-amber-400 scale-105' : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Bell className="w-5 h-5" />
+          <span className="text-[10px] font-semibold">Báo thức</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('reports')}
           className={`flex flex-col items-center gap-1 transition-all ${
             activeTab === 'reports' ? 'text-indigo-400 scale-105' : 'text-slate-400 hover:text-slate-200'
@@ -1046,16 +1499,6 @@ export default function IOSAppPage() {
         >
           <FileSpreadsheet className="w-5 h-5" />
           <span className="text-[10px] font-semibold">Sổ sách</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('ai')}
-          className={`flex flex-col items-center gap-1 transition-all ${
-            activeTab === 'ai' ? 'text-purple-400 scale-105' : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Sparkles className="w-5 h-5" />
-          <span className="text-[10px] font-semibold">Trợ lý AI</span>
         </button>
       </nav>
 

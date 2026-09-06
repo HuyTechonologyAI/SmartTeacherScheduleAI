@@ -2,9 +2,16 @@ package com.smartteacher.schedule.feature.settings
 
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
+import com.smartteacher.schedule.core.sync.CloudSyncManager
 import com.smartteacher.schedule.core.sync.GoogleCalendarManager
 import com.smartteacher.schedule.feature.lockscreen.LockScreenGlanceManager
 import com.smartteacher.schedule.feature.widget.ScheduleWidgetReceiver
+import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -21,6 +28,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,8 +50,16 @@ fun SettingsScreen(
     var showGeminiDialog by remember { mutableStateOf(false) }
     var showZaloDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     var lockScreenGlanceEnabled by remember { mutableStateOf(LockScreenGlanceManager.isLockScreenGlanceEnabled(context)) }
     var showLockScreenGuideDialog by remember { mutableStateOf(false) }
+
+    var syncCode by remember { mutableStateOf(CloudSyncManager.getSyncCode(context)) }
+    var isSyncing by remember { mutableStateOf(false) }
+    var showEditSyncCodeDialog by remember { mutableStateOf(false) }
+    var newSyncCodeInput by remember { mutableStateOf("") }
+    var lastSyncTime by remember { mutableStateOf(CloudSyncManager.getLastSyncTime(context)) }
+    var autoSyncEnabled by remember { mutableStateOf(CloudSyncManager.isAutoSyncEnabled(context)) }
 
     Scaffold(
         topBar = {
@@ -276,12 +292,12 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                "Bản cập nhật mới nhất: v1.3.6",
+                                "Bản cập nhật mới nhất: v1.4.0",
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.titleSmall
                             )
                             Text(
-                                "Khắc phục hiển thị: Tối ưu thanh thao tác cho nút Sửa, Xóa, Đính kèm tài liệu & Đồng bộ Google trên mọi kích thước màn hình.",
+                                "Hệ sinh thái Đa Nền Tảng: Đồng bộ đám mây tự động 2 chiều giữa Điện thoại (Android/iOS), Máy tính (Windows, Mac, Linux) và Web!",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                             )
@@ -295,7 +311,7 @@ fun SettingsScreen(
                         Button(
                             onClick = {
                                 runCatching {
-                                    val url = "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.3.6/SmartTeacherSchedule_v1.3.6_Release.apk"
+                                    val url = "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.4.0/SmartTeacherSchedule_v1.4.0_Release.apk"
                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                                     context.startActivity(intent)
                                 }
@@ -304,7 +320,7 @@ fun SettingsScreen(
                         ) {
                             Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Tải APK v1.3.6")
+                            Text("Tải APK v1.4.0")
                         }
 
                         OutlinedButton(
@@ -321,6 +337,109 @@ fun SettingsScreen(
                             Text("Trang chủ Web")
                         }
                     }
+                }
+            }
+
+            // Group: ĐỒNG BỘ ĐÁM MÂY ĐA NỀN TẢNG (PC, MAC, LINUX, IPHONE, WEB)
+            SettingsGroupHeader("ĐỒNG BỘ ĐÁM MÂY ĐA NỀN TẢNG (PC, MAC, LINUX, IPHONE, WEB)")
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(Color(0xFF0284C7).copy(alpha = 0.15f), RoundedCornerShape(10.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.CloudSync, contentDescription = null, tint = Color(0xFF0284C7), modifier = Modifier.size(22.dp))
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Mã Đồng Bộ Đám Mây", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+                            Text("Dùng chung mã này trên Máy tính và Điện thoại để liên kết dữ liệu tự động.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                        }
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text("MÃ ĐỒNG BỘ CỦA THẦY/CÔ:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                Text(syncCode, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    newSyncCodeInput = syncCode
+                                    showEditSyncCodeDialog = true
+                                },
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                modifier = Modifier.height(34.dp),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Đổi mã", fontSize = 12.sp)
+                            }
+                        }
+                    }
+
+                    if (lastSyncTime > 0L) {
+                        val formattedTime = try {
+                            val instant = Instant.ofEpochMilli(lastSyncTime)
+                            val formatter = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy").withZone(ZoneId.systemDefault())
+                            formatter.format(instant)
+                        } catch (e: Exception) { "" }
+
+                        if (formattedTime.isNotBlank()) {
+                            Text("🟢 Lần đồng bộ gần nhất: $formattedTime", style = MaterialTheme.typography.labelSmall, color = Color(0xFF059669), fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                if (isSyncing) return@Button
+                                isSyncing = true
+                                coroutineScope.launch {
+                                    val result = CloudSyncManager.syncBothWays(context)
+                                    isSyncing = false
+                                    if (result.isSuccess) {
+                                        lastSyncTime = CloudSyncManager.getLastSyncTime(context)
+                                        Toast.makeText(context, result.getOrNull() ?: "Đồng bộ đám mây thành công!", Toast.LENGTH_LONG).show()
+                                    } else {
+                                        Toast.makeText(context, "Lỗi đồng bộ: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            },
+                            enabled = !isSyncing,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(if (isSyncing) Icons.Default.Sync else Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(if (isSyncing) "Đang đồng bộ..." else "Đồng bộ đám mây ngay")
+                        }
+                    }
+
+                    Text(
+                        text = "💡 Thầy/Cô mở trình duyệt trên Máy tính (Windows, Mac, Linux) vào địa chỉ: gvcncdsai.io.vn/app và nhập mã trên để toàn bộ lịch dạy được đồng bộ 2 chiều tức thì!",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+                    )
                 }
             }
 
@@ -491,6 +610,47 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+
+    if (showEditSyncCodeDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditSyncCodeDialog = false },
+            title = { Text("Đổi Mã Đồng Bộ Đám Mây", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Thầy/Cô có thể nhập Số điện thoại hoặc Mã đồng bộ từ Máy tính (Windows/Mac/Web) để kết nối chung dữ liệu:")
+                    OutlinedTextField(
+                        value = newSyncCodeInput,
+                        onValueChange = { newSyncCodeInput = it.trim() },
+                        label = { Text("Nhập Số điện thoại hoặc Mã đồng bộ") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (newSyncCodeInput.isNotBlank()) {
+                            CloudSyncManager.setSyncCode(context, newSyncCodeInput)
+                            syncCode = newSyncCodeInput
+                            showEditSyncCodeDialog = false
+                            Toast.makeText(context, "Đã lưu mã đồng bộ mới: $newSyncCodeInput", Toast.LENGTH_SHORT).show()
+                            coroutineScope.launch {
+                                CloudSyncManager.pullFromCloud(context)
+                            }
+                        }
+                    }
+                ) {
+                    Text("Lưu & Kết nối")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditSyncCodeDialog = false }) {
+                    Text("Hủy")
+                }
+            }
+        )
     }
 
     if (showLockScreenGuideDialog) {

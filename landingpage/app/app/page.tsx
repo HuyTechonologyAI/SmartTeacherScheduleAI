@@ -37,7 +37,11 @@ import {
   Play,
   Settings,
   ShieldCheck,
-  AlertTriangle
+  AlertTriangle,
+  Cloud,
+  Laptop,
+  Monitor,
+  Copy
 } from 'lucide-react';
 
 interface ScheduleItem {
@@ -153,6 +157,17 @@ export default function IOSAppPage() {
   const [notifyEvening, setNotifyEvening] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [lastTestAlert, setLastTestAlert] = useState<string | null>(null);
+
+  // Cloud Sync States (Multi-Platform: Android, Windows, Mac, Linux, iOS, Web)
+  const [syncCode, setSyncCode] = useState<string>('0961364600');
+  const [syncInput, setSyncInput] = useState<string>('0961364600');
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'synced' | 'syncing' | 'error'>('synced');
+  const [lastSyncTime, setLastSyncTime] = useState<string>('Vừa xong');
+  const [showSyncModal, setShowSyncModal] = useState<boolean>(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState<boolean>(false);
+  const [copiedCode, setCopiedCode] = useState<boolean>(false);
 
   // Add form states
   const [newSubject, setNewSubject] = useState('');
@@ -348,6 +363,34 @@ export default function IOSAppPage() {
       setShowIOSGuide(true);
     }
 
+    // Load Sync Code from localStorage
+    const savedCode = localStorage.getItem('smart_teacher_sync_code');
+    const effectiveCode = savedCode || '0961364600';
+    setSyncCode(effectiveCode);
+    setSyncInput(effectiveCode);
+
+    // Initial pull from cloud
+    pullFromCloud(effectiveCode, false);
+
+    // Register PWA Install prompt listener
+    const handleBeforeInstall = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+
+    // Register focus listener for instant sync when switching back
+    const handleFocus = () => {
+      pullFromCloud(effectiveCode, false);
+    };
+    window.addEventListener('focus', handleFocus);
+
+    // Background cloud sync interval (every 20 seconds)
+    const syncInterval = setInterval(() => {
+      pullFromCloud(effectiveCode, false);
+    }, 20000);
+
     // Background interval check for upcoming teaching schedule (every 30 seconds)
     const interval = setInterval(() => {
       const now = new Date();
@@ -381,14 +424,84 @@ export default function IOSAppPage() {
       });
     }, 30000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      clearInterval(syncInterval);
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
-  // Save to localStorage
-  const saveSchedules = (items: ScheduleItem[]) => {
+  // Push to Cloud
+  const pushToCloud = async (currentSchedules: ScheduleItem[], code = syncCode) => {
+    if (!code) return;
+    setIsSyncing(true);
+    setSyncStatus('syncing');
+    try {
+      const res = await fetch('/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          syncCode: code,
+          platform: typeof window !== 'undefined' && (window as any).desktopAPI ? 'desktop' : 'web',
+          deviceName: typeof window !== 'undefined' ? (window.navigator.userAgent.includes('Windows') ? 'Windows PC' : window.navigator.userAgent.includes('Mac') ? 'Mac' : 'Web') : 'Web',
+          updatedAt: Date.now(),
+          schedules: currentSchedules
+        })
+      });
+      if (res.ok) {
+        setSyncStatus('synced');
+        setLastSyncTime(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      } else {
+        setSyncStatus('error');
+      }
+    } catch (e) {
+      console.error('Push sync error:', e);
+      setSyncStatus('error');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Pull from Cloud
+  const pullFromCloud = async (code = syncCode, force = false) => {
+    if (!code) return;
+    setIsSyncing(true);
+    try {
+      const res = await fetch(`/api/sync?code=${encodeURIComponent(code)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.schedules && Array.isArray(data.schedules) && data.schedules.length > 0) {
+          const savedStr = localStorage.getItem('smart_teacher_schedules') || '[]';
+          const localSchedules = JSON.parse(savedStr);
+          const localLastSync = Number(localStorage.getItem('smart_teacher_last_sync_ts') || 0);
+          const cloudUpdatedAt = data.updatedAt || Date.now();
+
+          if (force || data.schedules.length !== localSchedules.length || cloudUpdatedAt > localLastSync) {
+            setSchedules(data.schedules);
+            localStorage.setItem('smart_teacher_schedules', JSON.stringify(data.schedules));
+            localStorage.setItem('smart_teacher_last_sync_ts', String(cloudUpdatedAt));
+            setLastTestAlert(`🟢 Đã đồng bộ ${data.schedules.length} lịch dạy từ điện thoại/máy tính!`);
+          }
+        }
+        setSyncStatus('synced');
+        setLastSyncTime(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      }
+    } catch (e) {
+      console.error('Pull sync error:', e);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Save to localStorage & Cloud
+  const saveSchedules = (items: ScheduleItem[], sync = true) => {
     setSchedules(items);
     if (typeof window !== 'undefined') {
       localStorage.setItem('smart_teacher_schedules', JSON.stringify(items));
+      if (sync && syncCode) {
+        pushToCloud(items, syncCode);
+      }
     }
   };
 
@@ -538,26 +651,69 @@ export default function IOSAppPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-28 max-w-md mx-auto relative shadow-2xl overflow-x-hidden border-x border-slate-800">
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-28 max-w-md md:max-w-4xl lg:max-w-5xl mx-auto relative shadow-2xl overflow-x-hidden border-x border-slate-800">
       
-      {/* iOS Status Bar Simulation */}
+      {/* Header Bar */}
       <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-xl border-b border-slate-800/80 px-4 pt-3 pb-2.5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Link href="/" className="p-1 -ml-1 text-slate-400 hover:text-white transition-colors">
+          <div className="flex items-center gap-2.5">
+            <Link href="/" className="p-1 -ml-1 text-slate-400 hover:text-white transition-colors" title="Về trang chủ">
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 p-0.5 shadow-md shadow-indigo-500/20">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 p-0.5 shadow-md shadow-indigo-500/20 shrink-0">
               <img src="/app_icon.jpg" alt="Icon" className="w-full h-full object-cover rounded-[10px]" />
             </div>
             <div>
               <h1 className="text-sm font-bold text-white leading-tight flex items-center gap-1.5">
-                Smart Teacher <span className="text-[10px] bg-indigo-500/30 text-indigo-300 font-semibold px-1.5 py-0.5 rounded-full border border-indigo-500/30">iOS PWA</span>
+                Smart Teacher <span className="text-[10px] bg-indigo-500/30 text-indigo-300 font-semibold px-1.5 py-0.5 rounded-full border border-indigo-500/30">Hệ Sinh Thái Đa Nền Tảng</span>
               </h1>
-              <p className="text-[11px] text-slate-400">Giáo viên: Nguyễn Văn An</p>
+              <p className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                <span>Giáo viên: Nguyễn Văn An</span>
+                <span className="text-slate-600">•</span>
+                <span className="text-emerald-400 font-medium">🟢 Đám Mây Sẵn Sàng</span>
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-1.5">
+            {/* Cloud Sync Button */}
+            <button
+              onClick={() => setShowSyncModal(true)}
+              className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg border flex items-center gap-1.5 transition-all shadow-sm ${
+                syncStatus === 'synced'
+                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25'
+                  : syncStatus === 'syncing'
+                  ? 'bg-blue-500/15 text-cyan-300 border-blue-500/30 animate-pulse'
+                  : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+              }`}
+              title="Đồng bộ Đám mây với Điện thoại và Máy tính"
+            >
+              <Cloud className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-cyan-300' : 'text-emerald-400'}`} />
+              <span className="hidden sm:inline">Mã:</span>
+              <span className="font-mono">{syncCode}</span>
+            </button>
+
+            {/* Desktop Install PWA Button */}
+            {isInstallable && (
+              <button
+                onClick={() => {
+                  if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then((choiceResult: any) => {
+                      if (choiceResult.outcome === 'accepted') {
+                        setIsInstallable(false);
+                      }
+                      setDeferredPrompt(null);
+                    });
+                  }
+                }}
+                className="hidden md:flex px-2 py-1 text-[11px] font-medium bg-gradient-to-r from-teal-600 to-indigo-600 text-white rounded-lg items-center gap-1 shadow-sm hover:scale-105 transition-all"
+                title="Cài đặt App lên Máy tính (Windows / Mac / Linux)"
+              >
+                <Monitor className="w-3.5 h-3.5" />
+                <span>Cài Đặt Desktop App</span>
+              </button>
+            )}
+
             <button
               onClick={() => setActiveTab('notifications')}
               className={`p-1.5 rounded-xl border transition-all ${
@@ -565,13 +721,15 @@ export default function IOSAppPage() {
                   ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
                   : 'bg-amber-500/20 text-amber-400 border-amber-500/30 animate-pulse'
               }`}
-              title="Quản lý chuông báo & thông báo iOS"
+              title="Quản lý chuông báo & thông báo"
             >
               <BellRing className="w-4 h-4" />
             </button>
+
             <button
               onClick={() => setShowIOSGuide(true)}
               className="px-2 py-1 text-[11px] font-medium bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 rounded-lg flex items-center gap-1 transition-all"
+              title="Hướng dẫn ghim ra Màn hình chính điện thoại"
             >
               <Smartphone className="w-3 h-3" /> Ghim MH
             </button>
@@ -1510,8 +1668,8 @@ export default function IOSAppPage() {
         )}
       </main>
 
-      {/* iOS TAB BAR NAVIGATION (Apple Human Interface Guidelines) */}
-      <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-slate-900/95 backdrop-blur-2xl border-t border-slate-800/80 px-2 py-2 z-50 flex items-center justify-around shadow-2xl">
+      {/* TAB BAR NAVIGATION */}
+      <nav className="fixed bottom-0 left-0 right-0 max-w-md md:max-w-4xl lg:max-w-5xl mx-auto bg-slate-900/95 backdrop-blur-2xl border-t border-slate-800/80 px-2 py-2 z-50 flex items-center justify-around shadow-2xl">
         <button
           onClick={() => setActiveTab('today')}
           className={`flex flex-col items-center gap-1 transition-all ${
@@ -1560,6 +1718,103 @@ export default function IOSAppPage() {
           <span className="text-[10px] font-semibold">Sổ sách</span>
         </button>
       </nav>
+
+      {/* Cloud Sync Modal */}
+      {showSyncModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl relative animate-in fade-in duration-200">
+            <button
+              onClick={() => setShowSyncModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20">
+                <Cloud className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-white">Đồng Bộ Đám Mây Đa Nền Tảng</h3>
+                <p className="text-xs text-slate-400">Kết nối Máy tính (Windows/Mac/Linux) & Điện thoại</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-slate-950/70 rounded-xl border border-slate-800 space-y-2">
+              <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
+                <span>MÃ ĐỒNG BỘ CỦA THẦY/CÔ:</span>
+                <span className="text-[11px] text-emerald-400 font-normal">🟢 Đang hoạt động</span>
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={syncInput}
+                  onChange={(e) => setSyncInput(e.target.value.trim())}
+                  placeholder="Nhập SĐT hoặc Mã (VD: 0961364600)"
+                  className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono font-bold focus:outline-none focus:border-indigo-500"
+                />
+                <button
+                  onClick={() => {
+                    if (syncInput) {
+                      setSyncCode(syncInput);
+                      localStorage.setItem('smart_teacher_sync_code', syncInput);
+                      pullFromCloud(syncInput, true);
+                      setCopiedCode(true);
+                      setTimeout(() => setCopiedCode(false), 2000);
+                    }
+                  }}
+                  className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-colors"
+                >
+                  {copiedCode ? 'Đã lưu!' : 'Lưu & Tải'}
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                💡 Nhập cùng mã này trong ứng dụng <b>Android</b> (mục <i>Cài đặt ➔ Mã đồng bộ đám mây</i>) để dữ liệu liên kết 2 chiều.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between text-xs text-slate-400 px-1">
+              <span>Lần đồng bộ gần nhất: <b className="text-slate-200">{lastSyncTime}</b></span>
+              <span className="text-emerald-400 flex items-center gap-1 font-semibold">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Tự động đồng bộ
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                onClick={() => {
+                  pullFromCloud(syncCode, true);
+                }}
+                disabled={isSyncing}
+                className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-750 text-white font-semibold text-xs border border-slate-700 flex items-center justify-center gap-1.5 transition-all"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-cyan-400' : ''}`} />
+                <span>{isSyncing ? 'Đang tải...' : 'Tải về từ Đám mây'}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  pushToCloud(schedules, syncCode);
+                }}
+                disabled={isSyncing}
+                className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-indigo-600/30"
+              >
+                <Cloud className="w-3.5 h-3.5" />
+                <span>{isSyncing ? 'Đang lưu...' : 'Lưu lên Đám mây'}</span>
+              </button>
+            </div>
+
+            <div className="p-3 bg-indigo-950/30 border border-indigo-500/30 rounded-xl space-y-1.5">
+              <h4 className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                <Laptop className="w-3.5 h-3.5 text-cyan-400" /> Hệ Sinh Thái Máy Tính (Windows / Mac / Linux)
+              </h4>
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                Thầy/Cô có thể mở lịch dạy trên bất kỳ máy tính nào bằng cách truy cập <b>gvcncdsai.io.vn/app</b> và bấm biểu tượng "Cài đặt Desktop App" ở thanh địa chỉ để dùng như một phần mềm máy tính độc lập.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

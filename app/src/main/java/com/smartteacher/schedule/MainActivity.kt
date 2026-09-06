@@ -95,6 +95,11 @@ class MainActivity : ComponentActivity() {
 
         lifecycleScope.launch(Dispatchers.IO) {
             com.smartteacher.schedule.core.util.ScheduleSyncManager.syncAndSelfHeal(this@MainActivity)
+            if (com.smartteacher.schedule.core.sync.CloudSyncManager.isAutoSyncEnabled(this@MainActivity)) {
+                runCatching {
+                    com.smartteacher.schedule.core.sync.CloudSyncManager.pullFromCloud(this@MainActivity)
+                }
+            }
         }
 
         setContent {
@@ -437,6 +442,13 @@ class MainActivity : ComponentActivity() {
                     }
                     Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
                 }
+
+                // Tự động đẩy lên Đám mây để đồng bộ với Máy tính và iPhone
+                if (com.smartteacher.schedule.core.sync.CloudSyncManager.isAutoSyncEnabled(this@MainActivity)) {
+                    runCatching {
+                        com.smartteacher.schedule.core.sync.CloudSyncManager.pushToCloud(this@MainActivity)
+                    }
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
                 withContext(Dispatchers.Main) {
@@ -574,6 +586,13 @@ class MainActivity : ComponentActivity() {
 
             ScheduleWidgetReceiver.updateAllWidgets(this@MainActivity)
             LockScreenGlanceManager.updateLockScreenGlance(this@MainActivity)
+
+            // Tự động đẩy cập nhật lên Đám mây để Máy tính và iPhone cùng nhận thay đổi
+            if (com.smartteacher.schedule.core.sync.CloudSyncManager.isAutoSyncEnabled(this@MainActivity)) {
+                runCatching {
+                    com.smartteacher.schedule.core.sync.CloudSyncManager.pushToCloud(this@MainActivity)
+                }
+            }
 
             withContext(Dispatchers.Main) {
                 val msg = when {

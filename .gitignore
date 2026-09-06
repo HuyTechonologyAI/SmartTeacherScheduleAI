@@ -17,3 +17,5 @@ landingpage/.next/
 landingpage/out/
 node_modules/
 .next/
+.env*
+landingpage/.env*

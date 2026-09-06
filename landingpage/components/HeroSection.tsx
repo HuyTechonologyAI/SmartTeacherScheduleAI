@@ -16,15 +16,18 @@ import {
   Layers,
   ArrowRight,
   Apple,
+  Monitor,
 } from "lucide-react";
 
 export default function HeroSection() {
   const [showQr, setShowQr] = useState(false);
 
   const apkUrl =
-    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.3.6/SmartTeacherSchedule_v1.3.6_Release.apk";
+    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.4.0/SmartTeacherSchedule_v1.4.0_Release.apk";
   const aabUrl =
-    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.3.6/SmartTeacherSchedule_v1.3.6_Release.aab";
+    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.4.0/SmartTeacherSchedule_v1.4.0_Release.aab";
+  const desktopUrl =
+    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.4.0/SmartTeacherSchedule_v1.4.0_Desktop.zip";
 
   return (
     <section
@@ -45,9 +48,9 @@ export default function HeroSection() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              <span>Phiên bản v1.3.6 chính thức phát hành</span>
+              <span>Phiên bản v1.4.0 chính thức phát hành</span>
               <span className="text-slate-500">•</span>
-              <span className="text-cyan-300">Tối Ưu Thanh Thao Tác Sửa, Xóa & Đính Kèm Mọi Màn Hình</span>
+              <span className="text-cyan-300">Hệ Sinh Thái Đa Nền Tảng (Windows, macOS, Linux, Android, iOS)</span>
             </div>
 
             {/* Main Headline */}
@@ -61,8 +64,8 @@ export default function HeroSection() {
               Ứng dụng thông minh chuyên biệt dành cho Giảng viên & Giáo viên:{" "}
               <strong className="text-white">Báo thức kép 60m & 15m</strong>,
               chống tắt ngầm khi dọn RAM,{" "}
-              <strong className="text-cyan-400">Tiện ích Widget Màn hình chính 2-trong-1</strong>{" "}
-              và trợ lý trí tuệ nhân tạo Gemini AI.
+              <strong className="text-cyan-400">Đồng bộ đám mây thời gian thực 2 chiều</strong>{" "}
+              giữa Máy tính PC (Windows/Mac/Linux), Điện thoại Android & iPhone.
             </p>
 
             {/* ========================================================================= */}
@@ -79,66 +82,87 @@ export default function HeroSection() {
                       Tải Ứng Dụng Ngay (Miễn Phí 100%)
                     </h3>
                     <p className="text-xs text-slate-400">
-                      Tương thích Android 8.0 đến Android 15 & Apple iOS (iPhone/iPad)
+                      Đồng bộ thông suốt Windows, macOS, Linux, Android & iOS
                     </p>
                   </div>
                 </div>
                 <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">
-                  Bản v1.3.6 (15.4 MB)
+                  Bản v1.4.0 Đa Nền Tảng
                 </span>
               </div>
 
-              {/* Action Buttons */}
-              <div className="grid sm:grid-cols-2 gap-3.5 pt-1">
+              {/* Action Buttons: 3 platforms */}
+              <div className="grid sm:grid-cols-3 gap-3 pt-1">
                 {/* Primary APK Download for Android */}
                 <a
                   href={apkUrl}
-                  className="flex items-center justify-center space-x-3 px-5 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 hover:from-emerald-400 hover:to-indigo-500 text-white font-bold text-base shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all group"
+                  className="flex items-center justify-center space-x-2.5 px-4 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 hover:from-emerald-400 hover:to-indigo-500 text-white font-bold shadow-xl shadow-emerald-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all group"
                 >
-                  <Smartphone className="w-5 h-5 group-hover:scale-110 transition-transform text-emerald-100" />
+                  <Smartphone className="w-5 h-5 group-hover:scale-110 transition-transform text-emerald-100 shrink-0" />
                   <div className="text-left">
                     <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-100">
-                      Dành Cho Android
+                      Điện thoại Android
                     </div>
-                    <div className="text-sm font-bold leading-tight">TẢI FILE APK v1.3.6</div>
+                    <div className="text-xs font-bold leading-tight">TẢI APK v1.4.0</div>
                   </div>
                 </a>
+
+                {/* Primary Desktop PC / Laptop */}
+                <Link
+                  href="/app"
+                  className="flex items-center justify-center space-x-2.5 px-4 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold shadow-xl shadow-blue-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all group"
+                >
+                  <Monitor className="w-5 h-5 group-hover:scale-110 transition-transform text-blue-100 shrink-0" />
+                  <div className="text-left">
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-blue-100">
+                      Máy tính PC / Laptop
+                    </div>
+                    <div className="text-xs font-bold leading-tight">MỞ BẢN DESKTOP</div>
+                  </div>
+                </Link>
 
                 {/* Primary iOS App Link */}
                 <Link
                   href="/app"
-                  className="flex items-center justify-center space-x-3 px-5 py-4 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-900 hover:from-slate-800 hover:to-purple-800 text-white font-bold text-base border-2 border-indigo-500/40 shadow-xl shadow-purple-950/40 hover:scale-[1.02] active:scale-[0.98] transition-all group"
+                  className="flex items-center justify-center space-x-2.5 px-4 py-3.5 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-900 hover:from-slate-800 hover:to-purple-800 text-white font-bold border-2 border-indigo-500/40 shadow-xl shadow-purple-950/40 hover:scale-[1.02] active:scale-[0.98] transition-all group"
                 >
-                  <Apple className="w-6 h-6 text-indigo-300 group-hover:scale-110 transition-transform" />
+                  <Apple className="w-5 h-5 text-indigo-300 group-hover:scale-110 transition-transform shrink-0" />
                   <div className="text-left">
                     <div className="text-[10px] font-semibold uppercase tracking-wider text-indigo-300">
-                      Dành Cho iPhone / iPad
+                      iPhone / iPad
                     </div>
-                    <div className="text-sm font-bold leading-tight flex items-center gap-1.5">
-                      MỞ APP TRÊN iOS <ArrowRight className="w-3.5 h-3.5 text-indigo-300 group-hover:translate-x-1 transition-transform" />
-                    </div>
+                    <div className="text-xs font-bold leading-tight">MỞ TRÊN iOS</div>
                   </div>
                 </Link>
               </div>
 
-              {/* Secondary Actions: AAB & QR */}
-              <div className="flex space-x-2 pt-0.5">
+              {/* Secondary Actions: Desktop Zip, AAB & QR */}
+              <div className="grid grid-cols-3 gap-2 pt-0.5">
+                <a
+                  href={desktopUrl}
+                  className="flex items-center justify-center space-x-1.5 px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white font-medium text-xs border border-white/10 hover:border-indigo-500/50 transition-all text-center"
+                  title="Tải gói chạy độc lập cho Windows (1-click run)"
+                >
+                  <Download className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                  <span className="truncate">Desktop Zip (PC)</span>
+                </a>
+
                 <a
                   href={aabUrl}
-                  className="flex-1 flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white font-medium text-xs border border-white/10 hover:border-indigo-500/50 transition-all text-center"
-                  title="Dành cho kỹ thuật viên hoặc xuất bản Google Play"
+                  className="flex items-center justify-center space-x-1.5 px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white font-medium text-xs border border-white/10 hover:border-indigo-500/50 transition-all text-center"
+                  title="Gói Android App Bundle"
                 >
-                  <Layers className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Gói Android AAB (14.5 MB)</span>
+                  <Layers className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span className="truncate">Bản AAB Android</span>
                 </a>
 
                 <button
                   onClick={() => setShowQr(!showQr)}
-                  className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white font-medium text-xs border border-white/10 hover:border-indigo-500/50 transition-all flex items-center justify-center gap-1.5"
+                  className="px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white font-medium text-xs border border-white/10 hover:border-indigo-500/50 transition-all flex items-center justify-center gap-1.5"
                   title="Quét mã QR để mở trên điện thoại"
                 >
-                  <QrCode className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Mã QR Điện Thoại</span>
+                  <QrCode className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                  <span className="truncate">Mã QR App</span>
                 </button>
               </div>
 
@@ -161,7 +185,7 @@ export default function HeroSection() {
                       <p className="font-bold text-emerald-400 flex items-center gap-1">
                         <Smartphone className="w-3.5 h-3.5" /> Quét Tải APK (Android)
                       </p>
-                      <p className="text-[11px] text-slate-400">Mở Camera quét để tải file APK v1.3.6 trực tiếp về máy.</p>
+                      <p className="text-[11px] text-slate-400">Mở Camera quét để tải file APK v1.4.0 trực tiếp về máy.</p>
                     </div>
                   </div>
 

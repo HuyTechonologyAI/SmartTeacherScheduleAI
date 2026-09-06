@@ -198,7 +198,7 @@ export default function AIAssistantWidget() {
 
     if (query.includes("cài") || query.includes("tải") || query.includes("apk") || query.includes("huong_dan_cai_dat")) {
       return {
-        text: `Dạ, để cài đặt bản v1.3.6 trên điện thoại Android, Thầy/Cô làm theo 3 bước đơn giản sau ạ:\n\n1️⃣ **Bước 1: Tải file APK**: Bấm nút **[TẢI FILE APK v1.3.6 (15.4 MB)]** ở đầu trang hoặc quét mã QR.\n2️⃣ **Bước 2: Cho phép tải xuống**: Nếu trình duyệt báo "Tệp có thể gây hại", Thầy/Cô chọn **"Vẫn tải xuống"** (đây là cảnh báo mặc định của Android khi cài file ngoài CH Play, ứng dụng đã được ký số SHA-256 an toàn 100%).\n3️⃣ **Bước 3: Cài đặt**: Mở tệp vừa tải ➔ Chọn **Cài đặt (Install)** ➔ Mở app là trải nghiệm được ngay!`,
+        text: `Dạ, để cài đặt bản v1.4.0 trên điện thoại Android hoặc Máy tính PC, Thầy/Cô làm theo các bước sau ạ:\n\n📱 **Dành cho Android**: Bấm nút **[TẢI APK v1.4.0]** ở đầu trang hoặc quét mã QR ➔ Mở tệp vừa tải ➔ Chọn **Cài đặt**.\n\n💻 **Dành cho Máy tính PC (Windows/Mac/Linux)**: Bấm **[MỞ BẢN DESKTOP]** hoặc **[Desktop Zip (PC)]** để chạy trực tiếp, hoặc dùng Chrome/Edge bấm biểu tượng Cài đặt (Install App) trên thanh địa chỉ.\n\n☁️ **Đồng bộ thời gian thực**: Chỉ cần nhập cùng **Mã Đồng Bộ Giáo Viên** (trong Cài đặt) là dữ liệu tự động cập nhật xuyên suốt giữa điện thoại và máy tính!`,
         quickActions: [
           { label: "🔋 Làm sao để app không bị tắt ngầm?", action: "chong_tat_ngam" },
           { label: "🖼️ Cách bật Widget màn hình chính?", action: "bat_widget" },

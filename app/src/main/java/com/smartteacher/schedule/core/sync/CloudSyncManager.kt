@@ -28,12 +28,15 @@ object CloudSyncManager {
     private const val KEY_SYNC_CODE = "sync_code"
     private const val KEY_LAST_SYNC_TIME = "last_sync_timestamp"
     private const val KEY_AUTO_SYNC = "auto_sync_enabled"
-    private const val BASE_SYNC_URL = "https://gvcncdsai.io.vn/api/sync"
+    private const val BASE_SYNC_URL = "https://www.gvcncdsai.io.vn/api/sync"
 
     private val httpClient = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(20, TimeUnit.SECONDS)
-        .writeTimeout(20, TimeUnit.SECONDS)
+        .followRedirects(true)
+        .followSslRedirects(true)
+        .retryOnConnectionFailure(true)
+        .connectTimeout(20, TimeUnit.SECONDS)
+        .readTimeout(25, TimeUnit.SECONDS)
+        .writeTimeout(25, TimeUnit.SECONDS)
         .build()
 
     private val gson = Gson()
@@ -127,6 +130,7 @@ object CloudSyncManager {
                 .build()
 
             val response = httpClient.newCall(request).execute()
+            val responseBody = response.body?.string() ?: ""
             if (response.isSuccessful) {
                 context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                     .edit()
@@ -134,7 +138,7 @@ object CloudSyncManager {
                     .apply()
                 Result.success(schedules.size)
             } else {
-                Result.failure(Exception("Lỗi máy chủ đám mây: ${response.code}"))
+                Result.failure(Exception("Lỗi máy chủ đám mây (${response.code}): $responseBody"))
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -157,7 +161,8 @@ object CloudSyncManager {
 
             val response = httpClient.newCall(request).execute()
             if (!response.isSuccessful) {
-                return@withContext Result.failure(Exception("Không thể kết nối máy chủ đám mây: ${response.code}"))
+                val errorBody = response.body?.string() ?: ""
+                return@withContext Result.failure(Exception("Lỗi kết nối máy chủ (${response.code}): $errorBody"))
             }
 
             val responseBody = response.body?.string() ?: ""
@@ -244,15 +249,19 @@ object CloudSyncManager {
     }
 
     /**
-     * Đồng bộ hai chiều: Tải về các thay đổi trước, sau đó gửi lịch lên đám mây
+     * Đồng bộ hai chiều: Đẩy dữ liệu hiện tại lên trước, sau đó tải về các cập nhật từ máy tính
      */
     suspend fun syncBothWays(context: Context): Result<String> = withContext(Dispatchers.IO) {
         try {
-            val pullResult = pullFromCloud(context)
             val pushResult = pushToCloud(context)
-            val pulled = pullResult.getOrDefault(0)
+            if (pushResult.isFailure) {
+                val err = pushResult.exceptionOrNull()?.message ?: "Lỗi khi lưu lịch lên đám mây"
+                return@withContext Result.failure(Exception(err))
+            }
+            val pullResult = pullFromCloud(context)
             val pushed = pushResult.getOrDefault(0)
-            Result.success("Đồng bộ thành công: Tải $pulled thay đổi, lưu $pushed lịch lên Đám mây!")
+            val pulled = pullResult.getOrDefault(0)
+            Result.success("Đã đồng bộ thành công: Tải lên $pushed lịch lên Đám mây, cập nhật $pulled thay đổi từ máy tính!")
         } catch (e: Exception) {
             Result.failure(e)
         }

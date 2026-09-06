@@ -97,7 +97,7 @@ class MainActivity : ComponentActivity() {
             com.smartteacher.schedule.core.util.ScheduleSyncManager.syncAndSelfHeal(this@MainActivity)
             if (com.smartteacher.schedule.core.sync.CloudSyncManager.isAutoSyncEnabled(this@MainActivity)) {
                 runCatching {
-                    com.smartteacher.schedule.core.sync.CloudSyncManager.pullFromCloud(this@MainActivity)
+                    com.smartteacher.schedule.core.sync.CloudSyncManager.syncBothWays(this@MainActivity)
                 }
             }
         }

@@ -4,7 +4,7 @@ const path = require('path');
 
 let mainWindow = null;
 let tray = null;
-const APP_URL = 'https://gvcncdsai.io.vn/app';
+const APP_URL = 'https://www.gvcncdsai.io.vn/app';
 
 function createWindow() {
   mainWindow = new BrowserWindow({

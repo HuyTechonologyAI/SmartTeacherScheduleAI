@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 chcp 65001 >nul
 title Cai Dat Bieu Tuong Smart Teacher Schedule AI Len Desktop
 
@@ -14,8 +14,8 @@ $Desktop = $WshShell.SpecialFolders('Desktop'); ^
 $Shortcut = $WshShell.CreateShortcut("$Desktop\Smart Teacher Schedule AI.lnk"); ^
 $CurDir = (Get-Item .).FullName; ^
 $Ico = "$CurDir\icon.ico"; ^
-$Edge = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe"; ^
-if (-not (Test-Path `$Edge)) { `$Edge = "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe" }; ^
+$Edge = "$env:ProgramFiles(x86)\Microsoft\Edge\Application\msedge.exe"; ^
+if (-not (Test-Path $Edge)) { $Edge = "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe" }; ^
 if (Test-Path $Edge) { ^
     $Shortcut.TargetPath = $Edge; ^
     $Shortcut.Arguments = '--app=\"https://gvcncdsai.io.vn/app\" --window-size=1280,820'; ^

@@ -472,23 +472,36 @@ export default function IOSAppPage() {
       if (res.ok) {
         const data = await res.json();
         if (data.schedules && Array.isArray(data.schedules) && data.schedules.length > 0) {
+          const cloudUpdatedAt = data.updatedAt || Date.now();
+          const localLastSync = Number(localStorage.getItem('smart_teacher_last_sync_ts') || 0);
           const savedStr = localStorage.getItem('smart_teacher_schedules') || '[]';
           const localSchedules = JSON.parse(savedStr);
-          const localLastSync = Number(localStorage.getItem('smart_teacher_last_sync_ts') || 0);
-          const cloudUpdatedAt = data.updatedAt || Date.now();
 
-          if (force || data.schedules.length !== localSchedules.length || cloudUpdatedAt > localLastSync) {
+          // Update if forced, or schedule count differs, or cloud data is newer
+          if (force || data.schedules.length !== localSchedules.length || cloudUpdatedAt >= localLastSync) {
             setSchedules(data.schedules);
             localStorage.setItem('smart_teacher_schedules', JSON.stringify(data.schedules));
             localStorage.setItem('smart_teacher_last_sync_ts', String(cloudUpdatedAt));
-            setLastTestAlert(`🟢 Đã đồng bộ ${data.schedules.length} lịch dạy từ điện thoại/máy tính!`);
+            setLastTestAlert(`🟢 Đã đồng bộ ${data.schedules.length} lịch dạy từ điện thoại về máy tính!`);
           }
+          if (force) {
+            alert(`🎉 ĐỒNG BỘ THÀNH CÔNG!\n\nĐã tải về ${data.schedules.length} lịch dạy từ đám mây về máy tính cho mã: ${code}`);
+          }
+        } else if (force) {
+          alert(`⚠️ Chưa có lịch dạy nào trên Đám mây cho mã: "${code}"\n\nĐể đồng bộ lịch từ điện thoại sang máy tính, Thầy/Cô vui lòng:\n1. Mở ứng dụng trên Điện thoại ➔ Vào mục [Cài đặt].\n2. Xem mục [MÃ ĐỒNG BỘ CỦA THẦY/CÔ] xem có khớp mã "${code}" này không (nếu khác, hãy nhập đúng mã của điện thoại vào đây).\n3. Bấm nút [Đồng bộ đám mây ngay] trên điện thoại để đưa lịch lên đám mây trước nhé!`);
         }
         setSyncStatus('synced');
         setLastSyncTime(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      } else {
+        if (force) {
+          alert(`Lỗi kết nối máy chủ đồng bộ (${res.status}). Vui lòng kiểm tra lại kết nối mạng.`);
+        }
       }
     } catch (e) {
       console.error('Pull sync error:', e);
+      if (force) {
+        alert('Lỗi kết nối đồng bộ: ' + (e as any)?.message);
+      }
     } finally {
       setIsSyncing(false);
     }

@@ -2,7 +2,7 @@
 chcp 65001 >nul
 title Smart Teacher Schedule AI - Windows Desktop
 
-set APP_URL=https://gvcncdsai.io.vn/app
+set APP_URL=https://www.gvcncdsai.io.vn/app
 
 if exist "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" (
     start "" "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" --app="%APP_URL%" --window-size=1280,820

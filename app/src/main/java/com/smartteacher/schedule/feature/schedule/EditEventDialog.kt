@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
@@ -261,7 +262,11 @@ fun EditEventDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.weight(1f, fill = false),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         Icon(
                             Icons.Default.EditCalendar,
                             contentDescription = null,
@@ -269,8 +274,10 @@ fun EditEventDialog(
                         )
                         Text(
                             text = "Chỉnh sửa / Đổi lịch dạy",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                     IconButton(
@@ -861,54 +868,70 @@ fun EditEventDialog(
                 // Actions
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextButton(onClick = onDismiss) {
-                        Text("Hủy")
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = {
-                            if (title.isBlank()) {
-                                errorMessage = "Vui lòng nhập tên tiết dạy / môn học."
-                                return@Button
-                            }
-                            if (className.isBlank()) {
-                                errorMessage = "Vui lòng nhập tên lớp."
-                                return@Button
-                            }
-                            if (room.isBlank()) {
-                                errorMessage = "Vui lòng nhập phòng học."
-                                return@Button
-                            }
-
-                            // Chặn nếu có trùng lịch và giáo viên chưa xác nhận
-                            if (conflictResult != null && conflictResult.hasConflict && !allowSaveConflict) {
-                                errorMessage = "Lịch dạy đang bị trùng! Vui lòng điều chỉnh hoặc bật 'Vẫn lưu dù trùng lịch'."
-                                return@Button
-                            }
-
-                            val updated = event.copy(
-                                title = title.trim(),
-                                subject = title.trim(),
-                                className = className.trim(),
-                                room = room.trim(),
-                                date = date.trim(),
-                                startTime = startTime.trim(),
-                                endTime = endTime.trim(),
-                                sessionType = sessionType,
-                                notes = notes.trim(),
-                                reminder1Enabled = reminder1Enabled,
-                                reminder2Enabled = reminder2Enabled,
-                                updatedAt = System.currentTimeMillis()
-                            )
-                            onSave(updated, syncSubsequentEvents, applyToWholeSchedule, startDate.trim(), endDate.trim())
-                        }
+                    OutlinedButton(
+                        onClick = { showDeleteConfirm = true },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                     ) {
-                        Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Cập nhật lịch")
+                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Xóa lịch", fontWeight = FontWeight.Bold)
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        TextButton(onClick = onDismiss) {
+                            Text("Hủy")
+                        }
+                        Button(
+                            onClick = {
+                                if (title.isBlank()) {
+                                    errorMessage = "Vui lòng nhập tên tiết dạy / môn học."
+                                    return@Button
+                                }
+                                if (className.isBlank()) {
+                                    errorMessage = "Vui lòng nhập tên lớp."
+                                    return@Button
+                                }
+                                if (room.isBlank()) {
+                                    errorMessage = "Vui lòng nhập phòng học."
+                                    return@Button
+                                }
+
+                                // Chặn nếu có trùng lịch và giáo viên chưa xác nhận
+                                if (conflictResult != null && conflictResult.hasConflict && !allowSaveConflict) {
+                                    errorMessage = "Lịch dạy đang bị trùng! Vui lòng điều chỉnh hoặc bật 'Vẫn lưu dù trùng lịch'."
+                                    return@Button
+                                }
+
+                                val updated = event.copy(
+                                    title = title.trim(),
+                                    subject = title.trim(),
+                                    className = className.trim(),
+                                    room = room.trim(),
+                                    date = date.trim(),
+                                    startTime = startTime.trim(),
+                                    endTime = endTime.trim(),
+                                    sessionType = sessionType,
+                                    notes = notes.trim(),
+                                    reminder1Enabled = reminder1Enabled,
+                                    reminder2Enabled = reminder2Enabled,
+                                    updatedAt = System.currentTimeMillis()
+                                )
+                                onSave(updated, syncSubsequentEvents, applyToWholeSchedule, startDate.trim(), endDate.trim())
+                            }
+                        ) {
+                            Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Cập nhật lịch")
+                        }
                     }
                 }
             }

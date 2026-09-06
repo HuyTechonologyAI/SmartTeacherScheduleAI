@@ -22,9 +22,9 @@ export default function HeroSection() {
   const [showQr, setShowQr] = useState(false);
 
   const apkUrl =
-    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.3.5/SmartTeacherSchedule_v1.3.5_Release.apk";
+    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.3.6/SmartTeacherSchedule_v1.3.6_Release.apk";
   const aabUrl =
-    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.3.5/SmartTeacherSchedule_v1.3.5_Release.aab";
+    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.3.6/SmartTeacherSchedule_v1.3.6_Release.aab";
 
   return (
     <section
@@ -45,9 +45,9 @@ export default function HeroSection() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              <span>Phiên bản v1.3.5 chính thức phát hành</span>
+              <span>Phiên bản v1.3.6 chính thức phát hành</span>
               <span className="text-slate-500">•</span>
-              <span className="text-cyan-300">Tự Động Đồng Bộ Các Lịch Cùng Loại Phía Sau Chưa Diễn Ra</span>
+              <span className="text-cyan-300">Tối Ưu Thanh Thao Tác Sửa, Xóa & Đính Kèm Mọi Màn Hình</span>
             </div>
 
             {/* Main Headline */}
@@ -84,7 +84,7 @@ export default function HeroSection() {
                   </div>
                 </div>
                 <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">
-                  Bản v1.3.5 (15.4 MB)
+                  Bản v1.3.6 (15.4 MB)
                 </span>
               </div>
 
@@ -100,7 +100,7 @@ export default function HeroSection() {
                     <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-100">
                       Dành Cho Android
                     </div>
-                    <div className="text-sm font-bold leading-tight">TẢI FILE APK v1.3.5</div>
+                    <div className="text-sm font-bold leading-tight">TẢI FILE APK v1.3.6</div>
                   </div>
                 </a>
 
@@ -161,7 +161,7 @@ export default function HeroSection() {
                       <p className="font-bold text-emerald-400 flex items-center gap-1">
                         <Smartphone className="w-3.5 h-3.5" /> Quét Tải APK (Android)
                       </p>
-                      <p className="text-[11px] text-slate-400">Mở Camera quét để tải file APK v1.3.5 trực tiếp về máy.</p>
+                      <p className="text-[11px] text-slate-400">Mở Camera quét để tải file APK v1.3.6 trực tiếp về máy.</p>
                     </div>
                   </div>
 

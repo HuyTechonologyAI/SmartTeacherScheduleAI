@@ -276,12 +276,12 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                "Bản cập nhật mới nhất: v1.3.5",
+                                "Bản cập nhật mới nhất: v1.3.6",
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.titleSmall
                             )
                             Text(
-                                "Tự động đồng bộ các lịch cùng loại phía sau (chưa diễn ra) khi chỉnh sửa, tránh lặp lại thao tác nhiều lần.",
+                                "Khắc phục hiển thị: Tối ưu thanh thao tác cho nút Sửa, Xóa, Đính kèm tài liệu & Đồng bộ Google trên mọi kích thước màn hình.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                             )
@@ -295,7 +295,7 @@ fun SettingsScreen(
                         Button(
                             onClick = {
                                 runCatching {
-                                    val url = "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.3.5/SmartTeacherSchedule_v1.3.5_Release.apk"
+                                    val url = "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.3.6/SmartTeacherSchedule_v1.3.6_Release.apk"
                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                                     context.startActivity(intent)
                                 }
@@ -304,7 +304,7 @@ fun SettingsScreen(
                         ) {
                             Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Tải APK v1.3.5")
+                            Text("Tải APK v1.3.6")
                         }
 
                         OutlinedButton(

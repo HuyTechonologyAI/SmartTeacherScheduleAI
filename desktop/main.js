@@ -13,6 +13,7 @@ function createWindow() {
     minWidth: 900,
     minHeight: 650,
     title: 'Smart Teacher Schedule AI - Windows/Mac/Linux Desktop',
+    icon: process.platform === 'win32' ? path.join(__dirname, 'icon.ico') : path.join(__dirname, 'icon.png'),
     backgroundColor: '#030712',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -134,7 +135,8 @@ function createMenu() {
 
 function createTray() {
   try {
-    tray = new Tray(nativeImage.createEmpty());
+    const iconPath = path.join(__dirname, 'icon.png');
+    tray = new Tray(iconPath);
     tray.setToolTip('Smart Teacher Schedule AI - Đang chạy ngầm');
     
     const contextMenu = Menu.buildFromTemplate([

@@ -253,7 +253,7 @@ object PedagogicalReportHelper {
 
             // Cột 6: Ghi chú
             paintText.textAlign = Paint.Align.LEFT
-            val noteStr = if (e.title.contains("thực hành", true) || e.room.contains("xưởng", true)) "Thực hành" else "Lý thuyết"
+            val noteStr = if (e.sessionType.contains("thực hành", true) || e.title.contains("thực hành", true) || e.room.contains("xưởng", true)) "Thực hành" else "Lý thuyết"
             canvas.drawText(noteStr, cellX + 6f, textBaseY, paintText)
 
             rowY += rowHeight
@@ -382,7 +382,7 @@ object PedagogicalReportHelper {
             canvas.drawRect(leftMargin, rowY, rightMargin, rowY + rowHeight, paintBorder)
 
             val periods = calculateTeachingPeriods(e.startTime, e.endTime)
-            val isPractice = e.title.contains("thực hành", true) || e.room.contains("xưởng", true) || e.notes.contains("thực hành", true)
+            val isPractice = e.sessionType.contains("thực hành", true) || e.title.contains("thực hành", true) || e.room.contains("xưởng", true) || e.notes.contains("thực hành", true)
             val theoryPeriods = if (isPractice) 0 else periods
             val practicePeriods = if (isPractice) periods else 0
 
@@ -542,7 +542,7 @@ object PedagogicalReportHelper {
                 e.date
             }
 
-            val note = if (e.title.contains("thực hành", true) || e.room.contains("xưởng", true)) "Thực hành / Xưởng" else "Lý thuyết"
+            val note = if (e.sessionType.contains("thực hành", true) || e.title.contains("thực hành", true) || e.room.contains("xưởng", true)) "Thực hành / Xưởng" else "Lý thuyết"
             val content = e.notes.ifBlank { e.description.ifBlank { "Giảng dạy theo phân phối chương trình" } }
 
             sb.append("<tr>\n")
@@ -629,7 +629,7 @@ object PedagogicalReportHelper {
 
         for (e in sortedEvents) {
             val periods = calculateTeachingPeriods(e.startTime, e.endTime)
-            val isPractice = e.title.contains("thực hành", true) || e.room.contains("xưởng", true) || e.notes.contains("thực hành", true)
+            val isPractice = e.sessionType.contains("thực hành", true) || e.title.contains("thực hành", true) || e.room.contains("xưởng", true) || e.notes.contains("thực hành", true)
             val theoryPeriods = if (isPractice) 0 else periods
             val practicePeriods = if (isPractice) periods else 0
 

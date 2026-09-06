@@ -1,5 +1,6 @@
 package com.smartteacher.schedule.feature.schedule
 
+import android.app.DatePickerDialog
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -21,11 +22,13 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.smartteacher.schedule.core.database.SmartTeacherDatabase
 import com.smartteacher.schedule.core.database.entity.CalendarEventEntity
+import com.smartteacher.schedule.core.database.entity.TeachingScheduleEntity
 import com.smartteacher.schedule.core.util.ScheduleConflictChecker
 import com.smartteacher.schedule.core.util.TeachingPeriodPresets
 import com.smartteacher.schedule.feature.schedule.components.LessonAttachmentSection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -36,7 +39,7 @@ import java.util.Locale
 fun EditEventDialog(
     event: CalendarEventEntity,
     onDismiss: () -> Unit,
-    onSave: (CalendarEventEntity) -> Unit,
+    onSave: (updatedEvent: CalendarEventEntity, updateWholeSchedule: Boolean, newStartDate: String, newEndDate: String) -> Unit,
     onDelete: (CalendarEventEntity) -> Unit,
     existingEvents: List<CalendarEventEntity> = emptyList()
 ) {
@@ -50,7 +53,29 @@ fun EditEventDialog(
     var reminder1Enabled by remember { mutableStateOf(event.reminder1Enabled) }
     var reminder2Enabled by remember { mutableStateOf(event.reminder2Enabled) }
 
-    var selectedPresetTab by remember { mutableStateOf(0) }
+    // Hình thức giảng dạy: Lý thuyết vs Thực hành (v1.3.4)
+    var sessionType by remember {
+        mutableStateOf(
+            if (event.sessionType.isNotBlank() && event.sessionType != "Lý thuyết") {
+                event.sessionType
+            } else if (event.title.contains("thực hành", ignoreCase = true) ||
+                event.notes.contains("thực hành", ignoreCase = true) ||
+                event.room.contains("xưởng", ignoreCase = true)
+            ) {
+                "Thực hành"
+            } else {
+                "Lý thuyết"
+            }
+        )
+    }
+    var selectedPresetTab by remember { mutableStateOf(if (sessionType == "Thực hành") 1 else 0) }
+
+    // Tiến độ học kỳ: Ngày bắt đầu & Ngày kết thúc (v1.3.4)
+    var startDate by remember { mutableStateOf(event.date) }
+    var endDate by remember { mutableStateOf("") }
+    var applyToWholeSchedule by remember { mutableStateOf(event.teachingScheduleId != null) }
+    var parentSchedule by remember { mutableStateOf<TeachingScheduleEntity?>(null) }
+
     var allowSaveConflict by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -58,6 +83,66 @@ fun EditEventDialog(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val db = remember { SmartTeacherDatabase.getInstance(context) }
+
+    // Tự động tải thông tin TeachingScheduleEntity gốc nếu sự kiện liên kết với thời khóa biểu
+    LaunchedEffect(event.teachingScheduleId) {
+        if (event.teachingScheduleId != null) {
+            withContext(Dispatchers.IO) {
+                val sched = db.teachingScheduleDao().getScheduleById(event.teachingScheduleId)
+                if (sched != null) {
+                    parentSchedule = sched
+                    startDate = sched.startDate
+                    endDate = sched.endDate ?: ""
+                    if (sessionType == "Lý thuyết" && sched.sessionType == "Thực hành") {
+                        sessionType = "Thực hành"
+                        selectedPresetTab = 1
+                    }
+                }
+            }
+        }
+    }
+
+    // DatePicker Dialogs cho Ngày bắt đầu & Ngày kết thúc
+    val startDatePickerDialog = remember(startDate) {
+        val parsed = try { LocalDate.parse(startDate) } catch (e: Exception) { LocalDate.now() }
+        DatePickerDialog(
+            context,
+            { _, year, month, dayOfMonth ->
+                val picked = LocalDate.of(year, month + 1, dayOfMonth)
+                startDate = picked.toString()
+                if (event.teachingScheduleId == null) {
+                    date = picked.toString()
+                }
+            },
+            parsed.year,
+            parsed.monthValue - 1,
+            parsed.dayOfMonth
+        )
+    }
+
+    val endDatePickerDialog = remember(endDate, startDate) {
+        val parsed = try {
+            if (endDate.isNotBlank()) LocalDate.parse(endDate) else LocalDate.parse(startDate).plusMonths(5)
+        } catch (e: Exception) {
+            LocalDate.now().plusMonths(5)
+        }
+        DatePickerDialog(
+            context,
+            { _, year, month, dayOfMonth ->
+                val picked = LocalDate.of(year, month + 1, dayOfMonth)
+                val startLocal = try { LocalDate.parse(startDate) } catch (e: Exception) { null }
+                if (startLocal != null && picked.isBefore(startLocal)) {
+                    errorMessage = "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu!"
+                } else {
+                    endDate = picked.toString()
+                    errorMessage = null
+                }
+            },
+            parsed.year,
+            parsed.monthValue - 1,
+            parsed.dayOfMonth
+        )
+    }
     val attachments by db.lessonAttachmentDao().getAttachmentsForEvent(event.id).collectAsState(initial = emptyList())
 
     // Kiểm tra trùng lịch
@@ -248,10 +333,153 @@ fun EditEventDialog(
                     }
 
                     // =========================================================================
+                    // 📅 TIẾN ĐỘ HỌC KỲ (NGÀY BẮT ĐẦU & NGÀY KẾT THÚC)
+                    // =========================================================================
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)),
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Icon(Icons.Default.DateRange, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                                    Text(
+                                        "Tiến độ học kỳ & Thời gian áp dụng",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                            Text(
+                                "Cập nhật ngày bắt đầu và kết thúc môn học theo tiến độ điều chỉnh của nhà trường.",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                // Nút chọn Ngày Bắt Đầu
+                                OutlinedCard(
+                                    onClick = { startDatePickerDialog.show() },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Column(modifier = Modifier.padding(8.dp)) {
+                                        Text("Ngày bắt đầu *", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                        Spacer(modifier = Modifier.height(3.dp))
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = try { LocalDate.parse(startDate).format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) } catch (e: Exception) { startDate },
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 12.sp
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // Nút chọn Ngày Kết Thúc
+                                OutlinedCard(
+                                    onClick = { endDatePickerDialog.show() },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Column(modifier = Modifier.padding(8.dp)) {
+                                        Text("Ngày kết thúc", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                        Spacer(modifier = Modifier.height(3.dp))
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.EventBusy, contentDescription = null, modifier = Modifier.size(14.dp), tint = if (endDate.isNotBlank()) MaterialTheme.colorScheme.primary else Color.Gray)
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = if (endDate.isNotBlank()) {
+                                                    try { LocalDate.parse(endDate).format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) } catch (e: Exception) { endDate }
+                                                } else "Vô thời hạn",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 12.sp,
+                                                color = if (endDate.isNotBlank()) MaterialTheme.colorScheme.onSurface else Color.Gray
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Phím tắt chọn nhanh thời lượng học kỳ
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                val startParsed = try { LocalDate.parse(startDate) } catch(e: Exception) { LocalDate.now() }
+                                AssistChip(
+                                    onClick = { endDate = startParsed.plusWeeks(10).toString() },
+                                    label = { Text("+10 tuần", fontSize = 10.sp) }
+                                )
+                                AssistChip(
+                                    onClick = { endDate = startParsed.plusWeeks(15).toString() },
+                                    label = { Text("+15 tuần", fontSize = 10.sp) }
+                                )
+                                AssistChip(
+                                    onClick = { endDate = startParsed.plusMonths(5).toString() },
+                                    label = { Text("Kỳ 1 (+5 tháng)", fontSize = 10.sp) }
+                                )
+                                AssistChip(
+                                    onClick = { endDate = startParsed.plusMonths(9).toString() },
+                                    label = { Text("Cả năm (+9 tháng)", fontSize = 10.sp) }
+                                )
+                                if (endDate.isNotBlank()) {
+                                    AssistChip(
+                                        onClick = { endDate = "" },
+                                        label = { Text("Xóa kết thúc", fontSize = 10.sp) }
+                                    )
+                                }
+                            }
+
+                            // Tùy chọn cập nhật toàn bộ học kỳ môn này
+                            if (event.teachingScheduleId != null) {
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            "Cập nhật tiến độ toàn bộ học kỳ",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Text(
+                                            "Tự động đồng bộ các buổi dạy tương lai theo mốc ngày và hình thức mới.",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontSize = 10.sp,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                        )
+                                    }
+                                    Switch(
+                                        checked = applyToWholeSchedule,
+                                        onCheckedChange = { applyToWholeSchedule = it }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // =========================================================================
                     // 📅 ĐỔI NGÀY DẠY TRỰC TIẾP TRÊN LỊCH CŨ (ĐỔI QUA NGÀY KHÁC 1-CHẠM)
                     // =========================================================================
                     Card(
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -262,7 +490,7 @@ fun EditEventDialog(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column {
-                                    Text("Đổi ngày dạy (Dời lịch):", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                    Text("Đổi ngày dạy buổi này (Dời lịch):", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                                     Text(
                                         text = formattedDateDisplay,
                                         style = MaterialTheme.typography.titleSmall,
@@ -359,7 +587,7 @@ fun EditEventDialog(
                     }
 
                     // =========================================================================
-                    // ⏰ KHUNG GIỜ CỐ ĐỊNH CHỌN NHANH (LÝ THUYẾT & THỰC HÀNH)
+                    // 🛠️ HÌNH THỨC GIẢNG DẠY (LÝ THUYẾT & THỰC HÀNH) & KHUNG GIỜ CHUẨN
                     // =========================================================================
                     Card(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
@@ -367,26 +595,32 @@ fun EditEventDialog(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Hình thức giảng dạy *", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Text("Khung giờ chuẩn:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    FilterChip(
-                                        selected = selectedPresetTab == 0,
-                                        onClick = { selectedPresetTab = 0 },
-                                        label = { Text("Lý thuyết (45p)") }
-                                    )
-                                    FilterChip(
-                                        selected = selectedPresetTab == 1,
-                                        onClick = { selectedPresetTab = 1 },
-                                        label = { Text("Thực hành (60p)") }
-                                    )
-                                }
+                                FilterChip(
+                                    selected = sessionType == "Lý thuyết",
+                                    onClick = {
+                                        sessionType = "Lý thuyết"
+                                        selectedPresetTab = 0
+                                    },
+                                    label = { Text("📘 Lý thuyết (45p/T)") },
+                                    modifier = Modifier.weight(1f)
+                                )
+                                FilterChip(
+                                    selected = sessionType == "Thực hành",
+                                    onClick = {
+                                        sessionType = "Thực hành"
+                                        selectedPresetTab = 1
+                                    },
+                                    label = { Text("🛠️ Thực hành (60p/T)") },
+                                    modifier = Modifier.weight(1f)
+                                )
                             }
 
+                            Text("Khung giờ chuẩn đề xuất:", style = MaterialTheme.typography.labelSmall)
                             val presets = if (selectedPresetTab == 0) TeachingPeriodPresets.THEORY_PRESETS else TeachingPeriodPresets.PRACTICAL_PRESETS
                             Row(
                                 modifier = Modifier
@@ -544,12 +778,13 @@ fun EditEventDialog(
                                 date = date.trim(),
                                 startTime = startTime.trim(),
                                 endTime = endTime.trim(),
+                                sessionType = sessionType,
                                 notes = notes.trim(),
                                 reminder1Enabled = reminder1Enabled,
                                 reminder2Enabled = reminder2Enabled,
                                 updatedAt = System.currentTimeMillis()
                             )
-                            onSave(updated)
+                            onSave(updated, applyToWholeSchedule, startDate.trim(), endDate.trim())
                         }
                     ) {
                         Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))

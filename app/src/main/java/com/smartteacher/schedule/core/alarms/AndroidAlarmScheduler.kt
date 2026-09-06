@@ -246,8 +246,8 @@ class AndroidAlarmScheduler(private val context: Context) : AlarmScheduler {
             PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
         )
         if (pendingIntent != null) {
-            alarmManager.cancel(pendingIntent)
-            pendingIntent.cancel()
+            runCatching { alarmManager.cancel(pendingIntent) }
+            runCatching { pendingIntent.cancel() }
         }
     }
 

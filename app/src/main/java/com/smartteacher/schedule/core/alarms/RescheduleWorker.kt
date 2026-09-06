@@ -17,13 +17,16 @@ class RescheduleWorker(
             val db = SmartTeacherDatabase.getInstance(applicationContext)
             val scheduler = AndroidAlarmScheduler(applicationContext)
 
-            val today = LocalDate.now().toString()
-            val upcomingEvents = db.calendarEventDao().getUpcomingEvents(today)
+            val today = LocalDate.now()
+            val tomorrow = today.plusDays(1)
+            val upcomingEvents = db.calendarEventDao().getEventsBetweenDatesList(today.toString(), tomorrow.toString())
 
             var rearmedCount = 0
             for (event in upcomingEvents) {
-                scheduler.scheduleEventReminders(event)
-                rearmedCount++
+                if (event.reminder1Enabled || event.reminder2Enabled) {
+                    scheduler.scheduleEventReminders(event)
+                    rearmedCount++
+                }
             }
 
             db.notificationLogDao().insertLog(

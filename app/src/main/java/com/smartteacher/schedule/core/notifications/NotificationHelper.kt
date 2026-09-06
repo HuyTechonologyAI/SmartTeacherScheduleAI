@@ -195,7 +195,7 @@ class NotificationHelper(private val context: Context) {
             $remainingText
         """.trimIndent()
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_TEACHING)
+        val builder = NotificationCompat.Builder(context, CHANNEL_TEACHING)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("SẮP ĐẾN GIỜ DẠY: $subject")
             .setSubText(subtitle)
@@ -204,15 +204,23 @@ class NotificationHelper(private val context: Context) {
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setFullScreenIntent(viewPendingIntent, true)
             .setAutoCancel(true)
             .setContentIntent(viewPendingIntent)
             .addAction(0, context.getString(R.string.action_view_schedule), viewPendingIntent)
             .addAction(0, context.getString(R.string.action_mark_viewed), ackPendingIntent)
             .addAction(0, context.getString(R.string.action_snooze), snoozePendingIntent)
             .addAction(0, context.getString(R.string.action_dismiss), dismissPendingIntent)
-            .build()
 
+        // Safe FullScreenIntent check for Android 14+ (Tecno HiOS / API 34+)
+        try {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE || notificationManager.canUseFullScreenIntent()) {
+                builder.setFullScreenIntent(viewPendingIntent, false)
+            }
+        } catch (e: Exception) {
+            // Safe fallback if OEM security policy restricts full screen intent
+        }
+
+        val notification = builder.build()
         notificationManager.notify(notificationId, notification)
 
         // Log notification to Database

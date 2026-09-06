@@ -37,7 +37,7 @@ import java.util.Locale
 fun CalendarScreen(
     events: List<CalendarEventEntity>,
     onEventClick: (CalendarEventEntity) -> Unit,
-    onEditEvent: (CalendarEventEntity) -> Unit,
+    onEditEvent: (CalendarEventEntity, Boolean, String, String) -> Unit,
     onDeleteEvent: (CalendarEventEntity) -> Unit
 ) {
     val context = LocalContext.current
@@ -82,9 +82,9 @@ fun CalendarScreen(
             event = editingEvent!!,
             existingEvents = events,
             onDismiss = { editingEvent = null },
-            onSave = { updated ->
+            onSave = { updated, updateWhole, startD, endD ->
                 editingEvent = null
-                onEditEvent(updated)
+                onEditEvent(updated, updateWhole, startD, endD)
             },
             onDelete = { ev ->
                 editingEvent = null
@@ -133,8 +133,8 @@ fun CalendarScreen(
             when (selectedFilter) {
                 "Tuần này" -> !eventDate.isBefore(startOfThisWeek) && !eventDate.isAfter(endOfThisWeek)
                 "Tuần tới" -> !eventDate.isBefore(startOfNextWeek) && !eventDate.isAfter(endOfNextWeek)
-                "Lý thuyết" -> !event.title.contains("thực hành", ignoreCase = true) && !event.notes.contains("thực hành", ignoreCase = true)
-                "Thực hành" -> event.title.contains("thực hành", ignoreCase = true) || event.notes.contains("thực hành", ignoreCase = true) || event.room.contains("xưởng", ignoreCase = true)
+                "Lý thuyết" -> event.sessionType.contains("lý thuyết", ignoreCase = true) || (!event.sessionType.contains("thực hành", ignoreCase = true) && !event.title.contains("thực hành", ignoreCase = true) && !event.notes.contains("thực hành", ignoreCase = true))
+                "Thực hành" -> event.sessionType.contains("thực hành", ignoreCase = true) || event.title.contains("thực hành", ignoreCase = true) || event.notes.contains("thực hành", ignoreCase = true) || event.room.contains("xưởng", ignoreCase = true)
                 else -> !eventDate.isBefore(today.minusDays(1)) // Mặc định hiển thị từ hôm nay trở đi
             }
         }.sortedWith(compareBy({ it.date }, { it.startTime }))
@@ -464,6 +464,19 @@ fun ScheduleAgendaCard(
                                 color = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                         }
+                    }
+                    val isPractice = event.sessionType.contains("thực hành", true) || event.title.contains("thực hành", true) || event.room.contains("xưởng", true) || event.notes.contains("thực hành", true)
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = if (isPractice) Color(0xFFFEF3C7) else Color(0xFFEFF6FF)
+                    ) {
+                        Text(
+                            text = if (isPractice) "🛠️ TH (60p)" else "📘 LT (45p)",
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isPractice) Color(0xFFB45309) else Color(0xFF1D4ED8)
+                        )
                     }
                 }
 

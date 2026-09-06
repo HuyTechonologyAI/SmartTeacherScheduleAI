@@ -45,7 +45,7 @@ fun TodayScreen(
     todayTasks: List<TaskEntity>,
     aiWarnings: List<String>,
     onEventClick: (CalendarEventEntity) -> Unit,
-    onEditEvent: (CalendarEventEntity) -> Unit,
+    onEditEvent: (CalendarEventEntity, Boolean, String, String) -> Unit,
     onDeleteEvent: (CalendarEventEntity) -> Unit,
     onTaskToggle: (TaskEntity) -> Unit,
     onAddScheduleClick: () -> Unit,
@@ -113,10 +113,11 @@ fun TodayScreen(
     if (editingEvent != null) {
         com.smartteacher.schedule.feature.schedule.EditEventDialog(
             event = editingEvent!!,
+            existingEvents = todayEvents,
             onDismiss = { editingEvent = null },
-            onSave = { updated ->
+            onSave = { updated, updateWhole, startD, endD ->
                 editingEvent = null
-                onEditEvent(updated)
+                onEditEvent(updated, updateWhole, startD, endD)
             },
             onDelete = { ev ->
                 editingEvent = null
@@ -915,11 +916,28 @@ fun TimelineEventCard(
 
             // Details
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = event.title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = event.title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    val isPractice = event.sessionType.contains("thực hành", true) || event.title.contains("thực hành", true) || event.room.contains("xưởng", true) || event.notes.contains("thực hành", true)
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = if (isPractice) Color(0xFFFEF3C7) else Color(0xFFEFF6FF)
+                    ) {
+                        Text(
+                            text = if (isPractice) "🛠️ TH (60p)" else "📘 LT (45p)",
+                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isPractice) Color(0xFFB45309) else Color(0xFF1D4ED8)
+                        )
+                    }
+                }
                 Row(
                     modifier = Modifier.padding(top = 2.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)

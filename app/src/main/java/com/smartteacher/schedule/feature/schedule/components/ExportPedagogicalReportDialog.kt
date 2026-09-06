@@ -103,13 +103,13 @@ fun ExportPedagogicalReportDialog(
     // Tính thống kê nhanh
     val totalTheoryPeriods = remember(targetEvents) {
         targetEvents.sumOf { e ->
-            val isPractice = e.title.contains("thực hành", true) || e.room.contains("xưởng", true) || e.notes.contains("thực hành", true)
+            val isPractice = e.sessionType.contains("thực hành", true) || e.title.contains("thực hành", true) || e.room.contains("xưởng", true) || e.notes.contains("thực hành", true)
             if (!isPractice) PedagogicalReportHelper.calculateTeachingPeriods(e.startTime, e.endTime) else 0
         }
     }
     val totalPracticePeriods = remember(targetEvents) {
         targetEvents.sumOf { e ->
-            val isPractice = e.title.contains("thực hành", true) || e.room.contains("xưởng", true) || e.notes.contains("thực hành", true)
+            val isPractice = e.sessionType.contains("thực hành", true) || e.title.contains("thực hành", true) || e.room.contains("xưởng", true) || e.notes.contains("thực hành", true)
             if (isPractice) PedagogicalReportHelper.calculateTeachingPeriods(e.startTime, e.endTime) else 0
         }
     }

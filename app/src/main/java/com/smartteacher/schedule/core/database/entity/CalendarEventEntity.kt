@@ -27,6 +27,7 @@ data class CalendarEventEntity(
     val room: String = "",
     val className: String = "",
     val subject: String = "",
+    val sessionType: String = "Lý thuyết",
     val notes: String = "",
     val source: EventSource = EventSource.LOCAL,
     val externalId: String? = null,

@@ -19,7 +19,7 @@ import com.smartteacher.schedule.core.database.entity.*
         IntegrationConfigEntity::class,
         LessonAttachmentEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -82,6 +82,26 @@ abstract class SmartTeacherDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_3_4 = object : androidx.room.migration.Migration(3, 4) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `calendar_events` ADD COLUMN `sessionType` TEXT NOT NULL DEFAULT 'Lý thuyết'")
+            }
+        }
+
+        val MIGRATION_1_4 = object : androidx.room.migration.Migration(1, 4) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                MIGRATION_1_2.migrate(db)
+                MIGRATION_3_4.migrate(db)
+            }
+        }
+
+        val MIGRATION_2_4 = object : androidx.room.migration.Migration(2, 4) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                MIGRATION_2_3.migrate(db)
+                MIGRATION_3_4.migrate(db)
+            }
+        }
+
         fun getInstance(context: Context): SmartTeacherDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -89,7 +109,7 @@ abstract class SmartTeacherDatabase : RoomDatabase() {
                     SmartTeacherDatabase::class.java,
                     "smart_teacher_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_1_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_1_3, MIGRATION_3_4, MIGRATION_1_4, MIGRATION_2_4)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance

@@ -109,6 +109,7 @@ object DailyRefreshManager {
                         date = todayStr,
                         startTime = schedule.startTime,
                         endTime = schedule.endTime,
+                        sessionType = schedule.sessionType,
                         notes = schedule.notes,
                         reminder1Minutes = schedule.reminder1Minutes,
                         reminder2Minutes = schedule.reminder2Minutes,

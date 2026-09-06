@@ -167,6 +167,7 @@ export default function IOSAppPage() {
   const [newNotes, setNewNotes] = useState('');
   const [conflictWarning, setConflictWarning] = useState<string | null>(null);
   const [addSuccess, setAddSuccess] = useState(false);
+  const [showConflictModal, setShowConflictModal] = useState(false);
 
   // AI Chat state
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'ai' | 'user'; text: string }>>([
@@ -304,10 +305,21 @@ export default function IOSAppPage() {
   // Load from localStorage & Register Service Worker
   useEffect(() => {
     setIsClient(true);
+    const now = new Date();
+    const currentDay = now.getDay() === 0 ? 8 : now.getDay() + 1; // 2 -> 8 (Thứ 2 -> CN)
+    setSelectedDay(currentDay);
+    setNewDay(currentDay);
+
     const saved = localStorage.getItem('smart_teacher_schedules');
     if (saved) {
       try {
-        setSchedules(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSchedules(parsed);
+        } else {
+          setSchedules(DEFAULT_SCHEDULES);
+          localStorage.setItem('smart_teacher_schedules', JSON.stringify(DEFAULT_SCHEDULES));
+        }
       } catch (e) {
         setSchedules(DEFAULT_SCHEDULES);
       }
@@ -423,18 +435,7 @@ export default function IOSAppPage() {
     return false;
   };
 
-  const handleAddSchedule = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newSubject || !newClass || !newRoom) {
-      alert('Vui lòng điền đầy đủ Tên môn, Lớp và Phòng học!');
-      return;
-    }
-
-    if (checkConflict()) {
-      const proceed = confirm('Hệ thống phát hiện trùng lịch giảng dạy. Thầy/Cô có chắc chắn vẫn muốn lưu ca dạy này?');
-      if (!proceed) return;
-    }
-
+  const executeAddSchedule = () => {
     const newItem: ScheduleItem = {
       id: 's_' + Date.now(),
       subject: newSubject,
@@ -457,12 +458,28 @@ export default function IOSAppPage() {
     setNewRoom('');
     setNewNotes('');
     setConflictWarning(null);
+    setShowConflictModal(false);
 
     setTimeout(() => {
       setAddSuccess(false);
       setActiveTab('schedule');
       setSelectedDay(Number(newDay));
     }, 1200);
+  };
+
+  const handleAddSchedule = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSubject || !newClass || !newRoom) {
+      alert('Vui lòng điền đầy đủ Tên môn, Lớp và Phòng học!');
+      return;
+    }
+
+    if (checkConflict()) {
+      setShowConflictModal(true);
+      return;
+    }
+
+    executeAddSchedule();
   };
 
   const handleDeleteSchedule = (id: string) => {
@@ -837,9 +854,17 @@ export default function IOSAppPage() {
                       setNewDay(selectedDay);
                       setActiveTab('add');
                     }}
-                    className="mt-3 text-xs text-indigo-400 font-semibold hover:underline"
+                    className="mt-3 block mx-auto text-xs text-indigo-400 font-semibold hover:underline"
                   >
                     + Thêm tiết dạy cho ngày này
+                  </button>
+                  <button
+                    onClick={() => {
+                      saveSchedules(DEFAULT_SCHEDULES);
+                    }}
+                    className="mt-2 block mx-auto text-[11px] text-slate-500 hover:text-indigo-300 transition-colors"
+                  >
+                    🔄 Khôi phục thời khóa biểu mẫu mặc định
                   </button>
                 </div>
               ) : (
@@ -1076,6 +1101,40 @@ export default function IOSAppPage() {
                 <Plus className="w-4 h-4" /> Lưu Lịch Giảng Dạy Vào iPhone
               </button>
             </form>
+
+            {/* Modal Xác Nhận Trùng Lịch Chuẩn iOS WebKit */}
+            {showConflictModal && (
+              <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+                <div className="bg-slate-900 border border-amber-500/50 rounded-2xl p-5 max-w-xs w-full shadow-2xl space-y-3.5 animate-in zoom-in-95">
+                  <div className="flex items-center gap-2 text-amber-400">
+                    <AlertTriangle className="w-5 h-5 shrink-0" />
+                    <h3 className="font-bold text-sm">Cảnh Báo Trùng Lịch</h3>
+                  </div>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    {conflictWarning || 'Phát hiện ca dạy mới bị trùng khung giờ với một môn học khác đã có.'}
+                  </p>
+                  <p className="text-[11px] text-amber-200/80">
+                    Thầy/Cô có muốn tiếp tục lưu ca dạy này vào lịch trình không?
+                  </p>
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowConflictModal(false)}
+                      className="flex-1 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-all"
+                    >
+                      Sửa Giờ
+                    </button>
+                    <button
+                      type="button"
+                      onClick={executeAddSchedule}
+                      className="flex-1 py-2 text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white rounded-xl shadow-lg shadow-amber-600/30 transition-all"
+                    >
+                      Vẫn Lưu Lịch
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

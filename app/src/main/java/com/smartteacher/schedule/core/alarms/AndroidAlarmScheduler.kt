@@ -205,8 +205,8 @@ class AndroidAlarmScheduler(private val context: Context) : AlarmScheduler {
                 title = "Đặt báo thức AlarmClock: $subject",
                 details = "ID=$reminderId, In=$minutesRemaining min, Time=$triggerMillis"
             )
-        } catch (e: SecurityException) {
-            // Fallback if setAlarmClock permission is restricted
+        } catch (e: Exception) {
+            // Fallback if setAlarmClock permission is restricted (Android 14/15 / HiOS)
             try {
                 if (canScheduleExactAlarms()) {
                     alarmManager.setExactAndAllowWhileIdle(
@@ -222,11 +222,13 @@ class AndroidAlarmScheduler(private val context: Context) : AlarmScheduler {
                     )
                 }
             } catch (e2: Exception) {
-                alarmManager.setAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerMillis,
-                    pendingIntent
-                )
+                runCatching {
+                    alarmManager.set(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerMillis,
+                        pendingIntent
+                    )
+                }
             }
             logScheduling("EXACT_ALARM_FALLBACK", "Báo động fallback: $subject", e.message ?: "")
         }

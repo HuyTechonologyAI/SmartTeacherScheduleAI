@@ -93,6 +93,10 @@ class MainActivity : ComponentActivity() {
         LockScreenGlanceManager.updateLockScreenGlance(this)
         ScheduleWidgetReceiver.updateAllWidgets(this)
 
+        lifecycleScope.launch(Dispatchers.IO) {
+            com.smartteacher.schedule.core.util.ScheduleSyncManager.syncAndSelfHeal(this@MainActivity)
+        }
+
         setContent {
             SmartTeacherScheduleTheme {
                 val navController = rememberNavController()
@@ -361,6 +365,7 @@ class MainActivity : ComponentActivity() {
         ScheduleWidgetReceiver.updateAllWidgets(this)
         lifecycleScope.launch(Dispatchers.IO) {
             DailyRefreshManager.scheduleNextMidnightAlarm(this@MainActivity)
+            com.smartteacher.schedule.core.util.ScheduleSyncManager.syncAndSelfHeal(this@MainActivity)
         }
     }
 
@@ -369,61 +374,67 @@ class MainActivity : ComponentActivity() {
         attachments: List<com.smartteacher.schedule.core.database.entity.LessonAttachmentEntity> = emptyList()
     ) {
         lifecycleScope.launch(Dispatchers.IO) {
-            val scheduleId = database.teachingScheduleDao().insertSchedule(schedule)
+            try {
+                val scheduleId = database.teachingScheduleDao().insertSchedule(schedule)
 
-            // Calculate date matching the target dayOfWeek (1 = Monday, 7 = Sunday) respecting startDate and endDate
-            val today = LocalDate.now()
-            val parsedStart = try { LocalDate.parse(schedule.startDate) } catch (e: Exception) { today }
-            val parsedEnd = schedule.endDate?.let { try { LocalDate.parse(it) } catch (e: Exception) { null } }
-
-            // Tìm ngày đầu tiên phù hợp: nếu startDate ở tương lai thì bắt đầu từ startDate
-            val baseDate = if (parsedStart.isAfter(today)) parsedStart else today
-            val daysUntilTarget = (schedule.dayOfWeek - baseDate.dayOfWeek.value + 7) % 7
-            val targetDate = baseDate.plusDays(daysUntilTarget.toLong())
-
-            val shouldCreateFirstEvent = parsedEnd == null || !targetDate.isAfter(parsedEnd)
-
-            if (shouldCreateFirstEvent) {
-                val targetDateStr = targetDate.toString()
-                val event = CalendarEventEntity(
-                    teachingScheduleId = scheduleId,
-                    title = schedule.subject,
-                    subject = schedule.subject,
-                    className = schedule.className,
-                    room = schedule.room,
-                    date = targetDateStr,
-                    startTime = schedule.startTime,
-                    endTime = schedule.endTime,
-                    notes = schedule.notes,
-                    reminder1Minutes = schedule.reminder1Minutes,
-                    reminder2Minutes = schedule.reminder2Minutes,
-                    reminder1Enabled = schedule.reminder1Enabled,
-                    reminder2Enabled = schedule.reminder2Enabled
+                // Tạo đầy đủ tất cả các buổi dạy cụ thể cho toàn bộ học kỳ
+                val events = com.smartteacher.schedule.core.util.ScheduleGenerator.generateEventsForSchedule(
+                    schedule = schedule,
+                    scheduleId = scheduleId
                 )
 
-                val eventId = database.calendarEventDao().insertEvent(event)
-                val insertedEvent = event.copy(id = eventId)
+                if (events.isNotEmpty()) {
+                    database.calendarEventDao().insertEvents(events)
 
-                // Lưu các tệp giáo án & tài liệu đính kèm liên kết với cả eventId và scheduleId
-                if (attachments.isNotEmpty()) {
+                    // Lưu các tệp giáo án & tài liệu đính kèm liên kết với scheduleId và buổi đầu tiên
+                    if (attachments.isNotEmpty()) {
+                        val firstEvent = events.first()
+                        val toInsert = attachments.map {
+                            it.copy(eventId = firstEvent.id, teachingScheduleId = scheduleId)
+                        }
+                        database.lessonAttachmentDao().insertAttachments(toInsert)
+                    }
+
+                    // Đặt chuông báo thức cho ca dạy hôm nay và trong 2 ngày tới
+                    val today = LocalDate.now()
+                    events.filter {
+                        try {
+                            val d = LocalDate.parse(it.date)
+                            !d.isBefore(today) && !d.isAfter(today.plusDays(2))
+                        } catch (e: Exception) {
+                            false
+                        }
+                    }.forEach { ev ->
+                        runCatching { alarmScheduler.scheduleEventReminders(ev) }
+                    }
+                } else if (attachments.isNotEmpty()) {
                     val toInsert = attachments.map {
-                        it.copy(eventId = eventId, teachingScheduleId = scheduleId)
+                        it.copy(eventId = null, teachingScheduleId = scheduleId)
                     }
                     database.lessonAttachmentDao().insertAttachments(toInsert)
                 }
 
-                // Schedule dual reminders via AlarmManager
-                alarmScheduler.scheduleEventReminders(insertedEvent)
-            } else if (attachments.isNotEmpty()) {
-                val toInsert = attachments.map {
-                    it.copy(eventId = null, teachingScheduleId = scheduleId)
+                // Cập nhật Home Screen Widget & Lock Screen Glance
+                runCatching {
+                    ScheduleWidgetReceiver.updateAllWidgets(this@MainActivity)
+                    LockScreenGlanceManager.updateLockScreenGlance(this@MainActivity)
                 }
-                database.lessonAttachmentDao().insertAttachments(toInsert)
-            }
 
-            // Update Home Screen Widget & Lock Screen Glance
-            ScheduleWidgetReceiver.updateAllWidgets(this@MainActivity)
-            LockScreenGlanceManager.updateLockScreenGlance(this@MainActivity)
+                withContext(Dispatchers.Main) {
+                    val count = events.size
+                    val msg = if (count > 1) {
+                        "Đã lưu thành công và xếp $count buổi dạy trong học kỳ!"
+                    } else {
+                        "Đã tạo lịch và lưu giáo án đính kèm!"
+                    }
+                    Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@MainActivity, "Lỗi khi lưu lịch: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                }
+            }
         }
     }
 

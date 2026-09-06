@@ -123,6 +123,9 @@ object DailyRefreshManager {
                 }
             }
 
+            // Tự động kiểm tra và bù đắp các ca dạy tương lai cho toàn bộ học kỳ nếu còn thiếu
+            com.smartteacher.schedule.core.util.ScheduleSyncManager.syncAndSelfHeal(context)
+
             // 2. Kích hoạt lại chuông báo cho tất cả lịch dạy đã nhập trong ngày
             val todayEvents = db.calendarEventDao().getEventsForDateList(todayStr)
             for (ev in todayEvents) {

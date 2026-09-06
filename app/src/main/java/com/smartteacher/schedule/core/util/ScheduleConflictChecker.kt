@@ -95,7 +95,7 @@ object ScheduleConflictChecker {
     }
 
     /**
-     * Checks conflict for a recurring teaching schedule by dayOfWeek (1..7).
+     * Checks conflict for a recurring teaching schedule by dayOfWeek (1..7) and date range.
      */
     fun checkScheduleConflict(
         dayOfWeek: Int,
@@ -103,16 +103,24 @@ object ScheduleConflictChecker {
         endTime: String,
         room: String,
         existingSchedules: List<TeachingScheduleEntity>,
-        excludeScheduleId: Long = -1L
+        excludeScheduleId: Long = -1L,
+        startDate: String = "",
+        endDate: String? = null
     ): ConflictResult {
         val sameDaySchedules = existingSchedules.filter {
-            it.dayOfWeek == dayOfWeek && it.id != excludeScheduleId
+            it.dayOfWeek == dayOfWeek && it.id != excludeScheduleId && !it.isArchived
         }
 
         val dayNames = mapOf(1 to "Thứ Hai", 2 to "Thứ Ba", 3 to "Thứ Tư", 4 to "Thứ Năm", 5 to "Thứ Sáu", 6 to "Thứ Bảy", 7 to "Chủ Nhật")
         val dayName = dayNames[dayOfWeek] ?: "Thứ $dayOfWeek"
 
         for (sch in sameDaySchedules) {
+            // Kiểm tra xem khoảng thời gian áp dụng (startDate -> endDate) có giao nhau không
+            if (startDate.isNotBlank() && sch.startDate.isNotBlank()) {
+                val datesOverlap = isDateOverlap(startDate, endDate, sch.startDate, sch.endDate)
+                if (!datesOverlap) continue
+            }
+
             if (isTimeOverlap(startTime, endTime, sch.startTime, sch.endTime)) {
                 val isSameRoom = room.isNotBlank() && sch.room.isNotBlank() &&
                         room.trim().equals(sch.room.trim(), ignoreCase = true)
@@ -143,5 +151,17 @@ object ScheduleConflictChecker {
         }
 
         return ConflictResult(hasConflict = false)
+    }
+
+    private fun isDateOverlap(startA: String, endA: String?, startB: String, endB: String?): Boolean {
+        return try {
+            val sA = java.time.LocalDate.parse(startA)
+            val eA = endA?.let { java.time.LocalDate.parse(it) } ?: sA.plusMonths(5)
+            val sB = java.time.LocalDate.parse(startB)
+            val eB = endB?.let { java.time.LocalDate.parse(it) } ?: sB.plusMonths(5)
+            !sA.isAfter(eB) && !eA.isBefore(sB)
+        } catch (e: Exception) {
+            true
+        }
     }
 }

@@ -101,15 +101,19 @@ fun AddTeachingScheduleScreen(
         )
     }
 
-    // Kiểm tra trùng lịch theo thời gian thực
-    val conflictResult = remember(dayOfWeek, startTime, endTime, room, existingSchedules) {
+    var showConflictDialog by remember { mutableStateOf(false) }
+
+    // Kiểm tra trùng lịch theo thời gian thực (kèm đối chiếu khoảng ngày bắt đầu - kết thúc)
+    val conflictResult = remember(dayOfWeek, startTime, endTime, room, existingSchedules, startDate, endDate) {
         if (startTime.isNotBlank() && endTime.isNotBlank()) {
             ScheduleConflictChecker.checkScheduleConflict(
                 dayOfWeek = dayOfWeek,
                 startTime = startTime,
                 endTime = endTime,
                 room = room,
-                existingSchedules = existingSchedules
+                existingSchedules = existingSchedules,
+                startDate = startDate.toString(),
+                endDate = endDate?.toString()
             )
         } else {
             null
@@ -591,6 +595,57 @@ fun AddTeachingScheduleScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            val executeSave = {
+                val schedule = TeachingScheduleEntity(
+                    subject = subject.trim(),
+                    className = className.trim(),
+                    classCode = classCode.trim(),
+                    dayOfWeek = dayOfWeek,
+                    recurrenceType = recurrenceType,
+                    startDate = startDate.toString(),
+                    endDate = if (recurrenceType == RecurrenceType.ONCE) startDate.toString() else endDate?.toString(),
+                    startTime = startTime.trim(),
+                    endTime = endTime.trim(),
+                    room = room.trim(),
+                    campus = campus.trim(),
+                    sessionType = sessionType.trim(),
+                    instructor = instructor.trim(),
+                    notes = notes.trim(),
+                    reminder1Minutes = reminder1Minutes,
+                    reminder2Minutes = reminder2Minutes,
+                    reminder1Enabled = reminder1Enabled,
+                    reminder2Enabled = reminder2Enabled
+                )
+                onSave(schedule, attachments)
+            }
+
+            if (showConflictDialog) {
+                AlertDialog(
+                    onDismissRequest = { showConflictDialog = false },
+                    title = { Text("⚠️ Trùng giờ giảng dạy", fontWeight = FontWeight.Bold) },
+                    text = {
+                        Text(
+                            "${conflictResult?.warningMessage ?: "Phát hiện trùng giờ với môn học khác."}\n\nThầy/Cô có muốn tiếp tục lưu lịch dạy này không?"
+                        )
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                showConflictDialog = false
+                                executeSave()
+                            }
+                        ) {
+                            Text("Vẫn tiếp tục lưu")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showConflictDialog = false }) {
+                            Text("Xem lại & Sửa giờ")
+                        }
+                    }
+                )
+            }
+
             Button(
                 onClick = {
                     if (subject.isBlank()) {
@@ -606,39 +661,20 @@ fun AddTeachingScheduleScreen(
                         return@Button
                     }
 
-                    // Chặn nếu có trùng lịch và giáo viên chưa bật switch cho phép
-                    if (conflictResult != null && conflictResult.hasConflict && !allowSaveConflict) {
-                        errorMessage = "Lịch dạy đang trùng với môn khác! Vui lòng điều chỉnh giờ hoặc bật công tắc 'Vẫn tiếp tục lưu dù trùng lịch'."
-                        return@Button
-                    }
-
                     // Kiểm tra ngày kết thúc không được trước ngày bắt đầu
                     if (endDate != null && endDate!!.isBefore(startDate)) {
                         errorMessage = "Ngày kết thúc không được trước ngày bắt đầu!"
                         return@Button
                     }
 
-                    val schedule = TeachingScheduleEntity(
-                        subject = subject.trim(),
-                        className = className.trim(),
-                        classCode = classCode.trim(),
-                        dayOfWeek = dayOfWeek,
-                        recurrenceType = recurrenceType,
-                        startDate = startDate.toString(),
-                        endDate = if (recurrenceType == RecurrenceType.ONCE) startDate.toString() else endDate?.toString(),
-                        startTime = startTime.trim(),
-                        endTime = endTime.trim(),
-                        room = room.trim(),
-                        campus = campus.trim(),
-                        sessionType = sessionType.trim(),
-                        instructor = instructor.trim(),
-                        notes = notes.trim(),
-                        reminder1Minutes = reminder1Minutes,
-                        reminder2Minutes = reminder2Minutes,
-                        reminder1Enabled = reminder1Enabled,
-                        reminder2Enabled = reminder2Enabled
-                    )
-                    onSave(schedule, attachments)
+                    errorMessage = null
+
+                    // Nếu có trùng lịch và chưa bật switch, hiển thị hộp thoại hỏi ý kiến thay vì chặn đứng
+                    if (conflictResult != null && conflictResult.hasConflict && !allowSaveConflict) {
+                        showConflictDialog = true
+                    } else {
+                        executeSave()
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()

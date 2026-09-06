@@ -258,6 +258,72 @@ fun SettingsScreen(
                 }
             }
 
+            // Group: Cập Nhật Phiên Bản Mới
+            SettingsGroupHeader("CẬP NHẬT ỨNG DỤNG & PHIÊN BẢN MỚI")
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f))
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.SystemUpdate,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Bản cập nhật mới nhất: v1.3.3",
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                            Text(
+                                "Khắc phục triệt để lỗi mất lịch và không lưu được lịch mới (Đã tối ưu cho Tecno Spark Go & Android 15)",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                runCatching {
+                                    val url = "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.3.3/SmartTeacherSchedule_v1.3.3_Release.apk"
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                    context.startActivity(intent)
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Tải APK v1.3.3")
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                runCatching {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://gvcncdsai.io.vn"))
+                                    context.startActivity(intent)
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.Language, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Trang chủ Web")
+                        }
+                    }
+                }
+            }
+
             // Group 5: App Info & Developer Contact
             SettingsGroupHeader("THÔNG TIN ỨNG DỤNG & NHÀ PHÁT TRIỂN")
             Card(
@@ -274,7 +340,7 @@ fun SettingsScreen(
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                "Phiên bản 1.3.2 • Hỗ Trợ Đầy Đủ iOS iPhone & Chuông Báo Sư Phạm",
+                                "Phiên bản ${com.smartteacher.schedule.BuildConfig.VERSION_NAME} • Tự Động Phục Hồi & Bảo Vệ Toàn Diện Lịch Dạy",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
@@ -284,7 +350,7 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Text(
-                                "v1.3.2",
+                                "v${com.smartteacher.schedule.BuildConfig.VERSION_NAME}",
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,

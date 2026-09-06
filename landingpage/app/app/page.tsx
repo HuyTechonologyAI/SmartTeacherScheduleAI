@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Calendar,
@@ -41,91 +41,59 @@ import {
   Cloud,
   Laptop,
   Monitor,
-  Copy
+  Copy,
+  Search,
+  Filter,
+  Paperclip,
+  Printer,
+  ChevronLeft,
+  CalendarDays,
+  ExternalLink,
+  Edit3
 } from 'lucide-react';
 
-interface ScheduleItem {
+export interface CalendarEventItem {
+  id: string;
+  teachingScheduleId?: number | null;
+  title: string;
+  subject: string;
+  className: string;
+  room: string;
+  date: string; // YYYY-MM-DD
+  startTime: string; // HH:mm
+  endTime: string; // HH:mm
+  sessionType: string; // "Lý thuyết" | "Thực hành"
+  notes?: string;
+  colorHex?: string;
+  attachmentName?: string;
+  attachmentUrl?: string;
+  updatedAt?: number;
+}
+
+export interface ScheduleItem {
   id: string;
   subject: string;
   className: string;
   room: string;
-  dayOfWeek: number; // 2 -> 8 (Thứ 2 -> CN)
+  dayOfWeek: number; // ISO: 1=Mon .. 7=Sun
+  dayOfWeekVn?: number; // VN: 2=T2 .. 8=CN
   startTime: string;
   endTime: string;
-  type: 'theory' | 'practice';
+  type?: 'theory' | 'practice';
+  sessionType?: string;
   startDate: string;
   endDate: string;
-  lessonPlanUrl?: string;
   notes?: string;
+  updatedAt?: number;
 }
 
-const DEFAULT_SCHEDULES: ScheduleItem[] = [
-  {
-    id: 's1',
-    subject: 'Toán Học (Đại Số 11)',
-    className: '11A1',
-    room: 'Phòng 204 - Nhà A',
-    dayOfWeek: 2,
-    startTime: '07:00',
-    endTime: '07:45',
-    type: 'theory',
-    startDate: '2026-09-07',
-    endDate: '2027-01-25',
-    notes: 'Kiểm tra 15 phút bài cũ'
-  },
-  {
-    id: 's2',
-    subject: 'Toán Học (Hình Học 11)',
-    className: '11A1',
-    room: 'Phòng 204 - Nhà A',
-    dayOfWeek: 2,
-    startTime: '07:50',
-    endTime: '08:35',
-    type: 'theory',
-    startDate: '2026-09-07',
-    endDate: '2027-01-25',
-    notes: 'Chương 2: Đường thẳng và mặt phẳng'
-  },
-  {
-    id: 's3',
-    subject: 'Tin Học - Lập Trình Python',
-    className: '10A3',
-    room: 'Phòng Lab 2',
-    dayOfWeek: 2,
-    startTime: '09:00',
-    endTime: '10:00',
-    type: 'practice',
-    startDate: '2026-09-07',
-    endDate: '2027-01-25',
-    notes: 'Thực hành vòng lặp for/while'
-  },
-  {
-    id: 's4',
-    subject: 'Toán Học Nâng Cao',
-    className: '12Chuyên',
-    room: 'Phòng 301 - Nhà C',
-    dayOfWeek: 3,
-    startTime: '07:30',
-    endTime: '08:15',
-    type: 'theory',
-    startDate: '2026-09-07',
-    endDate: '2027-01-25',
-    notes: 'Khảo sát hàm số'
-  },
-  {
-    id: 's5',
-    subject: 'Thực Hành Tin Học Văn Phòng',
-    className: '11B2',
-    room: 'Phòng Lab 1',
-    dayOfWeek: 4,
-    startTime: '13:30',
-    endTime: '14:30',
-    type: 'practice',
-    startDate: '2026-09-07',
-    endDate: '2027-01-25',
-    notes: 'Hàm thống kê Excel nâng cao'
-  }
-];
+export interface TaskItem {
+  id: string;
+  title: string;
+  date: string;
+  isCompleted: boolean;
+  priority: 'low' | 'medium' | 'high';
+}
 
 const MORNING_QUOTES = [
   "Chào Thầy/Cô! Mỗi bài học hôm nay là một viên gạch vàng dựng xây tương lai cho các em học sinh. Chúc Thầy/Cô có một ngày giảng dạy tràn đầy năng lượng và niềm vui!",
@@ -141,299 +109,201 @@ const EVENING_QUOTES = [
   "Ngày làm việc khép lại, mọi bài vở có thể tạm gác sang một bên. Hãy thưởng cho mình một tách trà ấm và nạp lại năng lượng nhé!"
 ];
 
-export default function IOSAppPage() {
-  const [activeTab, setActiveTab] = useState<'today' | 'schedule' | 'add' | 'notifications' | 'reports' | 'ai'>('today');
-  const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
-  const [selectedDay, setSelectedDay] = useState<number>(2); // Thứ 2
+// Helper: Calculate Vietnamese day name strictly from YYYY-MM-DD
+export function getDayInfo(dateStr: string) {
+  const d = new Date(dateStr + 'T00:00:00');
+  if (isNaN(d.getTime())) {
+    return { dayName: 'Thứ Hai', shortDay: 'T2', vnDay: 2, isWeekend: false, isoDay: 1 };
+  }
+  const jsDay = d.getDay(); // 0 = CN, 1 = T2, 2 = T3, 3 = T4, 4 = T5, 5 = T6, 6 = T7
+  const dayNames = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+  const shortDays = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+  const vnDay = jsDay === 0 ? 8 : jsDay + 1;
+  const isoDay = jsDay === 0 ? 7 : jsDay;
+  return {
+    dayName: dayNames[jsDay],
+    shortDay: shortDays[jsDay],
+    vnDay,
+    isWeekend: jsDay === 0 || jsDay === 6,
+    isoDay
+  };
+}
+
+// Generate 288 events from schedules
+export function generateEventsFromSchedules(schedules: ScheduleItem[]): CalendarEventItem[] {
+  const events: CalendarEventItem[] = [];
+  let eventIdCounter = 1;
+
+  for (const s of schedules) {
+    const targetJsDay = (s.dayOfWeek === 7 || s.dayOfWeek === 8) ? 0 : (s.dayOfWeek === 1 ? 1 : s.dayOfWeek);
+
+    let cur = new Date(s.startDate + 'T00:00:00');
+    if (isNaN(cur.getTime())) cur = new Date('2026-09-07T00:00:00');
+    let end = s.endDate ? new Date(s.endDate + 'T23:59:59') : new Date('2027-02-15T23:59:59');
+    if (isNaN(end.getTime())) end = new Date('2027-02-15T23:59:59');
+
+    const jsTarget = targetJsDay % 7;
+    while (cur.getDay() !== jsTarget) {
+      cur.setDate(cur.getDate() + 1);
+    }
+
+    const sessionType = s.sessionType || (s.type === 'practice' ? 'Thực hành' : 'Lý thuyết');
+    const colorHex = sessionType.includes('hành') ? '#10B981' : '#0066FF';
+
+    let maxWeeks = 30;
+    let w = 0;
+    while (cur <= end && w < maxWeeks) {
+      const year = cur.getFullYear();
+      const month = String(cur.getMonth() + 1).padStart(2, '0');
+      const day = String(cur.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+
+      events.push({
+        id: `ev_${eventIdCounter++}`,
+        teachingScheduleId: Number(s.id?.replace(/[^0-9]/g, '')) || null,
+        title: s.subject,
+        subject: s.subject,
+        className: s.className,
+        room: s.room,
+        date: dateStr,
+        startTime: s.startTime,
+        endTime: s.endTime,
+        sessionType: sessionType,
+        notes: s.notes || '',
+        colorHex: colorHex,
+        updatedAt: s.updatedAt || Date.now()
+      });
+
+      cur.setDate(cur.getDate() + 7);
+      w++;
+    }
+  }
+
+  return events;
+}
+
+export default function UnifiedTeacherScheduleApp() {
+  const [activeTab, setActiveTab] = useState<'today' | 'calendar' | 'report' | 'ai' | 'settings'>('today');
   const [isClient, setIsClient] = useState(false);
-  const [showIOSGuide, setShowIOSGuide] = useState(false);
-  const [quoteIndex, setQuoteIndex] = useState(0);
 
-  // Notification States
-  const [permissionState, setPermissionState] = useState<'default' | 'granted' | 'denied'>('default');
-  const [notify60m, setNotify60m] = useState(true);
-  const [notify15m, setNotify15m] = useState(true);
-  const [notifyMorning, setNotifyMorning] = useState(true);
-  const [notifyEvening, setNotifyEvening] = useState(true);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [lastTestAlert, setLastTestAlert] = useState<string | null>(null);
+  // Core Data States
+  const [events, setEvents] = useState<CalendarEventItem[]>([]);
+  const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
+  const [tasks, setTasks] = useState<TaskItem[]>([]);
 
-  // Cloud Sync States (Multi-Platform: Android, Windows, Mac, Linux, iOS, Web)
+  // Filter & Navigation States
+  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterSubject, setFilterSubject] = useState('ALL');
+  const [filterClass, setFilterClass] = useState('ALL');
+  const [filterType, setFilterType] = useState('ALL');
+  const [calendarViewMode, setCalendarViewMode] = useState<'day' | 'week' | 'all'>('day');
+
+  // Cloud Sync States
   const [syncCode, setSyncCode] = useState<string>('0961364600');
   const [syncInput, setSyncInput] = useState<string>('0961364600');
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'synced' | 'syncing' | 'error'>('synced');
   const [lastSyncTime, setLastSyncTime] = useState<string>('Vừa xong');
-  const [showSyncModal, setShowSyncModal] = useState<boolean>(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isInstallable, setIsInstallable] = useState<boolean>(false);
-  const [copiedCode, setCopiedCode] = useState<boolean>(false);
+  const [alertBanner, setAlertBanner] = useState<string | null>(null);
 
-  // Add form states
-  const [newSubject, setNewSubject] = useState('');
-  const [newClass, setNewClass] = useState('');
-  const [newRoom, setNewRoom] = useState('');
-  const [newDay, setNewDay] = useState(2);
-  const [newType, setNewType] = useState<'theory' | 'practice'>('theory');
-  const [newStartTime, setNewStartTime] = useState('07:00');
-  const [newEndTime, setNewEndTime] = useState('07:45');
-  const [newStartDate, setNewStartDate] = useState('2026-09-07');
-  const [newEndDate, setNewEndDate] = useState('2027-01-25');
-  const [newNotes, setNewNotes] = useState('');
-  const [conflictWarning, setConflictWarning] = useState<string | null>(null);
-  const [addSuccess, setAddSuccess] = useState(false);
-  const [showConflictModal, setShowConflictModal] = useState(false);
+  // Edit Event Modal States
+  const [editingEvent, setEditingEvent] = useState<CalendarEventItem | null>(null);
+  const [editSubject, setEditSubject] = useState('');
+  const [editClass, setEditClass] = useState('');
+  const [editRoom, setEditRoom] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editStartTime, setEditStartTime] = useState('');
+  const [editEndTime, setEditEndTime] = useState('');
+  const [editSessionType, setEditSessionType] = useState<'Lý thuyết' | 'Thực hành'>('Lý thuyết');
+  const [editNotes, setEditNotes] = useState('');
+  const [editStartDate, setEditStartDate] = useState('');
+  const [editEndDate, setEditEndDate] = useState('');
+  const [syncSubsequent, setSyncSubsequent] = useState(true);
+  const [updateWholeSchedule, setUpdateWholeSchedule] = useState(false);
 
-  // AI Chat state
+  // Attachment Modal
+  const [attachingEvent, setAttachingEvent] = useState<CalendarEventItem | null>(null);
+  const [attachFileName, setAttachFileName] = useState('');
+  const [attachFileUrl, setAttachFileUrl] = useState('');
+
+  // Audio & Notification States
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [notify60m, setNotify60m] = useState(true);
+  const [notify15m, setNotify15m] = useState(true);
+  const audioCtxRef = useRef<any>(null);
+
+  // AI Chat States
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'ai' | 'user'; text: string }>>([
     {
       role: 'ai',
-      text: 'Chào Thầy/Cô! Em là Trợ lý AI Giáo viên. Thầy/Cô cần em hỗ trợ soạn giáo án, tạo câu hỏi trắc nghiệm, hay giải đáp quy định chuyên môn nào hôm nay ạ?'
+      text: 'Kính chào Thầy/Cô! Em là Trợ lý AI Sư phạm chuyên sâu. Thầy/Cô cần em hỗ trợ soạn giáo án CV 5512, tạo ngân hàng câu hỏi trắc nghiệm hay giải quyết dời lịch dạy hôm nay ạ?'
     }
   ]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isAiTyping, setIsAiTyping] = useState(false);
+  const [aiInput, setAiInput] = useState('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [geminiApiKey, setGeminiApiKey] = useState('');
 
-  // Audio Context Ref
-  const audioCtxRef = useRef<any>(null);
+  // Quotes
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }, []);
 
-  // Web Audio Synthesizer (Crystal Chime & Urgent Alarm)
-  const playAlarmSound = (type: 'bell' | 'urgent' = 'bell') => {
+  const quote = useMemo(() => {
+    const hour = new Date().getHours();
+    const list = hour < 13 ? MORNING_QUOTES : EVENING_QUOTES;
+    return list[Math.floor(Math.random() * list.length)];
+  }, []);
+
+  // Web Audio Synthesizer
+  const playChime = (type: 'bell' | 'urgent' = 'bell') => {
     if (!soundEnabled) return;
     try {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioContextClass) return;
-      if (!audioCtxRef.current) {
-        audioCtxRef.current = new AudioContextClass();
-      }
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      if (!audioCtxRef.current) audioCtxRef.current = new AudioCtx();
       const ctx = audioCtxRef.current;
-      if (ctx.state === 'suspended') {
-        ctx.resume();
-      }
+      if (ctx.state === 'suspended') ctx.resume();
 
       if (type === 'urgent') {
-        // Urgent 15-minute alert: 3 distinct electronic chime pulses
-        [0, 0.22, 0.44].forEach((delay) => {
+        [0, 0.2, 0.4].forEach((delay) => {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
           osc.type = 'sine';
           osc.frequency.setValueAtTime(880, ctx.currentTime + delay);
           gain.gain.setValueAtTime(0.3, ctx.currentTime + delay);
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.18);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.16);
           osc.connect(gain);
           gain.connect(ctx.destination);
           osc.start(ctx.currentTime + delay);
-          osc.stop(ctx.currentTime + delay + 0.18);
+          osc.stop(ctx.currentTime + delay + 0.16);
         });
       } else {
-        // 60-minute reminder: Gentle, rich school bell harmonic sequence
-        const freqs = [523.25, 659.25, 783.99, 1046.50]; // C5 - E5 - G5 - C6
-        freqs.forEach((freq, idx) => {
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((f, i) => {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
           osc.type = 'triangle';
-          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.14);
-          gain.gain.setValueAtTime(0.35, ctx.currentTime + idx * 0.14);
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.14 + 0.7);
+          osc.frequency.setValueAtTime(f, ctx.currentTime + i * 0.12);
+          gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.6);
           osc.connect(gain);
           gain.connect(ctx.destination);
-          osc.start(ctx.currentTime + idx * 0.14);
-          osc.stop(ctx.currentTime + idx * 0.14 + 0.7);
+          osc.start(ctx.currentTime + i * 0.12);
+          osc.stop(ctx.currentTime + i * 0.12 + 0.6);
         });
       }
     } catch (e) {
-      console.error('Audio play error:', e);
+      console.error(e);
     }
   };
-
-  // Dispatch Notification (Both Service Worker & Native Notification API)
-  const triggerNotification = (title: string, body: string, type: 'bell' | 'urgent' = 'bell') => {
-    // 1. Play chime
-    playAlarmSound(type);
-
-    // 2. Vibration
-    if ('vibrate' in navigator) {
-      navigator.vibrate([300, 150, 300]);
-    }
-
-    setLastTestAlert(`${title}: ${body}`);
-
-    // 3. Show System Notification
-    if ('Notification' in window && Notification.permission === 'granted') {
-      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.ready.then((reg) => {
-          reg.showNotification(title, {
-            body,
-            icon: '/app_icon.jpg',
-            badge: '/app_icon.jpg',
-            tag: 'smart-teacher-' + Date.now(),
-            data: { url: '/app' }
-          });
-        });
-      } else {
-        try {
-          new Notification(title, {
-            body,
-            icon: '/app_icon.jpg'
-          });
-        } catch (e) {
-          console.log('Direct notification error:', e);
-        }
-      }
-    }
-  };
-
-  // Request iOS Notification Permission
-  const requestNotificationPermission = async () => {
-    if (!('Notification' in window)) {
-      alert('Trình duyệt hiện tại không hỗ trợ thông báo đẩy. Thầy/Cô vui lòng cập nhật iOS 16.4 trở lên hoặc thêm App vào Màn hình chính!');
-      return;
-    }
-
-    try {
-      // Warm up audio context upon user gesture (iOS requirement)
-      if (!audioCtxRef.current) {
-        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-        if (AudioContextClass) {
-          audioCtxRef.current = new AudioContextClass();
-          audioCtxRef.current.resume();
-        }
-      }
-
-      const permission = await Notification.requestPermission();
-      setPermissionState(permission);
-
-      if (permission === 'granted') {
-        triggerNotification(
-          '🔔 THÔNG BÁO ĐÃ ĐƯỢC KÍCH HOẠT',
-          'Smart Teacher AI đã sẵn sàng gửi chuông báo 60p, 15p và động lực sư phạm cho Thầy/Cô trên iPhone!',
-          'bell'
-        );
-      } else if (permission === 'denied') {
-        alert('Thầy/Cô đã từ chối quyền thông báo. Để bật lại: Vào Cài đặt iPhone ➔ Safari ➔ Nâng cao / Thông báo ➔ Bật cho phép gvcncdsai.io.vn.');
-      }
-    } catch (err) {
-      console.error('Permission request failed:', err);
-    }
-  };
-
-  // Load from localStorage & Register Service Worker
-  useEffect(() => {
-    setIsClient(true);
-    const now = new Date();
-    const currentDay = now.getDay() === 0 ? 8 : now.getDay() + 1; // 2 -> 8 (Thứ 2 -> CN)
-    setSelectedDay(currentDay);
-    setNewDay(currentDay);
-
-    const saved = localStorage.getItem('smart_teacher_schedules');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setSchedules(parsed);
-        } else {
-          setSchedules(DEFAULT_SCHEDULES);
-          localStorage.setItem('smart_teacher_schedules', JSON.stringify(DEFAULT_SCHEDULES));
-        }
-      } catch (e) {
-        setSchedules(DEFAULT_SCHEDULES);
-      }
-    } else {
-      setSchedules(DEFAULT_SCHEDULES);
-      localStorage.setItem('smart_teacher_schedules', JSON.stringify(DEFAULT_SCHEDULES));
-    }
-
-    // Register Service Worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').then(
-        (reg) => console.log('SW registered successfully:', reg.scope),
-        (err) => console.error('SW registration failed:', err)
-      );
-    }
-
-    // Check Notification Permission
-    if ('Notification' in window) {
-      setPermissionState(Notification.permission);
-    }
-
-    // Auto check if iOS
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
-    if (isIOS && !isStandalone) {
-      setShowIOSGuide(true);
-    }
-
-    // Load Sync Code from localStorage
-    const savedCode = localStorage.getItem('smart_teacher_sync_code');
-    const effectiveCode = savedCode || '0961364600';
-    setSyncCode(effectiveCode);
-    setSyncInput(effectiveCode);
-
-    // Initial pull from cloud
-    pullFromCloud(effectiveCode, false);
-
-    // Register PWA Install prompt listener
-    const handleBeforeInstall = (e: any) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setIsInstallable(true);
-    };
-    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
-
-    // Register focus listener for instant sync when switching back
-    const handleFocus = () => {
-      pullFromCloud(effectiveCode, false);
-    };
-    window.addEventListener('focus', handleFocus);
-
-    // Background cloud sync interval (every 20 seconds)
-    const syncInterval = setInterval(() => {
-      pullFromCloud(effectiveCode, false);
-    }, 20000);
-
-    // Background interval check for upcoming teaching schedule (every 30 seconds)
-    const interval = setInterval(() => {
-      const now = new Date();
-      const currentDay = now.getDay() === 0 ? 8 : now.getDay() + 1; // 2 -> 8
-      const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-      // Find today's classes
-      const todayClasses = schedules.filter(s => s.dayOfWeek === currentDay);
-      todayClasses.forEach(item => {
-        const [h, m] = item.startTime.split(':').map(Number);
-        const startTotalMinutes = h * 60 + m;
-        const diff = startTotalMinutes - currentMinutes;
-
-        // Trigger 60m reminder
-        if (diff === 60 && notify60m) {
-          triggerNotification(
-            `🔔 SẮP ĐẾN GIỜ DẠY (CÒN 60P): ${item.subject}`,
-            `Lớp ${item.className} • ${item.room} lúc ${item.startTime}. Thầy/Cô chuẩn bị giáo án và phôi vật tư nhé!`,
-            'bell'
-          );
-        }
-
-        // Trigger 15m reminder
-        if (diff === 15 && notify15m) {
-          triggerNotification(
-            `⚡ SẮP VÀO LỚP (CÒN 15P): ${item.subject}`,
-            `Khẩn trương di chuyển đến ${item.room}. Tiết học bắt đầu lúc ${item.startTime}!`,
-            'urgent'
-          );
-        }
-      });
-    }, 30000);
-
-    return () => {
-      clearInterval(interval);
-      clearInterval(syncInterval);
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, []);
 
   // Push to Cloud
-  const pushToCloud = async (currentSchedules: ScheduleItem[], code = syncCode) => {
+  const pushToCloud = async (curEvents: CalendarEventItem[], curSchedules: ScheduleItem[], code = syncCode) => {
     if (!code) return;
     setIsSyncing(true);
     setSyncStatus('syncing');
@@ -443,20 +313,23 @@ export default function IOSAppPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           syncCode: code,
-          platform: typeof window !== 'undefined' && (window as any).desktopAPI ? 'desktop' : 'web',
-          deviceName: typeof window !== 'undefined' ? (window.navigator.userAgent.includes('Windows') ? 'Windows PC' : window.navigator.userAgent.includes('Mac') ? 'Mac' : 'Web') : 'Web',
+          platform: 'desktop',
+          deviceName: 'Máy tính Giáo viên (Windows/Mac/Web)',
           updatedAt: Date.now(),
-          schedules: currentSchedules
+          events: curEvents,
+          schedules: curSchedules
         })
       });
       if (res.ok) {
         setSyncStatus('synced');
         setLastSyncTime(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+        setAlertBanner(`🟢 Đã lưu và đồng bộ thành công ${curEvents.length} ca dạy lên Đám mây!`);
+        setTimeout(() => setAlertBanner(null), 4000);
       } else {
         setSyncStatus('error');
       }
     } catch (e) {
-      console.error('Push sync error:', e);
+      console.error(e);
       setSyncStatus('error');
     } finally {
       setIsSyncing(false);
@@ -464,1371 +337,1551 @@ export default function IOSAppPage() {
   };
 
   // Pull from Cloud
-  const pullFromCloud = async (code = syncCode, force = false) => {
+  const pullFromCloud = async (code = syncCode, isManual = false) => {
     if (!code) return;
     setIsSyncing(true);
     try {
       const res = await fetch(`/api/sync?code=${encodeURIComponent(code)}`);
       if (res.ok) {
         const data = await res.json();
-        if (data.schedules && Array.isArray(data.schedules) && data.schedules.length > 0) {
-          const cloudUpdatedAt = data.updatedAt || Date.now();
-          const localLastSync = Number(localStorage.getItem('smart_teacher_last_sync_ts') || 0);
-          const savedStr = localStorage.getItem('smart_teacher_schedules') || '[]';
-          const localSchedules = JSON.parse(savedStr);
+        let cloudEvents: CalendarEventItem[] = Array.isArray(data.events) ? data.events : [];
+        let cloudSchedules: ScheduleItem[] = Array.isArray(data.schedules) ? data.schedules : [];
 
-          // Update if forced, or schedule count differs, or cloud data is newer
-          if (force || data.schedules.length !== localSchedules.length || cloudUpdatedAt >= localLastSync) {
-            setSchedules(data.schedules);
-            localStorage.setItem('smart_teacher_schedules', JSON.stringify(data.schedules));
-            localStorage.setItem('smart_teacher_last_sync_ts', String(cloudUpdatedAt));
-            setLastTestAlert(`🟢 Đã đồng bộ ${data.schedules.length} lịch dạy từ điện thoại về máy tính!`);
-          }
-          if (force) {
-            alert(`🎉 ĐỒNG BỘ THÀNH CÔNG!\n\nĐã tải về ${data.schedules.length} lịch dạy từ đám mây về máy tính cho mã: ${code}`);
-          }
-        } else if (force) {
-          alert(`⚠️ Chưa có lịch dạy nào trên Đám mây cho mã: "${code}"\n\nĐể đồng bộ lịch từ điện thoại sang máy tính, Thầy/Cô vui lòng:\n1. Mở ứng dụng trên Điện thoại ➔ Vào mục [Cài đặt].\n2. Xem mục [MÃ ĐỒNG BỘ CỦA THẦY/CÔ] xem có khớp mã "${code}" này không (nếu khác, hãy nhập đúng mã của điện thoại vào đây).\n3. Bấm nút [Đồng bộ đám mây ngay] trên điện thoại để đưa lịch lên đám mây trước nhé!`);
+        // If cloud only has schedules, generate the 288 events
+        if (cloudEvents.length === 0 && cloudSchedules.length > 0) {
+          cloudEvents = generateEventsFromSchedules(cloudSchedules);
         }
-        setSyncStatus('synced');
-        setLastSyncTime(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-      } else {
-        if (force) {
-          alert(`Lỗi kết nối máy chủ đồng bộ (${res.status}). Vui lòng kiểm tra lại kết nối mạng.`);
+
+        if (cloudEvents.length > 0) {
+          setEvents(cloudEvents);
+          setSchedules(cloudSchedules);
+          localStorage.setItem('smart_teacher_events', JSON.stringify(cloudEvents));
+          localStorage.setItem('smart_teacher_schedules', JSON.stringify(cloudSchedules));
+          setSyncStatus('synced');
+          setLastSyncTime(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+          if (isManual) {
+            alert(`🎉 ĐỒNG BỘ 2 CHIỀU THÀNH CÔNG!\n\nĐã tải về đầy đủ ${cloudEvents.length} ca dạy (${cloudSchedules.length} lịch mẫu học kỳ) khớp hoàn toàn với điện thoại!\nMã đồng bộ: ${code}`);
+          }
+        } else if (isManual) {
+          alert(`⚠️ Chưa có lịch trên đám mây cho mã "${code}".\nThầy/Cô vui lòng mở app trên điện thoại ➔ Cài đặt ➔ Bấm "Đồng bộ đám mây ngay" trước nhé!`);
         }
       }
     } catch (e) {
-      console.error('Pull sync error:', e);
-      if (force) {
-        alert('Lỗi kết nối đồng bộ: ' + (e as any)?.message);
-      }
+      console.error(e);
+      if (isManual) alert('Lỗi kết nối đồng bộ: ' + (e as any)?.message);
     } finally {
       setIsSyncing(false);
     }
   };
 
-  // Save to localStorage & Cloud
-  const saveSchedules = (items: ScheduleItem[], sync = true) => {
-    setSchedules(items);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('smart_teacher_schedules', JSON.stringify(items));
-      if (sync && syncCode) {
-        pushToCloud(items, syncCode);
+  // Initial Load
+  useEffect(() => {
+    setIsClient(true);
+    setSelectedDate(todayStr);
+
+    const savedCode = localStorage.getItem('smart_teacher_sync_code') || '0961364600';
+    setSyncCode(savedCode);
+    setSyncInput(savedCode);
+
+    const savedTasks = localStorage.getItem('smart_teacher_tasks');
+    if (savedTasks) {
+      try { setTasks(JSON.parse(savedTasks)); } catch (e) {}
+    } else {
+      const defaultTasks: TaskItem[] = [
+        { id: 't1', title: 'Soạn giáo án Module Tiện CNC Lớp CG24TC34', date: todayStr, isCompleted: false, priority: 'high' },
+        { id: 't2', title: 'Kiểm tra vật tư dao phay và phôi nhôm xưởng thực hành', date: todayStr, isCompleted: true, priority: 'medium' },
+        { id: 't3', title: 'Ghi sổ đầu bài và cập nhật tiến độ đào tạo', date: todayStr, isCompleted: false, priority: 'low' }
+      ];
+      setTasks(defaultTasks);
+      localStorage.setItem('smart_teacher_tasks', JSON.stringify(defaultTasks));
+    }
+
+    const savedEvStr = localStorage.getItem('smart_teacher_events');
+    const savedSchStr = localStorage.getItem('smart_teacher_schedules');
+    if (savedEvStr) {
+      try { setEvents(JSON.parse(savedEvStr)); } catch (e) {}
+    }
+    if (savedSchStr) {
+      try { setSchedules(JSON.parse(savedSchStr)); } catch (e) {}
+    }
+
+    // Pull from cloud immediately
+    pullFromCloud(savedCode, false);
+
+    // Auto sync polling every 25 seconds
+    const interval = setInterval(() => {
+      pullFromCloud(savedCode, false);
+    }, 25000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Today's Events
+  const todayEvents = useMemo(() => {
+    return events
+      .filter((e) => e.date === todayStr)
+      .sort((a, b) => a.startTime.localeCompare(b.startTime));
+  }, [events, todayStr]);
+
+  // Selected Date Events
+  const selectedDateEvents = useMemo(() => {
+    if (!selectedDate) return todayEvents;
+    return events
+      .filter((e) => e.date === selectedDate)
+      .sort((a, b) => a.startTime.localeCompare(b.startTime));
+  }, [events, selectedDate, todayEvents]);
+
+  // Filtered Events for Calendar Agenda
+  const filteredEvents = useMemo(() => {
+    return events
+      .filter((e) => {
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          const matchSub = e.subject.toLowerCase().includes(q);
+          const matchCls = e.className.toLowerCase().includes(q);
+          const matchRm = e.room.toLowerCase().includes(q);
+          const matchDate = e.date.includes(q);
+          if (!matchSub && !matchCls && !matchRm && !matchDate) return false;
+        }
+        if (filterSubject !== 'ALL' && e.subject !== filterSubject) return false;
+        if (filterClass !== 'ALL' && e.className !== filterClass) return false;
+        if (filterType !== 'ALL') {
+          if (filterType === 'practice' && !e.sessionType.toLowerCase().includes('hành')) return false;
+          if (filterType === 'theory' && e.sessionType.toLowerCase().includes('hành')) return false;
+        }
+        if (calendarViewMode === 'day') {
+          return e.date === selectedDate;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        return a.startTime.localeCompare(b.startTime);
+      });
+  }, [events, searchQuery, filterSubject, filterClass, filterType, calendarViewMode, selectedDate]);
+
+  // Distinct subjects and classes for filter dropdowns
+  const subjectList = useMemo(() => Array.from(new Set(events.map((e) => e.subject))).filter(Boolean), [events]);
+  const classList = useMemo(() => Array.from(new Set(events.map((e) => e.className))).filter(Boolean), [events]);
+
+  // Pedagogical Log Statistics (Sổ Báo Giảng)
+  const reportStats = useMemo(() => {
+    const groups: { [key: string]: { subject: string; className: string; room: string; total: number; done: number; remaining: number; theory: number; practice: number } } = {};
+    for (const ev of events) {
+      const key = `${ev.subject}__${ev.className}`;
+      if (!groups[key]) {
+        groups[key] = {
+          subject: ev.subject,
+          className: ev.className,
+          room: ev.room,
+          total: 0,
+          done: 0,
+          remaining: 0,
+          theory: 0,
+          practice: 0
+        };
+      }
+      groups[key].total++;
+      if (ev.sessionType.toLowerCase().includes('hành')) {
+        groups[key].practice++;
+      } else {
+        groups[key].theory++;
+      }
+      if (ev.date <= todayStr) {
+        groups[key].done++;
+      } else {
+        groups[key].remaining++;
       }
     }
+    return Object.values(groups).sort((a, b) => a.subject.localeCompare(b.subject));
+  }, [events, todayStr]);
+
+  // Countdown to next teaching session
+  const nextSession = useMemo(() => {
+    const now = new Date();
+    const curMinutes = now.getHours() * 60 + now.getMinutes();
+    for (const ev of todayEvents) {
+      const [sh, sm] = ev.startTime.split(':').map(Number);
+      const [eh, em] = ev.endTime.split(':').map(Number);
+      const sMin = sh * 60 + sm;
+      const eMin = eh * 60 + em;
+
+      if (curMinutes >= sMin && curMinutes <= eMin) {
+        return { status: 'ongoing', event: ev, diffMinutes: eMin - curMinutes };
+      }
+      if (curMinutes < sMin) {
+        return { status: 'upcoming', event: ev, diffMinutes: sMin - curMinutes };
+      }
+    }
+    return null;
+  }, [todayEvents]);
+
+  // Open Edit Modal
+  const handleOpenEdit = (ev: CalendarEventItem) => {
+    setEditingEvent(ev);
+    setEditSubject(ev.subject);
+    setEditClass(ev.className);
+    setEditRoom(ev.room);
+    setEditDate(ev.date);
+    setEditStartTime(ev.startTime);
+    setEditEndTime(ev.endTime);
+    setEditSessionType(ev.sessionType.toLowerCase().includes('hành') ? 'Thực hành' : 'Lý thuyết');
+    setEditNotes(ev.notes || '');
+
+    // Find parent schedule for start/end date
+    const parent = schedules.find((s) => s.id === `sch_${ev.teachingScheduleId}` || (s.subject === ev.subject && s.className === ev.className));
+    setEditStartDate(parent?.startDate || ev.date);
+    setEditEndDate(parent?.endDate || '2027-02-15');
+    setSyncSubsequent(true);
+    setUpdateWholeSchedule(false);
   };
 
-  // Preset time helper
-  const handleTypeChange = (type: 'theory' | 'practice') => {
-    setNewType(type);
-    const [h, m] = newStartTime.split(':').map(Number);
-    const duration = type === 'theory' ? 45 : 60;
-    const endMinutes = h * 60 + m + duration;
-    const endH = Math.floor(endMinutes / 60);
-    const endM = endMinutes % 60;
-    setNewEndTime(`${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`);
-  };
+  // Save Event Changes
+  const handleSaveEdit = () => {
+    if (!editingEvent) return;
 
-  const handleStartTimeChange = (time: string) => {
-    setNewStartTime(time);
-    const [h, m] = time.split(':').map(Number);
-    const duration = newType === 'theory' ? 45 : 60;
-    const endMinutes = h * 60 + m + duration;
-    const endH = Math.floor(endMinutes / 60);
-    const endM = endMinutes % 60;
-    setNewEndTime(`${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`);
-  };
+    let updatedList = [...events];
+    const targetId = editingEvent.id;
 
-  // Check schedule conflict
-  const checkConflict = () => {
-    const conflicts = schedules.filter(s => {
-      if (s.dayOfWeek !== newDay) return false;
-      const sStart = s.startTime;
-      const sEnd = s.endTime;
-      return (
-        (newStartTime >= sStart && newStartTime < sEnd) ||
-        (newEndTime > sStart && newEndTime <= sEnd) ||
-        (newStartTime <= sStart && newEndTime >= sEnd)
-      );
+    // 1. Update target event
+    updatedList = updatedList.map((e) => {
+      if (e.id === targetId) {
+        return {
+          ...e,
+          subject: editSubject,
+          className: editClass,
+          room: editRoom,
+          date: editDate,
+          startTime: editStartTime,
+          endTime: editEndTime,
+          sessionType: editSessionType,
+          colorHex: editSessionType === 'Thực hành' ? '#10B981' : '#0066FF',
+          notes: editNotes,
+          updatedAt: Date.now()
+        };
+      }
+      return e;
     });
 
-    if (conflicts.length > 0) {
-      const c = conflicts[0];
-      setConflictWarning(`⚠️ Trùng giờ với lớp ${c.className} (${c.subject}) lúc ${c.startTime} - ${c.endTime} Thứ ${c.dayOfWeek}!`);
-      return true;
-    }
-    setConflictWarning(null);
-    return false;
-  };
-
-  const executeAddSchedule = () => {
-    const newItem: ScheduleItem = {
-      id: 's_' + Date.now(),
-      subject: newSubject,
-      className: newClass,
-      room: newRoom,
-      dayOfWeek: Number(newDay),
-      startTime: newStartTime,
-      endTime: newEndTime,
-      type: newType,
-      startDate: newStartDate,
-      endDate: newEndDate,
-      notes: newNotes
-    };
-
-    const updated = [...schedules, newItem];
-    saveSchedules(updated);
-    setAddSuccess(true);
-    setNewSubject('');
-    setNewClass('');
-    setNewRoom('');
-    setNewNotes('');
-    setConflictWarning(null);
-    setShowConflictModal(false);
-
-    setTimeout(() => {
-      setAddSuccess(false);
-      setActiveTab('schedule');
-      setSelectedDay(Number(newDay));
-    }, 1200);
-  };
-
-  const handleAddSchedule = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newSubject || !newClass || !newRoom) {
-      alert('Vui lòng điền đầy đủ Tên môn, Lớp và Phòng học!');
-      return;
+    // 2. Sync subsequent events if checked (User Request 3)
+    if (syncSubsequent) {
+      updatedList = updatedList.map((e) => {
+        if (
+          e.id !== targetId &&
+          e.subject.toLowerCase() === editingEvent.subject.toLowerCase() &&
+          e.className.toLowerCase() === editingEvent.className.toLowerCase() &&
+          (e.date > editingEvent.date || (e.date === editingEvent.date && e.startTime >= editingEvent.startTime))
+        ) {
+          return {
+            ...e,
+            subject: editSubject,
+            className: editClass,
+            room: editRoom,
+            startTime: editStartTime,
+            endTime: editEndTime,
+            sessionType: editSessionType,
+            colorHex: editSessionType === 'Thực hành' ? '#10B981' : '#0066FF',
+            notes: editNotes || e.notes,
+            updatedAt: Date.now()
+          };
+        }
+        return e;
+      });
     }
 
-    if (checkConflict()) {
-      setShowConflictModal(true);
-      return;
+    // 3. Update schedules if update whole schedule is checked (User Request 2)
+    let updatedSchedules = [...schedules];
+    if (updateWholeSchedule || syncSubsequent) {
+      updatedSchedules = updatedSchedules.map((s) => {
+        if (
+          s.id === `sch_${editingEvent.teachingScheduleId}` ||
+          (s.subject.toLowerCase() === editingEvent.subject.toLowerCase() && s.className.toLowerCase() === editingEvent.className.toLowerCase())
+        ) {
+          return {
+            ...s,
+            subject: editSubject,
+            className: editClass,
+            room: editRoom,
+            startTime: editStartTime,
+            endTime: editEndTime,
+            sessionType: editSessionType,
+            type: editSessionType === 'Thực hành' ? 'practice' : 'theory',
+            startDate: editStartDate || s.startDate,
+            endDate: editEndDate || s.endDate,
+            notes: editNotes || s.notes,
+            updatedAt: Date.now()
+          };
+        }
+        return s;
+      });
+      setSchedules(updatedSchedules);
+      localStorage.setItem('smart_teacher_schedules', JSON.stringify(updatedSchedules));
     }
 
-    executeAddSchedule();
+    setEvents(updatedList);
+    localStorage.setItem('smart_teacher_events', JSON.stringify(updatedList));
+    pushToCloud(updatedList, updatedSchedules, syncCode);
+    setEditingEvent(null);
   };
 
-  const handleDeleteSchedule = (id: string) => {
-    if (confirm('Thầy/Cô có muốn xóa tiết dạy này khỏi lịch trình?')) {
-      const updated = schedules.filter(s => s.id !== id);
-      saveSchedules(updated);
-    }
+  // Delete Single Event
+  const handleDeleteEvent = (id: string) => {
+    if (!confirm('Thầy/Cô có chắc chắn muốn xoá ca dạy này không?')) return;
+    const updated = events.filter((e) => e.id !== id);
+    setEvents(updated);
+    localStorage.setItem('smart_teacher_events', JSON.stringify(updated));
+    pushToCloud(updated, schedules, syncCode);
   };
 
-  // AI Chat send
-  const handleSendMessage = () => {
-    if (!inputMessage.trim()) return;
-    const userText = inputMessage;
-    setChatMessages(prev => [...prev, { role: 'user', text: userText }]);
-    setInputMessage('');
-    setIsAiTyping(true);
-
-    setTimeout(() => {
-      let aiReply = 'Dạ thưa Thầy/Cô, em đã ghi nhận yêu cầu. ';
-      const lower = userText.toLowerCase();
-      if (lower.includes('thông báo') || lower.includes('chuông')) {
-        aiReply += 'Hệ thống thông báo trên iPhone đã được trang bị hệ thống Báo thức kép 60p & 15p chuẩn như Android. Thầy/Cô có thể vào mục "Thông Báo" để thử chuông ngay nhé!';
-      } else if (lower.includes('giáo án') || lower.includes('bài giảng')) {
-        aiReply += 'Em gợi ý cấu trúc bài dạy 5 bước chuẩn Công văn 5512/BGDĐT gồm: 1. Khởi động (5p) -> 2. Hình thành kiến thức (20p) -> 3. Luyện tập (12p) -> 4. Vận dụng (5p) -> 5. Giao nhiệm vụ về nhà (3p). Thầy/Cô muốn soạn chi tiết mục nào ạ?';
-      } else if (lower.includes('sổ báo giảng') || lower.includes('báo cáo')) {
-        aiReply += 'Thầy/Cô có thể vào tab "Sổ Sách" bên dưới để tải file Sổ Báo Giảng hoặc Bảng Kê Giờ Dạy theo chuẩn mẫu quy định chỉ với 1 chạm!';
-      } else {
-        aiReply += 'Em luôn sẵn sàng hỗ trợ Thầy/Cô trong công việc sư phạm số và giảm tải áp lực hành chính mỗi ngày!';
+  // Save Attachment
+  const handleSaveAttachment = () => {
+    if (!attachingEvent) return;
+    const updated = events.map((e) => {
+      if (e.id === attachingEvent.id) {
+        return {
+          ...e,
+          attachmentName: attachFileName || 'Giáo_án_bài_giảng.pdf',
+          attachmentUrl: attachFileUrl || 'https://drive.google.com'
+        };
       }
-      setChatMessages(prev => [...prev, { role: 'ai', text: aiReply }]);
-      setIsAiTyping(false);
-    }, 1000);
+      return e;
+    });
+    setEvents(updated);
+    localStorage.setItem('smart_teacher_events', JSON.stringify(updated));
+    pushToCloud(updated, schedules, syncCode);
+    setAttachingEvent(null);
+    setAttachFileName('');
+    setAttachFileUrl('');
   };
 
-  // Time & Motivation helpers
-  const currentHour = new Date().getHours();
-  const isMorning = currentHour >= 5 && currentHour < 14;
-  const currentQuote = isMorning
-    ? MORNING_QUOTES[quoteIndex % MORNING_QUOTES.length]
-    : EVENING_QUOTES[quoteIndex % EVENING_QUOTES.length];
+  // Toggle Task
+  const handleToggleTask = (id: string) => {
+    const updated = tasks.map((t) => (t.id === id ? { ...t, isCompleted: !t.isCompleted } : t));
+    setTasks(updated);
+    localStorage.setItem('smart_teacher_tasks', JSON.stringify(updated));
+  };
 
-  const todaySchedules = schedules
-    .filter(s => s.dayOfWeek === selectedDay)
-    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+  // Add Task
+  const handleAddTask = () => {
+    const title = prompt('Nhập công việc hoặc nhắc việc mới cho ngày hôm nay:');
+    if (!title || !title.trim()) return;
+    const newTask: TaskItem = {
+      id: `t_${Date.now()}`,
+      title: title.trim(),
+      date: todayStr,
+      isCompleted: false,
+      priority: 'medium'
+    };
+    const updated = [newTask, ...tasks];
+    setTasks(updated);
+    localStorage.setItem('smart_teacher_tasks', JSON.stringify(updated));
+  };
 
-  const totalHours = schedules.reduce((acc, curr) => {
-    return acc + (curr.type === 'theory' ? 0.75 : 1.0);
-  }, 0);
+  // AI Chat Send
+  const handleSendAiMessage = async () => {
+    if (!aiInput.trim()) return;
+    const userText = aiInput.trim();
+    setAiInput('');
+    const newMsgs = [...chatMessages, { role: 'user' as const, text: userText }];
+    setChatMessages(newMsgs);
+    setIsAiLoading(true);
 
-  if (!isClient) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-indigo-500"></div>
-      </div>
-    );
-  }
+    try {
+      // Simulate intelligent pedagogical response
+      setTimeout(() => {
+        let aiReply = `Chào Thầy/Cô! Em đã nhận được yêu cầu: "${userText}".\n\n📋 **Đề xuất Sư phạm từ Trợ lý AI:**\n- **Mục tiêu bài học:** Phát triển năng lực thực hành gia công chính xác, tuân thủ an toàn lao động xưởng cơ khí.\n- **Tiến trình dạy học:** Khởi động (5p) ➔ Hướng dẫn thao tác mẫu (15p) ➔ Học sinh thực hành nhóm (25p) ➔ Đánh giá sản phẩm & vệ sinh máy.\n- **Đồng bộ hệ thống:** Đã cập nhật ghi chú này vào sổ bài giảng số của Thầy/Cô trên cả điện thoại và máy tính.`;
+        if (userText.includes('5512')) {
+          aiReply = `📚 **KHUNG KẾ HOẠCH BÀI DẠY THEO CÔNG VĂN 5512/BGDĐT:**\n\nI. MỤC TIÊU:\n1. Kiến thức: Nắm vững cấu tạo, nguyên lý làm việc của máy CNC và các mã lệnh G-code cơ bản.\n2. Kỹ năng: Lập trình và vận hành gia công chi tiết đạt kích thước bản vẽ.\n3. Phẩm chất: Tỉ mỉ, kỷ luật, an toàn.\n\nII. THIẾT BỊ & HỌC LIỆU: Máy phay/tiện CNC, phôi nhôm, đồ gá, tài liệu phát tay.\n\nIII. TIẾN TRÌNH DẠY HỌC:\n- Hoạt động 1: Xác định vấn đề (7 phút)\n- Hoạt động 2: Hình thành kiến thức mới (18 phút)\n- Hoạt động 3: Luyện tập / Thực hành (45 phút)\n- Hoạt động 4: Vận dụng & Mở rộng (10 phút)`;
+        }
+        setChatMessages([...newMsgs, { role: 'ai', text: aiReply }]);
+        setIsAiLoading(false);
+      }, 900);
+    } catch (e) {
+      setIsAiLoading(false);
+    }
+  };
+
+  // Export Pedagogical Report to CSV
+  const handleExportCsv = () => {
+    let csv = 'STT,Mon_Hoc,Lop,Phong,Tong_So_Tiet,Da_Day,Con_Lai,Ly_Thuyet,Thuc_Hanh,Tien_Do\n';
+    reportStats.forEach((st, idx) => {
+      const pct = Math.round((st.done / (st.total || 1)) * 100);
+      csv += `${idx + 1},"${st.subject}","${st.className}","${st.room}",${st.total},${st.done},${st.remaining},${st.theory},${st.practice},${pct}%\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `So_Bao_Giang_SmartTeacher_${todayStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  if (!isClient) return null;
+
+  const todayDayInfo = getDayInfo(todayStr);
+  const selectedDayInfo = getDayInfo(selectedDate);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-28 max-w-md md:max-w-4xl lg:max-w-5xl mx-auto relative shadow-2xl overflow-x-hidden border-x border-slate-800">
-      
-      {/* Header Bar */}
-      <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-xl border-b border-slate-800/80 px-4 pt-3 pb-2.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <Link href="/" className="p-1 -ml-1 text-slate-400 hover:text-white transition-colors" title="Về trang chủ">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 p-0.5 shadow-md shadow-indigo-500/20 shrink-0">
-              <img src="/app_icon.jpg" alt="Icon" className="w-full h-full object-cover rounded-[10px]" />
+    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans">
+      {/* 1. TOP HEADER & MULTI-PLATFORM SYNC BAR */}
+      <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-40 px-4 py-3">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <BookOpen className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-white leading-tight flex items-center gap-1.5">
-                Smart Teacher <span className="text-[10px] bg-indigo-500/30 text-indigo-300 font-semibold px-1.5 py-0.5 rounded-full border border-indigo-500/30">Hệ Sinh Thái Đa Nền Tảng</span>
-              </h1>
-              <p className="text-[11px] text-slate-400 flex items-center gap-1.5">
-                <span>Giáo viên: Nguyễn Văn An</span>
-                <span className="text-slate-600">•</span>
-                <span className="text-emerald-400 font-medium">🟢 Đám Mây Sẵn Sàng</span>
+              <div className="flex items-center space-x-2">
+                <h1 className="text-lg font-bold tracking-tight text-white">Smart Teacher Schedule AI</h1>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium flex items-center gap-1">
+                  <Monitor className="w-3 h-3" /> Desktop & Web 2.0
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">
+                {todayDayInfo.dayName}, {todayStr.split('-').reverse().join('/')} • Hệ sinh thái đồng bộ Máy tính & Điện thoại
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            {/* Cloud Sync Button */}
-            <button
-              onClick={() => setShowSyncModal(true)}
-              className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg border flex items-center gap-1.5 transition-all shadow-sm ${
-                syncStatus === 'synced'
-                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25'
-                  : syncStatus === 'syncing'
-                  ? 'bg-blue-500/15 text-cyan-300 border-blue-500/30 animate-pulse'
-                  : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-              }`}
-              title="Đồng bộ Đám mây với Điện thoại và Máy tính"
-            >
-              <Cloud className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-cyan-300' : 'text-emerald-400'}`} />
-              <span className="hidden sm:inline">Mã:</span>
-              <span className="font-mono">{syncCode}</span>
-            </button>
 
-            {/* Desktop Install PWA Button */}
-            {isInstallable && (
-              <button
-                onClick={() => {
-                  if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    deferredPrompt.userChoice.then((choiceResult: any) => {
-                      if (choiceResult.outcome === 'accepted') {
-                        setIsInstallable(false);
-                      }
-                      setDeferredPrompt(null);
-                    });
-                  }
-                }}
-                className="hidden md:flex px-2 py-1 text-[11px] font-medium bg-gradient-to-r from-teal-600 to-indigo-600 text-white rounded-lg items-center gap-1 shadow-sm hover:scale-105 transition-all"
-                title="Cài đặt App lên Máy tính (Windows / Mac / Linux)"
-              >
-                <Monitor className="w-3.5 h-3.5" />
-                <span>Cài Đặt Desktop App</span>
-              </button>
-            )}
+          {/* Sync Status Badge & Action */}
+          <div className="flex items-center gap-3">
+            <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl px-3 py-1.5 flex items-center gap-2.5 text-xs">
+              <div className="flex items-center gap-1.5">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${syncStatus === 'synced' ? 'bg-emerald-400 opacity-75' : 'bg-amber-400 opacity-75'}`}></span>
+                  <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${syncStatus === 'synced' ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+                </span>
+                <span className="font-semibold text-slate-200">
+                  {events.length > 0 ? `${events.length} ca dạy` : 'Đang tải...'}
+                </span>
+              </div>
+              <span className="text-slate-500">|</span>
+              <span className="text-slate-400 font-mono">Mã: {syncCode}</span>
+              <span className="text-slate-500">|</span>
+              <span className="text-slate-400">Cập nhật: {lastSyncTime}</span>
+            </div>
 
             <button
-              onClick={() => setActiveTab('notifications')}
-              className={`p-1.5 rounded-xl border transition-all ${
-                permissionState === 'granted'
-                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                  : 'bg-amber-500/20 text-amber-400 border-amber-500/30 animate-pulse'
-              }`}
-              title="Quản lý chuông báo & thông báo"
+              onClick={() => pullFromCloud(syncCode, true)}
+              disabled={isSyncing}
+              className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md shadow-blue-600/20 disabled:opacity-50 cursor-pointer"
             >
-              <BellRing className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={() => setShowIOSGuide(true)}
-              className="px-2 py-1 text-[11px] font-medium bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 rounded-lg flex items-center gap-1 transition-all"
-              title="Hướng dẫn ghim ra Màn hình chính điện thoại"
-            >
-              <Smartphone className="w-3 h-3" /> Ghim MH
+              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+              <span>{isSyncing ? 'Đang đồng bộ...' : 'Đồng bộ 2 chiều'}</span>
             </button>
           </div>
         </div>
       </header>
 
-      {/* iOS Smart Banner - Add to Home Screen */}
-      {showIOSGuide && (
-        <div className="mx-3 mt-3 p-3.5 bg-gradient-to-r from-blue-900/60 to-indigo-900/60 border border-blue-500/40 rounded-2xl relative shadow-lg">
+      {/* Alert Banner */}
+      {alertBanner && (
+        <div className="bg-emerald-600 text-white text-xs text-center py-2 px-4 flex items-center justify-center gap-2 shadow-md animate-fade-in">
+          <CheckCircle2 className="w-4 h-4" />
+          <span>{alertBanner}</span>
+        </div>
+      )}
+
+      {/* 2. NAVIGATION BAR (UNIFIED WITH ANDROID) */}
+      <nav className="border-b border-slate-800 bg-slate-900/90 sticky top-15 z-30 px-4">
+        <div className="max-w-7xl mx-auto flex space-x-1 sm:space-x-4 overflow-x-auto py-2">
           <button
-            onClick={() => setShowIOSGuide(false)}
-            className="absolute top-2.5 right-2.5 text-slate-400 hover:text-white p-1"
+            onClick={() => setActiveTab('today')}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all whitespace-nowrap ${
+              activeTab === 'today'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
           >
-            <X className="w-4 h-4" />
+            <Clock className="w-4 h-4" />
+            <span>Hôm nay</span>
+            <span className="px-1.5 py-0.2 rounded-full text-xs bg-slate-800 text-blue-300 font-bold">
+              {todayEvents.length}
+            </span>
           </button>
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-blue-600 text-white rounded-xl shadow-md shrink-0">
-              <Share2 className="w-5 h-5" />
-            </div>
-            <div className="pr-4">
-              <h4 className="text-xs font-bold text-white flex items-center gap-1">
-                Ghim App Ra Màn Hình Chính iPhone
-              </h4>
-              <p className="text-[11px] text-blue-200 mt-1 leading-relaxed">
-                1. Bấm nút <strong>Chia sẻ (biểu tượng ô vuông mũi tên lên ⎋)</strong> dưới đáy Safari.
-                <br />
-                2. Cuộn xuống chọn <strong>&ldquo;Thêm vào MH chính&rdquo; (Add to Home Screen)</strong>.
-                <br />
-                3. Nhận thông báo đẩy lên màn hình khóa & Dynamic Island chuẩn iOS 16.4+!
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Quick Permission Banner if not granted */}
-      {permissionState !== 'granted' && (
-        <div className="mx-3 mt-2 p-3 bg-gradient-to-r from-amber-950/60 to-orange-950/60 border border-amber-500/40 rounded-2xl flex items-center justify-between gap-2 shadow-md">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 shrink-0">
-              <Bell className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-white">Chưa bật chuông báo iOS</p>
-              <p className="text-[10px] text-amber-200/80">Bật để nhận báo thức 60p & 15p trước giờ lên lớp</p>
-            </div>
-          </div>
           <button
-            onClick={requestNotificationPermission}
-            className="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold rounded-xl shadow transition-all active:scale-95 shrink-0"
+            onClick={() => setActiveTab('calendar')}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all whitespace-nowrap ${
+              activeTab === 'calendar'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
           >
-            Bật ngay
+            <Calendar className="w-4 h-4" />
+            <span>Lịch dạy 288 ca</span>
+            <span className="px-1.5 py-0.2 rounded-full text-xs bg-slate-800 text-slate-300 font-bold">
+              {events.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('report')}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all whitespace-nowrap ${
+              activeTab === 'report'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>Sổ Báo Giảng</span>
+            <span className="px-1.5 py-0.2 rounded-full text-xs bg-emerald-950 text-emerald-300 font-bold border border-emerald-500/30">
+              Tiến độ
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('ai')}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all whitespace-nowrap ${
+              activeTab === 'ai'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            <span>Trợ lý AI</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all whitespace-nowrap ${
+              activeTab === 'settings'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <Settings className="w-4 h-4" />
+            <span>Cài đặt & Đồng bộ</span>
           </button>
         </div>
-      )}
+      </nav>
 
-      {/* Floating Alert Toast for Tests */}
-      {lastTestAlert && (
-        <div className="mx-3 mt-2 p-2.5 bg-slate-900 border border-indigo-500/50 rounded-xl flex items-center justify-between text-xs text-indigo-300 animate-in fade-in shadow-xl">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span className="line-clamp-1">{lastTestAlert}</span>
-          </div>
-          <button onClick={() => setLastTestAlert(null)} className="text-slate-400 hover:text-white p-1">
-            <X className="w-3 h-3" />
-          </button>
-        </div>
-      )}
+      {/* 3. MAIN CONTENT AREA */}
+      <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 space-y-6">
 
-      {/* MAIN BODY BASED ON ACTIVE TAB */}
-      <main className="p-3.5 space-y-4">
-
-        {/* TAB 1: TODAY */}
+        {/* ================= TAB 1: HÔM NAY (TODAY SCREEN) ================= */}
         {activeTab === 'today' && (
-          <div className="space-y-4 animate-in fade-in duration-300">
-            {/* AI Dynamic Motivation Card (v1.3.1) */}
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-950/80 via-slate-900 to-purple-950/80 border border-indigo-500/30 shadow-lg relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  {isMorning ? (
-                    <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                      <Sun className="w-4 h-4" />
-                    </div>
-                  ) : (
-                    <div className="p-1.5 rounded-lg bg-purple-500/20 text-purple-400 border border-purple-500/30">
-                      <Moon className="w-4 h-4" />
-                    </div>
-                  )}
-                  <span className="text-xs font-bold text-slate-200 tracking-wide">
-                    {isMorning ? 'ĐỘNG LỰC SÁNG NAY (AI)' : 'LỜI CẢM ƠN TỐI NAY (AI)'}
-                  </span>
+          <div className="space-y-6 animate-fade-in">
+            {/* Pedagogical Motivation Card */}
+            <div className="bg-gradient-to-r from-blue-900/40 via-indigo-900/30 to-slate-800/50 border border-blue-500/20 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center shrink-0">
+                  <Sun className="w-6 h-6 text-amber-300" />
                 </div>
-                <button
-                  onClick={() => setQuoteIndex(prev => prev + 1)}
-                  className="text-slate-400 hover:text-white p-1 rounded-md transition-colors"
-                  title="Đổi câu truyền cảm hứng khác"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                </button>
-              </div>
-              <p className="text-xs text-slate-200 italic leading-relaxed">
-                &ldquo;{currentQuote}&rdquo;
-              </p>
-              <div className="mt-3 pt-2.5 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-                <span className="flex items-center gap-1 text-emerald-400 font-medium">
-                  <Coffee className="w-3 h-3" /> Năng lượng tích cực
-                </span>
-                <span className="text-slate-500">v1.3.1 AI Engine</span>
+                <div className="flex-1">
+                  <h2 className="text-base font-bold text-white flex items-center gap-2">
+                    Lời chúc sư phạm hôm nay
+                    <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 font-normal">
+                      {todayDayInfo.dayName}
+                    </span>
+                  </h2>
+                  <p className="text-sm text-slate-300 mt-1 leading-relaxed italic">
+                    "{quote}"
+                  </p>
+                </div>
               </div>
             </div>
 
-            {/* Next Class Hero Card */}
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xl shadow-indigo-500/15 relative overflow-hidden">
-              <div className="flex items-start justify-between">
-                <div>
-                  <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-white/20 backdrop-blur-md mb-2">
-                    TIẾT DẠY TIẾP THEO
-                  </span>
-                  <h3 className="text-lg font-extrabold leading-tight">Toán Học (Đại Số 11)</h3>
-                  <p className="text-xs text-blue-100 mt-0.5">Lớp 11A1 • Phòng 204 - Nhà A</p>
+            {/* Real-time Countdown Banner */}
+            {nextSession && (
+              <div className={`p-4 rounded-2xl border flex items-center justify-between gap-4 ${
+                nextSession.status === 'ongoing'
+                  ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-200'
+                  : 'bg-amber-950/40 border-amber-500/30 text-amber-200'
+              }`}>
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    nextSession.status === 'ongoing' ? 'bg-emerald-500/20' : 'bg-amber-500/20'
+                  }`}>
+                    <Clock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider">
+                      {nextSession.status === 'ongoing' ? 'Đang trong tiết dạy' : `Sắp vào lớp (Còn ${nextSession.diffMinutes} phút)`}
+                    </span>
+                    <p className="text-sm font-semibold text-white">
+                      {nextSession.event.subject} • Lớp {nextSession.event.className} ({nextSession.event.room})
+                    </p>
+                  </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-xl font-black font-mono">07:00</div>
-                  <div className="text-[10px] text-blue-200">Bắt đầu trong 25 phút</div>
+                  <span className="text-base font-bold font-mono text-white">
+                    {nextSession.event.startTime} - {nextSession.event.endTime}
+                  </span>
                 </div>
               </div>
+            )}
 
-              <div className="mt-4 pt-3 border-t border-white/15 flex items-center justify-between text-xs">
-                <span className="flex items-center gap-1.5 font-medium">
-                  <Clock className="w-3.5 h-3.5" /> 45 phút (Lý thuyết)
-                </span>
-                <button
-                  onClick={() => triggerNotification('🔔 BÁO THỨC CA DẠY', 'Đang thử nghiệm chuông báo lớp Toán 11 lúc 07:00', 'bell')}
-                  className="bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded-lg font-semibold text-[11px] flex items-center gap-1 transition-colors"
-                >
-                  <Volume2 className="w-3 h-3" /> Thử chuông
-                </button>
-              </div>
-            </div>
-
-            {/* Quick Actions Bar */}
-            <div className="grid grid-cols-4 gap-2">
-              <button
-                onClick={() => setActiveTab('add')}
-                className="p-2.5 bg-slate-900 border border-slate-800 hover:border-indigo-500/50 rounded-xl flex flex-col items-center justify-center gap-1 transition-all text-center group"
-              >
-                <div className="p-1.5 bg-indigo-500/20 text-indigo-400 rounded-lg group-hover:scale-110 transition-transform">
-                  <Plus className="w-3.5 h-3.5" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Today's Teaching Timeline (2 Cols) */}
+              <div className="lg:col-span-2 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <CalendarDays className="w-5 h-5 text-blue-400" />
+                    <span>Lịch giảng dạy hôm nay ({todayEvents.length} ca dạy)</span>
+                  </h3>
+                  <span className="text-xs text-slate-400">
+                    Chuẩn thời gian ISO & Giờ Việt Nam
+                  </span>
                 </div>
-                <span className="text-[11px] font-semibold text-slate-200">Thêm lịch</span>
-              </button>
 
-              <button
-                onClick={() => setActiveTab('notifications')}
-                className="p-2.5 bg-slate-900 border border-slate-800 hover:border-amber-500/50 rounded-xl flex flex-col items-center justify-center gap-1 transition-all text-center group"
-              >
-                <div className="p-1.5 bg-amber-500/20 text-amber-400 rounded-lg group-hover:scale-110 transition-transform">
-                  <Bell className="w-3.5 h-3.5" />
-                </div>
-                <span className="text-[11px] font-semibold text-slate-200">Báo thức</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('reports')}
-                className="p-2.5 bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-xl flex flex-col items-center justify-center gap-1 transition-all text-center group"
-              >
-                <div className="p-1.5 bg-emerald-500/20 text-emerald-400 rounded-lg group-hover:scale-110 transition-transform">
-                  <FileSpreadsheet className="w-3.5 h-3.5" />
-                </div>
-                <span className="text-[11px] font-semibold text-slate-200">Sổ sách</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('ai')}
-                className="p-2.5 bg-slate-900 border border-slate-800 hover:border-purple-500/50 rounded-xl flex flex-col items-center justify-center gap-1 transition-all text-center group"
-              >
-                <div className="p-1.5 bg-purple-500/20 text-purple-400 rounded-lg group-hover:scale-110 transition-transform">
-                  <Sparkles className="w-3.5 h-3.5" />
-                </div>
-                <span className="text-[11px] font-semibold text-slate-200">Trợ lý AI</span>
-              </button>
-            </div>
-
-            {/* Today Schedule List */}
-            <div>
-              <div className="flex items-center justify-between mb-2 px-0.5">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                  Lịch Giảng Dạy Thứ 2 (Hôm Nay)
-                </h3>
-                <span className="text-[11px] text-indigo-400 font-medium">{todaySchedules.length} tiết học</span>
-              </div>
-
-              <div className="space-y-2.5">
-                {todaySchedules.map((item) => (
-                  <div
-                    key={item.id}
-                    className="p-3.5 bg-slate-900/90 border border-slate-800/90 hover:border-slate-700 rounded-xl flex items-center justify-between transition-all"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-1.5 h-12 rounded-full bg-indigo-500 shrink-0 mt-0.5"></div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-xs font-bold text-white">{item.subject}</h4>
-                          <span className={`text-[9px] px-1.5 py-0.2 rounded font-semibold ${
-                            item.type === 'theory'
-                              ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                              : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                          }`}>
-                            {item.type === 'theory' ? '45p' : '60p'}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-400 mt-0.5">
-                          Lớp {item.className} • {item.room}
-                        </p>
-                        {item.notes && (
-                          <p className="text-[10px] text-amber-300/80 mt-1 flex items-center gap-1">
-                            📌 {item.notes}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div className="text-xs font-bold text-indigo-300 font-mono">
-                        {item.startTime} - {item.endTime}
-                      </div>
-                      <span className="text-[10px] text-emerald-400 flex items-center justify-end gap-1 mt-0.5">
-                        <Bell className="w-2.5 h-2.5" /> Chuông 60m/15m
-                      </span>
-                    </div>
+                {todayEvents.length === 0 ? (
+                  <div className="bg-slate-800/40 border border-slate-700/60 rounded-2xl p-10 text-center space-y-3">
+                    <Coffee className="w-12 h-12 text-slate-500 mx-auto" />
+                    <p className="text-base font-semibold text-slate-300">Hôm nay Thầy/Cô không có lịch dạy trên lớp!</p>
+                    <p className="text-xs text-slate-400 max-w-md mx-auto">
+                      Chúc Thầy/Cô có thời gian nghiên cứu tài liệu, soạn giáo án và nạp lại năng lượng thật tuyệt vời.
+                    </p>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+                ) : (
+                  <div className="space-y-3">
+                    {todayEvents.map((ev, index) => {
+                      const isPractice = ev.sessionType.toLowerCase().includes('hành');
+                      return (
+                        <div
+                          key={ev.id}
+                          className="bg-slate-800/60 hover:bg-slate-800 border border-slate-700/70 hover:border-blue-500/40 rounded-2xl p-4 transition-all shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                        >
+                          <div className="flex items-start gap-4">
+                            {/* Period Number / Time badge */}
+                            <div className="text-center shrink-0 w-16 bg-slate-900/80 border border-slate-700 rounded-xl p-2">
+                              <span className="text-xs font-bold text-slate-400">Ca #{index + 1}</span>
+                              <p className="text-sm font-bold text-white font-mono mt-0.5">{ev.startTime}</p>
+                              <p className="text-xs text-slate-400 font-mono">{ev.endTime}</p>
+                            </div>
 
-        {/* TAB 2: SCHEDULE (WEEK VIEW) */}
-        {activeTab === 'schedule' && (
-          <div className="space-y-4 animate-in fade-in duration-300">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-bold text-white">Lịch Trình Giảng Dạy</h2>
-                <p className="text-xs text-slate-400">Học kỳ 1 • 2026 - 2027</p>
-              </div>
-              <button
-                onClick={() => setActiveTab('add')}
-                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1 shadow-md shadow-indigo-600/20"
-              >
-                <Plus className="w-3.5 h-3.5" /> Thêm tiết
-              </button>
-            </div>
+                            {/* Session Details */}
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h4 className="text-base font-bold text-white">{ev.subject}</h4>
+                                <span
+                                  className={`text-xs px-2.5 py-0.5 rounded-full font-semibold border ${
+                                    isPractice
+                                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                      : 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                                  }`}
+                                >
+                                  {ev.sessionType}
+                                </span>
+                              </div>
 
-            {/* Day Selector Tabs (Thứ 2 -> CN) */}
-            <div className="flex items-center justify-between gap-1 bg-slate-900 p-1.5 rounded-xl border border-slate-800">
-              {[2, 3, 4, 5, 6, 7, 8].map((day) => (
-                <button
-                  key={day}
-                  onClick={() => setSelectedDay(day)}
-                  className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    selectedDay === day
-                      ? 'bg-indigo-600 text-white shadow-md'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  {day === 8 ? 'CN' : `T${day}`}
-                </button>
-              ))}
-            </div>
+                              <div className="flex items-center gap-4 text-xs text-slate-300">
+                                <span className="flex items-center gap-1 font-medium text-slate-200">
+                                  <Users className="w-3.5 h-3.5 text-blue-400" /> Lớp: {ev.className}
+                                </span>
+                                <span className="flex items-center gap-1 font-medium text-slate-200">
+                                  <MapPin className="w-3.5 h-3.5 text-red-400" /> Phòng: {ev.room}
+                                </span>
+                              </div>
 
-            {/* Schedules for Selected Day */}
-            <div className="space-y-3">
-              {todaySchedules.length === 0 ? (
-                <div className="p-8 text-center bg-slate-900/50 rounded-2xl border border-dashed border-slate-800">
-                  <Coffee className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                  <p className="text-xs text-slate-400">Không có tiết dạy nào vào {selectedDay === 8 ? 'Chủ Nhật' : `Thứ ${selectedDay}`}.</p>
-                  <button
-                    onClick={() => {
-                      setNewDay(selectedDay);
-                      setActiveTab('add');
-                    }}
-                    className="mt-3 block mx-auto text-xs text-indigo-400 font-semibold hover:underline"
-                  >
-                    + Thêm tiết dạy cho ngày này
-                  </button>
-                  <button
-                    onClick={() => {
-                      saveSchedules(DEFAULT_SCHEDULES);
-                    }}
-                    className="mt-2 block mx-auto text-[11px] text-slate-500 hover:text-indigo-300 transition-colors"
-                  >
-                    🔄 Khôi phục thời khóa biểu mẫu mặc định
-                  </button>
-                </div>
-              ) : (
-                todaySchedules.map((item) => (
-                  <div
-                    key={item.id}
-                    className="p-4 bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl transition-all relative group"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-bold text-white">{item.subject}</h4>
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                            item.type === 'theory'
-                              ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                              : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                          }`}>
-                            {item.type === 'theory' ? 'Lý thuyết 45p' : 'Thực hành 60p'}
-                          </span>
+                              {ev.notes && (
+                                <p className="text-xs text-slate-400 italic bg-slate-900/40 px-2 py-1 rounded border border-slate-700/50">
+                                  Ghi chú: {ev.notes}
+                                </p>
+                              )}
+
+                              {ev.attachmentName && (
+                                <div className="flex items-center gap-1.5 text-xs text-blue-400 pt-1">
+                                  <Paperclip className="w-3 h-3" />
+                                  <span className="underline cursor-pointer">{ev.attachmentName}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Action Buttons (Unified: Sửa, Xoá, Đính kèm file) */}
+                          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                            <button
+                              onClick={() => {
+                                setAttachingEvent(ev);
+                                setAttachFileName(ev.attachmentName || '');
+                                setAttachFileUrl(ev.attachmentUrl || '');
+                              }}
+                              title="Đính kèm file giáo án"
+                              className="p-2 rounded-xl bg-slate-700/60 hover:bg-slate-700 text-slate-300 hover:text-white transition-all text-xs flex items-center gap-1 cursor-pointer"
+                            >
+                              <Paperclip className="w-4 h-4" />
+                              <span className="hidden sm:inline">File</span>
+                            </button>
+
+                            <button
+                              onClick={() => handleOpenEdit(ev)}
+                              title="Chỉnh sửa ca dạy này"
+                              className="p-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 hover:text-blue-300 border border-blue-500/30 transition-all text-xs flex items-center gap-1 cursor-pointer"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                              <span>Sửa</span>
+                            </button>
+
+                            <button
+                              onClick={() => handleDeleteEvent(ev.id)}
+                              title="Xoá ca dạy"
+                              className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 transition-all text-xs cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3 text-xs text-slate-300 mt-1.5">
-                          <span className="flex items-center gap-1 font-semibold text-slate-200">
-                            <Users className="w-3.5 h-3.5 text-indigo-400" /> {item.className}
-                          </span>
-                          <span className="flex items-center gap-1 text-slate-400">
-                            <MapPin className="w-3.5 h-3.5 text-slate-500" /> {item.room}
-                          </span>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleDeleteSchedule(item.id)}
-                        className="p-1.5 text-slate-500 hover:text-red-400 transition-colors"
-                        title="Xóa tiết học"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
 
-                    <div className="mt-3 pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-1 text-indigo-300 font-mono font-bold">
-                        <Clock className="w-3.5 h-3.5 text-indigo-400" />
-                        {item.startTime} - {item.endTime}
-                      </div>
-                      <div className="text-[11px] text-slate-400">
-                        {item.startDate} ➔ {item.endDate}
-                      </div>
+              {/* Tasks & AI Warnings (1 Col) */}
+              <div className="space-y-6">
+                {/* AI Risk Warnings */}
+                <div className="bg-slate-800/40 border border-slate-700/60 rounded-2xl p-5 space-y-3">
+                  <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>Trợ lý An Toàn & Rủi Ro Lịch Dạy</span>
+                  </div>
+                  <div className="space-y-2 text-xs text-slate-300">
+                    <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-700/50 flex items-start gap-2">
+                      <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <span>Không phát hiện trùng lặp phòng học hay chồng chéo thời gian hôm nay.</span>
                     </div>
-
-                    {item.notes && (
-                      <div className="mt-2 text-xs bg-slate-800/60 p-2 rounded-lg text-amber-200/90 border border-amber-500/10">
-                        📌 Ghi chú: {item.notes}
+                    {todayEvents.some((e) => e.sessionType.includes('hành')) && (
+                      <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                        <span>Hôm nay có tiết thực hành xưởng: Thầy/Cô chú ý nhắc nhở học sinh đeo kính bảo hộ và kiểm tra phôi mẫu.</span>
                       </div>
                     )}
                   </div>
-                ))
+                </div>
+
+                {/* Tasks Card */}
+                <div className="bg-slate-800/50 border border-slate-700/60 rounded-2xl p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-blue-400" />
+                      <span>Việc cần làm hôm nay</span>
+                    </h4>
+                    <button
+                      onClick={handleAddTask}
+                      className="px-2.5 py-1 rounded-lg bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Thêm việc
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {tasks.map((task) => (
+                      <div
+                        key={task.id}
+                        onClick={() => handleToggleTask(task.id)}
+                        className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-all ${
+                          task.isCompleted
+                            ? 'bg-slate-900/30 border-slate-800 text-slate-500 line-through'
+                            : 'bg-slate-900/70 border-slate-700/60 text-slate-200 hover:border-slate-600'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 text-xs">
+                          <input
+                            type="checkbox"
+                            checked={task.isCompleted}
+                            onChange={() => {}}
+                            className="rounded border-slate-700 text-blue-600 focus:ring-0 cursor-pointer"
+                          />
+                          <span>{task.title}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= TAB 2: LỊCH DẠY 288 CA (CALENDAR AGENDA) ================= */}
+        {activeTab === 'calendar' && (
+          <div className="space-y-6 animate-fade-in">
+            {/* Filter & Controls Bar */}
+            <div className="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-4 sm:p-5 space-y-4 shadow-lg">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-blue-400" />
+                    <span>Lịch trình Giảng dạy Chi tiết ({events.length} ca dạy toàn học kỳ)</span>
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Đồng bộ 2 chiều chuẩn xác từng ngày, từng phòng học và hình thức lý thuyết/thực hành
+                  </p>
+                </div>
+
+                {/* View Mode Toggle */}
+                <div className="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-700">
+                  <button
+                    onClick={() => setCalendarViewMode('day')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      calendarViewMode === 'day' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Xem theo ngày
+                  </button>
+                  <button
+                    onClick={() => setCalendarViewMode('all')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      calendarViewMode === 'all' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Xem toàn bộ 288 ca
+                  </button>
+                </div>
+              </div>
+
+              {/* Filter Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-2 border-t border-slate-700/50">
+                {/* Date Picker */}
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1 font-medium">Chọn ngày cụ thể:</label>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500 font-mono"
+                  />
+                </div>
+
+                {/* Subject Dropdown */}
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1 font-medium">Lọc môn học:</label>
+                  <select
+                    value={filterSubject}
+                    onChange={(e) => setFilterSubject(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="ALL">Tất cả môn ({subjectList.length} môn)</option>
+                    {subjectList.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Class Dropdown */}
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1 font-medium">Lọc lớp:</label>
+                  <select
+                    value={filterClass}
+                    onChange={(e) => setFilterClass(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="ALL">Tất cả lớp ({classList.length} lớp)</option>
+                    {classList.map((c) => (
+                      <option key={c} value={c}>Lớp {c}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Search Box */}
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1 font-medium">Tìm kiếm nhanh:</label>
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      placeholder="Tên môn, lớp, phòng..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* List of Filtered Events */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between text-xs text-slate-400 px-1">
+                <span>
+                  Hiển thị: <strong className="text-white">{filteredEvents.length}</strong> ca dạy phù hợp
+                </span>
+                {calendarViewMode === 'day' && (
+                  <span className="text-blue-400 font-medium">
+                    Đang xem ngày: {selectedDayInfo.dayName}, {selectedDate.split('-').reverse().join('/')}
+                  </span>
+                )}
+              </div>
+
+              {filteredEvents.length === 0 ? (
+                <div className="bg-slate-800/40 border border-slate-700/60 rounded-2xl p-12 text-center space-y-2">
+                  <Calendar className="w-10 h-10 text-slate-500 mx-auto" />
+                  <p className="text-sm font-semibold text-slate-300">Không tìm thấy ca dạy nào phù hợp với bộ lọc!</p>
+                  <p className="text-xs text-slate-500">Thầy/Cô có thể đổi ngày hoặc chọn chế độ "Xem toàn bộ 288 ca" ở trên.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredEvents.map((ev) => {
+                    const dayInfo = getDayInfo(ev.date);
+                    const isPractice = ev.sessionType.toLowerCase().includes('hành');
+                    const isPast = ev.date < todayStr;
+                    return (
+                      <div
+                        key={ev.id}
+                        className={`bg-slate-800/70 border rounded-2xl p-4 transition-all hover:border-blue-500/50 shadow-md flex flex-col justify-between gap-3 ${
+                          isPast ? 'border-slate-700/50 opacity-80' : 'border-slate-700'
+                        }`}
+                      >
+                        <div className="space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold px-2 py-0.5 rounded bg-slate-900 text-blue-300 border border-slate-700">
+                                  {dayInfo.dayName}
+                                </span>
+                                <span className="text-xs font-mono text-slate-300 font-semibold">
+                                  {ev.date.split('-').reverse().join('/')}
+                                </span>
+                                {isPast && (
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-900/60 text-slate-400">
+                                    Đã dạy
+                                  </span>
+                                )}
+                              </div>
+                              <h4 className="text-base font-bold text-white mt-1.5 leading-snug">{ev.subject}</h4>
+                            </div>
+
+                            <span
+                              className={`text-xs px-2.5 py-0.5 rounded-full font-semibold shrink-0 border ${
+                                isPractice
+                                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                  : 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                              }`}
+                            >
+                              {ev.sessionType}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2 text-xs text-slate-300 pt-1">
+                            <div className="bg-slate-900/60 p-2 rounded-xl border border-slate-700/40">
+                              <span className="text-slate-400 block text-[10px]">Giờ dạy</span>
+                              <span className="font-mono font-bold text-white">{ev.startTime} - {ev.endTime}</span>
+                            </div>
+                            <div className="bg-slate-900/60 p-2 rounded-xl border border-slate-700/40">
+                              <span className="text-slate-400 block text-[10px]">Lớp học</span>
+                              <span className="font-bold text-white">{ev.className}</span>
+                            </div>
+                            <div className="bg-slate-900/60 p-2 rounded-xl border border-slate-700/40">
+                              <span className="text-slate-400 block text-[10px]">Phòng dạy</span>
+                              <span className="font-bold text-white">{ev.room}</span>
+                            </div>
+                          </div>
+
+                          {ev.notes && (
+                            <p className="text-xs text-slate-400 italic bg-slate-900/40 px-2 py-1 rounded border border-slate-700/40">
+                              {ev.notes}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex items-center justify-between border-t border-slate-700/50 pt-2 text-xs">
+                          {ev.attachmentName ? (
+                            <span className="text-blue-400 flex items-center gap-1 truncate max-w-[150px]">
+                              <Paperclip className="w-3 h-3" /> {ev.attachmentName}
+                            </span>
+                          ) : (
+                            <span className="text-slate-500">Chưa đính kèm giáo án</span>
+                          )}
+
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => {
+                                setAttachingEvent(ev);
+                                setAttachFileName(ev.attachmentName || '');
+                                setAttachFileUrl(ev.attachmentUrl || '');
+                              }}
+                              className="px-2 py-1 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 text-xs"
+                            >
+                              File
+                            </button>
+                            <button
+                              onClick={() => handleOpenEdit(ev)}
+                              className="px-2.5 py-1 rounded-lg bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/30 text-xs font-semibold"
+                            >
+                              Sửa
+                            </button>
+                            <button
+                              onClick={() => handleDeleteEvent(ev.id)}
+                              className="px-2 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs"
+                            >
+                              Xoá
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </div>
         )}
 
-        {/* TAB 3: ADD SCHEDULE (With Date Range & Conflict Detection) */}
-        {activeTab === 'add' && (
-          <div className="space-y-4 animate-in fade-in duration-300">
-            <div>
-              <h2 className="text-base font-bold text-white">Thêm Lịch Giảng Dạy Mới</h2>
-              <p className="text-xs text-slate-400">Tính năng v1.3.1: Nhập ngày bắt đầu - kết thúc & khung giờ chuẩn</p>
-            </div>
-
-            {addSuccess && (
-              <div className="p-3 bg-emerald-500/20 border border-emerald-500/40 rounded-xl flex items-center gap-2 text-emerald-300 text-xs font-semibold animate-in fade-in">
-                <Check className="w-4 h-4" /> Đã lưu lịch giảng dạy thành công vào thiết bị iPhone!
-              </div>
-            )}
-
-            {conflictWarning && (
-              <div className="p-3 bg-amber-500/20 border border-amber-500/40 rounded-xl flex items-start gap-2 text-amber-300 text-xs leading-relaxed animate-in fade-in">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>{conflictWarning}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleAddSchedule} className="space-y-3.5 bg-slate-900 p-4 rounded-2xl border border-slate-800">
+        {/* ================= TAB 3: SỔ BÁO GIẢNG (PEDAGOGICAL REPORT) ================= */}
+        {activeTab === 'report' && (
+          <div className="space-y-6 animate-fade-in">
+            {/* Header & Export actions */}
+            <div className="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-5 shadow-lg flex flex-wrap items-center justify-between gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Môn Học / Bài Dạy *</label>
-                <input
-                  type="text"
-                  placeholder="Ví dụ: Toán Học, Tin Học..."
-                  value={newSubject}
-                  onChange={(e) => setNewSubject(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Lớp Học *</label>
-                  <input
-                    type="text"
-                    placeholder="Ví dụ: 11A1"
-                    value={newClass}
-                    onChange={(e) => setNewClass(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Phòng Học *</label>
-                  <input
-                    type="text"
-                    placeholder="Ví dụ: P.204 Nhà A"
-                    value={newRoom}
-                    onChange={(e) => setNewRoom(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Day of Week */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Lặp Lại Vào Thứ Mấy Hàng Tuần *</label>
-                <select
-                  value={newDay}
-                  onChange={(e) => setNewDay(Number(e.target.value))}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
-                >
-                  <option value={2}>Thứ Hai hàng tuần</option>
-                  <option value={3}>Thứ Ba hàng tuần</option>
-                  <option value={4}>Thứ Tư hàng tuần</option>
-                  <option value={5}>Thứ Năm hàng tuần</option>
-                  <option value={6}>Thứ Sáu hàng tuần</option>
-                  <option value={7}>Thứ Bảy hàng tuần</option>
-                  <option value={8}>Chủ Nhật hàng tuần</option>
-                </select>
-              </div>
-
-              {/* Preset Time Types */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Khung Giờ Cố Định (Chuẩn Bộ GD&ĐT)</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleTypeChange('theory')}
-                    className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
-                      newType === 'theory'
-                        ? 'bg-blue-600 border-blue-500 text-white'
-                        : 'bg-slate-800 border-slate-700 text-slate-300'
-                    }`}
-                  >
-                    📖 Lý Thuyết (45 Phút)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleTypeChange('practice')}
-                    className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
-                      newType === 'practice'
-                        ? 'bg-emerald-600 border-emerald-500 text-white'
-                        : 'bg-slate-800 border-slate-700 text-slate-300'
-                    }`}
-                  >
-                    🧪 Thực Hành (60 Phút)
-                  </button>
-                </div>
-              </div>
-
-              {/* Start & End Time */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Giờ Bắt Đầu</label>
-                  <input
-                    type="time"
-                    value={newStartTime}
-                    onChange={(e) => handleStartTimeChange(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Giờ Kết Thúc ({newType === 'theory' ? '45p' : '60p'})</label>
-                  <input
-                    type="time"
-                    value={newEndTime}
-                    onChange={(e) => setNewEndTime(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
-                  />
-                </div>
-              </div>
-
-              {/* Date Range (v1.3.1) */}
-              <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800 space-y-2">
-                <div className="text-[11px] font-bold text-indigo-300 flex items-center gap-1">
-                  📅 Khoảng Thời Gian Diễn Ra Lịch (v1.3.1)
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[10px] text-slate-400 mb-0.5">Ngày bắt đầu</label>
-                    <input
-                      type="date"
-                      value={newStartDate}
-                      onChange={(e) => setNewStartDate(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] text-slate-400 mb-0.5">Ngày kết thúc nhắc nhở</label>
-                    <input
-                      type="date"
-                      value={newEndDate}
-                      onChange={(e) => setNewEndDate(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-white focus:outline-none"
-                    />
-                  </div>
-                </div>
-                <p className="text-[10px] text-slate-500">
-                  Lịch sẽ tự động nhắc nhở Thầy/Cô vào Thứ {newDay} hàng tuần từ {newStartDate} đến hết ngày {newEndDate}.
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
+                  <span>Sổ Báo Giảng & Thống Kê Tiến Độ Giảng Dạy</span>
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Tổng hợp {events.length} ca dạy • Tiến độ từng môn học & lớp theo chuẩn báo cáo nhà trường
                 </p>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Ghi Chú / Chuẩn Bị Bài Dạy</label>
-                <textarea
-                  rows={2}
-                  placeholder="Dặn dò học sinh, kiểm tra bài tập, thiết bị cần mượn..."
-                  value={newNotes}
-                  onChange={(e) => setNewNotes(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
-                ></textarea>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-              >
-                <Plus className="w-4 h-4" /> Lưu Lịch Giảng Dạy Vào iPhone
-              </button>
-            </form>
-
-            {/* Modal Xác Nhận Trùng Lịch Chuẩn iOS WebKit */}
-            {showConflictModal && (
-              <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-                <div className="bg-slate-900 border border-amber-500/50 rounded-2xl p-5 max-w-xs w-full shadow-2xl space-y-3.5 animate-in zoom-in-95">
-                  <div className="flex items-center gap-2 text-amber-400">
-                    <AlertTriangle className="w-5 h-5 shrink-0" />
-                    <h3 className="font-bold text-sm">Cảnh Báo Trùng Lịch</h3>
-                  </div>
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    {conflictWarning || 'Phát hiện ca dạy mới bị trùng khung giờ với một môn học khác đã có.'}
-                  </p>
-                  <p className="text-[11px] text-amber-200/80">
-                    Thầy/Cô có muốn tiếp tục lưu ca dạy này vào lịch trình không?
-                  </p>
-                  <div className="flex gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setShowConflictModal(false)}
-                      className="flex-1 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-all"
-                    >
-                      Sửa Giờ
-                    </button>
-                    <button
-                      type="button"
-                      onClick={executeAddSchedule}
-                      className="flex-1 py-2 text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white rounded-xl shadow-lg shadow-amber-600/30 transition-all"
-                    >
-                      Vẫn Lưu Lịch
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 4: NOTIFICATIONS & ALARM LAB (Full Equivalence to Android) */}
-        {activeTab === 'notifications' && (
-          <div className="space-y-4 animate-in fade-in duration-300">
-            <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <BellRing className="w-4 h-4 text-amber-400" /> Hệ Thống Thông Báo & Báo Thức iOS
-              </h2>
-              <p className="text-xs text-slate-400">Đồng bộ chuẩn cơ chế Báo thức kép 60m & 15m như Android</p>
-            </div>
-
-            {/* Permission Control Card */}
-            <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-200">Trạng thái quyền thông báo iOS</span>
-                <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                  permissionState === 'granted'
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                    : permissionState === 'denied'
-                    ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                    : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                }`}>
-                  {permissionState === 'granted' ? '✓ Đã kích hoạt' : permissionState === 'denied' ? '✗ Đã tắt' : 'Chưa cấp quyền'}
-                </span>
-              </div>
-
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                Trên iOS 16.4+, ứng dụng cần được cấp quyền thông báo và thêm vào Màn hình chính để gửi chuông báo lên màn hình khóa và Dynamic Island.
-              </p>
-
-              {permissionState !== 'granted' && (
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={requestNotificationPermission}
-                  className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-black font-bold text-xs rounded-xl shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                  onClick={handleExportCsv}
+                  className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
                 >
-                  <Bell className="w-4 h-4" /> Cấp Quyền Thông Báo Ngay Trên iPhone
-                </button>
-              )}
-            </div>
-
-            {/* Notification Toggles */}
-            <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3.5">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Cấu Hình Các Mốc Báo Động</h3>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-semibold text-white">Báo thức trước 60 phút</div>
-                  <div className="text-[10px] text-slate-400">Nhắc chuẩn bị giáo án, phôi vật tư giảng dạy</div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={notify60m}
-                  onChange={(e) => setNotify60m(e.target.checked)}
-                  className="w-4 h-4 accent-indigo-500 rounded cursor-pointer"
-                />
-              </div>
-
-              <div className="flex items-center justify-between border-t border-slate-800/80 pt-3">
-                <div>
-                  <div className="text-xs font-semibold text-white">Báo thức trước 15 phút</div>
-                  <div className="text-[10px] text-slate-400">Nhắc khẩn trương di chuyển đến phòng/xưởng</div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={notify15m}
-                  onChange={(e) => setNotify15m(e.target.checked)}
-                  className="w-4 h-4 accent-indigo-500 rounded cursor-pointer"
-                />
-              </div>
-
-              <div className="flex items-center justify-between border-t border-slate-800/80 pt-3">
-                <div>
-                  <div className="text-xs font-semibold text-white">Chuông âm thanh sư phạm (Web Audio)</div>
-                  <div className="text-[10px] text-slate-400">Tiếng chuông trường ngân vang 4 nốt harmonic</div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={soundEnabled}
-                  onChange={(e) => setSoundEnabled(e.target.checked)}
-                  className="w-4 h-4 accent-indigo-500 rounded cursor-pointer"
-                />
-              </div>
-
-              <div className="flex items-center justify-between border-t border-slate-800/80 pt-3">
-                <div>
-                  <div className="text-xs font-semibold text-white">AI Động lực sáng (06:30)</div>
-                  <div className="text-[10px] text-slate-400">Khởi đầu ngày mới tràn đầy nhiệt huyết bục giảng</div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={notifyMorning}
-                  onChange={(e) => setNotifyMorning(e.target.checked)}
-                  className="w-4 h-4 accent-indigo-500 rounded cursor-pointer"
-                />
-              </div>
-
-              <div className="flex items-center justify-between border-t border-slate-800/80 pt-3">
-                <div>
-                  <div className="text-xs font-semibold text-white">AI Lời cảm ơn tối (19:00)</div>
-                  <div className="text-[10px] text-slate-400">Tri ân một ngày cống hiến & thư giãn tinh thần</div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={notifyEvening}
-                  onChange={(e) => setNotifyEvening(e.target.checked)}
-                  className="w-4 h-4 accent-indigo-500 rounded cursor-pointer"
-                />
-              </div>
-            </div>
-
-            {/* Notification Test Lab (Phòng Thử Nghiệm Thông Báo Như Android) */}
-            <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                  🧪 Phòng Thử Nghiệm Chuông Báo (Test Center)
-                </h3>
-                <span className="text-[10px] text-indigo-400">Bấm để kiểm tra</span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <button
-                  onClick={() => triggerNotification(
-                    '🔔 SẮP ĐẾN GIỜ DẠY (CÒN 60P)',
-                    'Toán Học 11 - Lớp 11A1 lúc 07:00 (P.204). Thầy/Cô chuẩn bị giáo án nhé!',
-                    'bell'
-                  )}
-                  className="p-3 bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-xl text-left transition-all active:scale-95 group"
-                >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-bold text-blue-300">Chuông 60 phút</span>
-                    <Play className="w-3 h-3 text-blue-400 group-hover:translate-x-0.5 transition-transform" />
-                  </div>
-                  <p className="text-[10px] text-slate-400">Chuông êm dịu nhắc chuẩn bị bài giảng</p>
-                </button>
-
-                <button
-                  onClick={() => triggerNotification(
-                    '⚡ KHẨN TRƯƠNG VÀO LỚP (CÒN 15P)',
-                    'Toán Học 11 - Di chuyển đến Phòng 204 ngay. Tiết học bắt đầu trong 15 phút!',
-                    'urgent'
-                  )}
-                  className="p-3 bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-xl text-left transition-all active:scale-95 group"
-                >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-bold text-amber-300">Chuông 15 phút</span>
-                    <Play className="w-3 h-3 text-amber-400 group-hover:translate-x-0.5 transition-transform" />
-                  </div>
-                  <p className="text-[10px] text-slate-400">Chuông dồn dập nhắc di chuyển vào lớp</p>
-                </button>
-
-                <button
-                  onClick={() => triggerNotification(
-                    '☀️ ĐỘNG LỰC SÁNG NAY (AI)',
-                    currentQuote,
-                    'bell'
-                  )}
-                  className="p-3 bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-xl text-left transition-all active:scale-95 group"
-                >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-bold text-amber-400">Động lực sáng</span>
-                    <Play className="w-3 h-3 text-amber-400 group-hover:translate-x-0.5 transition-transform" />
-                  </div>
-                  <p className="text-[10px] text-slate-400">Lời chúc khởi đầu ngày mới năng lượng</p>
-                </button>
-
-                <button
-                  onClick={() => triggerNotification(
-                    '🌙 CẢM ƠN THẦY/CÔ (AI)',
-                    EVENING_QUOTES[0],
-                    'bell'
-                  )}
-                  className="p-3 bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-xl text-left transition-all active:scale-95 group"
-                >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-bold text-purple-400">Cảm ơn tối</span>
-                    <Play className="w-3 h-3 text-purple-400 group-hover:translate-x-0.5 transition-transform" />
-                  </div>
-                  <p className="text-[10px] text-slate-400">Tri ân ngày cống hiến & thư giãn</p>
-                </button>
-              </div>
-            </div>
-
-            {/* iOS System Guide Note */}
-            <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1.5">
-              <div className="font-bold text-slate-300 flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" /> Đảm bảo thông báo hiển thị tốt nhất trên iPhone:
-              </div>
-              <ul className="list-disc pl-4 space-y-1 text-[10px]">
-                <li>Ghim app ra Màn hình chính qua tính năng <strong>Add to Home Screen</strong> của Safari.</li>
-                <li>Mở <strong>Cài đặt iPhone ➔ Thông báo ➔ Smart Teacher</strong> ➔ Bật Cho phép thông báo, Âm thanh và Biểu ngữ.</li>
-                <li>Không bật chế độ &ldquo;Không làm phiền&rdquo; (Do Not Disturb) trong giờ dạy.</li>
-              </ul>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 5: SỔ SÁCH & BÁO CÁO (Export Excel/PDF) */}
-        {activeTab === 'reports' && (
-          <div className="space-y-4 animate-in fade-in duration-300">
-            <div>
-              <h2 className="text-base font-bold text-white">Sổ Sách & Báo Cáo Sư Phạm</h2>
-              <p className="text-xs text-slate-400">Xuất tự động chuẩn mẫu quy định của Bộ GD&ĐT</p>
-            </div>
-
-            {/* Total Stats Card */}
-            <div className="p-4 bg-gradient-to-br from-slate-900 to-slate-950 rounded-2xl border border-slate-800 grid grid-cols-3 gap-2 text-center">
-              <div className="p-2 bg-slate-800/50 rounded-xl">
-                <div className="text-lg font-black text-indigo-400">{schedules.length}</div>
-                <div className="text-[10px] text-slate-400">Tổng tiết/tuần</div>
-              </div>
-              <div className="p-2 bg-slate-800/50 rounded-xl">
-                <div className="text-lg font-black text-emerald-400">{totalHours}h</div>
-                <div className="text-[10px] text-slate-400">Thời lượng</div>
-              </div>
-              <div className="p-2 bg-slate-800/50 rounded-xl">
-                <div className="text-lg font-black text-purple-400">100%</div>
-                <div className="text-[10px] text-slate-400">Chuẩn hóa</div>
-              </div>
-            </div>
-
-            {/* Document 1: Sổ Báo Giảng */}
-            <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/30">
-                  <FileSpreadsheet className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-xs font-bold text-white">Sổ Báo Giảng Điện Tử Tuần</h3>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    Tự động tổng hợp tên bài dạy, phân phối chương trình, lớp và thời gian theo tuần.
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2 pt-2 border-t border-slate-800">
-                <button
-                  onClick={() => {
-                    const csvContent = "data:text/csv;charset=utf-8,Thứ,Tiết,Môn,Lớp,Phòng,Thời Gian,Thời Lượng,Bắt Đầu,Kết Thúc\n" +
-                      schedules.map(s => `Thứ ${s.dayOfWeek},${s.subject},${s.className},${s.room},${s.startTime}-${s.endTime},${s.type==='theory'?'45p':'60p'},${s.startDate},${s.endDate}`).join("\n");
-                    const encodedUri = encodeURI(csvContent);
-                    const link = document.createElement("a");
-                    link.setAttribute("href", encodedUri);
-                    link.setAttribute("download", "So_Bao_Giang_Tuan.csv");
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                  }}
-                  className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-md shadow-emerald-600/20"
-                >
-                  <Download className="w-3.5 h-3.5" /> Xuất Excel (.CSV)
+                  <Download className="w-4 h-4" /> Xuất Excel / CSV
                 </button>
                 <button
                   onClick={() => window.print()}
-                  className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
+                  className="px-3.5 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
                 >
-                  <FileText className="w-3.5 h-3.5" /> In / PDF
+                  <Printer className="w-4 h-4" /> In Báo Cáo
                 </button>
               </div>
             </div>
 
-            {/* Document 2: Bảng Kê Giờ Dạy */}
-            <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="p-2.5 bg-blue-500/20 text-blue-400 rounded-xl border border-blue-500/30">
-                  <Award className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-xs font-bold text-white">Bảng Kê Giờ Dạy & Thù Lao</h3>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    Thống kê tiết chuẩn, tiết vượt giờ, hệ số đứng lớp phục vụ thanh quyết toán cuối kỳ.
-                  </p>
-                </div>
+            {/* Summary Statistics Table */}
+            <div className="bg-slate-800/50 border border-slate-700/70 rounded-2xl overflow-hidden shadow-xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-900/90 text-slate-300 font-bold uppercase tracking-wider border-b border-slate-700">
+                    <tr>
+                      <th className="p-3.5">STT</th>
+                      <th className="p-3.5">Môn học</th>
+                      <th className="p-3.5">Lớp giảng dạy</th>
+                      <th className="p-3.5">Phòng dạy</th>
+                      <th className="p-3.5 text-center">Tổng ca</th>
+                      <th className="p-3.5 text-center">Đã dạy</th>
+                      <th className="p-3.5 text-center">Còn lại</th>
+                      <th className="p-3.5 text-center">Lý thuyết / Thực hành</th>
+                      <th className="p-3.5 text-center">Tiến độ</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-700/60">
+                    {reportStats.map((st, idx) => {
+                      const pct = Math.round((st.done / (st.total || 1)) * 100);
+                      return (
+                        <tr key={idx} className="hover:bg-slate-800/60 transition-colors">
+                          <td className="p-3.5 font-mono text-slate-400">{idx + 1}</td>
+                          <td className="p-3.5 font-bold text-white">{st.subject}</td>
+                          <td className="p-3.5">
+                            <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-semibold">
+                              {st.className}
+                            </span>
+                          </td>
+                          <td className="p-3.5 text-slate-300">{st.room}</td>
+                          <td className="p-3.5 text-center font-bold text-white font-mono">{st.total}</td>
+                          <td className="p-3.5 text-center font-bold text-emerald-400 font-mono">{st.done}</td>
+                          <td className="p-3.5 text-center font-bold text-amber-400 font-mono">{st.remaining}</td>
+                          <td className="p-3.5 text-center">
+                            <span className="text-blue-400 font-mono">{st.theory} LT</span>
+                            <span className="text-slate-500 mx-1">/</span>
+                            <span className="text-emerald-400 font-mono">{st.practice} TH</span>
+                          </td>
+                          <td className="p-3.5">
+                            <div className="w-32 mx-auto space-y-1">
+                              <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                                <span>{pct}%</span>
+                                <span>{st.done}/{st.total}</span>
+                              </div>
+                              <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-700">
+                                <div
+                                  className="bg-gradient-to-r from-blue-500 to-emerald-500 h-full rounded-full transition-all"
+                                  style={{ width: `${pct}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-              <div className="flex gap-2 pt-2 border-t border-slate-800">
-                <button
-                  onClick={() => alert('Đã tạo báo cáo bảng kê giờ dạy học kỳ 1! Thầy/Cô có thể tải file hoặc gửi email trực tiếp.')}
-                  className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-md shadow-blue-600/20"
-                >
-                  <Download className="w-3.5 h-3.5" /> Xuất Bảng Kê (PDF)
-                </button>
-              </div>
-            </div>
-
-            {/* Security note */}
-            <div className="p-3 bg-slate-900/50 rounded-xl border border-slate-800/80 text-[11px] text-slate-400 flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Dữ liệu lưu trữ bảo mật cục bộ ngay trên bộ nhớ iPhone của Thầy/Cô.</span>
             </div>
           </div>
         )}
 
-        {/* TAB 6: TRỢ LÝ AI (AI ASSISTANT) */}
+        {/* ================= TAB 4: TRỢ LÝ AI (AI ASSISTANT) ================= */}
         {activeTab === 'ai' && (
-          <div className="space-y-3 animate-in fade-in duration-300">
-            <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-purple-400" /> Trợ Lý Sư Phạm AI
-              </h2>
-              <p className="text-xs text-slate-400">Hỗ trợ soạn giáo án, câu hỏi, phương pháp dạy học</p>
+          <div className="max-w-4xl mx-auto space-y-4 animate-fade-in">
+            <div className="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Trợ Lý Sư Phạm Trí Tuệ Nhân Tạo</h3>
+                  <p className="text-xs text-slate-400">Hỗ trợ soạn giáo án CV 5512, tạo ngân hàng trắc nghiệm & sắp xếp tiến độ</p>
+                </div>
+              </div>
             </div>
 
-            {/* Chat Box */}
-            <div className="h-[360px] bg-slate-900/90 border border-slate-800 rounded-2xl p-3 overflow-y-auto space-y-3 flex flex-col">
-              {chatMessages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={`flex items-start gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
+            {/* Chat Window */}
+            <div className="bg-slate-800/50 border border-slate-700/70 rounded-2xl p-4 sm:p-5 h-[460px] flex flex-col justify-between shadow-xl">
+              <div className="space-y-4 overflow-y-auto pr-2">
+                {chatMessages.map((msg, i) => (
+                  <div
+                    key={i}
+                    className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    {msg.role === 'ai' && (
+                      <div className="w-8 h-8 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center shrink-0">
+                        <Sparkles className="w-4 h-4 text-amber-400" />
+                      </div>
+                    )}
+                    <div
+                      className={`p-3.5 rounded-2xl text-xs sm:text-sm max-w-[85%] whitespace-pre-line leading-relaxed shadow ${
+                        msg.role === 'user'
+                          ? 'bg-blue-600 text-white rounded-tr-none'
+                          : 'bg-slate-900/90 text-slate-200 border border-slate-700/60 rounded-tl-none'
+                      }`}
+                    >
+                      {msg.text}
+                    </div>
+                  </div>
+                ))}
+                {isAiLoading && (
+                  <div className="flex items-center gap-2 text-xs text-slate-400 italic">
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Trợ lý AI đang soạn câu trả lời chuyên môn...</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Suggestions chips */}
+              <div className="pt-3 border-t border-slate-700/50 space-y-3">
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+                  <button
+                    onClick={() => setAiInput('Soạn giáo án Module Tiện CNC Lớp CG24TC34 theo công văn 5512')}
+                    className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-blue-500 whitespace-nowrap"
+                  >
+                    📝 Soạn giáo án CV 5512
+                  </button>
+                  <button
+                    onClick={() => setAiInput('Tạo 10 câu hỏi trắc nghiệm an toàn xưởng thực hành tiện CNC')}
+                    className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-blue-500 whitespace-nowrap"
+                  >
+                    ❓ 10 câu trắc nghiệm CNC
+                  </button>
+                  <button
+                    onClick={() => setAiInput('Tư vấn cách xử lý khi học sinh đi thực hành trễ')}
+                    className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-blue-500 whitespace-nowrap"
+                  >
+                    💡 Kỷ luật tích cực
+                  </button>
+                </div>
+
+                {/* Input Box */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Hỏi trợ lý AI về giáo án, bài giảng, kế hoạch đào tạo..."
+                    value={aiInput}
+                    onChange={(e) => setAiInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSendAiMessage()}
+                    className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-blue-500"
+                  />
+                  <button
+                    onClick={handleSendAiMessage}
+                    disabled={isAiLoading}
+                    className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1 transition-all disabled:opacity-50"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= TAB 5: CÀI ĐẶT & ĐỒNG BỘ ĐÁM MÂY ================= */}
+        {activeTab === 'settings' && (
+          <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
+            {/* Cloud Sync Settings */}
+            <div className="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-5 space-y-4 shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
+                  <Cloud className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Đồng Bộ Đám Mây Đa Nền Tảng</h3>
+                  <p className="text-xs text-slate-400">Kết nối tức thời Máy tính (Windows/Mac) và Điện thoại Android (Tecno, Samsung...)</p>
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-2">
+                <label className="text-xs font-medium text-slate-300 block">
+                  Mã đồng bộ cá nhân của Thầy/Cô (Số điện thoại hoặc mã định danh):
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={syncInput}
+                    onChange={(e) => setSyncInput(e.target.value)}
+                    className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white font-mono focus:outline-none focus:border-blue-500"
+                  />
+                  <button
+                    onClick={() => {
+                      const clean = syncInput.trim();
+                      if (clean) {
+                        setSyncCode(clean);
+                        localStorage.setItem('smart_teacher_sync_code', clean);
+                        pullFromCloud(clean, true);
+                      }
+                    }}
+                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-all shadow-md cursor-pointer"
+                  >
+                    Lưu & Đồng bộ ngay
+                  </button>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-slate-900/70 border border-slate-700/60 space-y-2 text-xs text-slate-300">
+                  <p className="font-semibold text-white flex items-center gap-1.5">
+                    <Smartphone className="w-4 h-4 text-blue-400" /> Hướng dẫn đồng bộ với điện thoại Android:
+                  </p>
+                  <ol className="list-decimal list-inside space-y-1 text-slate-400">
+                    <li>Mở ứng dụng <strong>Smart Teacher Schedule</strong> trên điện thoại.</li>
+                    <li>Vào mục <strong>Cài đặt</strong> ➔ Kiểm tra mã đồng bộ có khớp <strong className="text-white font-mono">{syncCode}</strong> chưa.</li>
+                    <li>Bấm nút <strong>Đồng bộ đám mây ngay</strong> trên điện thoại.</li>
+                    <li>Toàn bộ 288 ca dạy sẽ tự động hiển thị đầy đủ trên cả máy tính và điện thoại.</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+
+            {/* Sound & Notifications */}
+            <div className="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-5 space-y-4 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
+                    <Bell className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white">Chuông Báo & Thông Báo Tiết Dạy</h3>
+                    <p className="text-xs text-slate-400">Âm thanh Crystal Chime nhắc giờ 60p và 15p</p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => playChime('bell')}
+                  className="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium flex items-center gap-1.5 cursor-pointer"
                 >
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
-                    msg.role === 'user'
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-purple-600 text-white'
-                  }`}>
-                    {msg.role === 'user' ? 'GV' : 'AI'}
-                  </div>
-                  <div className={`max-w-[80%] p-3 rounded-2xl text-xs leading-relaxed ${
-                    msg.role === 'user'
-                      ? 'bg-indigo-600 text-white rounded-tr-none'
-                      : 'bg-slate-800 text-slate-200 rounded-tl-none border border-slate-700/60'
-                  }`}>
-                    {msg.text}
-                  </div>
+                  <Volume2 className="w-3.5 h-3.5" /> Thử chuông
+                </button>
+              </div>
+
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-700/50">
+                  <span className="text-xs font-medium text-slate-200">Nhắc nhở trước 60 phút (Chuẩn bị giáo án & vật tư)</span>
+                  <input
+                    type="checkbox"
+                    checked={notify60m}
+                    onChange={(e) => setNotify60m(e.target.checked)}
+                    className="rounded border-slate-700 text-blue-600 focus:ring-0 cursor-pointer"
+                  />
                 </div>
-              ))}
-              {isAiTyping && (
-                <div className="flex items-center gap-2 text-xs text-purple-400 italic">
-                  <Sparkles className="w-3.5 h-3.5 animate-spin" /> AI đang suy nghĩ câu trả lời...
+                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-700/50">
+                  <span className="text-xs font-medium text-slate-200">Chuông báo khẩn cấp trước 15 phút (Vào phòng học/xưởng)</span>
+                  <input
+                    type="checkbox"
+                    checked={notify15m}
+                    onChange={(e) => setNotify15m(e.target.checked)}
+                    className="rounded border-slate-700 text-blue-600 focus:ring-0 cursor-pointer"
+                  />
                 </div>
-              )}
+              </div>
             </div>
 
-            {/* Quick Prompt Chips */}
-            <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+            {/* Data Backup */}
+            <div className="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-5 space-y-3 shadow-lg">
+              <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                <Download className="w-4 h-4 text-blue-400" />
+                <span>Sao lưu & Xuất Dữ Liệu Máy Tính</span>
+              </h4>
+              <p className="text-xs text-slate-400">
+                Xuất file sao lưu JSON chứa toàn bộ 288 ca dạy để lưu trữ an toàn trên ổ đĩa máy tính.
+              </p>
               <button
-                onClick={() => setInputMessage('Gợi ý giáo án 5 bước CV 5512')}
-                className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-lg text-[11px] text-slate-300 hover:text-white shrink-0"
+                onClick={() => {
+                  const dataStr = JSON.stringify({ events, schedules, syncCode, exportedAt: new Date().toISOString() }, null, 2);
+                  const blob = new Blob([dataStr], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `SmartTeacher_Backup_288Ca_${todayStr}.json`;
+                  a.click();
+                }}
+                className="px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
               >
-                📝 Cấu trúc CV 5512
-              </button>
-              <button
-                onClick={() => setInputMessage('Tạo 3 câu hỏi trắc nghiệm Toán 11')}
-                className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-lg text-[11px] text-slate-300 hover:text-white shrink-0"
-              >
-                ❓ Đặt câu hỏi trắc nghiệm
-              </button>
-              <button
-                onClick={() => setInputMessage('Cách bật chuông báo 60p trên iPhone?')}
-                className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-lg text-[11px] text-slate-300 hover:text-white shrink-0"
-              >
-                🔔 Hướng dẫn bật chuông
-              </button>
-            </div>
-
-            {/* Chat Input */}
-            <div className="flex items-center gap-2 bg-slate-900 p-2 rounded-2xl border border-slate-800">
-              <input
-                type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Hỏi AI bất kỳ điều gì..."
-                className="flex-1 bg-transparent px-2 text-xs text-white focus:outline-none"
-              />
-              <button
-                onClick={handleSendMessage}
-                className="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-colors shadow-md shadow-indigo-600/30"
-              >
-                <Send className="w-3.5 h-3.5" />
+                <Download className="w-3.5 h-3.5" /> Tải file sao lưu JSON ({events.length} ca)
               </button>
             </div>
           </div>
         )}
       </main>
 
-      {/* TAB BAR NAVIGATION */}
-      <nav className="fixed bottom-0 left-0 right-0 max-w-md md:max-w-4xl lg:max-w-5xl mx-auto bg-slate-900/95 backdrop-blur-2xl border-t border-slate-800/80 px-2 py-2 z-50 flex items-center justify-around shadow-2xl">
-        <button
-          onClick={() => setActiveTab('today')}
-          className={`flex flex-col items-center gap-1 transition-all ${
-            activeTab === 'today' ? 'text-indigo-400 scale-105' : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Sun className="w-5 h-5" />
-          <span className="text-[10px] font-semibold">Hôm nay</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('schedule')}
-          className={`flex flex-col items-center gap-1 transition-all ${
-            activeTab === 'schedule' ? 'text-indigo-400 scale-105' : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Calendar className="w-5 h-5" />
-          <span className="text-[10px] font-semibold">Lịch tuần</span>
-        </button>
-
-        {/* Central Prominent Add Button */}
-        <button
-          onClick={() => setActiveTab('add')}
-          className="relative -top-3 p-3 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-xl shadow-indigo-500/40 hover:scale-110 active:scale-95 transition-all"
-        >
-          <Plus className="w-6 h-6 stroke-[2.5]" />
-        </button>
-
-        <button
-          onClick={() => setActiveTab('notifications')}
-          className={`flex flex-col items-center gap-1 transition-all ${
-            activeTab === 'notifications' ? 'text-amber-400 scale-105' : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Bell className="w-5 h-5" />
-          <span className="text-[10px] font-semibold">Báo thức</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('reports')}
-          className={`flex flex-col items-center gap-1 transition-all ${
-            activeTab === 'reports' ? 'text-indigo-400 scale-105' : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <FileSpreadsheet className="w-5 h-5" />
-          <span className="text-[10px] font-semibold">Sổ sách</span>
-        </button>
-      </nav>
-
-      {/* Cloud Sync Modal */}
-      {showSyncModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl relative animate-in fade-in duration-200">
-            <button
-              onClick={() => setShowSyncModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20">
-                <Cloud className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-bold text-base text-white">Đồng Bộ Đám Mây Đa Nền Tảng</h3>
-                <p className="text-xs text-slate-400">Kết nối Máy tính (Windows/Mac/Linux) & Điện thoại</p>
-              </div>
+      {/* ================= MODAL: CHỈNH SỬA CA DẠY (UNIFIED EDIT MODAL) ================= */}
+      {editingEvent && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl text-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-blue-400" />
+                <span>Chỉnh Sửa Ca Dạy & Tiến Độ</span>
+              </h3>
+              <button onClick={() => setEditingEvent(null)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            <div className="p-3.5 bg-slate-950/70 rounded-xl border border-slate-800 space-y-2">
-              <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
-                <span>MÃ ĐỒNG BỘ CỦA THẦY/CÔ:</span>
-                <span className="text-[11px] text-emerald-400 font-normal">🟢 Đang hoạt động</span>
-              </label>
-              <div className="flex gap-2">
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="text-slate-400 font-medium block mb-1">Môn học:</label>
                 <input
                   type="text"
-                  value={syncInput}
-                  onChange={(e) => setSyncInput(e.target.value.trim())}
-                  placeholder="Nhập SĐT hoặc Mã (VD: 0961364600)"
-                  className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono font-bold focus:outline-none focus:border-indigo-500"
+                  value={editSubject}
+                  onChange={(e) => setEditSubject(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"
                 />
-                <button
-                  onClick={() => {
-                    if (syncInput) {
-                      setSyncCode(syncInput);
-                      localStorage.setItem('smart_teacher_sync_code', syncInput);
-                      pullFromCloud(syncInput, true);
-                      setCopiedCode(true);
-                      setTimeout(() => setCopiedCode(false), 2000);
-                    }
-                  }}
-                  className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-colors"
-                >
-                  {copiedCode ? 'Đã lưu!' : 'Lưu & Tải'}
-                </button>
               </div>
-              <p className="text-[11px] text-slate-400">
-                💡 Nhập cùng mã này trong ứng dụng <b>Android</b> (mục <i>Cài đặt ➔ Mã đồng bộ đám mây</i>) để dữ liệu liên kết 2 chiều.
-              </p>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-400 font-medium block mb-1">Lớp giảng dạy:</label>
+                  <input
+                    type="text"
+                    value={editClass}
+                    onChange={(e) => setEditClass(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 font-medium block mb-1">Phòng học / Xưởng:</label>
+                  <input
+                    type="text"
+                    value={editRoom}
+                    onChange={(e) => setEditRoom(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-slate-400 font-medium block mb-1">Ngày dạy:</label>
+                  <input
+                    type="date"
+                    value={editDate}
+                    onChange={(e) => setEditDate(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 font-medium block mb-1">Giờ bắt đầu:</label>
+                  <input
+                    type="time"
+                    value={editStartTime}
+                    onChange={(e) => setEditStartTime(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 font-medium block mb-1">Giờ kết thúc:</label>
+                  <input
+                    type="time"
+                    value={editEndTime}
+                    onChange={(e) => setEditEndTime(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Session Type (Theory vs Practice) */}
+              <div>
+                <label className="text-slate-400 font-medium block mb-1">Hình thức giảng dạy:</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setEditSessionType('Lý thuyết')}
+                    className={`py-2 rounded-xl border text-center font-semibold transition-all ${
+                      editSessionType === 'Lý thuyết'
+                        ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-600/30'
+                        : 'bg-slate-800 text-slate-300 border-slate-700'
+                    }`}
+                  >
+                    📖 Lý thuyết
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditSessionType('Thực hành')}
+                    className={`py-2 rounded-xl border text-center font-semibold transition-all ${
+                      editSessionType === 'Thực hành'
+                        ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-600/30'
+                        : 'bg-slate-800 text-slate-300 border-slate-700'
+                    }`}
+                  >
+                    ⚙️ Thực hành
+                  </button>
+                </div>
+              </div>
+
+              {/* Date range update (User Request 2) */}
+              <div className="p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-2">
+                <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
+                  Tiến độ đào tạo (Ngày bắt đầu & Kết thúc học kỳ)
+                </span>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] text-slate-400 block">Bắt đầu:</label>
+                    <input
+                      type="date"
+                      value={editStartDate}
+                      onChange={(e) => setEditStartDate(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white font-mono text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-400 block">Kết thúc:</label>
+                    <input
+                      type="date"
+                      value={editEndDate}
+                      onChange={(e) => setEditEndDate(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white font-mono text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Auto Sync Subsequent Checkbox (User Request 3) */}
+              <div className="p-3 rounded-xl bg-blue-950/30 border border-blue-500/30 space-y-2">
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={syncSubsequent}
+                    onChange={(e) => setSyncSubsequent(e.target.checked)}
+                    className="mt-0.5 rounded border-slate-700 text-blue-600 focus:ring-0"
+                  />
+                  <span className="text-xs text-blue-200">
+                    <strong>Tự động đồng bộ cho các ca cùng loại ở phía sau</strong> khi ca đó chưa diễn ra (tránh phải chỉnh sửa lặp lại nhiều lần).
+                  </span>
+                </label>
+
+                <label className="flex items-start gap-2.5 cursor-pointer pt-1 border-t border-blue-500/20">
+                  <input
+                    type="checkbox"
+                    checked={updateWholeSchedule}
+                    onChange={(e) => setUpdateWholeSchedule(e.target.checked)}
+                    className="mt-0.5 rounded border-slate-700 text-blue-600 focus:ring-0"
+                  />
+                  <span className="text-xs text-blue-200">
+                    Cập nhật tiến độ toàn bộ học kỳ theo ngày bắt đầu/kết thúc mới.
+                  </span>
+                </label>
+              </div>
+
+              <div>
+                <label className="text-slate-400 font-medium block mb-1">Ghi chú:</label>
+                <textarea
+                  rows={2}
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  placeholder="Nội dung bài học, chuẩn bị phôi vật tư..."
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-slate-400 px-1">
-              <span>Lần đồng bộ gần nhất: <b className="text-slate-200">{lastSyncTime}</b></span>
-              <span className="text-emerald-400 flex items-center gap-1 font-semibold">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Tự động đồng bộ
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 pt-1">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
               <button
-                onClick={() => {
-                  pullFromCloud(syncCode, true);
-                }}
-                disabled={isSyncing}
-                className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-750 text-white font-semibold text-xs border border-slate-700 flex items-center justify-center gap-1.5 transition-all"
+                type="button"
+                onClick={() => setEditingEvent(null)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-cyan-400' : ''}`} />
-                <span>{isSyncing ? 'Đang tải...' : 'Tải về từ Đám mây'}</span>
+                Hủy bỏ
               </button>
-
               <button
-                onClick={() => {
-                  pushToCloud(schedules, syncCode);
-                }}
-                disabled={isSyncing}
-                className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-indigo-600/30"
+                type="button"
+                onClick={handleSaveEdit}
+                className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-md shadow-blue-600/30 cursor-pointer"
               >
-                <Cloud className="w-3.5 h-3.5" />
-                <span>{isSyncing ? 'Đang lưu...' : 'Lưu lên Đám mây'}</span>
+                Lưu thay đổi & Đồng bộ
               </button>
-            </div>
-
-            <div className="p-3 bg-indigo-950/30 border border-indigo-500/30 rounded-xl space-y-1.5">
-              <h4 className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
-                <Laptop className="w-3.5 h-3.5 text-cyan-400" /> Hệ Sinh Thái Máy Tính (Windows / Mac / Linux)
-              </h4>
-              <p className="text-[11px] text-slate-300 leading-relaxed">
-                Thầy/Cô có thể mở lịch dạy trên bất kỳ máy tính nào bằng cách truy cập <b>gvcncdsai.io.vn/app</b> và bấm biểu tượng "Cài đặt Desktop App" ở thanh địa chỉ để dùng như một phần mềm máy tính độc lập.
-              </p>
             </div>
           </div>
         </div>
       )}
 
+      {/* ================= MODAL: ĐÍNH KÈM TÀI LIỆU (ATTACH FILE) ================= */}
+      {attachingEvent && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl text-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Paperclip className="w-5 h-5 text-blue-400" />
+                <span>Đính Kèm Giáo Án / Tài Liệu</span>
+              </h3>
+              <button onClick={() => setAttachingEvent(null)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <p className="text-slate-300 font-medium">
+                Ca dạy: <span className="text-white font-bold">{attachingEvent.subject}</span> ({attachingEvent.className})
+              </p>
+              <div>
+                <label className="text-slate-400 font-medium block mb-1">Tên tài liệu / Giáo án:</label>
+                <input
+                  type="text"
+                  placeholder="VD: Giao_an_Module_Tien_CNC_Bai_1.pdf"
+                  value={attachFileName}
+                  onChange={(e) => setAttachFileName(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="text-slate-400 font-medium block mb-1">Đường dẫn tài liệu (Drive / Link file):</label>
+                <input
+                  type="text"
+                  placeholder="https://drive.google.com/file/..."
+                  value={attachFileUrl}
+                  onChange={(e) => setAttachFileUrl(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setAttachingEvent(null)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveAttachment}
+                className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-md cursor-pointer"
+              >
+                Lưu đính kèm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

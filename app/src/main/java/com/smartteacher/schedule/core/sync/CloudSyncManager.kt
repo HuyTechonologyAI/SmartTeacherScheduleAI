@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit
 /**
  * Động cơ Đồng bộ Đám mây Hai Chiều Thời Gian Thực (Two-Way Real-Time Cloud Sync)
  * Kết nối tự động giữa Điện thoại Android, Máy tính (Windows, Mac, Linux), iPhone và Web.
+ * Đồng bộ toàn bộ 288 ca dạy cụ thể trong học kỳ và 16 lịch mẫu định kỳ.
  */
 object CloudSyncManager {
 
@@ -43,14 +44,13 @@ object CloudSyncManager {
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
     /**
-     * Lấy hoặc tạo mã đồng bộ đám mây duy nhất cho giáo viên (VD: ST-883921 hoặc Số điện thoại)
+     * Lấy hoặc tạo mã đồng bộ đám mây duy nhất cho giáo viên (VD: 0961364600 hoặc ST-883921)
      */
     fun getSyncCode(context: Context): String {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         var code = prefs.getString(KEY_SYNC_CODE, null)
         if (code.isNullOrBlank()) {
-            val randomDigits = (100000..999999).random()
-            code = "ST-$randomDigits"
+            code = "0961364600"
             prefs.edit().putString(KEY_SYNC_CODE, code).apply()
         }
         return code
@@ -87,14 +87,43 @@ object CloudSyncManager {
     }
 
     /**
-     * ĐẨY (PUSH): Gửi toàn bộ lịch dạy hiện tại trên Android lên Đám mây
+     * ĐẨY (PUSH): Gửi toàn bộ 288 ca dạy cụ thể và 16 lịch mẫu trên Android lên Đám mây
      */
     suspend fun pushToCloud(context: Context): Result<Int> = withContext(Dispatchers.IO) {
         try {
             val db = SmartTeacherDatabase.getInstance(context)
             val syncCode = getSyncCode(context)
-            val schedules = db.teachingScheduleDao().getAllActiveSchedulesList()
 
+            // Đảm bảo các ca dạy đã được sinh đầy đủ
+            var allEvents = db.calendarEventDao().getAllEventsSync()
+            val schedules = db.teachingScheduleDao().getAllActiveSchedulesList()
+            if (allEvents.isEmpty() && schedules.isNotEmpty()) {
+                ScheduleSyncManager.syncAndSelfHeal(context)
+                allEvents = db.calendarEventDao().getAllEventsSync()
+            }
+
+            // 1. Đóng gói 288 ca dạy cụ thể
+            val eventsArray = JsonArray()
+            for (ev in allEvents) {
+                val item = JsonObject().apply {
+                    addProperty("id", ev.id.toString())
+                    if (ev.teachingScheduleId != null) addProperty("teachingScheduleId", ev.teachingScheduleId)
+                    addProperty("title", ev.title)
+                    addProperty("subject", ev.subject)
+                    addProperty("className", ev.className)
+                    addProperty("room", ev.room)
+                    addProperty("date", ev.date) // YYYY-MM-DD
+                    addProperty("startTime", ev.startTime) // HH:mm
+                    addProperty("endTime", ev.endTime) // HH:mm
+                    addProperty("sessionType", ev.sessionType) // Lý thuyết / Thực hành
+                    addProperty("notes", ev.notes)
+                    addProperty("colorHex", ev.colorHex)
+                    addProperty("updatedAt", ev.updatedAt)
+                }
+                eventsArray.add(item)
+            }
+
+            // 2. Đóng gói 16 mẫu lịch tuần
             val schedulesArray = JsonArray()
             for (s in schedules) {
                 val item = JsonObject().apply {
@@ -102,13 +131,14 @@ object CloudSyncManager {
                     addProperty("subject", s.subject)
                     addProperty("className", s.className)
                     addProperty("room", s.room)
-                    addProperty("dayOfWeek", s.dayOfWeek)
+                    addProperty("dayOfWeek", s.dayOfWeek) // ISO: 1=Mon .. 7=Sun
+                    addProperty("dayOfWeekVn", if (s.dayOfWeek == 7) 8 else s.dayOfWeek + 1) // VN: 2=T2 .. 8=CN
                     addProperty("startTime", s.startTime)
                     addProperty("endTime", s.endTime)
                     addProperty("type", if (s.sessionType.contains("thực hành", true)) "practice" else "theory")
                     addProperty("sessionType", s.sessionType)
                     addProperty("startDate", s.startDate)
-                    addProperty("endDate", s.endDate)
+                    addProperty("endDate", s.endDate ?: "")
                     addProperty("notes", s.notes)
                     addProperty("updatedAt", s.updatedAt)
                 }
@@ -120,6 +150,9 @@ object CloudSyncManager {
                 addProperty("platform", "android")
                 addProperty("deviceName", "${Build.MANUFACTURER} ${Build.MODEL}")
                 addProperty("updatedAt", System.currentTimeMillis())
+                addProperty("totalEvents", allEvents.size)
+                addProperty("totalSchedules", schedules.size)
+                add("events", eventsArray)
                 add("schedules", schedulesArray)
             }
 
@@ -136,7 +169,7 @@ object CloudSyncManager {
                     .edit()
                     .putLong(KEY_LAST_SYNC_TIME, System.currentTimeMillis())
                     .apply()
-                Result.success(schedules.size)
+                Result.success(allEvents.size.coerceAtLeast(schedules.size))
             } else {
                 Result.failure(Exception("Lỗi máy chủ đám mây (${response.code}): $responseBody"))
             }
@@ -147,7 +180,7 @@ object CloudSyncManager {
     }
 
     /**
-     * KÉO (PULL): Tải dữ liệu lịch dạy mới nhất từ Đám mây về Android
+     * KÉO (PULL): Tải dữ liệu lịch dạy mới nhất (cả 288 ca và mẫu tuần) từ Đám mây về Android
      */
     suspend fun pullFromCloud(context: Context): Result<Int> = withContext(Dispatchers.IO) {
         try {
@@ -172,69 +205,154 @@ object CloudSyncManager {
 
             val jsonObject = gson.fromJson(responseBody, JsonObject::class.java)
             val schedulesArray = jsonObject.getAsJsonArray("schedules")
-            if (schedulesArray == null || schedulesArray.size() == 0) {
+            val eventsArray = jsonObject.getAsJsonArray("events")
+
+            if ((schedulesArray == null || schedulesArray.size() == 0) && (eventsArray == null || eventsArray.size() == 0)) {
                 return@withContext Result.success(0)
             }
 
             val db = SmartTeacherDatabase.getInstance(context)
-            val currentSchedules = db.teachingScheduleDao().getAllActiveSchedulesList()
             var changedCount = 0
 
-            for (elem in schedulesArray) {
-                val item = elem.asJsonObject
-                val subject = item.get("subject")?.asString ?: ""
-                val className = item.get("className")?.asString ?: ""
-                val room = item.get("room")?.asString ?: ""
-                val dayOfWeek = item.get("dayOfWeek")?.asInt ?: 2
-                val startTime = item.get("startTime")?.asString ?: "07:00"
-                val endTime = item.get("endTime")?.asString ?: "07:45"
-                val sessionType = item.get("sessionType")?.asString ?: if (item.get("type")?.asString == "practice") "Thực hành" else "Lý thuyết"
-                val startDate = item.get("startDate")?.asString ?: "2026-09-07"
-                val endDate = item.get("endDate")?.asString ?: "2027-01-25"
-                val notes = item.get("notes")?.asString ?: ""
-                val updatedAt = item.get("updatedAt")?.asLong ?: System.currentTimeMillis()
+            // 1. Cập nhật các mẫu định kỳ (teaching_schedules)
+            if (schedulesArray != null && schedulesArray.size() > 0) {
+                val currentSchedules = db.teachingScheduleDao().getAllActiveSchedulesList()
+                for (elem in schedulesArray) {
+                    val item = elem.asJsonObject
+                    val subject = item.get("subject")?.asString ?: ""
+                    val className = item.get("className")?.asString ?: ""
+                    val room = item.get("room")?.asString ?: ""
+                    val rawDay = item.get("dayOfWeek")?.asInt ?: 1
+                    // Chuẩn hóa ISO 1..7
+                    val dayOfWeek = if (item.has("dayOfWeekVn")) {
+                        rawDay
+                    } else if (rawDay in 2..8) {
+                        // Nếu gửi chuẩn VN (2=T2..8=CN)
+                        if (rawDay == 8) 7 else rawDay - 1
+                    } else {
+                        rawDay.coerceIn(1, 7)
+                    }
 
-                val existing = currentSchedules.find {
-                    it.subject.equals(subject, ignoreCase = true) &&
-                    it.className.equals(className, ignoreCase = true) &&
-                    it.dayOfWeek == dayOfWeek
-                }
+                    val startTime = item.get("startTime")?.asString ?: "07:00"
+                    val endTime = item.get("endTime")?.asString ?: "07:45"
+                    val sessionType = item.get("sessionType")?.asString ?: if (item.get("type")?.asString == "practice") "Thực hành" else "Lý thuyết"
+                    val startDate = item.get("startDate")?.asString ?: "2026-09-07"
+                    val endDate = item.get("endDate")?.asString ?: "2027-02-15"
+                    val notes = item.get("notes")?.asString ?: ""
+                    val updatedAt = item.get("updatedAt")?.asLong ?: System.currentTimeMillis()
 
-                if (existing != null) {
-                    if (existing.room != room || existing.startTime != startTime || existing.endTime != endTime || existing.sessionType != sessionType) {
-                        val updated = existing.copy(
+                    val existing = currentSchedules.find {
+                        it.subject.equals(subject, ignoreCase = true) &&
+                        it.className.equals(className, ignoreCase = true) &&
+                        it.dayOfWeek == dayOfWeek
+                    }
+
+                    if (existing != null) {
+                        if (existing.room != room || existing.startTime != startTime || existing.endTime != endTime || existing.sessionType != sessionType || existing.startDate != startDate || existing.endDate != endDate) {
+                            val updated = existing.copy(
+                                room = room,
+                                startTime = startTime,
+                                endTime = endTime,
+                                sessionType = sessionType,
+                                startDate = startDate,
+                                endDate = endDate,
+                                notes = notes,
+                                updatedAt = updatedAt
+                            )
+                            db.teachingScheduleDao().updateSchedule(updated)
+                            changedCount++
+                        }
+                    } else {
+                        val newSchedule = TeachingScheduleEntity(
+                            subject = subject,
+                            className = className,
                             room = room,
+                            dayOfWeek = dayOfWeek,
                             startTime = startTime,
                             endTime = endTime,
                             sessionType = sessionType,
+                            startDate = startDate,
+                            endDate = endDate,
                             notes = notes,
                             updatedAt = updatedAt
                         )
-                        db.teachingScheduleDao().updateSchedule(updated)
+                        db.teachingScheduleDao().insertSchedule(newSchedule)
                         changedCount++
                     }
-                } else {
-                    val newSchedule = TeachingScheduleEntity(
-                        subject = subject,
-                        className = className,
-                        room = room,
-                        dayOfWeek = dayOfWeek,
-                        startTime = startTime,
-                        endTime = endTime,
-                        sessionType = sessionType,
-                        startDate = startDate,
-                        endDate = endDate,
-                        notes = notes,
-                        updatedAt = updatedAt
-                    )
-                    db.teachingScheduleDao().insertSchedule(newSchedule)
-                    changedCount++
                 }
             }
 
-            if (changedCount > 0) {
-                ScheduleSyncManager.syncAndSelfHeal(context)
+            // 2. Cập nhật các ca dạy cụ thể (calendar_events)
+            if (eventsArray != null && eventsArray.size() > 0) {
+                val currentEvents = db.calendarEventDao().getAllEventsSync()
+                val toInsert = mutableListOf<CalendarEventEntity>()
+                val toUpdate = mutableListOf<CalendarEventEntity>()
+
+                for (elem in eventsArray) {
+                    val item = elem.asJsonObject
+                    val subject = item.get("subject")?.asString ?: item.get("title")?.asString ?: ""
+                    val className = item.get("className")?.asString ?: ""
+                    val room = item.get("room")?.asString ?: ""
+                    val date = item.get("date")?.asString ?: ""
+                    val startTime = item.get("startTime")?.asString ?: ""
+                    val endTime = item.get("endTime")?.asString ?: ""
+                    val sessionType = item.get("sessionType")?.asString ?: "Lý thuyết"
+                    val notes = item.get("notes")?.asString ?: ""
+                    val colorHex = item.get("colorHex")?.asString ?: (if (sessionType.contains("thực hành", true)) "#10B981" else "#0066FF")
+                    val tId = if (item.has("teachingScheduleId") && !item.get("teachingScheduleId").isJsonNull) item.get("teachingScheduleId").asLong else null
+
+                    val existing = currentEvents.find {
+                        it.date == date && it.startTime == startTime && it.className.equals(className, ignoreCase = true)
+                    }
+
+                    if (existing != null) {
+                        if (existing.room != room || existing.subject != subject || existing.sessionType != sessionType || existing.endTime != endTime || existing.notes != notes) {
+                            toUpdate.add(
+                                existing.copy(
+                                    room = room,
+                                    subject = subject,
+                                    title = subject,
+                                    sessionType = sessionType,
+                                    endTime = endTime,
+                                    notes = notes,
+                                    colorHex = colorHex,
+                                    updatedAt = System.currentTimeMillis()
+                                )
+                            )
+                        }
+                    } else if (date.isNotBlank() && startTime.isNotBlank()) {
+                        toInsert.add(
+                            CalendarEventEntity(
+                                teachingScheduleId = tId,
+                                title = subject,
+                                subject = subject,
+                                className = className,
+                                room = room,
+                                date = date,
+                                startTime = startTime,
+                                endTime = endTime,
+                                sessionType = sessionType,
+                                notes = notes,
+                                colorHex = colorHex,
+                                updatedAt = System.currentTimeMillis()
+                            )
+                        )
+                    }
+                }
+
+                if (toUpdate.isNotEmpty()) {
+                    db.calendarEventDao().updateEvents(toUpdate)
+                    changedCount += toUpdate.size
+                }
+                if (toInsert.isNotEmpty()) {
+                    db.calendarEventDao().insertEvents(toInsert)
+                    changedCount += toInsert.size
+                }
             }
+
+            // Tự động kiểm tra và sinh bù các ca dạy còn thiếu (Self-Healing)
+            val healed = ScheduleSyncManager.syncAndSelfHeal(context)
+            changedCount += healed
 
             context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 .edit()
@@ -261,7 +379,7 @@ object CloudSyncManager {
             val pullResult = pullFromCloud(context)
             val pushed = pushResult.getOrDefault(0)
             val pulled = pullResult.getOrDefault(0)
-            Result.success("Đã đồng bộ thành công: Tải lên $pushed lịch lên Đám mây, cập nhật $pulled thay đổi từ máy tính!")
+            Result.success("Đã đồng bộ thành công: Tải lên $pushed ca dạy/lịch lên Đám mây, cập nhật $pulled thay đổi từ máy tính!")
         } catch (e: Exception) {
             Result.failure(e)
         }

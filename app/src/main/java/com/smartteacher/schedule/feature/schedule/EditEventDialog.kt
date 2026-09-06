@@ -29,8 +29,10 @@ import com.smartteacher.schedule.feature.schedule.components.LessonAttachmentSec
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.foundation.BorderStroke
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -39,7 +41,13 @@ import java.util.Locale
 fun EditEventDialog(
     event: CalendarEventEntity,
     onDismiss: () -> Unit,
-    onSave: (updatedEvent: CalendarEventEntity, updateWholeSchedule: Boolean, newStartDate: String, newEndDate: String) -> Unit,
+    onSave: (
+        updatedEvent: CalendarEventEntity,
+        syncSubsequent: Boolean,
+        updateWholeSchedule: Boolean,
+        newStartDate: String,
+        newEndDate: String
+    ) -> Unit,
     onDelete: (CalendarEventEntity) -> Unit,
     existingEvents: List<CalendarEventEntity> = emptyList()
 ) {
@@ -70,6 +78,12 @@ fun EditEventDialog(
     }
     var selectedPresetTab by remember { mutableStateOf(if (sessionType == "Thực hành") 1 else 0) }
 
+    // Đồng bộ các lịch cùng loại phía sau chưa diễn ra (v1.3.5)
+    var syncSubsequentEvents by remember { mutableStateOf(true) }
+    var subsequentCount by remember { mutableStateOf(0) }
+    var subsequentNextDate by remember { mutableStateOf("") }
+    var subsequentEndDate by remember { mutableStateOf("") }
+
     // Tiến độ học kỳ: Ngày bắt đầu & Ngày kết thúc (v1.3.4)
     var startDate by remember { mutableStateOf(event.date) }
     var endDate by remember { mutableStateOf("") }
@@ -83,6 +97,32 @@ fun EditEventDialog(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val db = remember { SmartTeacherDatabase.getInstance(context) }
+
+    // Tự động quét và đếm số buổi học cùng môn/lớp tiếp theo chưa diễn ra (v1.3.5)
+    LaunchedEffect(event.id, event.date) {
+        withContext(Dispatchers.IO) {
+            try {
+                val todayStr = LocalDate.now().toString()
+                val curTimeStr = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
+                val allEvents = db.calendarEventDao().getAllEventsSync()
+                val matching = allEvents.filter { other ->
+                    other.id != event.id &&
+                    ((event.teachingScheduleId != null && other.teachingScheduleId == event.teachingScheduleId) ||
+                     (other.subject.equals(event.subject, ignoreCase = true) && other.className.equals(event.className, ignoreCase = true))) &&
+                    (other.date > event.date || (other.date == event.date && other.startTime >= event.startTime)) &&
+                    (other.date > todayStr || (other.date == todayStr && (curTimeStr.isBlank() || other.endTime >= curTimeStr)))
+                }.sortedBy { it.date }
+
+                subsequentCount = matching.size
+                if (matching.isNotEmpty()) {
+                    subsequentNextDate = matching.first().date
+                    subsequentEndDate = matching.last().date
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 
     // Tự động tải thông tin TeachingScheduleEntity gốc nếu sự kiện liên kết với thời khóa biểu
     LaunchedEffect(event.teachingScheduleId) {
@@ -330,6 +370,85 @@ fun EditEventDialog(
                             modifier = Modifier.weight(1f),
                             singleLine = true
                         )
+                    }
+
+                    // =========================================================================
+                    // 🔄 TỰ ĐỘNG ĐỒNG BỘ CÁC LỊCH CÙNG LOẠI PHÍA SAU (CHƯA DIỄN RA) (v1.3.5)
+                    // =========================================================================
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+                        ),
+                        shape = RoundedCornerShape(14.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Icon(
+                                            Icons.Default.Sync,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Text(
+                                            "Tự động đồng bộ các lịch phía sau",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        "Tự động cập nhật phòng học, hình thức (LT/TH), giờ dạy... cho tất cả các buổi tiếp theo của môn này chưa diễn ra.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                                    )
+                                }
+                                Switch(
+                                    checked = syncSubsequentEvents,
+                                    onCheckedChange = { syncSubsequentEvents = it }
+                                )
+                            }
+
+                            if (subsequentCount > 0) {
+                                Surface(
+                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.AutoAwesome,
+                                            contentDescription = null,
+                                            tint = Color(0xFF10B981),
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Text(
+                                            text = if (syncSubsequentEvents) {
+                                                "Sẽ tự động cập nhật $subsequentCount buổi dạy tiếp theo (đến ${try { LocalDate.parse(subsequentEndDate).format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) } catch (e: Exception) { subsequentEndDate }})"
+                                            } else {
+                                                "Đã tắt: Chỉ cập nhật riêng lẻ buổi học này"
+                                            },
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = if (syncSubsequentEvents) Color(0xFF059669) else Color.Gray
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     // =========================================================================
@@ -784,7 +903,7 @@ fun EditEventDialog(
                                 reminder2Enabled = reminder2Enabled,
                                 updatedAt = System.currentTimeMillis()
                             )
-                            onSave(updated, applyToWholeSchedule, startDate.trim(), endDate.trim())
+                            onSave(updated, syncSubsequentEvents, applyToWholeSchedule, startDate.trim(), endDate.trim())
                         }
                     ) {
                         Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))

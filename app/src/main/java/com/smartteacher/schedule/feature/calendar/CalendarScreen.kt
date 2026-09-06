@@ -37,7 +37,7 @@ import java.util.Locale
 fun CalendarScreen(
     events: List<CalendarEventEntity>,
     onEventClick: (CalendarEventEntity) -> Unit,
-    onEditEvent: (CalendarEventEntity, Boolean, String, String) -> Unit,
+    onEditEvent: (updatedEvent: CalendarEventEntity, syncSubsequent: Boolean, updateWhole: Boolean, startD: String, endD: String) -> Unit,
     onDeleteEvent: (CalendarEventEntity) -> Unit
 ) {
     val context = LocalContext.current
@@ -82,9 +82,9 @@ fun CalendarScreen(
             event = editingEvent!!,
             existingEvents = events,
             onDismiss = { editingEvent = null },
-            onSave = { updated, updateWhole, startD, endD ->
+            onSave = { updated, syncSubsequent, updateWhole, startD, endD ->
                 editingEvent = null
-                onEditEvent(updated, updateWhole, startD, endD)
+                onEditEvent(updated, syncSubsequent, updateWhole, startD, endD)
             },
             onDelete = { ev ->
                 editingEvent = null

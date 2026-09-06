@@ -45,7 +45,7 @@ fun TodayScreen(
     todayTasks: List<TaskEntity>,
     aiWarnings: List<String>,
     onEventClick: (CalendarEventEntity) -> Unit,
-    onEditEvent: (CalendarEventEntity, Boolean, String, String) -> Unit,
+    onEditEvent: (updatedEvent: CalendarEventEntity, syncSubsequent: Boolean, updateWhole: Boolean, startD: String, endD: String) -> Unit,
     onDeleteEvent: (CalendarEventEntity) -> Unit,
     onTaskToggle: (TaskEntity) -> Unit,
     onAddScheduleClick: () -> Unit,
@@ -115,9 +115,9 @@ fun TodayScreen(
             event = editingEvent!!,
             existingEvents = todayEvents,
             onDismiss = { editingEvent = null },
-            onSave = { updated, updateWhole, startD, endD ->
+            onSave = { updated, syncSubsequent, updateWhole, startD, endD ->
                 editingEvent = null
-                onEditEvent(updated, updateWhole, startD, endD)
+                onEditEvent(updated, syncSubsequent, updateWhole, startD, endD)
             },
             onDelete = { ev ->
                 editingEvent = null

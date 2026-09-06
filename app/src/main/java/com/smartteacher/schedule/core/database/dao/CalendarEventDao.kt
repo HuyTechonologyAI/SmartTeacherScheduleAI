@@ -55,6 +55,9 @@ interface CalendarEventDao {
     @Update
     suspend fun updateEvent(event: CalendarEventEntity)
 
+    @Update
+    suspend fun updateEvents(events: List<CalendarEventEntity>)
+
     @Delete
     suspend fun deleteEvent(event: CalendarEventEntity)
 

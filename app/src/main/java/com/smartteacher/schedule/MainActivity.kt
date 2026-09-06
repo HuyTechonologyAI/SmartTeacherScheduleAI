@@ -193,8 +193,8 @@ class MainActivity : ComponentActivity() {
                                 todayTasks = todayTasks,
                                 aiWarnings = aiWarnings,
                                 onEventClick = { },
-                                onEditEvent = { updatedEvent, updateWhole, startD, endD ->
-                                    updateEventAndReschedule(updatedEvent, updateWhole, startD, endD)
+                                onEditEvent = { updatedEvent, syncSubsequent, updateWhole, startD, endD ->
+                                    updateEventAndReschedule(updatedEvent, syncSubsequent, updateWhole, startD, endD)
                                 },
                                 onDeleteEvent = { event ->
                                     deleteEventAndCancelAlarms(event)
@@ -217,8 +217,8 @@ class MainActivity : ComponentActivity() {
                             CalendarScreen(
                                 events = allEvents,
                                 onEventClick = { },
-                                onEditEvent = { updatedEvent, updateWhole, startD, endD ->
-                                    updateEventAndReschedule(updatedEvent, updateWhole, startD, endD)
+                                onEditEvent = { updatedEvent, syncSubsequent, updateWhole, startD, endD ->
+                                    updateEventAndReschedule(updatedEvent, syncSubsequent, updateWhole, startD, endD)
                                 },
                                 onDeleteEvent = { event ->
                                     deleteEventAndCancelAlarms(event)
@@ -448,6 +448,7 @@ class MainActivity : ComponentActivity() {
 
     private fun updateEventAndReschedule(
         event: CalendarEventEntity,
+        syncSubsequent: Boolean = true,
         updateWholeSchedule: Boolean = false,
         newStartDate: String = "",
         newEndDate: String = ""
@@ -455,7 +456,57 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             database.calendarEventDao().updateEvent(event)
 
-            // If linked to teachingSchedule, update parent schedule
+            var syncedCount = 0
+            val today = LocalDate.now()
+            val todayStr = today.toString()
+            val curTimeStr = try {
+                java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
+            } catch (e: Exception) { "" }
+
+            // 1. Tự động đồng bộ cho các lịch cùng loại ở phía sau khi lịch đó chưa diễn ra (v1.3.5)
+            if (syncSubsequent) {
+                val allEvents = database.calendarEventDao().getAllEventsSync()
+                val subsequentEvents = allEvents.filter { other ->
+                    other.id != event.id &&
+                    ((event.teachingScheduleId != null && other.teachingScheduleId == event.teachingScheduleId) ||
+                     (other.subject.equals(event.subject, ignoreCase = true) && other.className.equals(event.className, ignoreCase = true))) &&
+                    (other.date > event.date || (other.date == event.date && other.startTime >= event.startTime)) &&
+                    (other.date > todayStr || (other.date == todayStr && (curTimeStr.isBlank() || other.endTime >= curTimeStr)))
+                }
+
+                if (subsequentEvents.isNotEmpty()) {
+                    val updatedSubsequent = subsequentEvents.map { other ->
+                        other.copy(
+                            title = event.title,
+                            subject = event.subject,
+                            className = event.className,
+                            room = event.room,
+                            sessionType = event.sessionType,
+                            startTime = event.startTime,
+                            endTime = event.endTime,
+                            notes = if (event.notes.isNotBlank()) event.notes else other.notes,
+                            reminder1Enabled = event.reminder1Enabled,
+                            reminder2Enabled = event.reminder2Enabled,
+                            updatedAt = System.currentTimeMillis()
+                        )
+                    }
+                    database.calendarEventDao().updateEvents(updatedSubsequent)
+                    syncedCount = updatedSubsequent.size
+
+                    // Đặt lại chuông báo thức nếu có sự kiện tiếp theo rơi vào hôm nay hoặc ngày mai
+                    updatedSubsequent.filter { ev ->
+                        val d = runCatching { LocalDate.parse(ev.date) }.getOrNull()
+                        d != null && !d.isBefore(today) && !d.isAfter(today.plusDays(1))
+                    }.forEach { ev ->
+                        alarmScheduler.cancelEventReminders(ev.id)
+                        if (ev.reminder1Enabled || ev.reminder2Enabled) {
+                            runCatching { alarmScheduler.scheduleEventReminders(ev) }
+                        }
+                    }
+                }
+            }
+
+            // 2. Cập nhật parent TeachingScheduleEntity nếu có
             if (event.teachingScheduleId != null) {
                 val schedule = database.teachingScheduleDao().getScheduleById(event.teachingScheduleId)
                 if (schedule != null) {
@@ -481,7 +532,6 @@ class MainActivity : ComponentActivity() {
                         database.teachingScheduleDao().updateSchedule(updatedSchedule)
 
                         // Xóa các buổi dạy tương lai từ hôm nay để sinh lại theo tiến độ mới
-                        val todayStr = LocalDate.now().toString()
                         val clearFrom = if (newStartDate.isNotBlank() && newStartDate < todayStr) todayStr else (newStartDate.ifBlank { todayStr })
                         database.calendarEventDao().deleteFutureEventsForSchedule(schedule.id, clearFrom)
 
@@ -493,8 +543,8 @@ class MainActivity : ComponentActivity() {
                         if (toInsert.isNotEmpty()) {
                             database.calendarEventDao().insertEvents(toInsert)
                         }
-                    } else {
-                        // Cập nhật thông tin và hình thức dạy (Lý thuyết / Thực hành)
+                    } else if (syncSubsequent) {
+                        // Cập nhật thông tin và hình thức dạy (Lý thuyết / Thực hành) cho lịch gốc
                         database.teachingScheduleDao().updateSchedule(
                             schedule.copy(
                                 sessionType = event.sessionType,
@@ -515,7 +565,6 @@ class MainActivity : ComponentActivity() {
 
             // Đặt lại báo thức chuẩn xác (chỉ đặt trong vòng 24h-48h: hôm nay & ngày mai)
             alarmScheduler.cancelEventReminders(event.id)
-            val today = LocalDate.now()
             val eventDate = runCatching { LocalDate.parse(event.date) }.getOrNull()
             if (eventDate != null && !eventDate.isBefore(today) && !eventDate.isAfter(today.plusDays(1))) {
                 if (event.reminder1Enabled || event.reminder2Enabled) {
@@ -527,10 +576,10 @@ class MainActivity : ComponentActivity() {
             LockScreenGlanceManager.updateLockScreenGlance(this@MainActivity)
 
             withContext(Dispatchers.Main) {
-                val msg = if (updateWholeSchedule) {
-                    "Đã cập nhật tiến độ toàn học kỳ & hình thức ${event.sessionType}!"
-                } else {
-                    "Đã cập nhật lịch dạy (${event.sessionType}) thành công!"
+                val msg = when {
+                    syncedCount > 0 -> "Đã cập nhật và tự động đồng bộ $syncedCount buổi tiếp theo (${event.sessionType})!"
+                    updateWholeSchedule -> "Đã cập nhật tiến độ toàn học kỳ & hình thức ${event.sessionType}!"
+                    else -> "Đã cập nhật lịch dạy (${event.sessionType}) thành công!"
                 }
                 Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
             }

@@ -258,6 +258,7 @@ class MainActivity : ComponentActivity() {
                                 events = if (allEvents.isNotEmpty()) allEvents else todayEvents,
                                 schedules = allSchedules,
                                 tasks = allTasks,
+                                knowledgeDao = database.knowledgeDocumentDao(),
                                 onSaveImportedSchedule = { schedule ->
                                     saveTeachingSchedule(schedule)
                                 },

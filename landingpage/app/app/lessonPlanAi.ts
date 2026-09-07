@@ -43,6 +43,7 @@ export interface LessonPlan5512Data {
     product: string;
     implementation: string;
   };
+  referenceCitations?: string;
 }
 
 export interface LessonPlan2634Data {
@@ -84,6 +85,7 @@ export interface LessonPlan2634Data {
     studentActivity: string;
     safetyAndKeyPoints: string;
   };
+  referenceCitations?: string;
 }
 
 export interface ExamQuestionItem {
@@ -110,6 +112,7 @@ export interface ExamMatrixData {
     advancedApplicationPercent: number;
   };
   questions: ExamQuestionItem[];
+  referenceCitations?: string;
 }
 
 export function generateLessonPlan5512(
@@ -117,7 +120,8 @@ export function generateLessonPlan5512(
   subject: string,
   grade: string,
   durationMinutes: number = 45,
-  customRequirements?: string
+  customRequirements?: string,
+  referenceContext: string = ''
 ): LessonPlan5512Data {
   const custom = customRequirements?.trim() ? ` Yêu cầu sư phạm: ${customRequirements}.` : '';
 
@@ -171,7 +175,8 @@ export function generateLessonPlan2634(
   occupation: string,
   level: string,
   durationMinutes: number = 180,
-  workshopEquipment?: string
+  workshopEquipment?: string,
+  referenceContext: string = ''
 ): LessonPlan2634Data {
   const equip = workshopEquipment?.trim() ? workshopEquipment.trim() : 'Máy móc gia công chuyên dụng, trang bị đo kiểm, trang bị BHLĐ cá nhân';
 
@@ -213,7 +218,10 @@ export function generateLessonPlan2634(
       teacherActivity: `Thu nhận sản phẩm của học sinh, tổ chức nghiệm thu đối chiếu bản vẽ kỹ thuật. Nhận xét ưu/nhược điểm buổi thực hành. Hướng dẫn và giám sát quy trình vệ sinh xưởng 5S.`,
       studentActivity: `Nộp sản phẩm bài tập; tự đánh giá và nhận xét chéo sản phẩm; ngắt cầu dao điện máy móc, lau chùi dầu mỡ bôi trơn máy, thu dọn dụng cụ về tủ và quét dọn xưởng sạch sẽ.`,
       safetyAndKeyPoints: `Thực hiện nghiêm túc 5S: Tắt hoàn toàn nguồn điện tổng của xưởng, giao trả chìa khóa và kiểm đếm dụng cụ đo kiểm đầy đủ.`
-    }
+    },
+    referenceCitations: referenceContext
+      ? `Công văn 2634/GDNN; Tiêu chuẩn ATLĐ và 5S xưởng;\nTư liệu chuẩn đối chiếu từ Kho dữ liệu:\n${referenceContext.slice(0, 200)}...`
+      : 'Công văn 2634/GDNN của Tổng cục GDNN; Tiêu chuẩn An toàn xưởng và 5S'
   };
 }
 
@@ -221,7 +229,8 @@ export function generateExamMatrix(
   topic: string,
   subject: string,
   grade: string,
-  questionCount: number = 10
+  questionCount: number = 10,
+  referenceContext: string = ''
 ): ExamMatrixData {
   const c = Math.max(4, questionCount);
   const nRecog = Math.round(c * 0.4);
@@ -306,7 +315,10 @@ export function generateExamMatrix(
       advancedApplicationCount: nAdv,
       advancedApplicationPercent: Math.round((nAdv / c) * 100)
     },
-    questions
+    questions,
+    referenceCitations: referenceContext
+      ? `Thông tư 22/2021/TT-BGDĐT; Khung ma trận đề kiểm tra 4 mức độ;\nTư liệu chuẩn đối chiếu từ Kho dữ liệu:\n${referenceContext.slice(0, 200)}...`
+      : 'Thông tư 22/2021/TT-BGDĐT của Bộ GD&ĐT; Khung ma trận đề 4 mức độ nhận thức'
   };
 }
 
@@ -319,6 +331,13 @@ export function lessonPlan5512ToHtml(plan: LessonPlan5512Data): string {
     <h2 style="margin: 0; font-size: 14pt; color: #0284c7;">BÀI: ${plan.lessonTitle}</h2>
     <p style="margin-top: 6px; font-size: 12pt;"><b>Môn:</b> ${plan.subject} | <b>Khối/Lớp:</b> ${plan.grade} | <b>Thời lượng:</b> ${plan.durationMinutes} phút</p>
   </div>
+
+${plan.referenceCitations ? `
+  <div style="background-color: #f0fdf4; border: 1.5px solid #16a34a; border-radius: 6px; padding: 10px 14px; margin: 15px 0; font-size: 11pt; color: #166534;">
+    <b>🛡️ CĂN CỨ VĂN BẢN & TƯ LIỆU ĐỐI CHIẾU CHUẨN (KHÔNG ẢO GIÁC/BỊA ĐẶT):</b><br/>
+    ${plan.referenceCitations.replace(/\n/g, '<br/>')}
+  </div>
+` : ''}
 
   <h3 style="color: #1e3a8a; border-bottom: 1.5px solid #1e3a8a; padding-bottom: 3px;">I. MỤC TIÊU BÀI DẠY</h3>
   <p><b>1. Kiến thức:</b> ${plan.objectives.knowledge}</p>
@@ -485,6 +504,13 @@ export function examMatrixToHtml(data: ExamMatrixData): string {
     <h2 style="margin: 5px 0; font-size: 13pt;">CHỦ ĐỀ: ${data.topic}</h2>
     <p style="margin: 4px 0; font-size: 11pt;"><b>Môn:</b> ${data.subject} | <b>Khối lớp:</b> ${data.grade} | <b>Tổng số câu:</b> ${data.questionCount}</p>
   </div>
+
+${data.referenceCitations ? `
+  <div style="background-color: #faf5ff; border: 1.5px solid #9333ea; border-radius: 6px; padding: 10px 14px; margin: 15px 0; font-size: 11pt; color: #6b21a8;">
+    <b>🛡️ CĂN CỨ THÔNG TƯ 22 & MA TRẬN 4 MỨC ĐỘ CHUẨN (KHÔNG ẢO GIÁC/BỊA ĐẶT):</b><br/>
+    ${data.referenceCitations.replace(/\n/g, '<br/>')}
+  </div>
+` : ''}
 
   <h3 style="color: #7e22ce; border-bottom: 1.5px solid #7e22ce; padding-bottom: 3px;">I. BẢNG MA TRẬN ĐỀ THI 4 MỨC ĐỘ</h3>
   <table border="1" cellpadding="6" style="border-collapse: collapse; width: 100%; margin: 10px 0; text-align: center;">

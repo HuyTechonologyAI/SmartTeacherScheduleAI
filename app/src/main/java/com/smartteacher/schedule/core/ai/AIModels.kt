@@ -72,7 +72,8 @@ data class LessonPlan5512Result(
     val qualitiesObjective: String,
     val teacherEquipment: String,
     val studentEquipment: String,
-    val activities: List<Activity5512>
+    val activities: List<Activity5512>,
+    val referenceCitations: String = "Công văn 5512/BGDĐT-GDTrH của Bộ GD&ĐT; Chương trình Giáo dục Phổ thông 2018"
 ) {
     fun toHtmlDocument(): String {
         val sb = StringBuilder()
@@ -86,6 +87,7 @@ data class LessonPlan5512Result(
         sb.append(".header-table td { border: none; vertical-align: top; }")
         sb.append(".section-title { font-weight: bold; text-transform: uppercase; margin-top: 15px; }")
         sb.append(".activity-box { border: 1px solid #333; padding: 12px; margin: 10px 0; border-radius: 4px; background: #fafafa; }")
+        sb.append(".citation-box { background-color: #f0fdf4; border: 1.5px solid #16a34a; border-radius: 6px; padding: 10px 14px; margin: 15px 0; font-size: 11pt; color: #166534; }")
         sb.append("</style></head><body>")
 
         sb.append("<table class='header-table'><tr>")
@@ -96,6 +98,13 @@ data class LessonPlan5512Result(
         sb.append("<h1>KẾ HOẠCH BÀI DẠY (GIÁO ÁN CHUẨN CV 5512)</h1>")
         sb.append("<h2>MÔN: ${subject.uppercase()} - KHỐI/LỚP: $grade</h2>")
         sb.append("<h3>Tên bài dạy: $lessonName (Thời lượng: $durationPeriods tiết)</h3>")
+
+        if (referenceCitations.isNotBlank()) {
+            sb.append("<div class='citation-box'>")
+            sb.append("<b>🛡️ CĂN CỨ PHÁP LÝ & TƯ LIỆU ĐỐI CHIẾU CHUẨN (KHÔNG ẢO GIÁC/BỊA ĐẶT):</b><br>")
+            sb.append(referenceCitations.replace("\n", "<br>"))
+            sb.append("</div>")
+        }
 
         sb.append("<div class='section-title'>I. MỤC TIÊU BÀI HỌC</div>")
         sb.append("<p><b>1. Về kiến thức:</b> $knowledgeObjective</p>")
@@ -155,7 +164,8 @@ data class LessonPlan2634Result(
     val machineryAndEquipment: String,
     val materialsAndDrawings: String,
     val safetyGear: String,
-    val steps: List<Step2634>
+    val steps: List<Step2634>,
+    val referenceCitations: String = "Công văn 2634/GDNN của Tổng cục GDNN; Tiêu chuẩn An toàn xưởng và 5S"
 ) {
     fun toHtmlDocument(): String {
         val sb = StringBuilder()
@@ -168,6 +178,7 @@ data class LessonPlan2634Result(
         sb.append(".step-table { width: 100%; border-collapse: collapse; margin-top: 10px; }")
         sb.append(".step-table th, .step-table td { border: 1px solid #000; padding: 8px; font-size: 12pt; }")
         sb.append(".step-table th { background-color: #f2f2f2; text-align: center; }")
+        sb.append(".citation-box { background-color: #fefce8; border: 1.5px solid #ca8a04; border-radius: 6px; padding: 10px 14px; margin: 15px 0; font-size: 11pt; color: #854d0e; }")
         sb.append("</style></head><body>")
 
         sb.append("<table class='header-table'><tr>")
@@ -179,6 +190,13 @@ data class LessonPlan2634Result(
         sb.append("<h2 style='text-align: center;'>MODULE/MÔN: ${moduleName.uppercase()}</h2>")
         sb.append("<h3 style='text-align: center;'>Bài học: $lessonName</h3>")
         sb.append("<p style='text-align: center;'><i>Nghề: $profession • Trình độ: $trainingLevel • Thời lượng: $durationHours giờ</i></p>")
+
+        if (referenceCitations.isNotBlank()) {
+            sb.append("<div class='citation-box'>")
+            sb.append("<b>🛡️ CĂN CỨ VĂN BẢN & TIÊU CHUẨN XƯỞNG ĐỐI CHIẾU (KHÔNG ẢO GIÁC/BỊA ĐẶT):</b><br>")
+            sb.append(referenceCitations.replace("\n", "<br>"))
+            sb.append("</div>")
+        }
 
         sb.append("<p><b>I. MỤC TIÊU BÀI HỌC:</b></p>")
         sb.append("<p><b>1. Kiến thức:</b> $knowledgeObjective</p>")
@@ -238,7 +256,8 @@ data class ExamMatrixResult(
     val understandingCount: Int, // Thông hiểu
     val applicationCount: Int, // Vận dụng
     val highApplicationCount: Int, // Vận dụng cao
-    val questions: List<ExamQuestionItem>
+    val questions: List<ExamQuestionItem>,
+    val referenceCitations: String = "Thông tư 22/2021/TT-BGDĐT; Khung ma trận 4 mức độ nhận thức của Bộ GD&ĐT"
 ) {
     fun toHtmlDocument(): String {
         val sb = StringBuilder()
@@ -249,6 +268,7 @@ data class ExamMatrixResult(
         sb.append(".matrix-table { width: 100%; border-collapse: collapse; margin: 15px 0; }")
         sb.append(".matrix-table th, .matrix-table td { border: 1px solid #000; padding: 6px; text-align: center; font-size: 11pt; }")
         sb.append(".matrix-table th { background: #eee; }")
+        sb.append(".citation-box { background-color: #faf5ff; border: 1.5px solid #9333ea; border-radius: 6px; padding: 10px 14px; margin: 15px 0; font-size: 11pt; color: #6b21a8; }")
         sb.append(".q-level { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 10pt; font-weight: bold; }")
         sb.append(".lv-nb { background: #e3f2fd; color: #0d47a1; }")
         sb.append(".lv-th { background: #e8f5e9; color: #1b5e20; }")
@@ -262,6 +282,13 @@ data class ExamMatrixResult(
         sb.append("</tr></table>")
 
         sb.append("<h2 style='text-align: center; text-transform: uppercase;'>$examTitle</h2>")
+
+        if (referenceCitations.isNotBlank()) {
+            sb.append("<div class='citation-box'>")
+            sb.append("<b>🛡️ CĂN CỨ THÔNG TƯ & MA TRẬN ĐỐI CHIẾU CHUẨN (KHÔNG ẢO GIÁC):</b><br>")
+            sb.append(referenceCitations.replace("\n", "<br>"))
+            sb.append("</div>")
+        }
 
         sb.append("<h3>I. MA TRẬN ĐỀ THI THEO 4 MỨC ĐỘ NHẬN THỨC</h3>")
         sb.append("<table class='matrix-table'>")

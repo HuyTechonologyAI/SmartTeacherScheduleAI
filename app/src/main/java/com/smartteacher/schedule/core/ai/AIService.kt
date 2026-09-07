@@ -30,7 +30,8 @@ interface AIService {
         subject: String,
         grade: String,
         durationPeriods: Int = 1,
-        customObjectives: String = ""
+        customObjectives: String = "",
+        referenceContext: String = ""
     ): LessonPlan5512Result
 
     suspend fun generateLessonPlan2634(
@@ -39,13 +40,15 @@ interface AIService {
         profession: String,
         trainingLevel: String = "Trung cấp",
         durationHours: Float = 4.0f,
-        customSafety: String = ""
+        customSafety: String = "",
+        referenceContext: String = ""
     ): LessonPlan2634Result
 
     suspend fun generateExamMatrix(
         topic: String,
         subject: String,
         gradeOrClass: String,
-        questionCount: Int = 10
+        questionCount: Int = 10,
+        referenceContext: String = ""
     ): ExamMatrixResult
 }

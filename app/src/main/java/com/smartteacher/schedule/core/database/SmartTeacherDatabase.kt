@@ -5,8 +5,13 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.sqlite.db.SupportSQLiteDatabase
+import com.smartteacher.schedule.core.ai.DefaultKnowledgeBase
 import com.smartteacher.schedule.core.database.dao.*
 import com.smartteacher.schedule.core.database.entity.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Database(
     entities = [
@@ -17,9 +22,10 @@ import com.smartteacher.schedule.core.database.entity.*
         AIInsightEntity::class,
         NotificationLogEntity::class,
         IntegrationConfigEntity::class,
-        LessonAttachmentEntity::class
+        LessonAttachmentEntity::class,
+        KnowledgeDocumentEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -32,13 +38,14 @@ abstract class SmartTeacherDatabase : RoomDatabase() {
     abstract fun notificationLogDao(): NotificationLogDao
     abstract fun integrationConfigDao(): IntegrationConfigDao
     abstract fun lessonAttachmentDao(): LessonAttachmentDao
+    abstract fun knowledgeDocumentDao(): KnowledgeDocumentDao
 
     companion object {
         @Volatile
         private var INSTANCE: SmartTeacherDatabase? = null
 
         val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
-            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+            override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("""
                     CREATE TABLE IF NOT EXISTS `lesson_attachments` (
                         `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -57,8 +64,7 @@ abstract class SmartTeacherDatabase : RoomDatabase() {
         }
 
         val MIGRATION_2_3 = object : androidx.room.migration.Migration(2, 3) {
-            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
-                // Safe migration: ensures tables exist without destructive wiping
+            override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("""
                     CREATE TABLE IF NOT EXISTS `lesson_attachments` (
                         `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -76,29 +82,33 @@ abstract class SmartTeacherDatabase : RoomDatabase() {
             }
         }
 
-        val MIGRATION_1_3 = object : androidx.room.migration.Migration(1, 3) {
-            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
-                MIGRATION_1_2.migrate(db)
-            }
-        }
-
         val MIGRATION_3_4 = object : androidx.room.migration.Migration(3, 4) {
-            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+            override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE `calendar_events` ADD COLUMN `sessionType` TEXT NOT NULL DEFAULT 'Lý thuyết'")
             }
         }
 
-        val MIGRATION_1_4 = object : androidx.room.migration.Migration(1, 4) {
-            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
-                MIGRATION_1_2.migrate(db)
-                MIGRATION_3_4.migrate(db)
-            }
-        }
-
-        val MIGRATION_2_4 = object : androidx.room.migration.Migration(2, 4) {
-            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
-                MIGRATION_2_3.migrate(db)
-                MIGRATION_3_4.migrate(db)
+        val MIGRATION_4_5 = object : androidx.room.migration.Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `knowledge_documents` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `code` TEXT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `category` TEXT NOT NULL,
+                        `subject` TEXT NOT NULL,
+                        `targetLevel` TEXT NOT NULL,
+                        `summary` TEXT NOT NULL,
+                        `content` TEXT NOT NULL,
+                        `isBuiltIn` INTEGER NOT NULL,
+                        `isActive` INTEGER NOT NULL,
+                        `createdAt` INTEGER NOT NULL,
+                        `updatedAt` INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_knowledge_documents_code` ON `knowledge_documents` (`code`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_knowledge_documents_category` ON `knowledge_documents` (`category`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_knowledge_documents_subject` ON `knowledge_documents` (`subject`)")
             }
         }
 
@@ -109,8 +119,32 @@ abstract class SmartTeacherDatabase : RoomDatabase() {
                     SmartTeacherDatabase::class.java,
                     "smart_teacher_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_1_3, MIGRATION_3_4, MIGRATION_1_4, MIGRATION_2_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .fallbackToDestructiveMigration()
+                    .addCallback(object : Callback() {
+                        override fun onCreate(db: SupportSQLiteDatabase) {
+                            super.onCreate(db)
+                            // Populate default official knowledge base on first database creation
+                            CoroutineScope(Dispatchers.IO).launch {
+                                INSTANCE?.let { database ->
+                                    database.knowledgeDocumentDao().insertDocuments(DefaultKnowledgeBase.getDefaultBuiltInDocuments())
+                                }
+                            }
+                        }
+
+                        override fun onOpen(db: SupportSQLiteDatabase) {
+                            super.onOpen(db)
+                            // Ensure built-in decrees are always present
+                            CoroutineScope(Dispatchers.IO).launch {
+                                INSTANCE?.let { database ->
+                                    val count = database.knowledgeDocumentDao().getDocumentCount()
+                                    if (count == 0) {
+                                        database.knowledgeDocumentDao().insertDocuments(DefaultKnowledgeBase.getDefaultBuiltInDocuments())
+                                    }
+                                }
+                            }
+                        }
+                    })
                     .build()
                 INSTANCE = instance
                 instance

@@ -393,7 +393,7 @@ class GeminiAIServiceImpl(
     }
 
     // =========================================================================
-    // TRỤ CỘT 2: HIỆN THỰC HÓA SOẠN GIÁO ÁN CHUẨN CV 5512, CV 2634 & ĐỀ THI
+    // TRỤ CỘT 2: HIỆN THỰC HÓA SOẠN GIÁO ÁN CHUẨN CV 5512, CV 2634 & ĐỀ THI (RAG & ANTI-HALLUCINATION)
     // =========================================================================
 
     override suspend fun generateLessonPlan5512(
@@ -401,14 +401,15 @@ class GeminiAIServiceImpl(
         subject: String,
         grade: String,
         durationPeriods: Int,
-        customObjectives: String
+        customObjectives: String,
+        referenceContext: String
     ): LessonPlan5512Result = withContext(Dispatchers.IO) {
         val apiKey = apiKeyProvider()
         if (!apiKey.isNullOrBlank()) {
-            val result = callGeminiFor5512(apiKey, lessonName, subject, grade, durationPeriods, customObjectives)
+            val result = callGeminiFor5512(apiKey, lessonName, subject, grade, durationPeriods, customObjectives, referenceContext)
             if (result != null) return@withContext result
         }
-        generateOffline5512(lessonName, subject, grade, durationPeriods, customObjectives)
+        generateOffline5512(lessonName, subject, grade, durationPeriods, customObjectives, referenceContext)
     }
 
     override suspend fun generateLessonPlan2634(
@@ -417,28 +418,30 @@ class GeminiAIServiceImpl(
         profession: String,
         trainingLevel: String,
         durationHours: Float,
-        customSafety: String
+        customSafety: String,
+        referenceContext: String
     ): LessonPlan2634Result = withContext(Dispatchers.IO) {
         val apiKey = apiKeyProvider()
         if (!apiKey.isNullOrBlank()) {
-            val result = callGeminiFor2634(apiKey, moduleName, lessonName, profession, trainingLevel, durationHours, customSafety)
+            val result = callGeminiFor2634(apiKey, moduleName, lessonName, profession, trainingLevel, durationHours, customSafety, referenceContext)
             if (result != null) return@withContext result
         }
-        generateOffline2634(moduleName, lessonName, profession, trainingLevel, durationHours, customSafety)
+        generateOffline2634(moduleName, lessonName, profession, trainingLevel, durationHours, customSafety, referenceContext)
     }
 
     override suspend fun generateExamMatrix(
         topic: String,
         subject: String,
         gradeOrClass: String,
-        questionCount: Int
+        questionCount: Int,
+        referenceContext: String
     ): ExamMatrixResult = withContext(Dispatchers.IO) {
         val apiKey = apiKeyProvider()
         if (!apiKey.isNullOrBlank()) {
-            val result = callGeminiForExamMatrix(apiKey, topic, subject, gradeOrClass, questionCount)
+            val result = callGeminiForExamMatrix(apiKey, topic, subject, gradeOrClass, questionCount, referenceContext)
             if (result != null) return@withContext result
         }
-        generateOfflineExamMatrix(topic, subject, gradeOrClass, questionCount)
+        generateOfflineExamMatrix(topic, subject, gradeOrClass, questionCount, referenceContext)
     }
 
     private fun callGeminiFor5512(
@@ -447,26 +450,46 @@ class GeminiAIServiceImpl(
         subject: String,
         grade: String,
         durationPeriods: Int,
-        customObjectives: String
+        customObjectives: String,
+        referenceContext: String
     ): LessonPlan5512Result? {
         return try {
+            val groundingDirective = if (referenceContext.isNotBlank()) {
+                """
+                === CƠ SỞ DỮ LIỆU TƯ LIỆU VĂN BẢN CHUẨN ĐỐI CHIẾU (BẮT BUỘC TUÂN THỦ) ===
+                $referenceContext
+                ========================================================================
+                CHỈ THỊ SƯ PHẠM NGHIÊM NGẶT (ANTI-HALLUCINATION & LEGAL GROUNDING DIRECTIVE):
+                1. Bạn CHỈ ĐƯỢC PHÉP dựa vào các căn cứ pháp quy, quy chế chuyên môn và tư liệu chuẩn được cung cấp ở trên để biên soạn kế hoạch bài dạy.
+                2. TUYỆT ĐỐI KHÔNG tự ý bịa đặt hoặc đưa ra thông tin, điều luật, khung năng lực chưa đối chiếu với cơ sở dữ liệu.
+                3. Trong trường 'referenceCitations', phải nêu rõ các văn bản quy phạm và tư liệu chuẩn đã được dùng làm căn cứ.
+                """.trimIndent()
+            } else {
+                """
+                CĂN CỨ PHÁP QUY: Tuân thủ Công văn 5512/BGDĐT-GDTrH và Chương trình GDPT 2018. Tuyệt đối không bịa đặt quy định chuyên môn.
+                """.trimIndent()
+            }
+
             val prompt = """
                 Bạn là chuyên gia sư phạm Việt Nam. Hãy soạn KẾ HOẠCH BÀI DẠY chuẩn Công văn 5512/BGDĐT-GDTrH cho:
                 Môn: $subject, Lớp: $grade, Bài: $lessonName, Thời lượng: $durationPeriods tiết.
-                Yêu cầu bổ sung: $customObjectives
+                Yêu cầu bổ sung của GV: $customObjectives
 
-                Trả về DUY NHẤT một JSON hợp lệ theo schema sau:
+                $groundingDirective
+
+                Trả về DUY NHẤT một JSON hợp lệ theo schema sau (không thêm markdown ngoài JSON):
                 {
                   "lessonName": "$lessonName",
                   "subject": "$subject",
                   "grade": "$grade",
                   "durationPeriods": $durationPeriods,
-                  "knowledgeObjective": "Nội dung kiến thức học sinh tiếp thu được",
+                  "knowledgeObjective": "Nội dung kiến thức học sinh tiếp thu được (bám sát chuẩn)",
                   "generalCompetence": "Năng lực tự chủ, giao tiếp, hợp tác",
                   "specificCompetence": "Năng lực tư duy đặc thù môn học",
                   "qualitiesObjective": "Chăm chỉ, trung thực, trách nhiệm",
                   "teacherEquipment": "Thiết bị, phiếu học tập, đồ dùng dạy học của GV",
                   "studentEquipment": "Sách vở, dụng cụ học tập của HS",
+                  "referenceCitations": "Công văn 5512/BGDĐT-GDTrH; CT GDPT 2018; các tài liệu đã đối chiếu",
                   "activities": [
                     {
                       "title": "Hoạt động 1: Mở đầu / Khởi động",
@@ -549,13 +572,20 @@ class GeminiAIServiceImpl(
         subject: String,
         grade: String,
         durationPeriods: Int,
-        customObjectives: String
+        customObjectives: String,
+        referenceContext: String
     ): LessonPlan5512Result {
         val totalMin = durationPeriods * 45
         val warmMin = (totalMin * 0.15).toInt().coerceAtLeast(5)
         val newMin = (totalMin * 0.45).toInt().coerceAtLeast(15)
         val pracMin = (totalMin * 0.25).toInt().coerceAtLeast(10)
         val appMin = totalMin - warmMin - newMin - pracMin
+
+        val citations = if (referenceContext.isNotBlank()) {
+            "Công văn 5512/BGDĐT-GDTrH; CT GDPT 2018;\nTư liệu chuẩn đối chiếu từ Kho dữ liệu: " + referenceContext.take(180) + "..."
+        } else {
+            "Công văn 5512/BGDĐT-GDTrH của Bộ GD&ĐT; Chương trình Giáo dục Phổ thông 2018"
+        }
 
         return LessonPlan5512Result(
             lessonName = lessonName,
@@ -601,7 +631,8 @@ class GeminiAIServiceImpl(
                     product = "Bản báo cáo ngắn gọn hoặc sản phẩm sáng tạo nộp vào tiết học sau.",
                     implementation = "1. Giao nhiệm vụ: GV hướng dẫn câu hỏi vận dụng mở rộng.\n2. Thực hiện: HS thực hiện ngoài giờ lên lớp.\n3. Đánh giá: Thu sản phẩm đánh giá vào buổi học tới."
                 )
-            )
+            ),
+            referenceCitations = citations
         )
     }
 
@@ -612,13 +643,32 @@ class GeminiAIServiceImpl(
         profession: String,
         trainingLevel: String,
         durationHours: Float,
-        customSafety: String
+        customSafety: String,
+        referenceContext: String
     ): LessonPlan2634Result? {
         return try {
+            val groundingDirective = if (referenceContext.isNotBlank()) {
+                """
+                === CƠ SỞ DỮ LIỆU TƯ LIỆU VĂN BẢN CHUẨN ĐỐI CHIẾU (BẮT BUỘC TUÂN THỦ) ===
+                $referenceContext
+                ========================================================================
+                CHỈ THỊ SƯ PHẠM NGHIÊM NGẶT (ANTI-HALLUCINATION & SAFETY DIRECTIVE):
+                1. Bạn CHỈ ĐƯỢC PHÉP dựa vào các căn cứ pháp quy, quy chuẩn an toàn lao động và giáo trình nghề được cung cấp ở trên.
+                2. TUYỆT ĐỐI KHÔNG tự bịa đặt quy trình kỹ thuật, quy tắc an toàn hoặc chuẩn kỹ năng nghề không có căn cứ.
+                3. Trường 'referenceCitations' phải ghi rõ Công văn 2634/GDNN và các tiêu chuẩn an toàn/tài liệu đối chiếu.
+                """.trimIndent()
+            } else {
+                """
+                CĂN CỨ PHÁP QUY: Tuân thủ Công văn 2634/GDNN của Tổng cục Giáo dục Nghề nghiệp và Tiêu chuẩn ATLĐ xưởng thực hành.
+                """.trimIndent()
+            }
+
             val prompt = """
                 Bạn là chuyên gia sư phạm Giáo dục Nghề nghiệp Việt Nam. Hãy soạn GIÁO ÁN TÍCH HỢP / THỰC HÀNH chuẩn Công văn 2634/GDNN cho:
                 Module: $moduleName, Bài: $lessonName, Nghề: $profession, Trình độ: $trainingLevel, Thời lượng: $durationHours giờ.
                 Yêu cầu an toàn: $customSafety
+
+                $groundingDirective
 
                 Trả về DUY NHẤT một JSON hợp lệ theo schema sau:
                 {
@@ -633,6 +683,7 @@ class GeminiAIServiceImpl(
                   "machineryAndEquipment": "Danh mục máy móc thiết bị xưởng",
                   "materialsAndDrawings": "Phôi liệu, dụng cụ đo, bản vẽ",
                   "safetyGear": "Trang bị BHLĐ cá nhân",
+                  "referenceCitations": "Công văn 2634/GDNN; Tiêu chuẩn ATLĐ; Tài liệu đối chiếu",
                   "steps": [
                     {
                       "stepName": "1. Ổn định lớp & Nhắc nhở an toàn xưởng",
@@ -712,8 +763,15 @@ class GeminiAIServiceImpl(
         profession: String,
         trainingLevel: String,
         durationHours: Float,
-        customSafety: String
+        customSafety: String,
+        referenceContext: String
     ): LessonPlan2634Result {
+        val citations = if (referenceContext.isNotBlank()) {
+            "Công văn 2634/GDNN; Tiêu chuẩn ATLĐ và 5S xưởng;\nTư liệu chuẩn đối chiếu từ Kho dữ liệu: " + referenceContext.take(180) + "..."
+        } else {
+            "Công văn 2634/GDNN của Tổng cục GDNN; Tiêu chuẩn An toàn xưởng và 5S"
+        }
+
         return LessonPlan2634Result(
             moduleName = moduleName,
             lessonName = lessonName,
@@ -755,7 +813,8 @@ class GeminiAIServiceImpl(
                     studentActivity = "Nộp sản phẩm cho giáo viên. Tắt nguồn điện máy, quét dọn phoi vụn, lau chùi máy, bôi dầu bảo quản băng máy và sắp xếp dụng cụ theo 5S.",
                     notesAndSafety = "Cắt aptomat tổng trước khi vệ sinh xưởng."
                 )
-            )
+            ),
+            referenceCitations = citations
         )
     }
 
@@ -764,12 +823,31 @@ class GeminiAIServiceImpl(
         topic: String,
         subject: String,
         gradeOrClass: String,
-        questionCount: Int
+        questionCount: Int,
+        referenceContext: String
     ): ExamMatrixResult? {
         return try {
+            val groundingDirective = if (referenceContext.isNotBlank()) {
+                """
+                === CƠ SỞ DỮ LIỆU TƯ LIỆU VĂN BẢN CHUẨN ĐỐI CHIẾU (BẮT BUỘC TUÂN THỦ) ===
+                $referenceContext
+                ========================================================================
+                CHỈ THỊ SƯ PHẠM NGHIÊM NGẶT (ANTI-HALLUCINATION & EVALUATION DIRECTIVE):
+                1. Bạn CHỈ ĐƯỢC PHÉP dựa vào chuẩn kiến thức kỹ năng, Thông tư 22/2021/TT-BGDĐT và ngân hàng tư liệu chuẩn ở trên.
+                2. BẮT BUỘC phân bổ đúng 4 mức độ nhận thức (Nhận biết, Thông hiểu, Vận dụng, Vận dụng cao) và câu hỏi phải có đáp án, lời giải thích có căn cứ khoa học rõ ràng, KHÔNG TỰ BỊA ĐẶT.
+                3. Trường 'referenceCitations' phải ghi rõ Thông tư 22/2021/TT-BGDĐT và các tư liệu đã đối chiếu.
+                """.trimIndent()
+            } else {
+                """
+                CĂN CỨ PHÁP QUY: Tuân thủ Thông tư 22/2021/TT-BGDĐT về kiểm tra đánh giá theo 4 mức độ nhận thức.
+                """.trimIndent()
+            }
+
             val prompt = """
                 Bạn là chuyên gia khảo thí và đo lường giáo dục. Hãy tạo MA TRẬN ĐỀ THI VÀ CÂU HỎI bám sát 4 MỨC ĐỘ NHẬN THỨC (Nhận biết, Thông hiểu, Vận dụng, Vận dụng cao) cho:
                 Môn: $subject, Lớp: $gradeOrClass, Chủ đề: $topic, Số lượng: $questionCount câu.
+
+                $groundingDirective
 
                 Trả về DUY NHẤT một JSON hợp lệ theo schema sau:
                 {
@@ -781,6 +859,7 @@ class GeminiAIServiceImpl(
                   "understandingCount": 3,
                   "applicationCount": 2,
                   "highApplicationCount": 1,
+                  "referenceCitations": "Thông tư 22/2021/TT-BGDĐT; Khung ma trận đề chuẩn; Tài liệu đối chiếu",
                   "questions": [
                     {
                       "questionNumber": 1,
@@ -838,7 +917,8 @@ class GeminiAIServiceImpl(
         topic: String,
         subject: String,
         gradeOrClass: String,
-        questionCount: Int
+        questionCount: Int,
+        referenceContext: String
     ): ExamMatrixResult {
         val nbCount = (questionCount * 0.4).toInt().coerceAtLeast(1)
         val thCount = (questionCount * 0.3).toInt().coerceAtLeast(1)
@@ -924,6 +1004,12 @@ class GeminiAIServiceImpl(
             )
         }
 
+        val citations = if (referenceContext.isNotBlank()) {
+            "Thông tư 22/2021/TT-BGDĐT; Khung ma trận đề kiểm tra 4 mức độ;\nTư liệu chuẩn đối chiếu từ Kho dữ liệu: " + referenceContext.take(180) + "..."
+        } else {
+            "Thông tư 22/2021/TT-BGDĐT của Bộ GD&ĐT; Khung ma trận đề 4 mức độ nhận thức"
+        }
+
         return ExamMatrixResult(
             examTitle = "Đề Kiểm Tra Đánh Giá Năng Lực: $topic",
             subject = subject,
@@ -933,8 +1019,8 @@ class GeminiAIServiceImpl(
             understandingCount = thCount,
             applicationCount = vdCount,
             highApplicationCount = vdcCount,
-            questions = questions
+            questions = questions,
+            referenceCitations = citations
         )
     }
-
 }

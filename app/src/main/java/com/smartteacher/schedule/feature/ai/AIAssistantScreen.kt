@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.smartteacher.schedule.core.ai.*
+import com.smartteacher.schedule.core.database.dao.KnowledgeDocumentDao
 import com.smartteacher.schedule.core.database.entity.CalendarEventEntity
 import com.smartteacher.schedule.core.database.entity.LessonAttachmentEntity
 import com.smartteacher.schedule.core.database.entity.TeachingScheduleEntity
@@ -31,12 +32,13 @@ fun AIAssistantScreen(
     events: List<CalendarEventEntity>,
     schedules: List<TeachingScheduleEntity> = emptyList(),
     tasks: List<TaskEntity>,
+    knowledgeDao: KnowledgeDocumentDao? = null,
     onSaveImportedSchedule: (TeachingScheduleEntity) -> Unit,
     onMoveUnfinishedTasks: () -> Unit,
     onSaveAttachment: (LessonAttachmentEntity) -> Unit = {}
 ) {
     var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf("Soạn Giáo Án (5512/2634)", "Đề Thi & Ma Trận", "Trợ lý Chat", "Nhập lịch AI", "Phân tích tuần", "Rà soát ngày")
+    val tabs = listOf("Soạn Giáo Án (5512/2634)", "Đề Thi & Ma Trận", "📚 Kho Tư Liệu Chuẩn", "Trợ lý Chat", "Nhập lịch AI", "Phân tích tuần", "Rà soát ngày")
 
     Scaffold(
         topBar = {
@@ -78,17 +80,30 @@ fun AIAssistantScreen(
                     aiService = aiService,
                     events = events,
                     schedules = schedules,
-                    onSaveAttachment = onSaveAttachment
+                    knowledgeDao = knowledgeDao,
+                    onSaveAttachment = onSaveAttachment,
+                    onNavigateToKnowledgeBase = { selectedTab = 2 }
                 )
                 1 -> AIExamMatrixView(
                     aiService = aiService,
                     events = events,
-                    onSaveAttachment = onSaveAttachment
+                    knowledgeDao = knowledgeDao,
+                    onSaveAttachment = onSaveAttachment,
+                    onNavigateToKnowledgeBase = { selectedTab = 2 }
                 )
-                2 -> AIChatView(aiService = aiService, events = events, tasks = tasks)
-                3 -> AIImportScheduleView(aiService = aiService, onConfirm = onSaveImportedSchedule)
-                4 -> AIWeeklyAnalysisView(aiService = aiService, events = events, tasks = tasks)
-                5 -> AIDailyReviewView(
+                2 -> {
+                    if (knowledgeDao != null) {
+                        AIKnowledgeBaseScreen(knowledgeDao = knowledgeDao)
+                    } else {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("Kho tư liệu không khả dụng")
+                        }
+                    }
+                }
+                3 -> AIChatView(aiService = aiService, events = events, tasks = tasks)
+                4 -> AIImportScheduleView(aiService = aiService, onConfirm = onSaveImportedSchedule)
+                5 -> AIWeeklyAnalysisView(aiService = aiService, events = events, tasks = tasks)
+                6 -> AIDailyReviewView(
                     aiService = aiService,
                     events = events,
                     tasks = tasks,

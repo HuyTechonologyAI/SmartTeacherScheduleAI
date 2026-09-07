@@ -14,6 +14,14 @@ import {
   examMatrixToHtml,
   downloadWordDoc
 } from './lessonPlanAi';
+import {
+  KnowledgeDocument,
+  getResolvedKnowledgeDocuments,
+  saveKnowledgeDocument,
+  deleteCustomKnowledgeDocument,
+  toggleKnowledgeDocumentActive,
+  getActiveReferenceContext
+} from './knowledgeBaseData';
 
 import {
   Calendar,
@@ -247,7 +255,26 @@ export default function UnifiedTeacherScheduleApp() {
   const audioCtxRef = useRef<any>(null);
 
   // Lesson Planner & Exam Matrix AI States
-  const [aiSubTab, setAiSubTab] = useState<'planner' | 'exam' | 'chat'>('planner');
+  const [aiSubTab, setAiSubTab] = useState<'planner' | 'exam' | 'chat' | 'knowledge'>('planner');
+  const [knowledgeDocs, setKnowledgeDocs] = useState<KnowledgeDocument[]>([]);
+  const [kbSearch, setKbSearch] = useState('');
+  const [kbFilter, setKbFilter] = useState<'ALL' | 'PHAP_QUY' | 'ATLD_5S' | 'CUSTOM'>('ALL');
+  const [kbViewingDoc, setKbViewingDoc] = useState<KnowledgeDocument | null>(null);
+  const [kbShowAddModal, setKbShowAddModal] = useState(false);
+  const [kbNewTitle, setKbNewTitle] = useState('');
+  const [kbNewCode, setKbNewCode] = useState('');
+  const [kbNewCategory, setKbNewCategory] = useState<'GIAO_TRINH' | 'DE_CUONG' | 'PHAP_QUY' | 'ATLD_5S'>('GIAO_TRINH');
+  const [kbNewSubject, setKbNewSubject] = useState('ALL');
+  const [kbNewLevel, setKbNewLevel] = useState('ALL');
+  const [kbNewContent, setKbNewContent] = useState('');
+
+  const refreshKnowledgeDocs = () => {
+    setKnowledgeDocs(getResolvedKnowledgeDocuments());
+  };
+
+  useEffect(() => {
+    refreshKnowledgeDocs();
+  }, []);
   const [plannerStandard, setPlannerStandard] = useState<5512 | 2634>(5512);
   const [plannerLessonTitle, setPlannerLessonTitle] = useState('');
   const [plannerModuleTitle, setPlannerModuleTitle] = useState('');
@@ -1506,6 +1533,17 @@ export default function UnifiedTeacherScheduleApp() {
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>Tư Vấn Chat AI</span>
                   </button>
+                  <button
+                    onClick={() => setAiSubTab('knowledge')}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      aiSubTab === 'knowledge'
+                        ? 'bg-emerald-600 text-white shadow-md'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>📚 Kho Tư Liệu Chuẩn</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -1515,6 +1553,26 @@ export default function UnifiedTeacherScheduleApp() {
               <div className="space-y-6">
                 {/* Framework Selector & Input Form */}
                 <div className="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-5 space-y-4 shadow-lg">
+
+                {/* Grounding Banner */}
+                <div
+                  onClick={() => setAiSubTab('knowledge')}
+                  className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40 flex items-center justify-between cursor-pointer hover:border-emerald-500/70 transition-all shadow-sm"
+                >
+                  <div className="flex items-center gap-3">
+                    <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <div>
+                      <div className="text-xs sm:text-sm font-bold text-emerald-300">
+                        🛡️ Chế độ đối chiếu chuẩn (Chống ảo giác & bịa đặt)
+                      </div>
+                      <div className="text-[11px] text-emerald-400/80">
+                        AI bắt buộc đối chiếu với {knowledgeDocs.filter(d => d.isActive).length} văn bản trong Kho dữ liệu (CV 5512/2634 & tài liệu của Thầy/Cô). Nhấn để xem & quản lý.
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-xs font-semibold text-emerald-400 underline shrink-0 ml-2">Kho tư liệu →</span>
+                </div>
+
                   <div>
                     <label className="text-xs font-bold text-slate-300 block mb-2">
                       1. Chọn khung pháp quy chuẩn của bài giảng:
@@ -1697,22 +1755,26 @@ export default function UnifiedTeacherScheduleApp() {
                         setPlannerIsGenerating(true);
                         setTimeout(() => {
                           if (plannerStandard === 5512) {
+                            const refContext = getActiveReferenceContext(plannerSubject, 'PHAP_QUY');
                             const p = generateLessonPlan5512(
                               title,
                               plannerSubject,
                               plannerClass,
                               Number(plannerDuration) || 1,
-                              plannerRequirements
+                              plannerRequirements,
+                              refContext
                             );
                             setPlannerResult5512(p);
                             setPlannerResult2634(null);
                           } else {
+                            const refContext = getActiveReferenceContext(plannerSubject, 'ATLD_5S');
                             const p = generateLessonPlan2634(
                               plannerModuleTitle || title,
                               plannerSubject,
                               plannerClass,
-                              Number(plannerDuration) || 4,
-                              plannerRequirements
+                              (Number(plannerDuration) || 4) * 60,
+                              plannerRequirements,
+                              refContext
                             );
                             p.moduleTitle = plannerModuleTitle || title;
                             p.objectives.knowledge = `Nắm vững quy trình kỹ thuật ${title} theo tài liệu nghề ${plannerSubject}.`;

@@ -22,6 +22,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.smartteacher.schedule.core.ai.*
+import com.smartteacher.schedule.core.database.dao.KnowledgeDocumentDao
+import com.smartteacher.schedule.core.database.entity.KnowledgeDocumentEntity
 import com.smartteacher.schedule.core.database.entity.CalendarEventEntity
 import com.smartteacher.schedule.core.database.entity.LessonAttachmentEntity
 import com.smartteacher.schedule.core.database.entity.TeachingScheduleEntity
@@ -39,7 +41,9 @@ fun AILessonPlannerView(
     aiService: AIService,
     events: List<CalendarEventEntity>,
     schedules: List<TeachingScheduleEntity>,
-    onSaveAttachment: (LessonAttachmentEntity) -> Unit
+    knowledgeDao: KnowledgeDocumentDao? = null,
+    onSaveAttachment: (LessonAttachmentEntity) -> Unit,
+    onNavigateToKnowledgeBase: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -94,6 +98,50 @@ fun AILessonPlannerView(
                         "Sinh tự động Kế hoạch bài dạy chuẩn quy định Bộ GD&ĐT (CV 5512) hoặc Tổng cục GDNN (CV 2634). Xuất tệp Word (.doc) mở 100% offline bằng WPS Office / Word và tự động đính kèm vào lịch dạy.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                    )
+                }
+            }
+        }
+
+
+        item {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFECFDF5),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF6EE7B7)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateToKnowledgeBase() }
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.VerifiedUser,
+                        contentDescription = null,
+                        tint = Color(0xFF059669),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "🛡️ Chế độ đối chiếu chuẩn (Chống ảo giác & bịa đặt)",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFF065F46)
+                        )
+                        Text(
+                            text = "AI bắt buộc đối chiếu với Kho tư liệu (CV 5512/2634 & tài liệu của Thầy/Cô). Bấm để quản lý tư liệu.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF047857)
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.Default.ArrowForwardIos,
+                        contentDescription = null,
+                        tint = Color(0xFF059669),
+                        modifier = Modifier.size(14.dp)
                     )
                 }
             }
@@ -255,12 +303,23 @@ fun AILessonPlannerView(
                     coroutineScope.launch {
                         if (selectedStandard == 0) {
                             val periods = durationText.toIntOrNull() ?: 1
+                            val activeDocs = knowledgeDao?.getAllActiveDocuments() ?: emptyList()
+                            val relevantDocs = activeDocs.filter { doc ->
+                                doc.category == KnowledgeDocumentEntity.CAT_PHAP_QUY ||
+                                doc.subject == "ALL" ||
+                                doc.subject.contains(subject.trim(), ignoreCase = true)
+                            }
+                            val refContext = relevantDocs.joinToString("\n\n---\n") { doc ->
+                                "【${doc.title} (${doc.code})】\n${doc.content}"
+                            }
+
                             val res = aiService.generateLessonPlan5512(
                                 lessonName = lessonTitle.trim(),
                                 subject = subject.ifBlank { "Chung" }.trim(),
                                 grade = className.ifBlank { "Phổ thông" }.trim(),
                                 durationPeriods = periods,
-                                customObjectives = specialRequirements
+                                customObjectives = specialRequirements,
+                                referenceContext = refContext
                             )
                             result5512 = res
                             // Auto-save .doc and prepare attachment
@@ -283,13 +342,26 @@ fun AILessonPlannerView(
                             }
                         } else {
                             val hours = durationText.toFloatOrNull() ?: 4.0f
+                            val activeDocs = knowledgeDao?.getAllActiveDocuments() ?: emptyList()
+                            val relevantDocs = activeDocs.filter { doc ->
+                                doc.category == KnowledgeDocumentEntity.CAT_PHAP_QUY ||
+                                doc.category == KnowledgeDocumentEntity.CAT_QUY_CHUAN_XUONG ||
+                                doc.category == KnowledgeDocumentEntity.CAT_GIAO_TRINH ||
+                                doc.subject == "ALL" ||
+                                doc.subject.contains(subject.trim(), ignoreCase = true)
+                            }
+                            val refContext = relevantDocs.joinToString("\n\n---\n") { doc ->
+                                "【${doc.title} (${doc.code})】\n${doc.content}"
+                            }
+
                             val res = aiService.generateLessonPlan2634(
                                 moduleName = moduleTitle.ifBlank { lessonTitle }.trim(),
                                 lessonName = lessonTitle.trim(),
                                 profession = subject.ifBlank { "Kỹ thuật Công nghệ" }.trim(),
                                 trainingLevel = className.ifBlank { "Trung cấp" }.trim(),
                                 durationHours = hours,
-                                customSafety = specialRequirements.ifBlank { "Máy móc gia công, thiết bị đo kiểm, trang bị BHLĐ cá nhân" }
+                                customSafety = specialRequirements.ifBlank { "Máy móc gia công, thiết bị đo kiểm, trang bị BHLĐ cá nhân" },
+                                referenceContext = refContext
                             )
                             result2634 = res
                             val docHtml = res.toHtmlDocument()
@@ -575,7 +647,9 @@ fun Step2634Item(stepLabel: String, step: Step2634) {
 fun AIExamMatrixView(
     aiService: AIService,
     events: List<CalendarEventEntity>,
-    onSaveAttachment: (LessonAttachmentEntity) -> Unit
+    knowledgeDao: KnowledgeDocumentDao? = null,
+    onSaveAttachment: (LessonAttachmentEntity) -> Unit,
+    onNavigateToKnowledgeBase: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -621,6 +695,50 @@ fun AIExamMatrixView(
                         "Tự động xây dựng bảng ma trận kiểm tra và bộ câu hỏi phân hóa 4 mức độ: Nhận biết, Thông hiểu, Vận dụng, Vận dụng cao kèm đáp án và lời giải chi tiết. Xuất tệp Word (.doc) mở 100% offline.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                    )
+                }
+            }
+        }
+
+
+        item {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFF0FDF4),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF86EFAC)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateToKnowledgeBase() }
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.VerifiedUser,
+                        contentDescription = null,
+                        tint = Color(0xFF16A34A),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "🛡️ Căn cứ Thông tư 22 & Ngân hàng đề chuẩn",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFF166534)
+                        )
+                        Text(
+                            text = "Đề thi và ma trận được đối chiếu khoa học, không tự bịa kiến thức ngoài chuẩn.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF15803D)
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.Default.ArrowForwardIos,
+                        contentDescription = null,
+                        tint = Color(0xFF16A34A),
+                        modifier = Modifier.size(14.dp)
                     )
                 }
             }
@@ -680,11 +798,23 @@ fun AIExamMatrixView(
 
                     coroutineScope.launch {
                         val count = questionCount.toIntOrNull() ?: 10
+                        val activeDocs = knowledgeDao?.getAllActiveDocuments() ?: emptyList()
+                        val relevantDocs = activeDocs.filter { doc ->
+                            doc.category == KnowledgeDocumentEntity.CAT_PHAP_QUY ||
+                            doc.category == KnowledgeDocumentEntity.CAT_DE_CUONG ||
+                            doc.subject == "ALL" ||
+                            doc.subject.contains(subject.trim(), ignoreCase = true)
+                        }
+                        val refContext = relevantDocs.joinToString("\n\n---\n") { doc ->
+                            "【${doc.title} (${doc.code})】\n${doc.content}"
+                        }
+
                         val res = aiService.generateExamMatrix(
                             topic = examTopic.trim(),
                             subject = subject.ifBlank { "Chung" }.trim(),
                             gradeOrClass = grade.ifBlank { "Phổ thông" }.trim(),
-                            questionCount = count
+                            questionCount = count,
+                            referenceContext = refContext
                         )
                         examResult = res
 

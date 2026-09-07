@@ -28,6 +28,7 @@ import {
   Clock,
   BookOpen,
   Plus,
+  Eye,
   Sparkles,
   CheckCircle2,
   ChevronRight,
@@ -2232,6 +2233,372 @@ export default function UnifiedTeacherScheduleApp() {
                     </button>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* ================= SUB-TAB 4: KHO TƯ LIỆU CHUẨN (KNOWLEDGE BASE) ================= */}
+            {aiSubTab === 'knowledge' && (
+              <div className="space-y-6">
+                {/* Header Banner */}
+                <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-950/60 via-slate-800/80 to-teal-950/60 border border-emerald-500/40 space-y-4 shadow-xl">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center border border-emerald-500/40 shadow-lg shadow-emerald-500/10">
+                        <ShieldCheck className="w-7 h-7 text-emerald-400" />
+                      </div>
+                      <div>
+                        <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2.5">
+                          <span>Kho Tư Liệu Đối Chiếu Chuẩn</span>
+                          <span className="px-2.5 py-0.5 rounded-full text-[11px] bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+                            {knowledgeDocs.filter(d => d.isActive).length} / {knowledgeDocs.length} Đang kích hoạt
+                          </span>
+                        </h2>
+                        <p className="text-xs text-slate-300 mt-1 max-w-2xl">
+                          AI bắt buộc đối chiếu các tài liệu đang BẬT dưới đây khi sinh Kế hoạch bài dạy & Đề thi. Tuyệt đối không tự bịa đặt điều luật, thông số kỹ thuật hoặc quy chuẩn ngoài nguồn chuẩn.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setKbNewTitle('');
+                          setKbNewCode('');
+                          setKbNewContent('');
+                          setKbShowAddModal(true);
+                        }}
+                        className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-500/30 flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Thêm Tài Liệu Mới</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Filters & Search */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-800/60 border border-slate-700/80 rounded-2xl p-3.5 shadow-md">
+                  <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 text-xs">
+                    {(['ALL', 'PHAP_QUY', 'ATLD_5S', 'CUSTOM'] as const).map((cat) => {
+                      const labels = {
+                        ALL: 'Tất cả (' + knowledgeDocs.length + ')',
+                        PHAP_QUY: 'Pháp quy (CV 5512/2634/TT22)',
+                        ATLD_5S: 'ATLĐ & 5S Xưởng',
+                        CUSTOM: 'Tài liệu Thầy/Cô nạp (' + knowledgeDocs.filter(d => !d.isBuiltIn).length + ')'
+                      };
+                      const isSel = kbFilter === cat;
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setKbFilter(cat)}
+                          className={`px-3 py-1.5 rounded-xl border whitespace-nowrap transition-all cursor-pointer ${
+                            isSel
+                              ? 'bg-emerald-600 text-white border-emerald-500 font-bold shadow'
+                              : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
+                          }`}
+                        >
+                          {labels[cat]}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="relative w-full sm:w-72">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={kbSearch}
+                      onChange={(e) => setKbSearch(e.target.value)}
+                      placeholder="Tìm theo tên, mã số, môn học..."
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Document List */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {knowledgeDocs
+                    .filter((doc) => {
+                      if (kbFilter === 'PHAP_QUY' && doc.category !== 'PHAP_QUY') return false;
+                      if (kbFilter === 'ATLD_5S' && doc.category !== 'ATLD_5S') return false;
+                      if (kbFilter === 'CUSTOM' && doc.isBuiltIn) return false;
+                      if (kbSearch.trim()) {
+                        const s = kbSearch.toLowerCase();
+                        return (
+                          doc.title.toLowerCase().includes(s) ||
+                          doc.code.toLowerCase().includes(s) ||
+                          doc.subject.toLowerCase().includes(s)
+                        );
+                      }
+                      return true;
+                    })
+                    .map((doc) => (
+                      <div
+                        key={doc.id}
+                        className={`p-4 rounded-2xl border transition-all space-y-3.5 ${
+                          doc.isActive
+                            ? 'bg-slate-800/90 border-slate-700 shadow-lg'
+                            : 'bg-slate-900/40 border-slate-800 opacity-60'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-1.5 flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  doc.isBuiltIn
+                                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                    : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                                }`}
+                              >
+                                {doc.isBuiltIn ? '🏛️ PHÁP QUY GỐC' : '👤 THẦY/CÔ NẠP THÊM'}
+                              </span>
+                              <span className="text-xs font-mono font-bold text-emerald-400">
+                                {doc.code}
+                              </span>
+                            </div>
+                            <h3 className="text-sm font-bold text-white leading-snug">
+                              {doc.title}
+                            </h3>
+                          </div>
+
+                          {/* Toggle Switch */}
+                          <div className="flex flex-col items-end shrink-0 pl-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                toggleKnowledgeDocumentActive(doc.id, !doc.isActive);
+                                refreshKnowledgeDocs();
+                              }}
+                              className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer ${
+                                doc.isActive ? 'bg-emerald-500' : 'bg-slate-700'
+                              }`}
+                            >
+                              <div
+                                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                                  doc.isActive ? 'translate-x-5' : 'translate-x-0'
+                                }`}
+                              />
+                            </button>
+                            <span className={`text-[10px] font-semibold mt-1 ${doc.isActive ? 'text-emerald-400' : 'text-slate-400'}`}>
+                              {doc.isActive ? 'Đang dùng' : 'Tạm tắt'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 text-[11px] text-slate-400 pt-2 border-t border-slate-700/60">
+                          <span>Môn: <strong className="text-slate-300">{doc.subject}</strong></span>
+                          <span>•</span>
+                          <span>Cấp: <strong className="text-slate-300">{doc.targetLevel}</strong></span>
+                          <span>•</span>
+                          <span>{doc.content.length.toLocaleString()} ký tự</span>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center justify-between pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setKbViewingDoc(doc)}
+                            className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1.5 cursor-pointer py-1"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Đọc tài liệu toàn văn</span>
+                          </button>
+
+                          {!doc.isBuiltIn && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (confirm(`Xác nhận xóa tài liệu '${doc.title}' khỏi cơ sở dữ liệu đối chiếu?`)) {
+                                  deleteCustomKnowledgeDocument(doc.id);
+                                  refreshKnowledgeDocs();
+                                }
+                              }}
+                              className="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1 cursor-pointer py-1"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Xóa</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+
+                {/* Modal Xem Toàn Văn */}
+                {kbViewingDoc && (
+                  <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl">
+                      <div className="p-4 sm:p-5 border-b border-slate-800 flex items-start justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs text-emerald-400 font-mono font-bold">{kbViewingDoc.code}</span>
+                            <span className="text-xs text-slate-400">• Môn: {kbViewingDoc.subject} • Cấp: {kbViewingDoc.targetLevel}</span>
+                          </div>
+                          <h3 className="text-base sm:text-lg font-bold text-white">{kbViewingDoc.title}</h3>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setKbViewingDoc(null)}
+                          className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                      <div className="p-5 overflow-y-auto flex-1 text-xs sm:text-sm text-slate-200 whitespace-pre-wrap leading-relaxed font-sans">
+                        {kbViewingDoc.content}
+                      </div>
+                      <div className="p-3.5 border-t border-slate-800 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setKbViewingDoc(null)}
+                          className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold cursor-pointer"
+                        >
+                          Đóng
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Modal Thêm Tài Liệu Mới */}
+                {kbShowAddModal && (
+                  <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-2xl">
+                      <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between">
+                        <h3 className="text-base font-bold text-white flex items-center gap-2">
+                          <Plus className="w-5 h-5 text-emerald-400" />
+                          <span>Thêm Tư Liệu Đối Chiếu AI Mới</span>
+                        </h3>
+                        <button
+                          type="button"
+                          onClick={() => setKbShowAddModal(false)}
+                          className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                      <div className="p-5 overflow-y-auto flex-1 space-y-4">
+                        <div>
+                          <label className="text-xs font-bold text-slate-300 block mb-1.5">
+                            Tên tài liệu / Văn bản / Giáo trình <span className="text-rose-400">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={kbNewTitle}
+                            onChange={(e) => setKbNewTitle(e.target.value)}
+                            placeholder="Ví dụ: Đề cương chi tiết môn Tiện CNC Lớp 11 hoặc Giáo trình Khí cụ điện"
+                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-emerald-500"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs font-bold text-slate-300 block mb-1.5">Mã ký hiệu (tùy chọn)</label>
+                            <input
+                              type="text"
+                              value={kbNewCode}
+                              onChange={(e) => setKbNewCode(e.target.value)}
+                              placeholder="Ví dụ: DC-TIEN-11"
+                              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-bold text-slate-300 block mb-1.5">Môn học áp dụng</label>
+                            <input
+                              type="text"
+                              value={kbNewSubject}
+                              onChange={(e) => setKbNewSubject(e.target.value)}
+                              placeholder="ALL hoặc Toán, Tiện CNC..."
+                              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs font-bold text-slate-300 block mb-1.5">Cấp học / Trình độ</label>
+                            <input
+                              type="text"
+                              value={kbNewLevel}
+                              onChange={(e) => setKbNewLevel(e.target.value)}
+                              placeholder="ALL, THPT, Trung cấp, Cao đẳng..."
+                              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-bold text-slate-300 block mb-1.5">Phân loại</label>
+                            <select
+                              value={kbNewCategory}
+                              onChange={(e) => setKbNewCategory(e.target.value as any)}
+                              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                            >
+                              <option value="GIAO_TRINH">Giáo trình nghề</option>
+                              <option value="DE_CUONG">Đề cương môn học</option>
+                              <option value="PHAP_QUY">Văn bản pháp quy</option>
+                              <option value="ATLD_5S">Tiêu chuẩn ATLĐ & 5S</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-bold text-slate-300 block mb-1.5">
+                            Nội dung văn bản / Chuẩn kiến thức kỹ năng <span className="text-rose-400">*</span>
+                          </label>
+                          <textarea
+                            rows={9}
+                            value={kbNewContent}
+                            onChange={(e) => setKbNewContent(e.target.value)}
+                            placeholder="Dán toàn bộ nội dung giáo trình, chuẩn kiến thức, quy trình hoặc điều luật mà Thầy/Cô muốn AI căn cứ vào đây để biên soạn (chống ảo giác / không tự bịa)..."
+                            className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono leading-relaxed"
+                          />
+                        </div>
+                      </div>
+                      <div className="p-4 border-t border-slate-800 flex justify-end gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => setKbShowAddModal(false)}
+                          className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold cursor-pointer"
+                        >
+                          Hủy
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!kbNewTitle.trim() || !kbNewContent.trim()) {
+                              alert('Vui lòng nhập Tên tài liệu và Nội dung!');
+                              return;
+                            }
+                            const newDoc: KnowledgeDocument = {
+                              id: 'custom-' + Date.now(),
+                              code: kbNewCode.trim() || ('DOC_' + (Date.now() % 10000)),
+                              title: kbNewTitle.trim(),
+                              category: kbNewCategory,
+                              subject: kbNewSubject.trim() || 'ALL',
+                              targetLevel: kbNewLevel.trim() || 'ALL',
+                              content: kbNewContent.trim(),
+                              isBuiltIn: false,
+                              isActive: true,
+                              createdAt: new Date().toISOString()
+                            };
+                            saveKnowledgeDocument(newDoc);
+                            refreshKnowledgeDocs();
+                            setKbShowAddModal(false);
+                            setKbNewTitle('');
+                            setKbNewCode('');
+                            setKbNewContent('');
+                            alert('Đã lưu tài liệu vào kho dữ liệu đối chiếu chuẩn của AI!');
+                          }}
+                          className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-500/25 cursor-pointer transition-all"
+                        >
+                          Lưu Vào Kho Tư Liệu
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

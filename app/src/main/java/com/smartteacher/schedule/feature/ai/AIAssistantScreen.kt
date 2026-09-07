@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.smartteacher.schedule.core.ai.*
 import com.smartteacher.schedule.core.database.entity.CalendarEventEntity
+import com.smartteacher.schedule.core.database.entity.LessonAttachmentEntity
 import com.smartteacher.schedule.core.database.entity.TeachingScheduleEntity
 import com.smartteacher.schedule.core.database.entity.TaskEntity
 import kotlinx.coroutines.launch
@@ -28,12 +29,14 @@ data class ChatMessage(val text: String, val isUser: Boolean)
 fun AIAssistantScreen(
     aiService: AIService,
     events: List<CalendarEventEntity>,
+    schedules: List<TeachingScheduleEntity> = emptyList(),
     tasks: List<TaskEntity>,
     onSaveImportedSchedule: (TeachingScheduleEntity) -> Unit,
-    onMoveUnfinishedTasks: () -> Unit
+    onMoveUnfinishedTasks: () -> Unit,
+    onSaveAttachment: (LessonAttachmentEntity) -> Unit = {}
 ) {
     var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf("Trợ lý Chat", "Nhập lịch AI", "Phân tích tuần", "Rà soát ngày")
+    val tabs = listOf("Soạn Giáo Án (5512/2634)", "Đề Thi & Ma Trận", "Trợ lý Chat", "Nhập lịch AI", "Phân tích tuần", "Rà soát ngày")
 
     Scaffold(
         topBar = {
@@ -46,7 +49,7 @@ fun AIAssistantScreen(
                             tint = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("AI Schedule Intelligence", fontWeight = FontWeight.Bold)
+                        Text("AI Sư Phạm & Trợ Lý Giáo Viên", fontWeight = FontWeight.Bold)
                     }
                 }
             )
@@ -71,10 +74,21 @@ fun AIAssistantScreen(
             }
 
             when (selectedTab) {
-                0 -> AIChatView(aiService = aiService, events = events, tasks = tasks)
-                1 -> AIImportScheduleView(aiService = aiService, onConfirm = onSaveImportedSchedule)
-                2 -> AIWeeklyAnalysisView(aiService = aiService, events = events, tasks = tasks)
-                3 -> AIDailyReviewView(
+                0 -> AILessonPlannerView(
+                    aiService = aiService,
+                    events = events,
+                    schedules = schedules,
+                    onSaveAttachment = onSaveAttachment
+                )
+                1 -> AIExamMatrixView(
+                    aiService = aiService,
+                    events = events,
+                    onSaveAttachment = onSaveAttachment
+                )
+                2 -> AIChatView(aiService = aiService, events = events, tasks = tasks)
+                3 -> AIImportScheduleView(aiService = aiService, onConfirm = onSaveImportedSchedule)
+                4 -> AIWeeklyAnalysisView(aiService = aiService, events = events, tasks = tasks)
+                5 -> AIDailyReviewView(
                     aiService = aiService,
                     events = events,
                     tasks = tasks,

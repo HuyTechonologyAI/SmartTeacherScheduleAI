@@ -278,4 +278,36 @@ object AttachmentFileHelper {
             )
         }
     }
+
+    /**
+     * Lưu Kế hoạch bài dạy (Giáo án CV 5512, CV 2634 hoặc Đề thi) vào tệp văn bản trong bộ nhớ nội bộ.
+     * Tệp này được lưu dưới định dạng .doc (HTML Word Document UTF-8) giúp mở trực tiếp bằng WPS Office, Word, Google Docs 100% offline.
+     */
+    fun saveLessonPlanToStorage(
+        context: Context,
+        displayName: String,
+        htmlContent: String
+    ): PickedFileInfo? {
+        return try {
+            val storageDir = File(context.filesDir, ATTACHMENT_DIR)
+            if (!storageDir.exists()) storageDir.mkdirs()
+
+            val sanitized = displayName.replace("[^a-zA-Z0-9._-]".toRegex(), "_")
+            val fileName = if (sanitized.endsWith(".doc", true) || sanitized.endsWith(".html", true)) sanitized else "$sanitized.doc"
+            val targetFile = File(storageDir, "${UUID.randomUUID()}_$fileName")
+
+            targetFile.writeText(htmlContent, Charsets.UTF_8)
+
+            PickedFileInfo(
+                fileName = fileName,
+                localFilePath = targetFile.absolutePath,
+                mimeType = "application/msword",
+                fileSize = targetFile.length(),
+                extension = "doc"
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
 }

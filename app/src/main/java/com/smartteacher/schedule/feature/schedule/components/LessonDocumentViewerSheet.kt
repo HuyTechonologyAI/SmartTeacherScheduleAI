@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import com.smartteacher.schedule.core.database.entity.CalendarEventEntity
 import com.smartteacher.schedule.core.database.entity.LessonAttachmentEntity
 import com.smartteacher.schedule.core.util.AttachmentFileHelper
+import com.smartteacher.schedule.core.ai.GeminiAIServiceImpl
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -50,6 +51,8 @@ fun LessonDocumentViewerSheet(
     val coroutineScope = rememberCoroutineScope()
     var isImporting by remember { mutableStateOf(false) }
     var showAddLinkDialog by remember { mutableStateOf(false) }
+    var showGenerateAiDialog by remember { mutableStateOf(false) }
+    var isGeneratingAiPlan by remember { mutableStateOf(false) }
     var itemToDelete by remember { mutableStateOf<LessonAttachmentEntity?>(null) }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
@@ -174,6 +177,138 @@ fun LessonDocumentViewerSheet(
         )
     }
 
+    if (showGenerateAiDialog) {
+        var aiStandard by remember { mutableStateOf(if (event.sessionType.contains("Thực hành", true)) 1 else 0) }
+        var aiTitle by remember { mutableStateOf(event.title.ifBlank { event.subject }) }
+        var aiSubject by remember { mutableStateOf(event.subject) }
+        var aiClass by remember { mutableStateOf(event.className) }
+        var aiReq by remember { mutableStateOf("") }
+
+        AlertDialog(
+            onDismissRequest = { if (!isGeneratingAiPlan) showGenerateAiDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Soạn Kế Hoạch Bài Dạy AI", fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("Chọn khung công văn chuẩn:", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodySmall)
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(
+                            selected = aiStandard == 0,
+                            onClick = { aiStandard = 0 },
+                            label = { Text("CV 5512 (Phổ thông)", fontSize = 12.sp) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        FilterChip(
+                            selected = aiStandard == 1,
+                            onClick = { aiStandard = 1 },
+                            label = { Text("CV 2634 (GDNN/Xưởng)", fontSize = 12.sp) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    OutlinedTextField(
+                        value = aiTitle,
+                        onValueChange = { aiTitle = it },
+                        label = { Text("Tên bài dạy / Bài thực hành") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = aiSubject,
+                        onValueChange = { aiSubject = it },
+                        label = { Text("Môn học / Chuyên môn") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = aiReq,
+                        onValueChange = { aiReq = it },
+                        label = { Text(if (aiStandard == 0) "Thiết bị dạy học / Ghi chú" else "Máy móc, BHLĐ & 5S xưởng") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+
+                    if (isGeneratingAiPlan) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Đang sinh giáo án Word chuẩn quy định...", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (aiTitle.isNotBlank()) {
+                            isGeneratingAiPlan = true
+                            coroutineScope.launch {
+                                val aiService = GeminiAIServiceImpl(context) { null }
+                                val (docHtml, fileName) = if (aiStandard == 0) {
+                                    val plan = aiService.generateLessonPlan5512(
+                                        lessonName = aiTitle.trim(),
+                                        subject = aiSubject.ifBlank { "Chung" },
+                                        grade = aiClass.ifBlank { "Phổ thông" },
+                                        durationPeriods = 1,
+                                        customObjectives = aiReq
+                                    )
+                                    plan.toHtmlDocument() to "GiaoAn_5512_${plan.lessonName.take(30).replace(" ", "_")}.doc"
+                                } else {
+                                    val plan = aiService.generateLessonPlan2634(
+                                        moduleName = event.subject.ifBlank { aiTitle }.trim(),
+                                        lessonName = aiTitle.trim(),
+                                        profession = aiSubject.ifBlank { "Kỹ thuật" },
+                                        trainingLevel = aiClass.ifBlank { "Trung cấp" },
+                                        durationHours = 4.0f,
+                                        customSafety = aiReq.ifBlank { "Máy móc gia công, thiết bị đo kiểm, trang bị BHLĐ cá nhân" }
+                                    )
+                                    plan.toHtmlDocument() to "GiaoAn_2634_${plan.lessonName.take(30).replace(" ", "_")}.doc"
+                                }
+
+                                val fileInfo = AttachmentFileHelper.saveLessonPlanToStorage(context, fileName, docHtml)
+                                withContext(Dispatchers.Main) {
+                                    isGeneratingAiPlan = false
+                                    showGenerateAiDialog = false
+                                    if (fileInfo != null) {
+                                        val newAttachment = LessonAttachmentEntity(
+                                            eventId = event.id,
+                                            teachingScheduleId = event.teachingScheduleId,
+                                            fileName = fileInfo.fileName,
+                                            filePath = fileInfo.localFilePath,
+                                            mimeType = fileInfo.mimeType,
+                                            fileSizeBytes = fileInfo.fileSize,
+                                            fileExtension = fileInfo.extension,
+                                            attachmentType = LessonAttachmentEntity.TYPE_FILE
+                                        )
+                                        onAddAttachments(listOf(newAttachment))
+                                        Toast.makeText(context, "Đã tạo Kế hoạch bài dạy chuẩn Word (.doc) và gắn vào tiết học!", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    enabled = !isGeneratingAiPlan
+                ) {
+                    Text("⚡ Sinh & Đính Kèm")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showGenerateAiDialog = false },
+                    enabled = !isGeneratingAiPlan
+                ) {
+                    Text("Hủy")
+                }
+            }
+        )
+    }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
@@ -232,6 +367,20 @@ fun LessonDocumentViewerSheet(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Action Buttons to Add More Documents
+            Button(
+                onClick = { showGenerateAiDialog = true },
+                modifier = Modifier.fillMaxWidth().height(42.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("⚡ Soạn Kế Hoạch Bài Dạy AI (Word .doc)", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -254,7 +403,8 @@ fun LessonDocumentViewerSheet(
                     },
                     modifier = Modifier.weight(1f).height(40.dp),
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))

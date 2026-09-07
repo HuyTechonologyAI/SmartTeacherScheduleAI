@@ -23,4 +23,29 @@ interface AIService {
         events: List<CalendarEventEntity>,
         tasks: List<TaskEntity>
     ): String
+
+    // TRỤ CỘT 2: Soạn Kế Hoạch Bài Dạy Chuẩn CV 5512 & CV 2634 và Ma Trận Đề Thi
+    suspend fun generateLessonPlan5512(
+        lessonName: String,
+        subject: String,
+        grade: String,
+        durationPeriods: Int = 1,
+        customObjectives: String = ""
+    ): LessonPlan5512Result
+
+    suspend fun generateLessonPlan2634(
+        moduleName: String,
+        lessonName: String,
+        profession: String,
+        trainingLevel: String = "Trung cấp",
+        durationHours: Float = 4.0f,
+        customSafety: String = ""
+    ): LessonPlan2634Result
+
+    suspend fun generateExamMatrix(
+        topic: String,
+        subject: String,
+        gradeOrClass: String,
+        questionCount: Int = 10
+    ): ExamMatrixResult
 }

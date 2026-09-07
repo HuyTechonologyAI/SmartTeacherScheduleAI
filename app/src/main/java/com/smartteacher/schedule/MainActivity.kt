@@ -255,7 +255,8 @@ class MainActivity : ComponentActivity() {
                         composable(Screen.AIAssistant.route) {
                             AIAssistantScreen(
                                 aiService = aiService,
-                                events = todayEvents,
+                                events = if (allEvents.isNotEmpty()) allEvents else todayEvents,
+                                schedules = allSchedules,
                                 tasks = allTasks,
                                 onSaveImportedSchedule = { schedule ->
                                     saveTeachingSchedule(schedule)
@@ -265,6 +266,11 @@ class MainActivity : ComponentActivity() {
                                         val today = LocalDate.now().toString()
                                         val tomorrow = LocalDate.now().plusDays(1).toString()
                                         database.taskDao().moveUnfinishedTasksToDate(today, tomorrow)
+                                    }
+                                },
+                                onSaveAttachment = { attachment ->
+                                    lifecycleScope.launch(Dispatchers.IO) {
+                                        database.lessonAttachmentDao().insertAttachment(attachment)
                                     }
                                 }
                             )

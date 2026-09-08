@@ -244,6 +244,20 @@ export default function UnifiedTeacherScheduleApp() {
   const [syncSubsequent, setSyncSubsequent] = useState(true);
   const [updateWholeSchedule, setUpdateWholeSchedule] = useState(false);
 
+  // New Ca Day (Add Event) Modal States
+  const [showAddEventModal, setShowAddEventModal] = useState(false);
+  const [newSubject, setNewSubject] = useState('');
+  const [newClass, setNewClass] = useState('');
+  const [newRoom, setNewRoom] = useState('');
+  const [newDate, setNewDate] = useState('');
+  const [newStartTime, setNewStartTime] = useState('07:00');
+  const [newEndTime, setNewEndTime] = useState('07:45');
+  const [newSessionType, setNewSessionType] = useState<'Lý thuyết' | 'Thực hành'>('Lý thuyết');
+  const [newNotes, setNewNotes] = useState('');
+  const [newCreateRecurring, setNewCreateRecurring] = useState(false);
+  const [newStartDate, setNewStartDate] = useState('2026-09-07');
+  const [newEndDate, setNewEndDate] = useState('2027-02-15');
+
   // Attachment Modal
   const [attachingEvent, setAttachingEvent] = useState<CalendarEventItem | null>(null);
   const [attachFileName, setAttachFileName] = useState('');
@@ -365,12 +379,14 @@ export default function UnifiedTeacherScheduleApp() {
     }
   };
 
-  // Push to Cloud
-  const pushToCloud = async (curEvents: CalendarEventItem[], curSchedules: ScheduleItem[], code = syncCode) => {
-    if (!code) return;
+  // Push to Cloud (Máy tính -> Đám mây -> Điện thoại)
+  const pushToCloud = async (curEvents: CalendarEventItem[], curSchedules: ScheduleItem[], code = syncCode, isManual = false) => {
+    if (!code) return false;
     setIsSyncing(true);
     setSyncStatus('syncing');
     try {
+      const nowTs = Date.now();
+      localStorage.setItem('smart_teacher_last_local_update', nowTs.toString());
       const res = await fetch('/api/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -378,7 +394,7 @@ export default function UnifiedTeacherScheduleApp() {
           syncCode: code,
           platform: 'desktop',
           deviceName: 'Máy tính Giáo viên (Windows/Mac/Web)',
-          updatedAt: Date.now(),
+          updatedAt: nowTs,
           events: curEvents,
           schedules: curSchedules
         })
@@ -386,27 +402,45 @@ export default function UnifiedTeacherScheduleApp() {
       if (res.ok) {
         setSyncStatus('synced');
         setLastSyncTime(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-        setAlertBanner(`🟢 Đã lưu và đồng bộ thành công ${curEvents.length} ca dạy lên Đám mây!`);
-        setTimeout(() => setAlertBanner(null), 4000);
+        setAlertBanner(`🟢 Đã đẩy thành công ${curEvents.length} ca dạy lên Đám mây! Điện thoại sẽ nhận được ngay.`);
+        setTimeout(() => setAlertBanner(null), 5000);
+        if (isManual) {
+          alert(`🎉 ĐẨY LÊN ĐÁM MÂY THÀNH CÔNG!\n\nĐã gửi ${curEvents.length} ca dạy và ${curSchedules.length} lịch mẫu học kỳ lên Đám mây!\n\nThầy/Cô mở app trên điện thoại và bấm "Đồng bộ đám mây ngay" (hoặc mở lại app) để nhận dữ liệu mới nhất từ máy tính nhé!\nMã đồng bộ: ${code}`);
+        }
+        return true;
       } else {
         setSyncStatus('error');
+        if (isManual) alert('Lỗi khi gửi dữ liệu lên đám mây: Mã lỗi ' + res.status);
+        return false;
       }
     } catch (e) {
-      console.error(e);
+      console.error('pushToCloud error:', e);
       setSyncStatus('error');
+      if (isManual) alert('Lỗi kết nối máy chủ đám mây: ' + (e as any)?.message);
+      return false;
     } finally {
       setIsSyncing(false);
     }
   };
 
-  // Pull from Cloud
+  // Pull from Cloud (Đám mây -> Máy tính)
   const pullFromCloud = async (code = syncCode, isManual = false) => {
-    if (!code) return;
+    if (!code) return false;
     setIsSyncing(true);
     try {
       const res = await fetch(`/api/sync?code=${encodeURIComponent(code)}`);
       if (res.ok) {
         const data = await res.json();
+        const cloudUpdatedAt = Number(data.updatedAt) || 0;
+        const lastLocalUpdate = Number(localStorage.getItem('smart_teacher_last_local_update') || 0);
+
+        // Bảo vệ dữ liệu vừa sửa trên máy tính trong vòng 30 giây tránh bị kéo đè
+        if (!isManual && lastLocalUpdate > 0 && cloudUpdatedAt < lastLocalUpdate && (Date.now() - lastLocalUpdate < 30000)) {
+          console.log('Skipping cloud pull because local changes are fresher than cloud data');
+          setIsSyncing(false);
+          return true;
+        }
+
         let cloudEvents: CalendarEventItem[] = Array.isArray(data.events) ? data.events : [];
         let cloudSchedules: ScheduleItem[] = Array.isArray(data.schedules) ? data.schedules : [];
 
@@ -425,13 +459,38 @@ export default function UnifiedTeacherScheduleApp() {
           if (isManual) {
             alert(`🎉 ĐỒNG BỘ 2 CHIỀU THÀNH CÔNG!\n\nĐã tải về đầy đủ ${cloudEvents.length} ca dạy (${cloudSchedules.length} lịch mẫu học kỳ) khớp hoàn toàn với điện thoại!\nMã đồng bộ: ${code}`);
           }
+          return true;
         } else if (isManual) {
           alert(`⚠️ Chưa có lịch trên đám mây cho mã "${code}".\nThầy/Cô vui lòng mở app trên điện thoại ➔ Cài đặt ➔ Bấm "Đồng bộ đám mây ngay" trước nhé!`);
         }
       }
     } catch (e) {
-      console.error(e);
+      console.error('pullFromCloud error:', e);
       if (isManual) alert('Lỗi kết nối đồng bộ: ' + (e as any)?.message);
+    } finally {
+      setIsSyncing(false);
+    }
+    return false;
+  };
+
+  // Đồng bộ 2 chiều toàn diện (Two-Way Cloud Sync)
+  const syncBothWays = async (code = syncCode, isManual = true) => {
+    if (!code) return;
+    setIsSyncing(true);
+    setSyncStatus('syncing');
+    try {
+      // 1. Luôn đẩy bản hiện tại trên máy tính lên trước
+      const pushed = await pushToCloud(events, schedules, code, false);
+      // 2. Sau đó kiểm tra và kéo cập nhật mới nhất từ đám mây
+      await pullFromCloud(code, false);
+      setSyncStatus('synced');
+      setLastSyncTime(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      if (isManual) {
+        alert(`🎉 ĐỒNG BỘ 2 CHIỀU THÀNH CÔNG!\n\n• Chiều 1: Đã lưu & đẩy ${events.length} ca dạy lên Đám mây cho Điện thoại.\n• Chiều 2: Đã kiểm tra & đồng bộ lịch mới nhất từ Đám mây về Máy tính.\nMã đồng bộ: ${code}`);
+      }
+    } catch (e) {
+      console.error('syncBothWays error:', e);
+      if (isManual) alert('Lỗi đồng bộ 2 chiều: ' + (e as any)?.message);
     } finally {
       setIsSyncing(false);
     }
@@ -461,20 +520,39 @@ export default function UnifiedTeacherScheduleApp() {
 
     const savedEvStr = localStorage.getItem('smart_teacher_events');
     const savedSchStr = localStorage.getItem('smart_teacher_schedules');
+    let hasLocalData = false;
     if (savedEvStr) {
-      try { setEvents(JSON.parse(savedEvStr)); } catch (e) {}
+      try {
+        const parsed = JSON.parse(savedEvStr);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setEvents(parsed);
+          hasLocalData = true;
+        }
+      } catch (e) {}
     }
     if (savedSchStr) {
-      try { setSchedules(JSON.parse(savedSchStr)); } catch (e) {}
+      try {
+        const parsed = JSON.parse(savedSchStr);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSchedules(parsed);
+        }
+      } catch (e) {}
     }
 
     // Pull from cloud immediately
     pullFromCloud(savedCode, false);
 
-    // Auto sync polling every 25 seconds
+    // Auto sync polling every 30 seconds
     const interval = setInterval(() => {
       pullFromCloud(savedCode, false);
-    }, 25000);
+    }, 30000);
+
+    // Listen to Desktop App menu "Đồng bộ Đám mây ngay" (Ctrl+S)
+    if (typeof window !== 'undefined' && (window as any).desktopAPI?.onSyncTriggered) {
+      (window as any).desktopAPI.onSyncTriggered(() => {
+        syncBothWays(savedCode, true);
+      });
+    }
 
     return () => clearInterval(interval);
   }, []);
@@ -687,6 +765,77 @@ export default function UnifiedTeacherScheduleApp() {
     setEditingEvent(null);
   };
 
+  // Add New Single or Recurring Event (Tạo Ca Dạy Mới Từ Máy Tính)
+  const handleCreateNewEvent = () => {
+    if (!newSubject.trim() || !newClass.trim() || !newDate.trim()) {
+      alert('Vui lòng điền đủ Tên môn học, Lớp giảng dạy và Ngày dạy!');
+      return;
+    }
+
+    const newEvId = 'ev_' + Date.now();
+    const createdEvent: CalendarEventItem = {
+      id: newEvId,
+      teachingScheduleId: newCreateRecurring ? Date.now() : undefined,
+      title: newSubject.trim(),
+      subject: newSubject.trim(),
+      className: newClass.trim(),
+      room: newRoom.trim() || 'Phòng học bộ môn',
+      date: newDate,
+      startTime: newStartTime,
+      endTime: newEndTime,
+      sessionType: newSessionType,
+      colorHex: newSessionType === 'Thực hành' ? '#10B981' : '#0066FF',
+      notes: newNotes.trim(),
+      updatedAt: Date.now()
+    };
+
+    let updatedEvents = [createdEvent, ...events];
+    let updatedSchedules = [...schedules];
+
+    if (newCreateRecurring) {
+      const dt = new Date(newDate + 'T00:00:00');
+      const dayOfWeek = dt.getDay() === 0 ? 7 : dt.getDay(); // ISO: 1..7
+      const newSchId = 'sch_' + Date.now();
+      const newSchedule: ScheduleItem = {
+        id: newSchId,
+        subject: newSubject.trim(),
+        className: newClass.trim(),
+        room: newRoom.trim() || 'Phòng học bộ môn',
+        dayOfWeek: dayOfWeek,
+        dayOfWeekVn: dayOfWeek === 7 ? 8 : dayOfWeek + 1,
+        startTime: newStartTime,
+        endTime: newEndTime,
+        type: newSessionType === 'Thực hành' ? 'practice' : 'theory',
+        sessionType: newSessionType,
+        startDate: newStartDate || newDate,
+        endDate: newEndDate || '2027-02-15',
+        notes: newNotes.trim(),
+        updatedAt: Date.now()
+      };
+      updatedSchedules = [...updatedSchedules, newSchedule];
+      setSchedules(updatedSchedules);
+      localStorage.setItem('smart_teacher_schedules', JSON.stringify(updatedSchedules));
+
+      // Generate remaining recurring events for the semester
+      const generated = generateEventsFromSchedules([newSchedule]);
+      for (const g of generated) {
+        if (g.date !== newDate && !updatedEvents.some(e => e.date === g.date && e.startTime === g.startTime && e.className === g.className)) {
+          updatedEvents.push(g);
+        }
+      }
+    }
+
+    setEvents(updatedEvents);
+    localStorage.setItem('smart_teacher_events', JSON.stringify(updatedEvents));
+    pushToCloud(updatedEvents, updatedSchedules, syncCode, false);
+    setShowAddEventModal(false);
+    setNewSubject('');
+    setNewClass('');
+    setNewRoom('');
+    setNewNotes('');
+    alert(`🎉 ĐÃ THÊM CA DẠY THÀNH CÔNG!\n\nCa dạy đã được lưu trên máy tính và tự động đẩy lên Đám mây cho Điện thoại!`);
+  };
+
   // Delete Single Event
   const handleDeleteEvent = (id: string) => {
     if (!confirm('Thầy/Cô có chắc chắn muốn xoá ca dạy này không?')) return;
@@ -827,8 +976,19 @@ export default function UnifiedTeacherScheduleApp() {
             </div>
 
             <button
-              onClick={() => pullFromCloud(syncCode, true)}
+              onClick={() => pushToCloud(events, schedules, syncCode, true)}
               disabled={isSyncing}
+              title="Đẩy toàn bộ lịch đã sửa trên Máy tính lên Đám mây cho Điện thoại"
+              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/20 disabled:opacity-50 cursor-pointer"
+            >
+              <Cloud className="w-3.5 h-3.5 text-white" />
+              <span>Đẩy lên ĐT</span>
+            </button>
+
+            <button
+              onClick={() => syncBothWays(syncCode, true)}
+              disabled={isSyncing}
+              title="Đồng bộ hai chiều: Gửi lịch máy tính lên đám mây và nhận lịch mới từ điện thoại"
               className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md shadow-blue-600/20 disabled:opacity-50 cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
@@ -1174,24 +1334,37 @@ export default function UnifiedTeacherScheduleApp() {
                   </p>
                 </div>
 
-                {/* View Mode Toggle */}
-                <div className="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-700">
+                <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setCalendarViewMode('day')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                      calendarViewMode === 'day' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
-                    }`}
+                    onClick={() => {
+                      setNewDate(selectedDate || todayStr);
+                      setShowAddEventModal(true);
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-600/25 cursor-pointer transition-all"
                   >
-                    Xem theo ngày
+                    <Plus className="w-4 h-4" />
+                    <span>Thêm Ca Dạy Mới</span>
                   </button>
-                  <button
-                    onClick={() => setCalendarViewMode('all')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                      calendarViewMode === 'all' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Xem toàn bộ 288 ca
-                  </button>
+
+                  {/* View Mode Toggle */}
+                  <div className="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-700">
+                    <button
+                      onClick={() => setCalendarViewMode('day')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                        calendarViewMode === 'day' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Xem theo ngày
+                    </button>
+                    <button
+                      onClick={() => setCalendarViewMode('all')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                        calendarViewMode === 'all' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Xem toàn bộ 288 ca
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -2636,12 +2809,27 @@ export default function UnifiedTeacherScheduleApp() {
                       if (clean) {
                         setSyncCode(clean);
                         localStorage.setItem('smart_teacher_sync_code', clean);
-                        pullFromCloud(clean, true);
+                        pushToCloud(events, schedules, clean, true);
                       }
                     }}
-                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-all shadow-md cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all shadow-md cursor-pointer flex items-center gap-1.5"
                   >
-                    Lưu & Đồng bộ ngay
+                    <Cloud className="w-3.5 h-3.5" />
+                    <span>Đẩy lên ĐT</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      const clean = syncInput.trim();
+                      if (clean) {
+                        setSyncCode(clean);
+                        localStorage.setItem('smart_teacher_sync_code', clean);
+                        syncBothWays(clean, true);
+                      }
+                    }}
+                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-all shadow-md cursor-pointer flex items-center gap-1.5"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                    <span>Đồng bộ 2 chiều</span>
                   </button>
                 </div>
 
@@ -2730,7 +2918,191 @@ export default function UnifiedTeacherScheduleApp() {
         )}
       </main>
 
-      {/* ================= MODAL: CHỈNH SỬA CA DẠY (UNIFIED EDIT MODAL) ================= */}
+      {/* ================= MODAL: THÊM CA DẠY MỚI TRÊN MÁY TÍNH ================= */}
+      {showAddEventModal && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl text-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Plus className="w-5 h-5 text-emerald-400" />
+                <span>Thêm Ca Dạy Mới (Tự Động Đồng Bộ Điện Thoại)</span>
+              </h3>
+              <button onClick={() => setShowAddEventModal(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="text-slate-300 font-medium block mb-1">
+                  Tên môn học / Module: <span className="text-rose-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="VD: Tiện CNC Cơ Bản, Công Nghệ 12..."
+                  value={newSubject}
+                  onChange={(e) => setNewSubject(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-300 font-medium block mb-1">
+                    Lớp giảng dạy: <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="VD: 12A2, CG24TC34..."
+                    value={newClass}
+                    onChange={(e) => setNewClass(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-300 font-medium block mb-1">Phòng học / Xưởng:</label>
+                  <input
+                    type="text"
+                    placeholder="VD: S3.05/2, Xưởng Cơ khí..."
+                    value={newRoom}
+                    onChange={(e) => setNewRoom(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-slate-300 font-medium block mb-1">
+                    Ngày dạy: <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={newDate}
+                    onChange={(e) => setNewDate(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-300 font-medium block mb-1">Giờ bắt đầu:</label>
+                  <input
+                    type="time"
+                    value={newStartTime}
+                    onChange={(e) => setNewStartTime(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-300 font-medium block mb-1">Giờ kết thúc:</label>
+                  <input
+                    type="time"
+                    value={newEndTime}
+                    onChange={(e) => setNewEndTime(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              {/* Session Type */}
+              <div>
+                <label className="text-slate-300 font-medium block mb-1">Hình thức giảng dạy:</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setNewSessionType('Lý thuyết')}
+                    className={`py-2 rounded-xl border text-center font-semibold transition-all ${
+                      newSessionType === 'Lý thuyết'
+                        ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-600/30'
+                        : 'bg-slate-800 text-slate-300 border-slate-700'
+                    }`}
+                  >
+                    📖 Lý thuyết
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewSessionType('Thực hành')}
+                    className={`py-2 rounded-xl border text-center font-semibold transition-all ${
+                      newSessionType === 'Thực hành'
+                        ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-600/30'
+                        : 'bg-slate-800 text-slate-300 border-slate-700'
+                    }`}
+                  >
+                    ⚙️ Thực hành
+                  </button>
+                </div>
+              </div>
+
+              {/* Recurring schedule option */}
+              <div className="p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newCreateRecurring}
+                    onChange={(e) => setNewCreateRecurring(e.target.checked)}
+                    className="rounded border-slate-700 text-emerald-600 focus:ring-0"
+                  />
+                  <span className="text-xs text-slate-200 font-semibold">
+                    Lặp lại định kỳ hàng tuần cho toàn bộ học kỳ
+                  </span>
+                </label>
+
+                {newCreateRecurring && (
+                  <div className="grid grid-cols-2 gap-3 pt-2">
+                    <div>
+                      <label className="text-[10px] text-slate-400 block">Bắt đầu học kỳ:</label>
+                      <input
+                        type="date"
+                        value={newStartDate}
+                        onChange={(e) => setNewStartDate(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white font-mono text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-400 block">Kết thúc học kỳ:</label>
+                      <input
+                        type="date"
+                        value={newEndDate}
+                        onChange={(e) => setNewEndDate(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="text-slate-300 font-medium block mb-1">Ghi chú (tùy chọn):</label>
+                <textarea
+                  rows={2}
+                  value={newNotes}
+                  onChange={(e) => setNewNotes(e.target.value)}
+                  placeholder="Ghi chú bài học, phòng máy, dặn dò học sinh..."
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowAddEventModal(false)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateNewEvent}
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-500/30 cursor-pointer"
+              >
+                Lưu & Đẩy lên Đám Mây
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+            {/* ================= MODAL: CHỈNH SỬA CA DẠY (UNIFIED EDIT MODAL) ================= */}
       {editingEvent && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
           <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl text-slate-100">

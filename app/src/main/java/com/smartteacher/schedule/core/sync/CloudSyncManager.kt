@@ -219,15 +219,15 @@ object CloudSyncManager {
                 val currentSchedules = db.teachingScheduleDao().getAllActiveSchedulesList()
                 for (elem in schedulesArray) {
                     val item = elem.asJsonObject
+                    val rawIdStr = item.get("id")?.asString?.replace("sch_", "")?.trim() ?: ""
+                    val numId = rawIdStr.toLongOrNull()
                     val subject = item.get("subject")?.asString ?: ""
                     val className = item.get("className")?.asString ?: ""
                     val room = item.get("room")?.asString ?: ""
                     val rawDay = item.get("dayOfWeek")?.asInt ?: 1
-                    // Chuẩn hóa ISO 1..7
                     val dayOfWeek = if (item.has("dayOfWeekVn")) {
                         rawDay
                     } else if (rawDay in 2..8) {
-                        // Nếu gửi chuẩn VN (2=T2..8=CN)
                         if (rawDay == 8) 7 else rawDay - 1
                     } else {
                         rawDay.coerceIn(1, 7)
@@ -239,17 +239,32 @@ object CloudSyncManager {
                     val startDate = item.get("startDate")?.asString ?: "2026-09-07"
                     val endDate = item.get("endDate")?.asString ?: "2027-02-15"
                     val notes = item.get("notes")?.asString ?: ""
-                    val updatedAt = item.get("updatedAt")?.asLong ?: System.currentTimeMillis()
+                    val itemUpdatedAt = item.get("updatedAt")?.asLong ?: System.currentTimeMillis()
 
-                    val existing = currentSchedules.find {
-                        it.subject.equals(subject, ignoreCase = true) &&
-                        it.className.equals(className, ignoreCase = true) &&
-                        it.dayOfWeek == dayOfWeek
-                    }
+                    val existing = (if (numId != null && numId > 0) currentSchedules.find { it.id == numId } else null)
+                        ?: currentSchedules.find {
+                            it.subject.equals(subject, ignoreCase = true) &&
+                            it.className.equals(className, ignoreCase = true) &&
+                            it.dayOfWeek == dayOfWeek
+                        }
 
                     if (existing != null) {
-                        if (existing.room != room || existing.startTime != startTime || existing.endTime != endTime || existing.sessionType != sessionType || existing.startDate != startDate || existing.endDate != endDate) {
+                        val isDiff = existing.room != room ||
+                                     existing.startTime != startTime ||
+                                     existing.endTime != endTime ||
+                                     existing.sessionType != sessionType ||
+                                     existing.startDate != startDate ||
+                                     existing.endDate != endDate ||
+                                     existing.notes != notes ||
+                                     existing.subject != subject ||
+                                     existing.className != className ||
+                                     existing.dayOfWeek != dayOfWeek
+
+                        if (isDiff && itemUpdatedAt >= existing.updatedAt) {
                             val updated = existing.copy(
+                                subject = subject,
+                                className = className,
+                                dayOfWeek = dayOfWeek,
                                 room = room,
                                 startTime = startTime,
                                 endTime = endTime,
@@ -257,7 +272,7 @@ object CloudSyncManager {
                                 startDate = startDate,
                                 endDate = endDate,
                                 notes = notes,
-                                updatedAt = updatedAt
+                                updatedAt = itemUpdatedAt
                             )
                             db.teachingScheduleDao().updateSchedule(updated)
                             changedCount++
@@ -274,7 +289,7 @@ object CloudSyncManager {
                             startDate = startDate,
                             endDate = endDate,
                             notes = notes,
-                            updatedAt = updatedAt
+                            updatedAt = itemUpdatedAt
                         )
                         db.teachingScheduleDao().insertSchedule(newSchedule)
                         changedCount++
@@ -290,6 +305,8 @@ object CloudSyncManager {
 
                 for (elem in eventsArray) {
                     val item = elem.asJsonObject
+                    val rawIdStr = item.get("id")?.asString?.replace("ev_", "")?.trim() ?: ""
+                    val numId = rawIdStr.toLongOrNull()
                     val subject = item.get("subject")?.asString ?: item.get("title")?.asString ?: ""
                     val className = item.get("className")?.asString ?: ""
                     val room = item.get("room")?.asString ?: ""
@@ -300,23 +317,38 @@ object CloudSyncManager {
                     val notes = item.get("notes")?.asString ?: ""
                     val colorHex = item.get("colorHex")?.asString ?: (if (sessionType.contains("thực hành", true)) "#10B981" else "#0066FF")
                     val tId = if (item.has("teachingScheduleId") && !item.get("teachingScheduleId").isJsonNull) item.get("teachingScheduleId").asLong else null
+                    val itemUpdatedAt = item.get("updatedAt")?.asLong ?: System.currentTimeMillis()
 
-                    val existing = currentEvents.find {
-                        it.date == date && it.startTime == startTime && it.className.equals(className, ignoreCase = true)
-                    }
+                    // Đối soát thông minh: ưu tiên ID nguyên bản, sau đó cặp khóa lịch (tId + date), cuối cùng là (date + startTime + class)
+                    val existing = (if (numId != null && numId > 0) currentEvents.find { it.id == numId } else null)
+                        ?: (if (tId != null) currentEvents.find { it.teachingScheduleId == tId && it.date == date } else null)
+                        ?: currentEvents.find { it.date == date && it.startTime == startTime && it.className.equals(className, ignoreCase = true) }
 
                     if (existing != null) {
-                        if (existing.room != room || existing.subject != subject || existing.sessionType != sessionType || existing.endTime != endTime || existing.notes != notes) {
+                        val isDiff = existing.room != room ||
+                                     existing.subject != subject ||
+                                     existing.className != className ||
+                                     existing.date != date ||
+                                     existing.startTime != startTime ||
+                                     existing.endTime != endTime ||
+                                     existing.sessionType != sessionType ||
+                                     existing.notes != notes ||
+                                     existing.colorHex != colorHex
+
+                        if (isDiff && itemUpdatedAt >= existing.updatedAt) {
                             toUpdate.add(
                                 existing.copy(
-                                    room = room,
-                                    subject = subject,
                                     title = subject,
-                                    sessionType = sessionType,
+                                    subject = subject,
+                                    className = className,
+                                    room = room,
+                                    date = date,
+                                    startTime = startTime,
                                     endTime = endTime,
+                                    sessionType = sessionType,
                                     notes = notes,
                                     colorHex = colorHex,
-                                    updatedAt = System.currentTimeMillis()
+                                    updatedAt = itemUpdatedAt
                                 )
                             )
                         }
@@ -334,7 +366,7 @@ object CloudSyncManager {
                                 sessionType = sessionType,
                                 notes = notes,
                                 colorHex = colorHex,
-                                updatedAt = System.currentTimeMillis()
+                                updatedAt = itemUpdatedAt
                             )
                         )
                     }
@@ -354,6 +386,24 @@ object CloudSyncManager {
             val healed = ScheduleSyncManager.syncAndSelfHeal(context)
             changedCount += healed
 
+            // Làm mới chuông báo thức, Widget và Màn hình khóa nếu có cập nhật
+            if (changedCount > 0) {
+                runCatching {
+                    val today = LocalDate.now()
+                    val upcomingEvents = db.calendarEventDao().getEventsForDateList(today.toString()) +
+                                         db.calendarEventDao().getEventsForDateList(today.plusDays(1).toString())
+                    val scheduler = com.smartteacher.schedule.core.alarms.AndroidAlarmScheduler(context)
+                    for (ev in upcomingEvents) {
+                        scheduler.cancelEventReminders(ev.id)
+                        if (ev.reminder1Enabled || ev.reminder2Enabled) {
+                            scheduler.scheduleEventReminders(ev)
+                        }
+                    }
+                    com.smartteacher.schedule.feature.widget.ScheduleWidgetReceiver.updateAllWidgets(context)
+                    com.smartteacher.schedule.feature.lockscreen.LockScreenGlanceManager.updateLockScreenGlance(context)
+                }
+            }
+
             context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 .edit()
                 .putLong(KEY_LAST_SYNC_TIME, System.currentTimeMillis())
@@ -367,21 +417,82 @@ object CloudSyncManager {
     }
 
     /**
-     * Đồng bộ hai chiều: Đẩy dữ liệu hiện tại lên trước, sau đó tải về các cập nhật từ máy tính
+     * Đồng bộ hai chiều thông minh (Smart 2-Way Sync):
+     * 1. KÉO TRƯỚC (PULL FIRST): Tải dữ liệu mới nhất từ Đám mây về máy và hợp nhất vào Room DB.
+     * 2. KIỂM TRA ĐỔI MỚI (CHECK LOCAL EDITS): Kiểm tra xem trên điện thoại có ca dạy nào
+     *    được giáo viên sửa đổi mới hơn mốc đồng bộ trước đó hay không.
+     * 3. ĐẨY SAU (PUSH AFTER): Chỉ gửi dữ liệu lên Đám mây khi có thay đổi thực tế trên điện thoại
+     *    (hoặc khi đám mây đang trống), ngăn chặn triệt để việc dữ liệu cũ đè lên dữ liệu mới của máy tính!
      */
     suspend fun syncBothWays(context: Context): Result<String> = withContext(Dispatchers.IO) {
         try {
-            val pushResult = pushToCloud(context)
-            if (pushResult.isFailure) {
-                val err = pushResult.exceptionOrNull()?.message ?: "Lỗi khi lưu lịch lên đám mây"
+            val lastSync = getLastSyncTime(context)
+
+            // Bước 1: Kéo cập nhật từ đám mây về trước
+            val pullResult = pullFromCloud(context)
+            if (pullResult.isFailure) {
+                val err = pullResult.exceptionOrNull()?.message ?: "Lỗi khi kết nối Đám mây"
                 return@withContext Result.failure(Exception(err))
             }
-            val pullResult = pullFromCloud(context)
-            val pushed = pushResult.getOrDefault(0)
-            val pulled = pullResult.getOrDefault(0)
-            Result.success("Đã đồng bộ thành công: Tải lên $pushed ca dạy/lịch lên Đám mây, cập nhật $pulled thay đổi từ máy tính!")
+            val pulledChanges = pullResult.getOrDefault(0)
+
+            // Bước 2: Kiểm tra xem điện thoại có chỉnh sửa nào mới hơn mốc đồng bộ không
+            val db = SmartTeacherDatabase.getInstance(context)
+            val currentEvents = db.calendarEventDao().getAllEventsSync()
+            val currentSchedules = db.teachingScheduleDao().getAllActiveSchedulesList()
+
+            val hasLocalNewerEdits = currentEvents.any { it.updatedAt > lastSync } ||
+                                     currentSchedules.any { it.updatedAt > lastSync }
+
+            var pushedCount = 0
+            if (hasLocalNewerEdits || lastSync == 0L) {
+                val pushResult = pushToCloud(context)
+                if (pushResult.isSuccess) {
+                    pushedCount = pushResult.getOrDefault(0)
+                }
+            }
+
+            val msg = when {
+                pulledChanges > 0 && pushedCount > 0 ->
+                    "Đồng bộ 2 chiều thành công: Đã nhận $pulledChanges ca mới từ Máy tính & Đẩy $pushedCount ca từ Điện thoại!"
+                pulledChanges > 0 ->
+                    "Đồng bộ thành công: Đã cập nhật $pulledChanges ca dạy mới nhất từ Máy tính về Điện thoại!"
+                pushedCount > 0 ->
+                    "Đồng bộ thành công: Đã lưu & đẩy $pushedCount ca dạy từ Điện thoại lên Đám mây!"
+                else ->
+                    "Dữ liệu giữa Điện thoại và Máy tính đã hoàn toàn khớp nhau (${currentEvents.size} ca dạy)!"
+            }
+
+            Result.success(msg)
         } catch (e: Exception) {
+            e.printStackTrace()
             Result.failure(e)
+        }
+    }
+
+    /**
+     * Kéo chủ động: Nhận toàn bộ cập nhật mới từ Máy tính về Điện thoại
+     */
+    suspend fun pullFromCloudExplicit(context: Context): Result<String> = withContext(Dispatchers.IO) {
+        val res = pullFromCloud(context)
+        if (res.isSuccess) {
+            val count = res.getOrDefault(0)
+            Result.success(if (count > 0) "Đã nhận và cập nhật thành công $count ca dạy từ Máy tính!" else "Lịch dạy trên Điện thoại đã khớp hoàn toàn với Máy tính!")
+        } else {
+            Result.failure(res.exceptionOrNull() ?: Exception("Lỗi khi tải lịch từ Máy tính"))
+        }
+    }
+
+    /**
+     * Đẩy chủ động: Lưu và đẩy toàn bộ lịch dạy hiện tại của Điện thoại lên Máy tính
+     */
+    suspend fun pushToCloudExplicit(context: Context): Result<String> = withContext(Dispatchers.IO) {
+        val res = pushToCloud(context)
+        if (res.isSuccess) {
+            val count = res.getOrDefault(0)
+            Result.success("Đã đẩy thành công $count ca dạy lên Đám mây cho Máy tính!")
+        } else {
+            Result.failure(res.exceptionOrNull() ?: Exception("Lỗi khi gửi lịch lên Đám mây"))
         }
     }
 }

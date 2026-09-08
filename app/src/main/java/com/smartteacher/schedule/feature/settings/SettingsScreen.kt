@@ -407,31 +407,79 @@ fun SettingsScreen(
                         }
                     }
 
+                    // Smart 2-Way Sync Button
+                    Button(
+                        onClick = {
+                            if (isSyncing) return@Button
+                            isSyncing = true
+                            coroutineScope.launch {
+                                val result = CloudSyncManager.syncBothWays(context)
+                                isSyncing = false
+                                if (result.isSuccess) {
+                                    lastSyncTime = CloudSyncManager.getLastSyncTime(context)
+                                    Toast.makeText(context, result.getOrNull() ?: "Đồng bộ đám mây thành công!", Toast.LENGTH_LONG).show()
+                                } else {
+                                    Toast.makeText(context, "Lỗi đồng bộ: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
+                                }
+                            }
+                        },
+                        enabled = !isSyncing,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(if (isSyncing) Icons.Default.Sync else Icons.Default.CloudSync, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(if (isSyncing) "Đang đồng bộ..." else "⚡ Đồng bộ 2 chiều thông minh")
+                    }
+
+                    // Explicit Actions: Pull from PC vs Push to PC
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Button(
+                        OutlinedButton(
                             onClick = {
-                                if (isSyncing) return@Button
+                                if (isSyncing) return@OutlinedButton
                                 isSyncing = true
                                 coroutineScope.launch {
-                                    val result = CloudSyncManager.syncBothWays(context)
+                                    val result = CloudSyncManager.pullFromCloudExplicit(context)
                                     isSyncing = false
                                     if (result.isSuccess) {
                                         lastSyncTime = CloudSyncManager.getLastSyncTime(context)
-                                        Toast.makeText(context, result.getOrNull() ?: "Đồng bộ đám mây thành công!", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, result.getOrNull() ?: "Đã nhận lịch từ Máy tính thành công!", Toast.LENGTH_LONG).show()
                                     } else {
-                                        Toast.makeText(context, "Lỗi đồng bộ: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, "Lỗi tải lịch: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
                                     }
                                 }
                             },
                             enabled = !isSyncing,
                             modifier = Modifier.weight(1f)
                         ) {
-                            Icon(if (isSyncing) Icons.Default.Sync else Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(if (isSyncing) "Đang đồng bộ..." else "Đồng bộ đám mây ngay")
+                            Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Nhận từ PC", fontSize = 12.sp)
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                if (isSyncing) return@OutlinedButton
+                                isSyncing = true
+                                coroutineScope.launch {
+                                    val result = CloudSyncManager.pushToCloudExplicit(context)
+                                    isSyncing = false
+                                    if (result.isSuccess) {
+                                        lastSyncTime = CloudSyncManager.getLastSyncTime(context)
+                                        Toast.makeText(context, result.getOrNull() ?: "Đã đẩy lịch lên Máy tính thành công!", Toast.LENGTH_LONG).show()
+                                    } else {
+                                        Toast.makeText(context, "Lỗi đẩy lịch: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            },
+                            enabled = !isSyncing,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Đẩy lên PC", fontSize = 12.sp)
                         }
                     }
 

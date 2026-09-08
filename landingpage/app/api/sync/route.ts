@@ -234,6 +234,76 @@ export async function GET(req: NextRequest) {
   });
 }
 
+function mergeSchedules(existing: SchedulePayload[], incoming: SchedulePayload[]): SchedulePayload[] {
+  const map = new Map<string, SchedulePayload>();
+
+  const getKey = (s: SchedulePayload) => {
+    const cleanId = s.id ? s.id.replace(/^sch_/, '') : '';
+    if (cleanId && !isNaN(Number(cleanId))) {
+      return `id_${cleanId}`;
+    }
+    return `${s.subject.toLowerCase().trim()}__${s.className.toLowerCase().trim()}__${s.dayOfWeek}`;
+  };
+
+  for (const s of existing) {
+    map.set(getKey(s), s);
+  }
+
+  for (const inc of incoming) {
+    const key = getKey(inc);
+    const prev = map.get(key);
+    if (!prev) {
+      map.set(key, inc);
+    } else {
+      const prevTs = Number(prev.updatedAt) || 0;
+      const incTs = Number(inc.updatedAt) || 0;
+      if (incTs >= prevTs) {
+        map.set(key, inc);
+      }
+    }
+  }
+
+  return Array.from(map.values());
+}
+
+function mergeEvents(existing: CalendarEventPayload[], incoming: CalendarEventPayload[]): CalendarEventPayload[] {
+  const map = new Map<string, CalendarEventPayload>();
+
+  const getKey = (e: CalendarEventPayload) => {
+    const numId = Number(e.id);
+    if (!isNaN(numId) && numId > 0) {
+      return `id_${numId}`;
+    }
+    if (e.teachingScheduleId) {
+      return `sch_${e.teachingScheduleId}_${e.date}`;
+    }
+    return `${e.date}_${e.className.toLowerCase().trim()}_${e.startTime.trim()}_${e.subject.toLowerCase().trim()}`;
+  };
+
+  for (const e of existing) {
+    map.set(getKey(e), e);
+  }
+
+  for (const inc of incoming) {
+    const key = getKey(inc);
+    const prev = map.get(key);
+    if (!prev) {
+      map.set(key, inc);
+    } else {
+      const prevTs = Number(prev.updatedAt) || 0;
+      const incTs = Number(inc.updatedAt) || 0;
+      if (incTs >= prevTs) {
+        map.set(key, inc);
+      }
+    }
+  }
+
+  return Array.from(map.values()).sort((a, b) => {
+    if (a.date !== b.date) return a.date.localeCompare(b.date);
+    return a.startTime.localeCompare(b.startTime);
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -245,20 +315,39 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const schedules: SchedulePayload[] = Array.isArray(body.schedules) ? body.schedules : [];
-    let events: CalendarEventPayload[] = Array.isArray(body.events) ? body.events : [];
+    const cleanCode = body.syncCode.trim().replace(/[^a-zA-Z0-9_-]/g, '');
+    const incomingSchedules: SchedulePayload[] = Array.isArray(body.schedules) ? body.schedules : [];
+    let incomingEvents: CalendarEventPayload[] = Array.isArray(body.events) ? body.events : [];
 
-    if (events.length === 0 && schedules.length > 0) {
-      events = generateEventsFromSchedules(schedules);
+    if (incomingEvents.length === 0 && incomingSchedules.length > 0) {
+      incomingEvents = generateEventsFromSchedules(incomingSchedules);
     }
 
+    // 1. Tải bản ghi đám mây hiện tại (nếu có) để hợp nhất 2 chiều thông minh
+    const existing = await getFromGist(cleanCode);
+
+    let finalSchedules = incomingSchedules;
+    let finalEvents = incomingEvents;
+
+    if (existing && !body.forceOverwrite) {
+      // Hợp nhất ca dạy và lịch mẫu theo mốc thời gian sửa đổi (Last-Write-Wins per item)
+      finalSchedules = mergeSchedules(existing.schedules || [], incomingSchedules);
+      finalEvents = mergeEvents(existing.events || [], incomingEvents);
+    }
+
+    const maxUpdatedAt = Math.max(
+      body.updatedAt || 0,
+      existing?.updatedAt || 0,
+      Date.now()
+    );
+
     const payload: SyncPayload = {
-      syncCode: body.syncCode.trim(),
+      syncCode: cleanCode,
       deviceName: body.deviceName || 'Smart Device',
       platform: body.platform || 'web',
-      updatedAt: body.updatedAt || Date.now(),
-      schedules,
-      events
+      updatedAt: maxUpdatedAt,
+      schedules: finalSchedules,
+      events: finalEvents
     };
 
     const saved = await saveToGist(payload);
@@ -271,9 +360,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Đã đồng bộ thành công ${payload.events.length} ca dạy (${payload.schedules.length} lịch mẫu) lên Đám mây!`,
+      message: `Đã hợp nhất và đồng bộ thành công ${payload.events.length} ca dạy (${payload.schedules.length} lịch mẫu) lên Đám mây!`,
       syncCode: payload.syncCode,
       updatedAt: payload.updatedAt,
+      schedules: payload.schedules,
+      events: payload.events,
       totalEvents: payload.events.length,
       totalSchedules: payload.schedules.length
     }, {

@@ -204,6 +204,66 @@ export function generateEventsFromSchedules(schedules: ScheduleItem[]): Calendar
   return events;
 }
 
+// Merge schedules based on updatedAt (Last-Write-Wins per item)
+export function mergeSchedulesDesktop(current: ScheduleItem[], incoming: ScheduleItem[]): ScheduleItem[] {
+  const map = new Map<string, ScheduleItem>();
+  const getKey = (s: ScheduleItem) => {
+    const cleanId = s.id ? s.id.replace(/^sch_/, '') : '';
+    if (cleanId && !isNaN(Number(cleanId))) return `id_${cleanId}`;
+    return `${s.subject.toLowerCase().trim()}__${s.className.toLowerCase().trim()}__${s.dayOfWeek}`;
+  };
+
+  for (const s of current) {
+    map.set(getKey(s), s);
+  }
+  for (const inc of incoming) {
+    const k = getKey(inc);
+    const prev = map.get(k);
+    if (!prev) {
+      map.set(k, inc);
+    } else {
+      const prevTs = Number(prev.updatedAt) || 0;
+      const incTs = Number(inc.updatedAt) || 0;
+      if (incTs >= prevTs) {
+        map.set(k, inc);
+      }
+    }
+  }
+  return Array.from(map.values());
+}
+
+// Merge events based on updatedAt (Last-Write-Wins per item)
+export function mergeEventsDesktop(current: CalendarEventItem[], incoming: CalendarEventItem[]): CalendarEventItem[] {
+  const map = new Map<string, CalendarEventItem>();
+  const getKey = (e: CalendarEventItem) => {
+    const numId = Number(e.id);
+    if (!isNaN(numId) && numId > 0) return `id_${numId}`;
+    if (e.teachingScheduleId) return `sch_${e.teachingScheduleId}_${e.date}`;
+    return `${e.date}_${e.className.toLowerCase().trim()}_${e.startTime.trim()}_${e.subject.toLowerCase().trim()}`;
+  };
+
+  for (const e of current) {
+    map.set(getKey(e), e);
+  }
+  for (const inc of incoming) {
+    const k = getKey(inc);
+    const prev = map.get(k);
+    if (!prev) {
+      map.set(k, inc);
+    } else {
+      const prevTs = Number(prev.updatedAt) || 0;
+      const incTs = Number(inc.updatedAt) || 0;
+      if (incTs >= prevTs) {
+        map.set(k, inc);
+      }
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => {
+    if (a.date !== b.date) return a.date.localeCompare(b.date);
+    return a.startTime.localeCompare(b.startTime);
+  });
+}
+
 export default function UnifiedTeacherScheduleApp() {
   const [activeTab, setActiveTab] = useState<'today' | 'calendar' | 'report' | 'ai' | 'settings'>('today');
   const [isClient, setIsClient] = useState(false);
@@ -400,12 +460,24 @@ export default function UnifiedTeacherScheduleApp() {
         })
       });
       if (res.ok) {
+        const result = await res.json();
+        // Cập nhật state với danh sách đã hợp nhất 2 chiều từ server
+        if (Array.isArray(result.events) && result.events.length > 0) {
+          setEvents(result.events);
+          localStorage.setItem('smart_teacher_events', JSON.stringify(result.events));
+        }
+        if (Array.isArray(result.schedules) && result.schedules.length > 0) {
+          setSchedules(result.schedules);
+          localStorage.setItem('smart_teacher_schedules', JSON.stringify(result.schedules));
+        }
+
+        const count = result.totalEvents || curEvents.length;
         setSyncStatus('synced');
         setLastSyncTime(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-        setAlertBanner(`🟢 Đã đẩy thành công ${curEvents.length} ca dạy lên Đám mây! Điện thoại sẽ nhận được ngay.`);
+        setAlertBanner(`🟢 Đã đồng bộ & hợp nhất ${count} ca dạy lên Đám mây! Điện thoại sẽ nhận được ngay.`);
         setTimeout(() => setAlertBanner(null), 5000);
         if (isManual) {
-          alert(`🎉 ĐẨY LÊN ĐÁM MÂY THÀNH CÔNG!\n\nĐã gửi ${curEvents.length} ca dạy và ${curSchedules.length} lịch mẫu học kỳ lên Đám mây!\n\nThầy/Cô mở app trên điện thoại và bấm "Đồng bộ đám mây ngay" (hoặc mở lại app) để nhận dữ liệu mới nhất từ máy tính nhé!\nMã đồng bộ: ${code}`);
+          alert(`🎉 ĐẨY LÊN ĐÁM MÂY THÀNH CÔNG!\n\nĐã gửi & hợp nhất ${count} ca dạy và ${result.totalSchedules || curSchedules.length} lịch mẫu học kỳ lên Đám mây!\n\nThầy/Cô mở app trên điện thoại và bấm "Đồng bộ 2 chiều" (hoặc "Nhận từ PC") để nhận dữ liệu mới nhất từ máy tính nhé!\nMã đồng bộ: ${code}`);
         }
         return true;
       } else {
@@ -450,14 +522,36 @@ export default function UnifiedTeacherScheduleApp() {
         }
 
         if (cloudEvents.length > 0) {
-          setEvents(cloudEvents);
-          setSchedules(cloudSchedules);
-          localStorage.setItem('smart_teacher_events', JSON.stringify(cloudEvents));
-          localStorage.setItem('smart_teacher_schedules', JSON.stringify(cloudSchedules));
+          // Hợp nhất thông minh với các sự kiện hiện tại trên máy tính theo updatedAt
+          const currentSavedEvents: CalendarEventItem[] = (() => {
+            try {
+              const str = localStorage.getItem('smart_teacher_events');
+              return str ? JSON.parse(str) : events;
+            } catch (e) {
+              return events;
+            }
+          })();
+
+          const currentSavedSchedules: ScheduleItem[] = (() => {
+            try {
+              const str = localStorage.getItem('smart_teacher_schedules');
+              return str ? JSON.parse(str) : schedules;
+            } catch (e) {
+              return schedules;
+            }
+          })();
+
+          const mergedEvents = mergeEventsDesktop(currentSavedEvents, cloudEvents);
+          const mergedSchedules = mergeSchedulesDesktop(currentSavedSchedules, cloudSchedules);
+
+          setEvents(mergedEvents);
+          setSchedules(mergedSchedules);
+          localStorage.setItem('smart_teacher_events', JSON.stringify(mergedEvents));
+          localStorage.setItem('smart_teacher_schedules', JSON.stringify(mergedSchedules));
           setSyncStatus('synced');
           setLastSyncTime(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
           if (isManual) {
-            alert(`🎉 ĐỒNG BỘ 2 CHIỀU THÀNH CÔNG!\n\nĐã tải về đầy đủ ${cloudEvents.length} ca dạy (${cloudSchedules.length} lịch mẫu học kỳ) khớp hoàn toàn với điện thoại!\nMã đồng bộ: ${code}`);
+            alert(`🎉 ĐỒNG BỘ 2 CHIỀU THÀNH CÔNG!\n\nĐã tải về đầy đủ ${mergedEvents.length} ca dạy (${mergedSchedules.length} lịch mẫu học kỳ) khớp hoàn toàn với điện thoại!\nMã đồng bộ: ${code}`);
           }
           return true;
         } else if (isManual) {
@@ -479,14 +573,21 @@ export default function UnifiedTeacherScheduleApp() {
     setIsSyncing(true);
     setSyncStatus('syncing');
     try {
-      // 1. Luôn đẩy bản hiện tại trên máy tính lên trước
-      const pushed = await pushToCloud(events, schedules, code, false);
-      // 2. Sau đó kiểm tra và kéo cập nhật mới nhất từ đám mây
+      // 1. Kéo cập nhật mới nhất từ đám mây về trước để hợp nhất
       await pullFromCloud(code, false);
+
+      // 2. Sau đó lưu & đẩy dữ liệu đã hợp nhất lên Đám mây
+      const savedEventsStr = localStorage.getItem('smart_teacher_events');
+      const curEvs: CalendarEventItem[] = savedEventsStr ? JSON.parse(savedEventsStr) : events;
+      const savedSchsStr = localStorage.getItem('smart_teacher_schedules');
+      const curSchs: ScheduleItem[] = savedSchsStr ? JSON.parse(savedSchsStr) : schedules;
+
+      await pushToCloud(curEvs, curSchs, code, false);
+
       setSyncStatus('synced');
       setLastSyncTime(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
       if (isManual) {
-        alert(`🎉 ĐỒNG BỘ 2 CHIỀU THÀNH CÔNG!\n\n• Chiều 1: Đã lưu & đẩy ${events.length} ca dạy lên Đám mây cho Điện thoại.\n• Chiều 2: Đã kiểm tra & đồng bộ lịch mới nhất từ Đám mây về Máy tính.\nMã đồng bộ: ${code}`);
+        alert(`🎉 ĐỒNG BỘ 2 CHIỀU THÀNH CÔNG!\n\n• Đã đồng bộ thông suốt ${curEvs.length} ca dạy giữa Máy tính và Điện thoại.\n• Dữ liệu trên 2 thiết bị hiện tại đã hoàn toàn trùng khớp.\nMã đồng bộ: ${code}`);
       }
     } catch (e) {
       console.error('syncBothWays error:', e);

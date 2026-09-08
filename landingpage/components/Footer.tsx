@@ -56,7 +56,7 @@ export default function Footer() {
             <ul className="space-y-2 text-sm text-slate-400">
               <li>
                 <a href="#download" className="hover:text-white transition-colors">
-                  Tải Bản Cài Đặt APK v1.3.1
+                  Tải Bản Cài Đặt APK v1.4.2
                 </a>
               </li>
               <li>
@@ -104,12 +104,12 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/tag/v1.3.1"
+                  href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases"
                   target="_blank"
                   rel="noreferrer"
                   className="hover:text-white transition-colors"
                 >
-                  Phiên Bản v1.3.1 (Release)
+                  Phiên Bản v1.4.2 (Release)
                 </a>
               </li>
               <li>

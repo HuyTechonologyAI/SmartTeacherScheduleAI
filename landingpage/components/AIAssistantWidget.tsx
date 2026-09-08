@@ -186,19 +186,19 @@ export default function AIAssistantWidget() {
       };
     }
 
-    if (query.includes("1.3.1") || query.includes("ngày bắt đầu") || query.includes("ngày kết thúc") || query.includes("động lực") || query.includes("cảm ơn") || query.includes("mới nhất")) {
+    if (query.includes("1.4.2") || query.includes("1.4") || query.includes("mới nhất") || query.includes("phiên bản")) {
       return {
-        text: `Dạ, phiên bản mới nhất **v1.3.1** mang đến 2 nâng cấp sư phạm đột phá:\n\n1. 📅 **Khoảng thời gian lịch dạy (Ngày bắt đầu & Ngày kết thúc)**:\n• Thầy/Cô có thể đặt chính xác chu kỳ môn học (ví dụ: từ T2 07/09/2026 đến 25/01/2027).\n• Sau ngày kết thúc, app **tự động dừng nhắc nhở** mà không cần Thầy/Cô phải nhớ xóa lịch.\n• Có sẵn phím tắt chọn nhanh: *Học kỳ 1 (+5 tháng)*, *Cả năm (+9 tháng)* hoặc *Vô thời hạn*.\n\n2. ☀️🌙 **AI Động lực sáng & Lời cảm ơn sư phạm cuối ngày**:\n• **Buổi sáng**: Lời chúc ngày mới và danh ngôn sư phạm tiếp lửa nhiệt huyết bục giảng.\n• **Buổi tối**: Lời cảm ơn tri ân ấm áp, khích lệ Thầy/Cô gác lại giáo án, thư giãn tâm trí bên gia đình.\n• Kết hợp Gemini AI thông minh và cơ sở dữ liệu danh ngôn Việt Nam 100% offline!`,
+        text: `Dạ, phiên bản mới nhất **v1.4.2** mang đến 3 nâng cấp công nghệ và nghiệp vụ sư phạm đột phá:\n\n1. ☁️ **Đồng bộ 2 chiều Máy tính ⇄ Điện thoại (Two-Way Cloud Sync)**:\n• Thầy/Cô có thể chỉnh sửa ca dạy, đổi tiết, thêm ca dạy mới ngay trên màn hình lớn Máy tính PC và bấm **[Đẩy lên ĐT]** hoặc **[Đồng bộ 2 chiều]** để lịch cập nhật tức thì về điện thoại.\n• Đầy đủ tính năng tạo ca dạy mới với tùy chọn lặp lại cả học kỳ.\n\n2. 🏛️ **Kho Tư Liệu Pháp Quy Đối Chiếu Chuẩn (Anti-Hallucination Grounding Engine)**:\n• AI biên soạn giáo án dựa 100% trên cơ sở dữ liệu Công văn 5512/BGDĐT, Công văn 2634/TCGDNN và tài liệu chuẩn do Thầy/Cô cung cấp, tuyệt đối không tự bịa hay ảo tưởng thông tin.\n• Có nút **[+ Thêm tư liệu mới]** để Thầy/Cô nạp giáo trình riêng, đề cương môn học và quy chuẩn an toàn nghề nghiệp.\n\n3. 📱 **Tối ưu trải nghiệm Đa nền tảng**:\n• Chuông báo kép 60p & 15p hoạt động bền bỉ, chống tắt ngầm trên Tecno, Xiaomi, Samsung...`,
         quickActions: [
-          { label: "📥 Tải APK v1.3.1 ngay", action: "huong_dan_cai_dat" },
-          { label: "📋 Xuất Sổ Báo Giảng & Bảng Kê", action: "xuat_so_bao_giang" }
+          { label: "📥 Tải APK v1.4.2 ngay", action: "huong_dan_cai_dat" },
+          { label: "☁️ Hướng dẫn đồng bộ 2 chiều", action: "dong_bo_2_chieu" }
         ],
       };
     }
 
     if (query.includes("cài") || query.includes("tải") || query.includes("apk") || query.includes("huong_dan_cai_dat")) {
       return {
-        text: `Dạ, để cài đặt bản v1.4.0 trên điện thoại Android hoặc Máy tính PC, Thầy/Cô làm theo các bước sau ạ:\n\n📱 **Dành cho Android**: Bấm nút **[TẢI APK v1.4.0]** ở đầu trang hoặc quét mã QR ➔ Mở tệp vừa tải ➔ Chọn **Cài đặt**.\n\n💻 **Dành cho Máy tính PC (Windows/Mac/Linux)**: Bấm **[MỞ BẢN DESKTOP]** hoặc **[Desktop Zip (PC)]** để chạy trực tiếp, hoặc dùng Chrome/Edge bấm biểu tượng Cài đặt (Install App) trên thanh địa chỉ.\n\n☁️ **Đồng bộ thời gian thực**: Chỉ cần nhập cùng **Mã Đồng Bộ Giáo Viên** (trong Cài đặt) là dữ liệu tự động cập nhật xuyên suốt giữa điện thoại và máy tính!`,
+        text: `Dạ, để cài đặt bản v1.4.2 trên điện thoại Android hoặc Máy tính PC, Thầy/Cô làm theo các bước sau ạ:\n\n📱 **Dành cho Android**: Bấm nút **[TẢI APK v1.4.2]** ở đầu trang hoặc quét mã QR ➔ Mở tệp vừa tải ➔ Chọn **Cài đặt**.\n\n💻 **Dành cho Máy tính PC (Windows/Mac/Linux)**: Bấm **[MỞ BẢN DESKTOP]** để dùng trực tiếp bản Web App v1.4.2 với đầy đủ tính năng soạn giáo án AI, kho tư liệu và đồng bộ 2 chiều, hoặc cài đặt qua Chrome/Edge bằng biểu tượng Install App trên thanh địa chỉ.\n\n☁️ **Đồng bộ thời gian thực 2 chiều**: Chỉ cần nhập cùng **Mã Đồng Bộ Giáo Viên** (trong Cài đặt) là dữ liệu tự động cập nhật xuyên suốt giữa điện thoại và máy tính!`,
         quickActions: [
           { label: "🔋 Làm sao để app không bị tắt ngầm?", action: "chong_tat_ngam" },
           { label: "🖼️ Cách bật Widget màn hình chính?", action: "bat_widget" },

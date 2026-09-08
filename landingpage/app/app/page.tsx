@@ -947,8 +947,8 @@ export default function UnifiedTeacherScheduleApp() {
             <div>
               <div className="flex items-center space-x-2">
                 <h1 className="text-lg font-bold tracking-tight text-white">Smart Teacher Schedule AI</h1>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium flex items-center gap-1">
-                  <Monitor className="w-3 h-3" /> Desktop & Web 2.0
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold flex items-center gap-1.5 shadow-sm">
+                  <Monitor className="w-3.5 h-3.5 text-cyan-400" /> Desktop & Web v1.4.2
                 </span>
               </div>
               <p className="text-xs text-slate-400">
@@ -2780,6 +2780,35 @@ export default function UnifiedTeacherScheduleApp() {
         {/* ================= TAB 5: CÀI ĐẶT & ĐỒNG BỘ ĐÁM MÂY ================= */}
         {activeTab === 'settings' && (
           <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
+            {/* Version Badge & Info */}
+            <div className="bg-slate-800/60 border border-indigo-500/30 rounded-2xl p-5 space-y-3 shadow-lg">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center shadow-md">
+                    <BookOpen className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white flex items-center gap-2">
+                      Smart Teacher Schedule AI
+                      <span className="px-2 py-0.5 rounded-md bg-indigo-500/30 text-cyan-300 border border-indigo-500/40 text-xs font-mono font-bold">
+                        v1.4.2
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-400">Đơn vị phát triển: Huy Technology AI • Hotline/Zalo: 0961364600</p>
+                  </div>
+                </div>
+                <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold">
+                  ✓ Phiên bản chính thức v1.4.2
+                </span>
+              </div>
+              <div className="text-xs text-slate-300 grid sm:grid-cols-2 gap-2 pt-2 border-t border-slate-700/60">
+                <div>• Nền tảng: <strong className="text-white">Desktop (PC/Laptop) & Web App</strong></div>
+                <div>• Cơ sở dữ liệu: <strong className="text-white">Đám mây 2 chiều Supabase</strong></div>
+                <div>• Trợ lý AI: <strong className="text-white">Kho Pháp Quy CV 5512 & CV 2634</strong></div>
+                <div>• Tính năng mới: <strong className="text-emerald-400">Đồng bộ 2 chiều (Máy tính ⇄ Điện thoại)</strong></div>
+              </div>
+            </div>
+
             {/* Cloud Sync Settings */}
             <div className="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-5 space-y-4 shadow-lg">
               <div className="flex items-center gap-3">

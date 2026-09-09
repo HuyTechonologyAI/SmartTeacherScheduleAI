@@ -134,12 +134,15 @@ abstract class SmartTeacherDatabase : RoomDatabase() {
 
                         override fun onOpen(db: SupportSQLiteDatabase) {
                             super.onOpen(db)
-                            // Ensure built-in decrees are always present
+                            // Ensure all built-in decrees are always present and up-to-date
                             CoroutineScope(Dispatchers.IO).launch {
                                 INSTANCE?.let { database ->
-                                    val count = database.knowledgeDocumentDao().getDocumentCount()
-                                    if (count == 0) {
-                                        database.knowledgeDocumentDao().insertDocuments(DefaultKnowledgeBase.getDefaultBuiltInDocuments())
+                                    val defaultDocs = DefaultKnowledgeBase.getDefaultBuiltInDocuments()
+                                    defaultDocs.forEach { defaultDoc ->
+                                        val existing = database.knowledgeDocumentDao().getDocumentByCode(defaultDoc.code)
+                                        if (existing == null) {
+                                            database.knowledgeDocumentDao().insertDocument(defaultDoc)
+                                        }
                                     }
                                 }
                             }

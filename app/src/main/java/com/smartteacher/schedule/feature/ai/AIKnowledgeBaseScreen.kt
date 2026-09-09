@@ -179,7 +179,7 @@ fun AIKnowledgeBaseScreen(
             divider = {}
         ) {
             Tab(selected = selectedFilter == "ALL", onClick = { selectedFilter = "ALL" }, text = { Text("Tất cả (${allDocuments.size})") })
-            Tab(selected = selectedFilter == "PHAP_QUY", onClick = { selectedFilter = "PHAP_QUY" }, text = { Text("Pháp quy (CV 5512/2634/TT22)") })
+            Tab(selected = selectedFilter == "PHAP_QUY", onClick = { selectedFilter = "PHAP_QUY" }, text = { Text("Pháp quy BGDĐT & GDNN") })
             Tab(selected = selectedFilter == "ATLD", onClick = { selectedFilter = "ATLD" }, text = { Text("ATLĐ & 5S") })
             Tab(selected = selectedFilter == "CUSTOM", onClick = { selectedFilter = "CUSTOM" }, text = { Text("Tài liệu tự nạp (${allDocuments.count { !it.isBuiltIn }})") })
         }

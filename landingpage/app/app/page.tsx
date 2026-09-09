@@ -2557,7 +2557,7 @@ export default function UnifiedTeacherScheduleApp() {
                     {(['ALL', 'PHAP_QUY', 'ATLD_5S', 'CUSTOM'] as const).map((cat) => {
                       const labels = {
                         ALL: 'Tất cả (' + knowledgeDocs.length + ')',
-                        PHAP_QUY: 'Pháp quy (CV 5512/2634/TT22)',
+                        PHAP_QUY: 'Pháp quy BGDĐT & GDNN',
                         ATLD_5S: 'ATLĐ & 5S Xưởng',
                         CUSTOM: 'Tài liệu Thầy/Cô nạp (' + knowledgeDocs.filter(d => !d.isBuiltIn).length + ')'
                       };

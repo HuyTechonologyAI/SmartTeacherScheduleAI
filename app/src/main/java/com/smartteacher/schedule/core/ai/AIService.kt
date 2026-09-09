@@ -24,6 +24,13 @@ interface AIService {
         tasks: List<TaskEntity>
     ): String
 
+    suspend fun chatWithPedagogicalAssistant(
+        userMessage: String,
+        events: List<CalendarEventEntity>,
+        tasks: List<TaskEntity>,
+        referenceDocsText: String = ""
+    ): String
+
     // TRỤ CỘT 2: Soạn Kế Hoạch Bài Dạy Chuẩn CV 5512 & CV 2634 và Ma Trận Đề Thi
     suspend fun generateLessonPlan5512(
         lessonName: String,

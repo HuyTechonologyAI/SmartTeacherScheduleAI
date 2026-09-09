@@ -18,40 +18,88 @@ import {
   ChevronDown,
   Minimize2,
   Maximize2,
+  BookOpen,
+  Award,
+  Layers,
+  Gamepad2,
+  GitFork,
+  Image as ImageIcon,
+  Globe,
+  Copy,
+  Check,
+  Download,
+  ExternalLink,
+  RefreshCw
 } from "lucide-react";
+import {
+  AiPedagogyMode,
+  AiPedagogyResponse,
+  processPedagogicalAiQuery,
+  answerKnowledgeBaseQuery,
+  generateExamAndMatrixPackage,
+  generateSlideDeckPackage,
+  generateMiniGamePackage,
+  generateMindmapPackage,
+  generateIllustrationPackage,
+  searchOfficialVietnameseSources
+} from "./aiPedagogyEngine";
+import { getResolvedKnowledgeDocuments } from "../app/app/knowledgeBaseData";
 
 interface ChatMessage {
   id: string;
   sender: "ai" | "user";
   text: string;
   timestamp: string;
-  quickActions?: { label: string; action: string }[];
+  mode?: AiPedagogyMode;
+  quickActions?: { label: string; action: string; mode?: AiPedagogyMode }[];
+  svgContent?: string;
+  mermaidCode?: string;
+  wordExportableHtml?: string;
+  sourceReferences?: {
+    title: string;
+    code?: string;
+    url?: string;
+    snippet?: string;
+  }[];
 }
 
 export default function AIAssistantWidget() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [selectedMode, setSelectedMode] = useState<AiPedagogyMode>("ALL");
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
       sender: "ai",
-      text: "Xin chào Thầy/Cô! Em là Trợ lý AI hỗ trợ 24/7 của Smart Teacher Schedule AI (Made in Huy Technology AI). Em có thể hướng dẫn Thầy/Cô cài đặt app, bật chuông báo kép, ghim Widget ra màn hình chính, hoặc tư vấn các gói Pro. Thầy/Cô cần em hỗ trợ điều gì ạ?",
+      text: `Xin chào Thầy/Cô! Em là **Trợ lý AI Sư phạm 24/7** của Smart Teacher Schedule AI (Made in Huy Technology AI).
+
+Em đã được tích hợp **7 năng lực sư phạm chuyên sâu**:
+1. 📚 **Tra cứu Kho tư liệu chuẩn**: CV 5512, CV 3456, QĐ 2422, CV 2634, TT 22, ATLĐ 5S và giáo trình của Thầy/Cô.
+2. 📝 **Tạo đề thi & ma trận** chuẩn 4 mức độ theo Thông tư 22/2021/TT-BGDĐT.
+3. 📊 **Tạo slide thuyết trình** bài giảng (10 slide kèm lời thoại giảng viên).
+4. 🎮 **Tạo mini game** Kahoot / Quizizz / Rung chuông vàng tương tác.
+5. 🧠 **Tạo sơ đồ tư duy** Mermaid và phân cấp tri thức trực quan.
+6. 🎨 **Tạo hình ảnh minh hoạ & vẽ SVG** hiển thị trực tiếp.
+7. 🇻🇳 **Tìm kiếm thông tin từ nguồn chính thống**: moet.gov.vn, gdnn.gov.vn, thuvienphapluat.vn.
+
+Thầy/Cô hãy chọn nhanh chức năng bên dưới hoặc đặt câu hỏi bất kỳ ạ!`,
       timestamp: "Vừa xong",
+      mode: "ALL",
       quickActions: [
-        { label: "📄 Xuất Sổ Báo Giảng & Bảng Kê Giờ Dạy?", action: "xuat_so_bao_giang" },
-        { label: "📎 Đính kèm Giáo án & File dạy học?", action: "dinh_kem_giao_an" },
-        { label: "🚀 Tính năng mới nhất bản v1.5.0?", action: "tinh_nang_moi" },
-        { label: "📱 Màn hình khóa Tecno Spark Go?", action: "tecno_spark_go" },
-        { label: "⏰ Chế độ Đồng hồ Bục giảng?", action: "dong_ho_buc_giang" },
-        { label: "⚠️ Cảnh báo trùng lịch dạy?", action: "canh_bao_trung_lich" },
-        { label: "⏰ Khung giờ cố định (45p & 60p)?", action: "khung_gio_chuan" },
-        { label: "📅 Lịch trình tổng thể liên tục?", action: "lich_trinh_tong_the" },
-        { label: "🔄 Đồng bộ Google Calendar & Smartwatch?", action: "dong_bo_google" },
-        { label: "📱 Cách cài đặt APK trên máy?", action: "huong_dan_cai_dat" },
-        { label: "📞 Gặp trực tiếp chuyên gia Zalo", action: "lien_he_chuyen_gia" },
+        { label: "📚 Quy định 4 hoạt động CV 5512", action: "quy_dinh_5512", mode: "KNOWLEDGE" },
+        { label: "📝 Tạo đề & ma trận chuẩn TT 22", action: "tao_de_tt22", mode: "EXAM_MATRIX" },
+        { label: "📊 Tạo slide bài giảng 10 trang", action: "tao_slide_mau", mode: "SLIDES" },
+        { label: "🎮 Tạo mini game tương tác", action: "tao_game_mau", mode: "MINI_GAME" },
+        { label: "🧠 Tạo sơ đồ tư duy Mermaid", action: "tao_mindmap_mau", mode: "MINDMAP" },
+        { label: "🎨 Tạo hình ảnh minh họa bài dạy", action: "tao_anh_mau", mode: "ILLUSTRATION" },
+        { label: "🇻🇳 Định mức giờ dạy (TT 28 & TT 15)", action: "dinh_muc_gio_day", mode: "OFFICIAL_VN" },
+        { label: "💻 Khung năng lực số CV 3456", action: "nang_luc_so_3456", mode: "KNOWLEDGE" },
+        { label: "📱 Hướng dẫn cài app v1.5.0", action: "huong_dan_cai_dat", mode: "SCHEDULE" }
       ],
     },
   ]);
@@ -64,7 +112,7 @@ export default function AIAssistantWidget() {
     if (isOpen) {
       scrollToBottom();
     }
-  }, [messages, isOpen]);
+  }, [messages, isOpen, isTyping]);
 
   useEffect(() => {
     const handleOpen = () => setIsOpen(true);
@@ -72,260 +120,148 @@ export default function AIAssistantWidget() {
     return () => window.removeEventListener("open-ai-assistant", handleOpen);
   }, []);
 
-  // AI Knowledge Base answering engine
-  const generateAIResponse = (userQuery: string): { text: string; quickActions?: { label: string; action: string }[] } => {
-    const query = userQuery.toLowerCase();
-
-    // Tecno Spark Go (HiOS on Android 15.1.2) Lock Screen Guide
-    if (query.includes("tecno") || query.includes("spark go") || query.includes("hios") || query.includes("tecno_spark_go")) {
-      return {
-        text: `Dạ, đối với dòng máy **Tecno Spark Go (chạy giao diện HiOS trên Android 15)**, do hệ điều hành HiOS có chính sách bảo mật riêng đối với màn hình khóa, Thầy/Cô chỉ cần thực hiện 3 bước sau để hiển thị lịch 100%:\n\n1️⃣ **Bật hiển thị nội dung trên Màn hình khóa Tecno:**\n• Vào **Cài đặt** máy ➔ **Trung tâm thông báo (Notification Center)** ➔ **Màn hình khóa (Lock screen)**.\n• Tại mục **"Nội dung thông báo trên màn hình khóa"**: Thầy/Cô hãy chọn **"Hiển thị thông báo và nội dung"** (Show notification and content). Nếu để *"Ẩn nội dung"* thì máy Tecno sẽ giấu chữ đi ạ!\n\n2️⃣ **Cấp quyền thông báo cho Smart Teacher:**\n• Vào **Cài đặt** ➔ **Ứng dụng** ➔ **Quản lý ứng dụng** ➔ **Smart Teacher Schedule AI** ➔ **Thông báo**.\n• Bật công tắc **"Cho phép hiển thị trên màn hình khóa"** và **"Biểu ngữ"**.\n\n3️⃣ **Sử dụng Chế độ Đồng hồ Bục giảng Toàn màn hình khóa (Bản v1.2.8):**\n• Trong app bản v1.2.8, Thầy/Cô chỉ cần bấm nút **"Đồng hồ bục giảng"**.\n• Ứng dụng sẽ hiển thị đồng hồ to rõ toàn màn hình cùng ca dạy, phòng học, lớp học và đếm ngược giờ **ngay trên màn hình khóa mà không cần mở khóa điện thoại**!`,
-        quickActions: [
-          { label: "⏰ Chế độ Đồng hồ Bục giảng là gì?", action: "dong_ho_buc_giang" },
-          { label: "📥 Tải ngay bản mới nhất v1.5.0", action: "huong_dan_cai_dat" },
-          { label: "📞 Nhờ chuyên gia Zalo hỗ trợ", action: "lien_he_chuyen_gia" }
-        ],
-      };
+  // Xử lý sao chép văn bản
+  const handleCopyText = (text: string, id: string) => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
     }
-
-    // Sổ Báo Giảng & Bảng Kê Giờ Dạy Knowledge (v1.3.0)
-    if (query.includes("sổ báo giảng") || query.includes("bảng kê") || query.includes("giờ dạy") || query.includes("xuat_so_bao_giang")) {
-      return {
-        text: `Dạ, tính năng **Tự Động Xuất "Sổ Báo Giảng" & "Bảng Kê Giờ Dạy" Chuẩn Bộ GD&ĐT** là bước đột phá lớn nhất của phiên bản **v1.3.0**:\n\n📄 **1. Sổ Báo Giảng Tuần Chuẩn Bộ GD&ĐT:**\n• Tự động tổng hợp lịch dạy trong tuần thành bảng chuẩn: Thứ/Ngày, Tiết, Lớp, Môn/Module, Tên bài giảng, Phòng học, Ghi chú.\n• **Khổ A4 Ngang (Landscape)** in ấn cực đẹp, có sẵn Quốc hiệu tiêu ngữ và phần chữ ký duyệt của *Tổ trưởng chuyên môn* & *Giáo viên báo giảng*.\n\n📊 **2. Bảng Kê Khối Lượng Giờ Dạy & Thù Lao Thanh Toán:**\n• Thống kê chi tiết từng buổi dạy trong tháng, phân loại rõ ràng **Tiết Lý thuyết** (45p) và **Tiết Thực hành** (60p).\n• Tự động tính tổng số tiết quy chuẩn để Thầy/Cô nộp phòng đào tạo / kế toán thanh toán tiền vượt giờ mà không cần tự cộng tay!\n• **Khổ A4 Dọc (Portrait)** đầy đủ 3 chữ ký: *Trưởng khoa/Tổ trưởng*, *Phòng Đào tạo* và *Người kê khai*.\n\n⚡ **Hỗ trợ cả 2 định dạng:**\n• 🔴 **Xuất file PDF**: Chuẩn in ấn sắc nét, gửi Zalo cho Tổ trưởng duyệt trong 3 giây.\n• 🟢 **Xuất file Excel (.xls)**: Có sẵn bảng biểu kẻ viền, mở trực tiếp trên Excel hoặc WPS Office để chỉnh sửa số liệu linh hoạt!`,
-        quickActions: [
-          { label: "🚀 Xem tính năng mới bản v1.5.0", action: "tinh_nang_moi" },
-          { label: "📥 Tải ngay bản mới nhất v1.5.0", action: "huong_dan_cai_dat" },
-          { label: "📎 Đính kèm Giáo án & File dạy học?", action: "dinh_kem_giao_an" }
-        ],
-      };
-    }
-
-    // Lesson Attachments Knowledge (v1.2.9)
-    if (query.includes("đính kèm") || query.includes("giáo án") || query.includes("tài liệu") || query.includes("dinh_kem_giao_an")) {
-      return {
-        text: `Dạ, tính năng **Đính Kèm Giáo Án & Tài Liệu Trực Tiếp Vào Tiết Dạy** là nâng cấp lớn nhất của phiên bản **v1.2.9**:\n\n📁 **Hỗ trợ đầy đủ mọi định dạng giảng dạy:**\n• Giáo án Word (.docx, .doc), PDF bài giảng\n• Slide bài giảng PowerPoint (.pptx, .ppt)\n• Danh sách điểm danh / bảng điểm Excel (.xlsx, .xls)\n• Hình ảnh sơ đồ bài học, ảnh chụp tài liệu\n• Đường link Google Drive, Canva, OneDrive, Youtube học liệu\n\n🔒 **Hoạt động Offline 100% không lo mất mạng:**\n• File được sao lưu an toàn vào bộ nhớ riêng của app, không bao giờ bị mất link khi dọn dẹp máy hay đổi thư mục.\n\n⚡ **Thao tác 1-chạm siêu tiện lợi:**\n• **1-chạm mở tài liệu**: Bấm là app tự động mở file bằng Microsoft Office, WPS Office hoặc Google Drive để Thầy/Cô trình chiếu hoặc đọc ngay trên lớp.\n• **1-chạm gửi Zalo**: Gửi tài liệu thẳng vào nhóm Zalo của lớp chỉ với một nút bấm!\n• **Huy hiệu trực quan**: Thẻ tiết dạy trên trang 'Hôm nay' và 'Lịch trình' đều hiện rõ \`[📎 X tài liệu]\` để Thầy/Cô không bao giờ quên mang giáo án.`,
-        quickActions: [
-          { label: "📄 Xuất Sổ Báo Giảng & Bảng Kê?", action: "xuat_so_bao_giang" },
-          { label: "🚀 Xem tính năng mới bản v1.5.0", action: "tinh_nang_moi" },
-          { label: "📥 Tải ngay bản mới nhất v1.5.0", action: "huong_dan_cai_dat" }
-        ],
-      };
-    }
-
-    // v1.5.0 New Features
-    if (query.includes("mới") || query.includes("v1.5.0") || query.includes("tinh_nang_moi") || query.includes("phiên bản")) {
-      return {
-        text: `Dạ, phiên bản mới nhất **v1.5.0** mang đến những nâng cấp đột phá hàng đầu về Trợ lý Giảng dạy & Công nghệ Sư phạm:\n\n1️⃣ ☁️ **Đồng bộ Đám mây 2 Chiều Thời Gian Thực (Two-Way Cloud Sync)**:\n• Đồng bộ thông suốt cả 288 ca dạy, 16 lịch mẫu học kỳ và toàn bộ Kho giáo trình giữa Máy tính (Web/Desktop) và Điện thoại Android.\n• Mọi chỉnh sửa, thêm giáo trình trên máy tính lập tức đồng bộ về điện thoại.\n\n2️⃣ 🤖 **Trợ Lý Soạn Giáo Án AI Chuẩn Bộ GD&ĐT & Năng Lực Số**:\n• Soạn giáo án tự động theo đúng khung chuẩn Công văn 5512/BGDĐT-GDTrH, Công văn 2634/TCGDNN và Thông tư 22/2021/TT-BGDĐT.\n• Tích hợp đầy đủ: Slide bài giảng, Sơ đồ tư duy trực quan, Câu hỏi Mini game và Video kịch bản giảng dạy.\n\n3️⃣ 🏛️ **Kho Tư Liệu Đối Chiếu Chuẩn (Grounding Knowledge Base)**:\n• Nạp và lưu trữ văn bản pháp quy, giáo trình nghề, đề cương chi tiết. Hỗ trợ xem trước PDF/Word trực tiếp và tải về nguyên bản.\n\n4️⃣ 📄 **Tự Động Xuất Sổ Báo Giảng & Bảng Kê Giờ Dạy Chuẩn Bộ GD&ĐT** (Khổ A4 Ngang/Dọc xuất PDF & Excel).\n5️⃣ 📎 **Đính Kèm Giáo Án & Tài Liệu Trực Tiếp Vào Tiết Dạy** (Mở 1-chạm & chia sẻ Zalo).\n6️⃣ ⏰ **Hệ Thống Báo Thức Kép 60p & 15p Chống Tắt Ngầm Tuyệt Đối**.`,
-        quickActions: [
-          { label: "📥 Tải ngay bản mới nhất v1.5.0", action: "huong_dan_cai_dat" },
-          { label: "☁️ Hướng dẫn đồng bộ 2 chiều", action: "dong_bo_2_chieu" },
-          { label: "📄 Xuất Sổ Báo Giảng & Bảng Kê?", action: "xuat_so_bao_giang" }
-        ],
-      };
-    }
-
-    if (query.includes("đồng hồ bục giảng") || query.includes("dong_ho_buc_giang")) {
-      return {
-        text: `Dạ, tính năng **Chế độ Đồng hồ Bục giảng (Lock Screen & Desk Clock)** là sáng kiến độc quyền trong bản v1.2.8:\n\n✨ **Hiển thị trực tiếp khi khóa máy:**\n• Khi giáo viên đặt điện thoại lên bàn giáo viên / bục giảng, màn hình sẽ hiển thị đồng hồ kỹ thuật số to rõ nét từng giây (\`HH:mm:ss\`).\n• Hiển thị thẻ ca dạy hiện tại hoặc kế tiếp: Tên môn học, Số phòng, Tên lớp, và huy hiệu đếm ngược: *"⏳ Còn 25 phút vào lớp"* hoặc *"🔴 Đang lên lớp"*.\n• Liệt kê toàn bộ các ca dạy tiếp theo trong ngày và việc cần làm.\n• Có công tắc giữ màn hình luôn sáng để thầy cô tiện canh giờ kết thúc tiết học mà không bị tắt màn hình!`,
-        quickActions: [
-          { label: "📱 Màn hình khóa Tecno Spark Go?", action: "tecno_spark_go" },
-          { label: "📥 Tải ngay bản mới nhất v1.5.0", action: "huong_dan_cai_dat" },
-        ],
-      };
-    }
-
-    if (query.includes("khóa") || query.includes("lockscreen") || query.includes("màn hình khóa") || query.includes("man_hinh_khoa")) {
-      return {
-        text: `Dạ, tính năng **Lịch trên Màn hình khóa (Lock Screen Live Glance & Keyguard Widget)** của bản v1.2.8 là bước tiến đột phá giúp Thầy/Cô tiện lợi nhất:\n\n✨ **Không cần mở khóa điện thoại:**\n• Ngay dưới đồng hồ màn hình khóa, điện thoại sẽ hiển thị: Tên môn, Lớp học, Số phòng và Đồng hồ đếm ngược giờ vào lớp (ví dụ: *"⏳ Còn 25 phút vào lớp • P.Xưởng A1"*).\n• Khi đang trong giờ dạy, màn hình khóa chuyển sang trạng thái: *"🔴 Đang dạy (Tan: 11:30)"*.\n• Khi đã xong ca hôm nay, màn hình khóa tự động chuyển sang hiển thị ca dạy sáng mai hoặc số nhiệm vụ cần làm.\n\n⚙️ **Cách bật / cấu hình:**\n1. Mở app Smart Teacher Schedule ➔ Vào tab **Hôm nay** hoặc mục **Cài đặt**.\n2. Bật công tắc **"Lịch trên Màn hình khóa"** (mặc định đã bật sẵn).\n3. Nếu dùng Tecno Spark Go / Xiaomi / Oppo, Thầy/Cô vào Cài đặt máy ➔ Màn hình khóa ➔ Thông báo ➔ Chọn **"Hiển thị thông báo và nội dung"** là xong ạ!`,
-        quickActions: [
-          { label: "📱 Cài đặt cho Tecno Spark Go?", action: "tecno_spark_go" },
-          { label: "🚀 Tính năng mới bản v1.5.0?", action: "tinh_nang_moi" },
-          { label: "📥 Tải ngay bản mới nhất v1.5.0", action: "huong_dan_cai_dat" },
-        ],
-      };
-    }
-
-    if (query.includes("trùng") || query.includes("xung đột") || query.includes("canh_bao_trung_lich")) {
-      return {
-        text: `Dạ, trong bản v1.2.6, tính năng **Cảnh báo trùng lịch** bảo vệ Thầy/Cô tuyệt đối khỏi sai sót khi nhập thời khóa biểu:\n\n• **Tự động quét thời gian thực**: Ngay khi Thầy/Cô chọn Thứ, Giờ vào lớp - Giờ tan lớp và Phòng học, ứng dụng sẽ so sánh với toàn bộ lịch dạy hiện có.\n• **Phân loại rõ ràng**: Báo rõ là **Trùng giờ dạy** (Thầy/Cô đã có ca khác cùng giờ) hay **Trùng phòng học** (phòng đó đã có lớp khác học).\n• **Cảnh báo trực quan**: Thẻ màu cam xuất hiện nêu rõ tên môn và phòng đang bị trùng.\n• **Quyền chủ động**: Thầy/Cô có thể điều chỉnh lại giờ, hoặc nếu là chủ đích (ví dụ dạy ghép 2 lớp) thì chỉ cần bật công tắc *"Vẫn lưu dù trùng lịch"* là xong ạ!`,
-        quickActions: [
-          { label: "⏰ Khung giờ chuẩn 45p và 60p?", action: "khung_gio_chuan" },
-          { label: "📅 Lịch trình tổng thể liên tục?", action: "lich_trinh_tong_the" }
-        ],
-      };
-    }
-
-    if (query.includes("khung giờ") || query.includes("tiết") || query.includes("45") || query.includes("60") || query.includes("khung_gio_chuan")) {
-      return {
-        text: `Dạ, để Thầy/Cô không phải quay số chọn từng phút khi nhập lịch, bản v1.2.6 tích hợp sẵn hệ thống **Khung giờ cố định chuẩn sư phạm**:\n\n📘 **Tiết Lý Thuyết (45 phút / tiết):**\n• Tiết 1-2: 07:00 - 08:30 (Sáng)\n• Tiết 3-4: 08:45 - 10:15 (Sáng)\n• Tiết 5-6: 10:30 - 12:00 (Trưa)\n• Tiết 7-8: 13:00 - 14:30 (Chiều)\n• Tiết 9-10: 14:45 - 16:15 (Chiều)\n• Tiết 11-12: 16:30 - 18:00 (Tối)\n\n🛠️ **Tiết Thực Hành / Xưởng (60 phút / tiết):**\n• Ca Sáng (4 tiết): 07:30 - 11:30 (4 tiếng)\n• Ca Chiều (4 tiết): 13:00 - 17:00 (4 tiếng)\n• Ca Tối (3 tiết): 18:00 - 21:00 (3 tiếng)\n\n⚡ **Cộng nhanh thời lượng:** Chỉ cần chọn giờ bắt đầu, Thầy/Cô bấm nút: \`+45p\`, \`+90p\`, \`+60p\`, \`+120p\`, \`+240p\` là máy tự động tính giờ kết thúc chuẩn xác 100%!`,
-        quickActions: [
-          { label: "📅 Lịch trình tổng thể ra sao?", action: "lich_trinh_tong_the" },
-          { label: "🔄 Đồng bộ Google Calendar?", action: "dong_bo_google" }
-        ],
-      };
-    }
-
-    if (query.includes("lịch trình") || query.includes("tổng thể") || query.includes("từng ngày") || query.includes("lich_trinh_tong_the")) {
-      return {
-        text: `Dạ, bắt đầu từ bản v1.2.6, khi Thầy/Cô nhấp vào tab **Lịch**, màn hình sẽ hiển thị ngay **Dòng thời gian Lịch trình tổng thể (Agenda)** mà không bắt Thầy/Cô phải bấm từng ngày nữa ạ!\n\n✨ **Những điểm tiện lợi:**\n• **Hiển thị cuộn một mạch**: Danh sách tất cả các ca dạy từ Hôm nay, Ngày mai, Thứ Sáu, Thứ Bảy... cuộn xem mượt mà cả tuần, cả tháng.\n• **Gom nhóm theo ngày sắc nét**: Phân biệt rõ HÔM NAY (xanh nổi bật), NGÀY MAI và các ngày tiếp theo.\n• **Bộ lọc 1-chạm**: Lọc nhanh ca dạy *"Tuần này"*, *"Tuần tới"*, *"Lý thuyết"* hoặc *"Thực hành"*.\n• **Thao tác nhanh trên từng ca**: Có sẵn nút ✏️ Sửa / Đổi ngày, 🗑️ Xóa và 🔄 Đồng bộ Google Calendar ngay trên thẻ lịch!`,
-        quickActions: [
-          { label: "🔄 Đồng bộ Google Calendar & Smartwatch?", action: "dong_bo_google" },
-          { label: "📥 Tải ngay bản mới nhất v1.5.0", action: "huong_dan_cai_dat" }
-        ],
-      };
-    }
-
-    if (query.includes("google") || query.includes("calendar") || query.includes("đồng bộ") || query.includes("smartwatch") || query.includes("dong_bo_google")) {
-      return {
-        text: `Dạ, tính năng liên kết **Google Calendar** trong bản v1.2.6 đã được kích hoạt hoàn hảo:\n\n1. **Đồng bộ toàn bộ lịch dạy sang Google Calendar**:\n• Vào mục **Cài đặt ➔ Google Calendar** ➔ Bấm **"Đồng bộ toàn bộ lịch dạy ngay"**.\n• Tất cả các ca dạy sẽ được đưa vào Google Calendar trên điện thoại kèm 2 mốc nhắc nhở (60m & 15m).\n2. **Rung báo trên Đồng hồ thông minh (Smartwatch)**:\n• Nhờ đồng bộ với Google Calendar, khi đến giờ báo thức 60m & 15m, đồng hồ thông minh (Apple Watch, Samsung Galaxy Watch, Xiaomi Band) của Thầy/Cô sẽ rung và hiện tên môn, phòng học ngay trên cổ tay!\n3. **Đồng bộ từng ca dạy riêng lẻ**: Ngay trên từng thẻ lịch dạy có biểu tượng đồng bộ 🔄 để đưa nhanh ca dạy đó vào Google Calendar.`,
-        quickActions: [
-          { label: "📥 Tải ngay bản mới nhất v1.5.0", action: "huong_dan_cai_dat" },
-          { label: "📞 Gặp chuyên gia hỗ trợ", action: "lien_he_chuyen_gia" }
-        ],
-      };
-    }
-
-    if (query.includes("1.5.0") || query.includes("1.4") || query.includes("mới nhất") || query.includes("phiên bản")) {
-      return {
-        text: `Dạ, phiên bản mới nhất **v1.5.0** mang đến 3 nâng cấp công nghệ và nghiệp vụ sư phạm đột phá:\n\n1. ☁️ **Đồng bộ 2 chiều Máy tính ⇄ Điện thoại (Two-Way Cloud Sync)**:\n• Thầy/Cô có thể chỉnh sửa ca dạy, đổi tiết, thêm ca dạy mới ngay trên màn hình lớn Máy tính PC và bấm **[Đẩy lên ĐT]** hoặc **[Đồng bộ 2 chiều]** để lịch cập nhật tức thì về điện thoại.\n• Đầy đủ tính năng tạo ca dạy mới với tùy chọn lặp lại cả học kỳ.\n\n2. 🏛️ **Kho Tư Liệu Pháp Quy Đối Chiếu Chuẩn (Anti-Hallucination Grounding Engine)**:\n• AI biên soạn giáo án dựa 100% trên cơ sở dữ liệu Công văn 5512/BGDĐT, Công văn 2634/TCGDNN và tài liệu chuẩn do Thầy/Cô cung cấp, tuyệt đối không tự bịa hay ảo tưởng thông tin.\n• Có nút **[+ Thêm tư liệu mới]** để Thầy/Cô nạp giáo trình riêng, đề cương môn học và quy chuẩn an toàn nghề nghiệp.\n\n3. 📱 **Tối ưu trải nghiệm Đa nền tảng**:\n• Chuông báo kép 60p & 15p hoạt động bền bỉ, chống tắt ngầm trên Tecno, Xiaomi, Samsung...`,
-        quickActions: [
-          { label: "📥 Tải APK v1.5.0 ngay", action: "huong_dan_cai_dat" },
-          { label: "☁️ Hướng dẫn đồng bộ 2 chiều", action: "dong_bo_2_chieu" }
-        ],
-      };
-    }
-
-    if (query.includes("cài") || query.includes("tải") || query.includes("apk") || query.includes("huong_dan_cai_dat")) {
-      return {
-        text: `Dạ, để cài đặt bản v1.5.0 trên điện thoại Android hoặc Máy tính PC, Thầy/Cô làm theo các bước sau ạ:\n\n📱 **Dành cho Android**: Bấm nút **[TẢI APK v1.5.0]** ở đầu trang hoặc quét mã QR ➔ Mở tệp vừa tải ➔ Chọn **Cài đặt**.\n\n💻 **Dành cho Máy tính PC (Windows/Mac/Linux)**: Bấm **[MỞ BẢN DESKTOP]** để dùng trực tiếp bản Web App v1.5.0 với đầy đủ tính năng soạn giáo án AI, kho tư liệu và đồng bộ 2 chiều, hoặc cài đặt qua Chrome/Edge bằng biểu tượng Install App trên thanh địa chỉ.\n\n☁️ **Đồng bộ thời gian thực 2 chiều**: Chỉ cần nhập cùng **Mã Đồng Bộ Giáo Viên** (trong Cài đặt) là dữ liệu tự động cập nhật xuyên suốt giữa điện thoại và máy tính!`,
-        quickActions: [
-          { label: "🔋 Làm sao để app không bị tắt ngầm?", action: "chong_tat_ngam" },
-          { label: "🖼️ Cách bật Widget màn hình chính?", action: "bat_widget" },
-        ],
-      };
-    }
-
-    if (query.includes("tắt ngầm") || query.includes("pin") || query.includes("xiaomi") || query.includes("samsung") || query.includes("oppo") || query.includes("vivo") || query.includes("chong_tat_ngam")) {
-      return {
-        text: `Dạ, các dòng điện thoại Android (đặc biệt là Xiaomi, Samsung, Oppo, Realme, Vivo) có tính năng tiết kiệm pin rất gắt gao. Để đảm bảo chuông báo thức kép 60m & 15m reo đúng 100%, Thầy/Cô cấu hình 2 bước sau:\n\n1. **Cho phép Báo thức chính xác (Exact Alarm)**: Vào Cài đặt máy ➔ Ứng dụng ➔ Smart Teacher Schedule ➔ Quyền ➔ Cho phép "Báo thức và lời nhắc".\n2. **Tắt Tối ưu hóa pin**: Nhấn giữ biểu tượng app trên màn hình chính ➔ Chọn "Thông tin ứng dụng (i)" ➔ Tiết kiệm pin / Pin ➔ Chọn **"Không giới hạn" (No restrictions)**.\n3. **Khóa ứng dụng trong đa nhiệm (Đặc biệt với Xiaomi)**: Mở màn hình đa nhiệm (Recent Apps) ➔ Nhấn giữ thẻ Smart Teacher ➔ Bấm vào biểu tượng **Khóa (Ổ khóa)** để máy không tự xóa app khi dọn RAM.\n\nTrong app cũng có mục **Cài đặt ➔ Trung tâm tin cậy thông báo (OEM)** hướng dẫn chi tiết từng dòng máy ạ!`,
-        quickActions: [
-          { label: "🖼️ Hướng dẫn ghim Widget 2-trong-1", action: "bat_widget" },
-          { label: "📞 Cần chuyên gia hỗ trợ qua Zalo", action: "lien_he_chuyen_gia" },
-        ],
-      };
-    }
-
-    if (query.includes("widget") || query.includes("tiện ích") || query.includes("màn hình chính") || query.includes("bat_widget")) {
-      return {
-        text: `Dạ, tiện ích Widget 2-trong-1 là tính năng cực kỳ tiện lợi giúp Thầy/Cô chỉ cần bật sáng điện thoại là thấy ngay ca dạy kế tiếp và việc cần làm!\n\n**Cách thêm Widget ra màn hình:**\n1. Ra màn hình chính của điện thoại, nhấn và giữ tay vào một vùng trống khoảng 2 giây.\n2. Chọn mục **Tiện ích (Widgets)** xuất hiện ở dưới màn hình.\n3. Tìm ứng dụng **Smart Teacher Schedule** ➔ Chọn widget kích thước **4x2** hoặc **Next Class**.\n4. Kéo thả ra vị trí Thầy/Cô ưng ý trên màn hình chính.\n\n💡 *Bật mí*: Widget hiển thị đếm ngược thời gian (ví dụ: "Còn 25 phút", "Còn 1h 30p"), phòng học, lớp học và có nút bấm làm mới tức thì ạ!`,
-        quickActions: [
-          { label: "⏰ Cơ chế làm mới 00:00 hoạt động ra sao?", action: "bao_thuc_kep" },
-          { label: "💎 Xem tính năng Gói Pro", action: "goi_pro" },
-        ],
-      };
-    }
-
-    if (query.includes("báo thức") || query.includes("nhắc") || query.includes("60") || query.includes("15") || query.includes("00:00") || query.includes("bao_thuc_kep")) {
-      return {
-        text: `Dạ, hệ thống nhắc lịch của Smart Teacher Schedule AI được tối ưu riêng cho nghề giáo:\n\n🔔 **Báo thức kép 2 mốc thời gian:**\n• **Trước 60 phút**: Phát chuông thông báo để Thầy/Cô kiểm tra lại giáo án, bài giảng điện tử hoặc chuẩn bị phôi vật tư xưởng thực hành.\n• **Trước 15 phút**: Báo thức nhắc nhở Thầy/Cô di chuyển đến giảng đường, xưởng máy để không bao giờ bị trễ giờ lên lớp.\n\n🔄 **Tự động làm mới lúc 00:00 hàng ngày (Bản v1.2.5):**\nVào đúng nửa đêm 00:00, app tự động đọc thời khóa biểu của ngày mới, lập chuông báo cho tất cả các ca dạy, chuyển tiếp các việc chưa hoàn thành của hôm trước sang hôm nay và làm mới Widget mà Thầy/Cô không cần thao tác gì thêm!`,
-        quickActions: [
-          { label: "🤖 AI Gemini trích xuất lịch ra sao?", action: "gemini_ai" },
-          { label: "📥 Tải ngay bản mới nhất v1.5.0", action: "huong_dan_cai_dat" },
-        ],
-      };
-    }
-
-    if (query.includes("pro") || query.includes("giá") || query.includes("phí") || query.includes("gói") || query.includes("mua") || query.includes("goi_pro")) {
-      return {
-        text: `Dạ, Smart Teacher Schedule AI có 3 gói phù hợp với từng nhu cầu của Thầy/Cô:\n\n1. 🟢 **Gói Miễn Phí (0 đ)**: Dùng trọn đời với đầy đủ báo thức kép 60m/15m, widget màn hình chính và chạy hoàn toàn offline.\n2. 💎 **Gói Giáo Viên Pro (VIP Cá Nhân) - 49.000 đ/tháng (hoặc 399.000 đ/năm - Tiết kiệm 32%)**:\n• Không giới hạn Gemini AI trích xuất lịch từ tin nhắn Zalo, email.\n• Tự động đồng bộ thời gian thực đa thiết bị trên Cloud Supabase.\n• Kết nối Bot Telegram tự động gửi tin nhắn báo giờ dạy.\n• Tặng bộ 20+ Prompt AI soạn giáo án chuẩn đầu ra.\n3. 🏢 **Gói Tổ Bộ Môn / Nhà Trường (1.490.000 đ/năm)**: Cho tối đa 30 giáo viên, phân công lịch dạy tự động và xuất báo cáo thanh toán giờ giảng.\n\nThầy/Cô có thể kéo xuống mục **Bảng Giá** hoặc **Điền Form Hỗ Trợ** ở dưới để nhận ưu đãi ngay hôm nay ạ!`,
-        quickActions: [
-          { label: "🎁 Nhận bộ Prompt AI soạn giáo án", action: "nhan_prompt" },
-          { label: "📞 Gặp chuyên gia Zalo 0961364600", action: "lien_he_chuyen_gia" },
-        ],
-      };
-    }
-
-    if (query.includes("gemini") || query.includes("ai") || query.includes("trích xuất") || query.includes("zalo") || query.includes("gemini_ai")) {
-      return {
-        text: `Dạ, tính năng Trợ lý AI Gemini là "vũ khí bí mật" giúp Thầy/Cô tiết kiệm hàng giờ nhập lịch dạy thủ công:\n\nChỉ cần sao chép đoạn tin nhắn Zalo phân công dạy (ví dụ: *"Thứ 2 từ 8h đến 11h dạy Phay CNC lớp CĐCK02 phòng Xưởng A1"*), sau đó vào màn hình **AI Assistant** trong app và bấm **"Phân tích"**.\n\nAI sẽ tự động nhận diện:\n• Thứ và ngày diễn ra\n• Thời gian bắt đầu & kết thúc\n• Tên môn học, tên lớp, số phòng\n• Tự tạo sự kiện và lên lịch báo thức kép 60m & 15m ngay lập tức!`,
-        quickActions: [
-          { label: "💎 Nâng cấp Gói Pro để dùng AI", action: "goi_pro" },
-          { label: "📞 Nhờ chuyên gia hỗ trợ", action: "lien_he_chuyen_gia" },
-        ],
-      };
-    }
-
-    if (query.includes("chuyên gia") || query.includes("liên hệ") || query.includes("sđt") || query.includes("zalo") || query.includes("huy") || query.includes("lien_he_chuyen_gia")) {
-      return {
-        text: `Dạ, Thầy/Cô có thể liên hệ trực tiếp với chuyên gia phát triển ứng dụng:\n\n👨‍💻 **Huy Technology AI**\n📞 Hotline / Zalo: **0961364600** (Chạm để gọi hoặc kết bạn Zalo)\n📧 Email: **huytechnologyai2025@gmail.com**\n🏢 Sứ mệnh: Đồng hành cùng Thầy/Cô giáo viên toàn quốc 24/7.\n\nChuyên gia luôn sẵn sàng hỗ trợ từ xa cài đặt qua Zalo hoặc TeamViewer/UltraViewer cho Thầy/Cô ạ!`,
-        quickActions: [
-          { label: "💬 Nhắn tin Zalo ngay", action: "open_zalo" },
-          { label: "📋 Điền form nhận hỗ trợ tại chỗ", action: "scroll_form" },
-        ],
-      };
-    }
-
-    // Default polite comprehensive fallback
-    return {
-      text: `Dạ, em đã ghi nhận thắc mắc: "${userQuery}".\n\nSmart Teacher Schedule AI phiên bản mới nhất v1.5.0 hiện đã có sẵn đầy đủ tính năng: Soạn giáo án AI chuẩn CV 5512/2634 & Năng lực số, Kho giáo trình đối chiếu, Đồng bộ Đám mây 2 chiều giữa Máy tính & Điện thoại, và Báo thức kép 60m & 15m.\n\nThầy/Cô muốn em hỗ trợ cụ thể về vấn đề nào dưới đây ạ?`,
-      quickActions: [
-        { label: "📱 Hướng dẫn cài đặt APK", action: "huong_dan_cai_dat" },
-        { label: "🔋 Chống tắt ngầm trên điện thoại", action: "chong_tat_ngam" },
-        { label: "🖼️ Cách thêm Widget màn hình chính", action: "bat_widget" },
-        { label: "💎 Bảng giá Gói Pro VIP", action: "goi_pro" },
-        { label: "📞 Gặp trực tiếp chuyên gia Zalo", action: "lien_he_chuyen_gia" },
-      ],
-    };
   };
 
-  const handleSendMessage = (textToSend?: string) => {
+  // Xuất file Word (.doc) client-side
+  const handleExportWord = (htmlContent: string, fileName: string = "Tai_Lieu_Smart_Teacher_AI") => {
+    if (typeof window === "undefined") return;
+    const blob = new Blob(["\ufeff", htmlContent], { type: "application/msword;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${fileName}.doc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Dispatch câu trả lời theo 7 chức năng
+  const generateAIResponse = (userQuery: string, mode: AiPedagogyMode = selectedMode): AiPedagogyResponse => {
+    const query = userQuery.toLowerCase().trim();
+
+    // 1. Nếu là câu hỏi hướng dẫn cài đặt app, lockscreen, báo thức cũ
+    if (query.includes("tecno") || query.includes("spark go") || query.includes("màn hình khóa") || query.includes("đồng hồ bục giảng") || query.includes("cài") || query.includes("tắt ngầm") || query.includes("widget")) {
+      if (query.includes("tecno") || query.includes("spark go")) {
+        return {
+          mode: "SCHEDULE",
+          text: "Dạ, với máy **Tecno Spark Go (HiOS Android 15)**:\n1️⃣ Vào **Cài đặt ➔ Trung tâm thông báo ➔ Màn hình khóa** ➔ Chọn **'Hiển thị thông báo và nội dung'**.\n2️⃣ Vào Cài đặt ➔ Ứng dụng ➔ Smart Teacher ➔ Thông báo ➔ Bật **'Hiển thị trên màn hình khóa'**.\n3️⃣ Bấm nút **'Đồng hồ bục giảng'** trong app để xem ca dạy đếm ngược to rõ ngay khi khóa máy!",
+          quickActions: [
+            { label: "📱 Màn hình khóa Tecno", action: "tecno_spark_go", mode: "SCHEDULE" },
+            { label: "📥 Tải APK v1.5.0", action: "huong_dan_cai_dat", mode: "SCHEDULE" }
+          ]
+        };
+      }
+      if (query.includes("cài") || query.includes("tải") || query.includes("apk")) {
+        return {
+          mode: "SCHEDULE",
+          text: "Dạ, để cài đặt bản v1.5.0:\n• **Android**: Bấm [TẢI APK v1.5.0] ở đầu trang hoặc quét mã QR ➔ Mở tệp vừa tải ➔ Cài đặt.\n• **Máy tính PC**: Dùng trực tiếp bản Web App v1.5.0 có đầy đủ tính năng soạn giáo án AI và đồng bộ 2 chiều qua mã đồng bộ!",
+          quickActions: [
+            { label: "🔋 Chống tắt ngầm Android", action: "chong_tat_ngam", mode: "SCHEDULE" },
+            { label: "🖼️ Cách bật Widget", action: "bat_widget", mode: "SCHEDULE" }
+          ]
+        };
+      }
+    }
+
+    // 2. Chạy qua Bộ máy AI Sư phạm trung tâm
+    const resolvedDocs = getResolvedKnowledgeDocuments();
+    return processPedagogicalAiQuery(userQuery, mode, resolvedDocs);
+  };
+
+  const handleSendMessage = (textToSend?: string, overrideMode?: AiPedagogyMode) => {
     const messageContent = textToSend || inputText;
     if (!messageContent.trim()) return;
+
+    const activeMode = overrideMode || selectedMode;
 
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
       sender: "user",
       text: messageContent.trim(),
       timestamp: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+      mode: activeMode
     };
 
     setMessages((prev) => [...prev, userMsg]);
     if (!textToSend) setInputText("");
     setIsTyping(true);
 
-    // Simulate natural AI thinking delay
     setTimeout(() => {
-      const response = generateAIResponse(messageContent);
+      const response = generateAIResponse(messageContent, activeMode);
       const aiMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         sender: "ai",
         text: response.text,
         timestamp: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+        mode: response.mode,
         quickActions: response.quickActions,
+        svgContent: response.svgContent,
+        mermaidCode: response.mermaidCode,
+        wordExportableHtml: response.wordExportableHtml,
+        sourceReferences: response.sourceReferences
       };
       setMessages((prev) => [...prev, aiMsg]);
       setIsTyping(false);
     }, 600);
   };
 
-  const handleQuickAction = (action: string, label: string) => {
+  const handleQuickAction = (action: string, label: string, mode?: AiPedagogyMode) => {
+    if (mode) setSelectedMode(mode);
+
     if (action === "open_zalo") {
       window.open("https://zalo.me/0961364600", "_blank");
       return;
     }
-    if (action === "scroll_form") {
-      document.getElementById("support")?.scrollIntoView({ behavior: "smooth" });
-      setIsOpen(false);
+    if (action === "open_moet") {
+      window.open("https://moet.gov.vn", "_blank");
       return;
     }
-    handleSendMessage(label);
+    if (action === "open_thuvienphapluat") {
+      window.open("https://thuvienphapluat.vn", "_blank");
+      return;
+    }
+    if (action === "xuat_word_de_thi" || action === "xuat_word_5512") {
+      const lastAiMsg = [...messages].reverse().find(m => m.sender === "ai" && m.wordExportableHtml);
+      if (lastAiMsg && lastAiMsg.wordExportableHtml) {
+        handleExportWord(lastAiMsg.wordExportableHtml, "De_Thi_Ma_Tran_TT22");
+        return;
+      }
+    }
+    if (action === "copy_mermaid") {
+      const lastAiMsg = [...messages].reverse().find(m => m.sender === "ai" && m.mermaidCode);
+      if (lastAiMsg && lastAiMsg.mermaidCode) {
+        handleCopyText(lastAiMsg.mermaidCode, "mermaid-" + lastAiMsg.id);
+        return;
+      }
+    }
+
+    handleSendMessage(label, mode);
   };
+
+  // Danh mục 7 chức năng hiển thị trên thanh công cụ tab
+  const modeTabs: { id: AiPedagogyMode; label: string; icon: any }[] = [
+    { id: "ALL", label: "Tất cả", icon: Sparkles },
+    { id: "KNOWLEDGE", label: "Kho tư liệu", icon: BookOpen },
+    { id: "EXAM_MATRIX", label: "Đề thi & Ma trận", icon: Award },
+    { id: "SLIDES", label: "Slide thuyết trình", icon: Layers },
+    { id: "MINI_GAME", label: "Mini game", icon: Gamepad2 },
+    { id: "MINDMAP", label: "Sơ đồ tư duy", icon: GitFork },
+    { id: "ILLUSTRATION", label: "Hình minh họa", icon: ImageIcon },
+    { id: "OFFICIAL_VN", label: "Nguồn chính thống", icon: Globe },
+  ];
 
   return (
     <>
-      {/* 1. Floating AI Button (Fixed at Bottom-Right) */}
+      {/* 1. NÚT NỔI GÓC DƯỚI PHẢI */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end space-y-2">
-        {/* Floating Tooltip if chat is closed */}
         {!isOpen && (
           <div
             onClick={() => setIsOpen(true)}
@@ -336,12 +272,11 @@ export default function AIAssistantWidget() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
             <span className="font-semibold text-indigo-300 group-hover:text-white">
-              Cần trợ giúp? Hỏi AI 24/7 ngay!
+              Trợ lý AI Sư phạm 24/7 (7 Chức năng)
             </span>
           </div>
         )}
 
-        {/* The Main Round Button */}
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={`relative group flex items-center justify-center p-4 rounded-full shadow-2xl transition-all duration-300 ${
@@ -349,27 +284,32 @@ export default function AIAssistantWidget() {
               ? "bg-slate-800 text-slate-300 rotate-90 scale-95 border border-white/20"
               : "bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 text-white hover:scale-110 shadow-indigo-500/50 hover:shadow-cyan-500/50"
           }`}
-          aria-label="Mở Trợ lý AI 24/7"
+          aria-label="Mở Trợ lý AI Sư phạm 24/7"
         >
           {isOpen ? (
             <X className="w-6 h-6" />
           ) : (
             <div className="relative">
               <Sparkles className="w-7 h-7 animate-pulse" />
-              {/* Online Indicator Badge */}
               <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-slate-900 rounded-full" />
             </div>
           )}
         </button>
       </div>
 
-      {/* 2. Interactive AI Chat Drawer / Window */}
+      {/* 2. CỬA SỔ CHAT ĐA NĂNG */}
       {isOpen && (
-        <div className="fixed bottom-24 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[420px] h-[580px] max-h-[82vh] rounded-3xl glass-panel border-2 border-indigo-500/40 bg-gradient-to-b from-slate-900/95 via-slate-950/98 to-black shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-          {/* Chat Window Header */}
-          <div className="p-4 bg-gradient-to-r from-indigo-950/80 via-slate-900 to-slate-950 border-b border-white/10 flex items-center justify-between">
+        <div
+          className={`fixed z-50 rounded-3xl glass-panel border-2 border-indigo-500/40 bg-gradient-to-b from-slate-900/95 via-slate-950/98 to-black shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 ${
+            isExpanded
+              ? "bottom-4 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-[720px] h-[85vh]"
+              : "bottom-24 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-[480px] h-[640px] max-h-[85vh]"
+          }`}
+        >
+          {/* Header */}
+          <div className="p-3.5 bg-gradient-to-r from-indigo-950/90 via-slate-900 to-slate-950 border-b border-white/10 flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="relative w-10 h-10 rounded-2xl overflow-hidden ring-2 ring-cyan-400/50 shadow-md">
+              <div className="relative w-9 h-9 rounded-xl overflow-hidden ring-2 ring-cyan-400/50 shadow-md">
                 <Image
                   src="/app_icon.jpg"
                   alt="AI Assistant"
@@ -380,20 +320,27 @@ export default function AIAssistantWidget() {
               <div>
                 <div className="flex items-center space-x-2">
                   <h4 className="font-bold text-sm text-white flex items-center gap-1.5">
-                    <span>Trợ Lý AI 24/7</span>
+                    <span>Trợ Lý AI Sư Phạm</span>
                     <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
                   </h4>
                   <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                    Online
+                    Online 24/7
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400">
-                  Made in Huy Technology AI • SĐT 0961364600
+                <p className="text-[10px] text-slate-400">
+                  CV 5512 • TT 22 • 6 Miền Năng Lực Số • Made by Huy Tech AI
                 </p>
               </div>
             </div>
 
             <div className="flex items-center space-x-1 text-slate-400">
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="p-1.5 rounded-lg hover:text-white hover:bg-white/10 transition-colors hidden sm:block"
+                title={isExpanded ? "Thu nhỏ" : "Phóng to cửa sổ"}
+              >
+                {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </button>
               <button
                 onClick={() => setIsOpen(false)}
                 className="p-1.5 rounded-lg hover:text-white hover:bg-white/10 transition-colors"
@@ -404,8 +351,30 @@ export default function AIAssistantWidget() {
             </div>
           </div>
 
-          {/* Chat Message Scrollable Area */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-4 text-xs">
+          {/* MODE SELECTOR BAR (7 CHỨC NĂNG SƯ PHẠM) */}
+          <div className="px-3 py-2 bg-slate-950/70 border-b border-white/5 flex items-center gap-1.5 overflow-x-auto text-[11px] scrollbar-thin">
+            {modeTabs.map((tab) => {
+              const IconComp = tab.icon;
+              const isSelected = selectedMode === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setSelectedMode(tab.id)}
+                  className={`px-2.5 py-1 rounded-xl flex items-center gap-1.5 whitespace-nowrap font-medium transition-all cursor-pointer ${
+                    isSelected
+                      ? "bg-gradient-to-r from-indigo-600 to-cyan-600 text-white shadow-md shadow-indigo-600/30"
+                      : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
+                  }`}
+                >
+                  <IconComp className="w-3 h-3" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* VÙNG CUỘN TIN NHẮN */}
+          <div className="flex-1 p-3.5 overflow-y-auto space-y-4 text-xs">
             {messages.map((msg) => (
               <div
                 key={msg.id}
@@ -413,7 +382,7 @@ export default function AIAssistantWidget() {
                   msg.sender === "user" ? "items-end" : "items-start"
                 }`}
               >
-                <div className="flex items-start space-x-2 max-w-[88%]">
+                <div className="flex items-start space-x-2 max-w-[94%]">
                   {msg.sender === "ai" && (
                     <div className="w-6 h-6 rounded-full bg-indigo-600/30 border border-indigo-500/50 flex items-center justify-center shrink-0 mt-0.5 text-cyan-300">
                       <Bot className="w-3.5 h-3.5" />
@@ -428,6 +397,83 @@ export default function AIAssistantWidget() {
                     }`}
                   >
                     {msg.text}
+
+                    {/* Hiển thị đồ họa SVG vector trực quan nếu có */}
+                    {msg.svgContent && (
+                      <div className="mt-3.5 rounded-xl overflow-hidden border border-cyan-500/30 shadow-lg bg-slate-950 p-2">
+                        <div
+                          dangerouslySetInnerHTML={{ __html: msg.svgContent }}
+                          className="w-full flex justify-center"
+                        />
+                      </div>
+                    )}
+
+                    {/* Hiển thị mã Mermaid cho sơ đồ tư duy nếu có */}
+                    {msg.mermaidCode && (
+                      <div className="mt-3 rounded-xl bg-slate-950/80 border border-indigo-500/30 p-2.5 space-y-1.5">
+                        <div className="flex items-center justify-between text-[10px] text-cyan-300 font-mono">
+                          <span>MÃ NGUỒN MERMAID MINDMAP:</span>
+                          <button
+                            onClick={() => handleCopyText(msg.mermaidCode!, "mermaid-" + msg.id)}
+                            className="flex items-center gap-1 hover:text-white px-2 py-0.5 rounded bg-white/5"
+                          >
+                            {copiedId === "mermaid-" + msg.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                            <span>{copiedId === "mermaid-" + msg.id ? "Đã chép" : "Chép mã"}</span>
+                          </button>
+                        </div>
+                        <pre className="text-[10px] text-slate-300 font-mono overflow-x-auto p-1.5 bg-black/40 rounded">
+                          {msg.mermaidCode}
+                        </pre>
+                      </div>
+                    )}
+
+                    {/* Trích dẫn căn cứ pháp lý chính thống nếu có */}
+                    {msg.sourceReferences && msg.sourceReferences.length > 0 && (
+                      <div className="mt-3 pt-2.5 border-t border-white/10 space-y-1.5">
+                        <div className="text-[10px] font-bold text-cyan-400 flex items-center gap-1">
+                          <Globe className="w-3 h-3" />
+                          <span>CĂN CỨ VĂN BẢN CHÍNH THỐNG:</span>
+                        </div>
+                        {msg.sourceReferences.map((ref, idx) => (
+                          <div key={idx} className="text-[10px] bg-indigo-950/30 rounded-lg p-1.5 border border-indigo-500/20 text-slate-300 flex items-center justify-between">
+                            <span>🏛️ {ref.title} {ref.code ? `(${ref.code})` : ""}</span>
+                            {ref.url && (
+                              <a
+                                href={ref.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-cyan-400 hover:underline flex items-center gap-1 shrink-0 ml-2"
+                              >
+                                <span>Tra cứu</span>
+                                <ExternalLink className="w-2.5 h-2.5" />
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Thanh nút thao tác: Sao chép & Xuất Word */}
+                    {msg.sender === "ai" && (
+                      <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-end gap-2 text-[10px]">
+                        {msg.wordExportableHtml && (
+                          <button
+                            onClick={() => handleExportWord(msg.wordExportableHtml!, "De_Thi_Ma_Tran_TT22")}
+                            className="px-2 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border border-indigo-500/30 flex items-center gap-1 transition-all"
+                          >
+                            <Download className="w-3 h-3" />
+                            <span>Xuất Word (.doc)</span>
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleCopyText(msg.text, "txt-" + msg.id)}
+                          className="px-2 py-1 rounded-lg bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10 flex items-center gap-1 transition-all"
+                        >
+                          {copiedId === "txt-" + msg.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                          <span>{copiedId === "txt-" + msg.id ? "Đã chép" : "Sao chép"}</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -435,13 +481,13 @@ export default function AIAssistantWidget() {
                   {msg.timestamp}
                 </span>
 
-                {/* Quick Action Chips if provided */}
+                {/* Gợi ý thao tác nhanh (Quick Action Chips) */}
                 {msg.quickActions && msg.quickActions.length > 0 && (
                   <div className="mt-2.5 flex flex-wrap gap-1.5 pl-8">
                     {msg.quickActions.map((qa, idx) => (
                       <button
                         key={idx}
-                        onClick={() => handleQuickAction(qa.action, qa.label)}
+                        onClick={() => handleQuickAction(qa.action, qa.label, qa.mode)}
                         className="px-2.5 py-1.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/25 border border-indigo-500/30 text-[11px] font-semibold text-cyan-300 hover:text-white transition-all text-left"
                       >
                         {qa.label}
@@ -461,18 +507,20 @@ export default function AIAssistantWidget() {
                   <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse delay-100"></span>
                   <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse delay-200"></span>
-                  <span className="text-[11px] text-slate-400 ml-1">AI đang soạn câu trả lời...</span>
+                  <span className="text-[11px] text-slate-400 ml-1">
+                    AI Sư phạm đang phân tích và đối chiếu tài liệu chuẩn...
+                  </span>
                 </div>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick Zalo Direct Connection Banner inside Chat */}
-          <div className="px-4 py-2 bg-indigo-950/40 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-300">
+          {/* Banner Zalo hỗ trợ */}
+          <div className="px-4 py-1.5 bg-indigo-950/40 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-300">
             <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
               <Phone className="w-3.5 h-3.5" />
-              <span>Zalo hỗ trợ trực tiếp: 0961364600</span>
+              <span>Chuyên gia Zalo 24/7: 0961364600</span>
             </span>
             <a
               href="https://zalo.me/0961364600"
@@ -480,11 +528,11 @@ export default function AIAssistantWidget() {
               rel="noreferrer"
               className="text-cyan-400 hover:underline font-bold"
             >
-              Nhắn ngay
+              Nhắn Zalo ngay
             </a>
           </div>
 
-          {/* Chat Input Bar */}
+          {/* Input Bar */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -496,13 +544,27 @@ export default function AIAssistantWidget() {
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="Nhập câu hỏi về app (ví dụ: cách ghim widget)..."
+              placeholder={
+                selectedMode === "EXAM_MATRIX"
+                  ? "Nhập môn & khối để tạo đề thi ma trận (ví dụ: Công nghệ 10)..."
+                  : selectedMode === "SLIDES"
+                  ? "Nhập tên bài học để tạo 10 slide thuyết trình..."
+                  : selectedMode === "MINI_GAME"
+                  ? "Nhập chủ đề để tạo mini game Kahoot / Quizizz..."
+                  : selectedMode === "MINDMAP"
+                  ? "Nhập chủ đề để tạo sơ đồ tư duy Mermaid..."
+                  : selectedMode === "ILLUSTRATION"
+                  ? "Nhập bài học để tạo hình minh họa & prompt 3D..."
+                  : selectedMode === "OFFICIAL_VN"
+                  ? "Hỏi về thông tư, định mức giờ dạy, công văn Bộ GD&ĐT..."
+                  : "Hỏi AI Sư phạm (CV 5512, TT 22, năng lực số, tạo slide, đề thi)..."
+              }
               className="flex-1 px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-indigo-500 transition-colors"
             />
             <button
               type="submit"
-              disabled={!inputText.trim()}
-              className="p-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white disabled:opacity-40 transition-all shadow-md"
+              disabled={!inputText.trim() || isTyping}
+              className="p-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white disabled:opacity-40 transition-all shadow-md cursor-pointer"
               title="Gửi câu hỏi"
             >
               <Send className="w-4 h-4" />

@@ -47,6 +47,8 @@ import {
   saveOriginalFileToStorage,
   dataUrlToBlobUrl
 } from './knowledgeFileStorage';
+import AIAssistantWidget from '@/components/AIAssistantWidget';
+import { AiPedagogyMode, processPedagogicalAiQuery } from '@/components/aiPedagogyEngine';
 
 import {
   Calendar,
@@ -703,12 +705,22 @@ export default function UnifiedTeacherScheduleApp() {
   const [examIsGenerating, setExamIsGenerating] = useState(false);
 
   // AI Chat States
-  const [chatMessages, setChatMessages] = useState<Array<{ role: 'ai' | 'user'; text: string }>>([
+  const [chatMessages, setChatMessages] = useState<Array<{
+    role: 'ai' | 'user';
+    text: string;
+    mode?: AiPedagogyMode;
+    svgContent?: string;
+    mermaidCode?: string;
+    wordExportableHtml?: string;
+    sourceReferences?: { title: string; code?: string; url?: string; snippet?: string }[];
+  }>>([
     {
       role: 'ai',
-      text: 'Kính chào Thầy/Cô! Em là Trợ lý AI Sư phạm chuyên sâu. Thầy/Cô cần em hỗ trợ soạn giáo án CV 5512, tạo ngân hàng câu hỏi trắc nghiệm hay giải quyết dời lịch dạy hôm nay ạ?'
+      text: 'Kính chào Thầy/Cô! Em là Trợ lý AI Sư phạm chuyên sâu (Made by Huy Technology AI). Em hỗ trợ Thầy/Cô với 7 năng lực sư phạm chuyên sâu: Tra cứu kho tư liệu chuẩn (CV 5512, CV 3456, QĐ 2422, TT 22, ATLĐ 5S), Tạo đề thi & ma trận TT 22, Tạo slide bài giảng 10 trang, Tạo mini game Kahoot/Quizizz, Tạo sơ đồ tư duy Mermaid, Thiết kế hình minh họa SVG và Tra cứu nguồn chính thống Việt Nam (moet.gov.vn, thuvienphapluat.vn).'
     }
   ]);
+  const [chatSelectedMode, setChatSelectedMode] = useState<AiPedagogyMode>('ALL');
+  const [chatCopiedId, setChatCopiedId] = useState<string | null>(null);
   const [aiInput, setAiInput] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [geminiApiKey, setGeminiApiKey] = useState('');
@@ -1363,27 +1375,44 @@ export default function UnifiedTeacherScheduleApp() {
     localStorage.setItem('smart_teacher_tasks', JSON.stringify(updated));
   };
 
-  // AI Chat Send
-  const handleSendAiMessage = async () => {
-    if (!aiInput.trim()) return;
-    const userText = aiInput.trim();
-    setAiInput('');
-    const newMsgs = [...chatMessages, { role: 'user' as const, text: userText }];
+  // AI Chat Send with 7 Pedagogical Capabilities
+  const handleSendAiMessage = async (customPrompt?: string, overrideMode?: AiPedagogyMode) => {
+    const userText = (customPrompt || aiInput).trim();
+    if (!userText) return;
+    if (!customPrompt) setAiInput('');
+    const targetMode = overrideMode || chatSelectedMode;
+
+    const newMsgs = [...chatMessages, { role: 'user' as const, text: userText, mode: targetMode }];
     setChatMessages(newMsgs);
     setIsAiLoading(true);
 
     try {
-      // Simulate intelligent pedagogical response
       setTimeout(() => {
-        let aiReply = `Chào Thầy/Cô! Em đã nhận được yêu cầu: "${userText}".\n\n📋 **Đề xuất Sư phạm từ Trợ lý AI:**\n- **Mục tiêu bài học:** Phát triển năng lực thực hành gia công chính xác, tuân thủ an toàn lao động xưởng cơ khí.\n- **Tiến trình dạy học:** Khởi động (5p) ➔ Hướng dẫn thao tác mẫu (15p) ➔ Học sinh thực hành nhóm (25p) ➔ Đánh giá sản phẩm & vệ sinh máy.\n- **Đồng bộ hệ thống:** Đã cập nhật ghi chú này vào sổ bài giảng số của Thầy/Cô trên cả điện thoại và máy tính.`;
-        if (userText.includes('5512')) {
-          aiReply = `📚 **KHUNG KẾ HOẠCH BÀI DẠY THEO CÔNG VĂN 5512/BGDĐT:**\n\nI. MỤC TIÊU:\n1. Kiến thức: Nắm vững cấu tạo, nguyên lý làm việc của máy CNC và các mã lệnh G-code cơ bản.\n2. Kỹ năng: Lập trình và vận hành gia công chi tiết đạt kích thước bản vẽ.\n3. Phẩm chất: Tỉ mỉ, kỷ luật, an toàn.\n\nII. THIẾT BỊ & HỌC LIỆU: Máy phay/tiện CNC, phôi nhôm, đồ gá, tài liệu phát tay.\n\nIII. TIẾN TRÌNH DẠY HỌC:\n- Hoạt động 1: Xác định vấn đề (7 phút)\n- Hoạt động 2: Hình thành kiến thức mới (18 phút)\n- Hoạt động 3: Luyện tập / Thực hành (45 phút)\n- Hoạt động 4: Vận dụng & Mở rộng (10 phút)`;
-        }
-        setChatMessages([...newMsgs, { role: 'ai', text: aiReply }]);
+        const resp = processPedagogicalAiQuery(userText, targetMode, knowledgeDocs);
+        setChatMessages([
+          ...newMsgs,
+          {
+            role: 'ai',
+            text: resp.text,
+            mode: resp.mode,
+            svgContent: resp.svgContent,
+            mermaidCode: resp.mermaidCode,
+            wordExportableHtml: resp.wordExportableHtml,
+            sourceReferences: resp.sourceReferences
+          }
+        ]);
         setIsAiLoading(false);
-      }, 900);
+      }, 650);
     } catch (e) {
       setIsAiLoading(false);
+    }
+  };
+
+  const handleCopyChatText = (text: string, id: string) => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setChatCopiedId(id);
+      setTimeout(() => setChatCopiedId(null), 2000);
     }
   };
 
@@ -3307,8 +3336,39 @@ export default function UnifiedTeacherScheduleApp() {
 
             {/* ================= SUB-TAB 3: TƯ VẤN CHAT AI ================= */}
             {aiSubTab === 'chat' && (
-              <div className="bg-slate-800/50 border border-slate-700/70 rounded-2xl p-4 sm:p-5 h-[480px] flex flex-col justify-between shadow-xl">
-                <div className="space-y-4 overflow-y-auto pr-2">
+              <div className="bg-slate-800/50 border border-slate-700/70 rounded-2xl p-4 sm:p-5 h-[620px] flex flex-col justify-between shadow-xl">
+                {/* 7 Mode Selector Bar */}
+                <div className="pb-3 mb-2 border-b border-slate-700/60 flex items-center gap-1.5 overflow-x-auto text-xs scrollbar-thin">
+                  {[
+                    { id: 'ALL', label: 'Tất cả' },
+                    { id: 'KNOWLEDGE', label: '📚 Kho tư liệu' },
+                    { id: 'EXAM_MATRIX', label: '📝 Đề thi & Ma trận (TT22)' },
+                    { id: 'SLIDES', label: '📊 Slide bài giảng' },
+                    { id: 'MINI_GAME', label: '🎮 Mini game' },
+                    { id: 'MINDMAP', label: '🧠 Sơ đồ tư duy' },
+                    { id: 'ILLUSTRATION', label: '🎨 Hình minh họa SVG' },
+                    { id: 'OFFICIAL_VN', label: '🇻🇳 Nguồn chính thống' },
+                  ].map((tab) => {
+                    const isSel = chatSelectedMode === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setChatSelectedMode(tab.id as AiPedagogyMode)}
+                        className={`px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                          isSel
+                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-600/30'
+                            : 'bg-slate-900/80 text-slate-300 hover:text-white border border-slate-700/60'
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Messages scrollable area */}
+                <div className="flex-1 space-y-4 overflow-y-auto pr-2">
                   {chatMessages.map((msg, i) => (
                     <div
                       key={i}
@@ -3320,44 +3380,156 @@ export default function UnifiedTeacherScheduleApp() {
                         </div>
                       )}
                       <div
-                        className={`p-3.5 rounded-2xl text-xs sm:text-sm max-w-[85%] whitespace-pre-line leading-relaxed shadow ${
+                        className={`p-3.5 rounded-2xl text-xs sm:text-sm max-w-[90%] whitespace-pre-line leading-relaxed shadow ${
                           msg.role === 'user'
                             ? 'bg-blue-600 text-white rounded-tr-none'
                             : 'bg-slate-900/90 text-slate-200 border border-slate-700/60 rounded-tl-none'
                         }`}
                       >
                         {msg.text}
+
+                        {/* Inline SVG Vector Graphics */}
+                        {msg.svgContent && (
+                          <div className="mt-3 rounded-xl overflow-hidden border border-cyan-500/30 shadow-lg bg-slate-950 p-2">
+                            <div
+                              dangerouslySetInnerHTML={{ __html: msg.svgContent }}
+                              className="w-full flex justify-center"
+                            />
+                          </div>
+                        )}
+
+                        {/* Mermaid Mindmap Code */}
+                        {msg.mermaidCode && (
+                          <div className="mt-3 rounded-xl bg-slate-950/80 border border-indigo-500/30 p-2.5 space-y-1.5">
+                            <div className="flex items-center justify-between text-[11px] text-cyan-300 font-mono">
+                              <span>MÃ NGUỒN MERMAID MINDMAP:</span>
+                              <button
+                                type="button"
+                                onClick={() => handleCopyChatText(msg.mermaidCode!, 'm-' + i)}
+                                className="flex items-center gap-1 hover:text-white px-2 py-0.5 rounded bg-white/5 cursor-pointer"
+                              >
+                                {chatCopiedId === 'm-' + i ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                <span>{chatCopiedId === 'm-' + i ? 'Đã chép' : 'Chép mã'}</span>
+                              </button>
+                            </div>
+                            <pre className="text-[11px] text-slate-300 font-mono overflow-x-auto p-1.5 bg-black/40 rounded">
+                              {msg.mermaidCode}
+                            </pre>
+                          </div>
+                        )}
+
+                        {/* Source citations */}
+                        {msg.sourceReferences && msg.sourceReferences.length > 0 && (
+                          <div className="mt-3 pt-2.5 border-t border-white/10 space-y-1.5">
+                            <div className="text-[11px] font-bold text-cyan-400 flex items-center gap-1">
+                              <span>CĂN CỨ VĂN BẢN CHÍNH THỐNG:</span>
+                            </div>
+                            {msg.sourceReferences.map((ref, idx) => (
+                              <div key={idx} className="text-xs bg-indigo-950/30 rounded-lg p-1.5 border border-indigo-500/20 text-slate-300 flex items-center justify-between">
+                                <span>🏛️ {ref.title} {ref.code ? `(${ref.code})` : ''}</span>
+                                {ref.url && (
+                                  <a
+                                    href={ref.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-cyan-400 hover:underline flex items-center gap-1 shrink-0 ml-2"
+                                  >
+                                    <span>Tra cứu</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Message Actions */}
+                        {msg.role === 'ai' && (
+                          <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-end gap-2 text-xs">
+                            {msg.wordExportableHtml && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  downloadWordDoc(msg.wordExportableHtml!, 'De_Thi_Ma_Tran_TT22.doc');
+                                }}
+                                className="px-2.5 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border border-indigo-500/30 flex items-center gap-1 transition-all cursor-pointer"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                                <span>Xuất Word (.doc)</span>
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleCopyChatText(msg.text, 't-' + i)}
+                              className="px-2.5 py-1 rounded-lg bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10 flex items-center gap-1 transition-all cursor-pointer"
+                            >
+                              {chatCopiedId === 't-' + i ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                              <span>{chatCopiedId === 't-' + i ? 'Đã chép' : 'Sao chép'}</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
                   {isAiLoading && (
                     <div className="flex items-center gap-2 text-xs text-slate-400 italic">
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      <span>Trợ lý AI đang soạn câu trả lời chuyên môn...</span>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-400" />
+                      <span>Trợ lý AI đang đối chiếu kho tư liệu chuẩn và soạn thảo chuyên môn...</span>
                     </div>
                   )}
                 </div>
 
-                {/* Suggestions chips */}
+                {/* Suggestions chips & Input Bar */}
                 <div className="pt-3 border-t border-slate-700/50 space-y-3">
                   <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
                     <button
-                      onClick={() => setAiInput('Soạn giáo án Module Tiện CNC Lớp CG24TC34 theo công văn 5512')}
-                      className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-blue-500 whitespace-nowrap"
+                      type="button"
+                      onClick={() => handleSendAiMessage('Soạn giáo án Công nghệ theo Công văn 5512', 'KNOWLEDGE')}
+                      className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-blue-500 whitespace-nowrap cursor-pointer"
                     >
-                      📝 Soạn giáo án CV 5512
+                      📜 4 hoạt động CV 5512
                     </button>
                     <button
-                      onClick={() => setAiInput('Tạo 10 câu hỏi trắc nghiệm an toàn xưởng thực hành tiện CNC')}
-                      className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-blue-500 whitespace-nowrap"
+                      type="button"
+                      onClick={() => handleSendAiMessage('Tạo đề thi và ma trận 10 câu theo Thông tư 22', 'EXAM_MATRIX')}
+                      className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-purple-500 whitespace-nowrap cursor-pointer"
                     >
-                      ❓ 10 câu trắc nghiệm CNC
+                      📝 Ma trận đề chuẩn TT 22
                     </button>
                     <button
-                      onClick={() => setAiInput('Tư vấn cách xử lý khi học sinh đi thực hành trễ')}
-                      className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-blue-500 whitespace-nowrap"
+                      type="button"
+                      onClick={() => handleSendAiMessage('Tạo bộ slide 10 trang cho bài học này', 'SLIDES')}
+                      className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-cyan-500 whitespace-nowrap cursor-pointer"
                     >
-                      💡 Kỷ luật tích cực
+                      📊 Tạo Slide thuyết trình
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSendAiMessage('Tạo mini game tương tác Kahoot 4 câu', 'MINI_GAME')}
+                      className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-amber-500 whitespace-nowrap cursor-pointer"
+                    >
+                      🎮 Mini game Kahoot
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSendAiMessage('Tạo sơ đồ tư duy Mermaid bài học', 'MINDMAP')}
+                      className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-emerald-500 whitespace-nowrap cursor-pointer"
+                    >
+                      🧠 Sơ đồ Mermaid
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSendAiMessage('Vẽ hình minh họa SVG nguyên lý máy gia công', 'ILLUSTRATION')}
+                      className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-pink-500 whitespace-nowrap cursor-pointer"
+                    >
+                      🎨 Hình minh họa SVG
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSendAiMessage('Tra cứu định mức giờ dạy theo Thông tư 28 và 15', 'OFFICIAL_VN')}
+                      className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-teal-500 whitespace-nowrap cursor-pointer"
+                    >
+                      🇻🇳 Định mức giờ dạy
                     </button>
                   </div>
 
@@ -3365,16 +3537,17 @@ export default function UnifiedTeacherScheduleApp() {
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
-                      placeholder="Hỏi trợ lý AI về giáo án, bài giảng, kế hoạch đào tạo..."
+                      placeholder="Hỏi trợ lý AI (CV 5512, TT 22, năng lực số, tạo slide, ma trận đề, mini game)..."
                       value={aiInput}
                       onChange={(e) => setAiInput(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleSendAiMessage()}
                       className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-blue-500"
                     />
                     <button
-                      onClick={handleSendAiMessage}
-                      disabled={isAiLoading}
-                      className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1 transition-all disabled:opacity-50"
+                      type="button"
+                      onClick={() => handleSendAiMessage()}
+                      disabled={isAiLoading || !aiInput.trim()}
+                      className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1 transition-all disabled:opacity-50 cursor-pointer"
                     >
                       <Send className="w-4 h-4" />
                     </button>
@@ -4866,6 +5039,7 @@ export default function UnifiedTeacherScheduleApp() {
           </div>
         </div>
       )}
+      <AIAssistantWidget />
     </div>
   );
 }

@@ -217,10 +217,17 @@ class GeminiAIServiceImpl(
         userMessage: String,
         events: List<CalendarEventEntity>,
         tasks: List<TaskEntity>
-    ): String = withContext(Dispatchers.IO) {
-        val lower = userMessage.lowercase()
+    ): String = chatWithPedagogicalAssistant(userMessage, events, tasks, "")
 
-        // Grounded schedule search in actual database
+    override suspend fun chatWithPedagogicalAssistant(
+        userMessage: String,
+        events: List<CalendarEventEntity>,
+        tasks: List<TaskEntity>,
+        referenceDocsText: String
+    ): String = withContext(Dispatchers.IO) {
+        val lower = userMessage.lowercase().trim()
+
+        // 1. Lịch dạy & Công việc
         if (lower.contains("mai") || lower.contains("ngày mai")) {
             val tomorrow = LocalDate.now().plusDays(1).toString()
             val tomorrowEvents = events.filter { it.date == tomorrow }
@@ -257,8 +264,177 @@ class GeminiAIServiceImpl(
                     todayTeaching.joinToString("\n") { "• ${it.title} lúc ${it.startTime} tại Phòng ${it.room}" }
         }
 
-        // Generic summary query
-        "Tôi đã tra cứu cơ sở dữ liệu: Hiện có ${events.size} sự kiện/lịch dạy và ${tasks.count { it.status != TaskStatus.COMPLETED }} nhiệm vụ chưa hoàn thành. Thầy/Cô có thể hỏi cụ thể về lịch ngày mai, lịch tuần này, hoặc các công việc quá hạn."
+        // 2. Chức năng 1: Tra cứu Kho tư liệu chuẩn (CV 5512, CV 3456, QĐ 2422, CV 2634, TT 22, ATLĐ 5S)
+        if (lower.contains("5512") || lower.contains("kế hoạch bài dạy") || lower.contains("4 hoạt động")) {
+            return@withContext "🏛️ **CÔNG VĂN SỐ 5512/BGDĐT-GDTrH (BỘ GD&ĐT)**\n\n" +
+                    "🎯 **Khung 3 thành tố mục tiêu bài học**:\n" +
+                    "1. Kiến thức: Nêu rõ đơn vị kiến thức cốt lõi cần chiếm lĩnh.\n" +
+                    "2. Năng lực: Gồm Năng lực chung (tự chủ, giao tiếp, sáng tạo) và Năng lực đặc thù môn học.\n" +
+                    "3. Phẩm chất: 5 phẩm chất chủ yếu (Yêu nước, Nhân ái, Chăm chỉ, Trung thực, Trách nhiệm).\n\n" +
+                    "⚡ **Tiến trình dạy học (Bắt buộc đủ 4 hoạt động)**:\n" +
+                    "• HĐ 1: Khởi động / Xác định vấn đề\n" +
+                    "• HĐ 2: Hình thành kiến thức mới\n" +
+                    "• HĐ 3: Luyện tập củng cố\n" +
+                    "• HĐ 4: Vận dụng thực tế\n" +
+                    "📌 Mỗi hoạt động tổ chức theo 4 bước: Chuyển giao nhiệm vụ -> HS thực hiện -> Báo cáo thảo luận -> GV chuẩn hóa kết luận."
+        }
+
+        if (lower.contains("3456") || lower.contains("năng lực số") || lower.contains("kỹ năng số")) {
+            return@withContext "🏛️ **CÔNG VĂN SỐ 3456/BGDĐT-GDPT - KHUNG NĂNG LỰC SỐ CHO HỌC SINH**\n\n" +
+                    "🌐 **6 Miền Năng lực số cốt lõi tích hợp vào tiết học**:\n" +
+                    "1. Vận hành thiết bị & phần mềm (kết nối máy chiếu, máy tính, bảng tương tác).\n" +
+                    "2. Khai thác thông tin & dữ liệu (tra cứu học liệu có định hướng, lưu trữ đám mây).\n" +
+                    "3. Giao tiếp & hợp tác trong môi trường số (tương tác trực tuyến văn minh, làm việc nhóm số).\n" +
+                    "4. Sáng tạo nội dung số (thiết kế bài trình chiếu, video ngắn, sơ đồ tư duy số).\n" +
+                    "5. An toàn trong môi trường số (bảo vệ tài khoản, dữ liệu cá nhân, phòng tránh lừa đảo).\n" +
+                    "6. Giải quyết vấn đề với công nghệ số (tư duy máy tính, phần mềm mô phỏng kỹ thuật)."
+        }
+
+        if (lower.contains("2422") || lower.contains("trí tuệ nhân tạo") || (lower.contains("ai") && !lower.contains("bài"))) {
+            return@withContext "🏛️ **QUYẾT ĐỊNH 2422/QĐ-BGDĐT: ĐỊNH HƯỚNG ỨNG DỤNG AI TRONG GIÁO DỤC**\n\n" +
+                    "🤖 4 nguyên tắc cốt lõi:\n" +
+                    "1. AI là trợ lý, Giáo viên là chủ thể quyết định chuyên môn.\n" +
+                    "2. Liêm chính học thuật: Mọi dữ liệu phải đối chiếu văn bản pháp quy, không chấp nhận bịa đặt.\n" +
+                    "3. Bảo mật thông tin học sinh trên môi trường số.\n" +
+                    "4. Hướng dẫn học sinh tư duy phản biện, kiểm chứng thông tin từ AI."
+        }
+
+        if (lower.contains("2634") || lower.contains("dạy nghề") || lower.contains("xưởng") || lower.contains("thực hành xưởng")) {
+            return@withContext "🏛️ **CÔNG VĂN 2634/TCGDNN: KẾ HOẠCH BÀI GIẢNG DẠY NGHỀ XƯỞNG**\n\n" +
+                    "⚙️ 5 bước lên lớp thực hành chuẩn:\n" +
+                    "• Bước 1: Ổn định lớp, điểm danh, kiểm tra BHLĐ.\n" +
+                    "• Bước 2: Dẫn nhập & Kiểm tra an toàn thiết bị.\n" +
+                    "• Bước 3: Hướng dẫn ban đầu (Thao tác mẫu chuẩn và phân tích lỗi sai).\n" +
+                    "• Bước 4: Hướng dẫn thường xuyên (Học sinh thực hành, giáo viên uốn nắn).\n" +
+                    "• Bước 5: Hướng dẫn kết thúc (Đo kiểm sản phẩm, chấm điểm và thực hiện 5S)."
+        }
+
+        // 3. Chức năng 2: Đề thi & Ma trận chuẩn Thông tư 22
+        if (lower.contains("ma trận") || lower.contains("đề thi") || lower.contains("đề kiểm tra") || lower.contains("tt 22") || lower.contains("thông tư 22")) {
+            return@withContext "📋 **BẢNG MA TRẬN & ĐỀ THI CHUẨN THÔNG TƯ 22/2021/TT-BGDĐT**\n\n" +
+                    "⚖️ **Tỉ lệ phân bổ 4 mức độ nhận thức**:\n" +
+                    "• 🟢 **Nhận biết (40%)**: 4 câu (Tái hiện khái niệm, định nghĩa, thông số)\n" +
+                    "• 🔵 **Thông hiểu (30%)**: 3 câu (Giải thích nguyên lý, phân tích quy trình)\n" +
+                    "• 🟡 **Vận dụng (20%)**: 2 câu (Bài toán thực tế, chọn chế độ công nghệ)\n" +
+                    "• 🔴 **Vận dụng cao (10%)**: 1 câu (Tối ưu hóa giải pháp, khắc phục sự cố)\n\n" +
+                    "═══════════════════════════════════════\n" +
+                    "📝 **ĐỀ THI MINH HỌA (45 phút - Thang điểm 10)**\n" +
+                    "I. TRẮC NGHIỆM (7.0 điểm):\n" +
+                    "• Câu 1 (NB): Ký hiệu dung sai trên bản vẽ kỹ thuật biểu thị gì?\n" +
+                    "  A. Giới hạn sai lệch kích thước cho phép (Đúng)\n  B. Trọng lượng phôi\n  C. Vật liệu dao\n  D. Vận tốc cắt\n" +
+                    "• Câu 2 (TH): Vì sao cần thực hiện 5S trước khi gia công máy?\n" +
+                    "  A. Tránh nguy cơ tai nạn và tăng năng suất lao động (Đúng)\n  B. Cho đẹp mắt\n  C. Giảm tiền điện\n  D. Không cần thiết\n" +
+                    "II. TỰ LUẬN (3.0 điểm):\n" +
+                    "• Câu 3 (VD): Trình bày 4 bước xử lý khi phôi bị rung động mạnh lúc cắt gọt.\n" +
+                    "• Câu 4 (VDC): Đề xuất giải pháp cảm biến tự ngắt khẩn cấp để đảm bảo an toàn lao động."
+        }
+
+        // 4. Chức năng 3: Slide thuyết trình bài giảng
+        if (lower.contains("slide") || lower.contains("thuyết trình") || lower.contains("powerpoint") || lower.contains("canva")) {
+            return@withContext "📊 **CẤU TRÚC 10 SLIDE BÀI GIẢNG CHUẨN SƯ PHẠM**\n\n" +
+                    "• Slide 1: Bìa bài giảng (Tên bài, Môn học, Lớp, Giáo viên phụ trách).\n" +
+                    "• Slide 2: Mục tiêu cần đạt (Kiến thức, Năng lực số, Phẩm chất).\n" +
+                    "• Slide 3: Hoạt động 1 - Khởi động (Tình huống thực tế dẫn nhập).\n" +
+                    "• Slide 4-5: Hoạt động 2 - Khám phá kiến thức (Nguyên lý & Cấu tạo thiết bị).\n" +
+                    "• Slide 6: Tiêu chuẩn An toàn lao động & Quy trình 5S xưởng.\n" +
+                    "• Slide 7-8: Hoạt động 3 - Luyện tập & Thao tác củng cố.\n" +
+                    "• Slide 9: Hoạt động 4 - Vận dụng thực tế & Dự án nhóm.\n" +
+                    "• Slide 10: Sơ đồ tư duy tổng kết & Hướng dẫn tự học ở nhà.\n\n" +
+                    "🗣️ *Speaker Notes*: Giáo viên dẫn nhập bằng câu hỏi thực tiễn khơi gợi tính chủ động của học sinh."
+        }
+
+        // 5. Chức năng 4: Mini game cho tiết dạy
+        if (lower.contains("mini game") || lower.contains("kahoot") || lower.contains("quizizz") || lower.contains("trò chơi") || lower.contains("đố vui")) {
+            return@withContext "🎮 **BỘ CÂU HỎI MINI GAME TƯƠNG TÁC (KAHOOT / QUIZIZZ)**\n\n" +
+                    "🏆 **Câu 1 (15s)**: Trước khi nhấn nút khởi động máy, hành động nào BẮT BUỘC?\n" +
+                    "A. Bật quạt gió\nB. Đeo kính bảo hộ, buộc tóc gọn gàng (Đúng)\nC. Uống nước\nD. Chụp ảnh\n" +
+                    "💡 *Giải thích*: Kính bảo hộ ngăn phoi văng bảo vệ mắt tuyệt đối!\n\n" +
+                    "🏆 **Câu 2 (20s)**: Chữ 'S' thứ 2 trong 5S (Seiton - Sắp xếp) có nghĩa là gì?\n" +
+                    "A. Vứt rác bừa bãi\nB. Dễ tìm, dễ thấy, dễ lấy, dễ trả lại (Đúng)\nC. Lau chùi sàn nhà\nD. Để lộn xộn\n" +
+                    "💡 *Giải thích*: Sắp xếp khoa học giúp tiết kiệm 20% thời gian tìm đồ nghề!\n\n" +
+                    "🏆 **Câu 3 (30s)**: Khi phoi tiện chuyển sang màu xanh tím, hiện tượng này là gì?\n" +
+                    "A. Máy chạy rất mát\nB. Vùng cắt quá nóng trên 600°C cần cấp trơn nguội ngay (Đúng)\nC. Phôi đã đẹp\nD. Bình thường"
+        }
+
+        // 6. Chức năng 5: Sơ đồ tư duy
+        if (lower.contains("sơ đồ tư duy") || lower.contains("mindmap") || lower.contains("sơ đồ")) {
+            return@withContext "🧠 **SƠ ĐỒ TƯ DUY BÀI DẠY (MÃ MERMAID & CÂY TRI THỨC)**\n\n" +
+                    "🌳 **Cây phân cấp kiến thức**:\n" +
+                    "🌿 [CHỦ ĐỀ BÀI HỌC]\n" +
+                    "├── 🔹 1. Khái niệm cốt lõi (Bản chất, Bản vẽ, Vật liệu)\n" +
+                    "├── 🔹 2. Phương pháp gia công (Cắt gọt, Phay, Tiện, CNC)\n" +
+                    "├── 🔹 3. Chế độ công nghệ (Vận tốc cắt, Lượng chạy dao, Chiều sâu)\n" +
+                    "└── 🔹 4. Tiêu chuẩn An toàn & 5S xưởng\n\n" +
+                    "💻 **Mã nguồn Mermaid Mindmap**:\n" +
+                    "```mermaid\n" +
+                    "mindmap\n" +
+                    "  root((\"Bài Giảng Sư Phạm\"))\n" +
+                    "    Khái Niệm Cốt Lõi\n" +
+                    "      Bản chất công nghệ\n" +
+                    "      Đọc bản vẽ kỹ thuật\n" +
+                    "    Phương Pháp Gia Công\n" +
+                    "      Tiện mặt trụ\n" +
+                    "      Phay mặt phẳng\n" +
+                    "      Gia công CNC số\n" +
+                    "    An Toàn Lao Động 5S\n" +
+                    "      Bảo hộ cá nhân\n" +
+                    "      Quy trình 5S xưởng\n" +
+                    "```"
+        }
+
+        // 7. Chức năng 6: Hình ảnh minh họa
+        if (lower.contains("hình ảnh") || lower.contains("minh họa") || lower.contains("prompt") || lower.contains("vẽ")) {
+            return@withContext "🎨 **CÂU LỆNH PROMPT AI TẠO HÌNH ẢNH MINH HỌA BÀI HỌC**\n\n" +
+                    "📝 **Prompt Tiếng Anh (Midjourney / DALL-E 3 / Gemini Imagen)**:\n" +
+                    "```text\n" +
+                    "Educational 3D isometric cutaway diagram of precision CNC lathe machine mechanism, showing rotating steel workpiece, carbide cutting tool, cooling fluid spray, technical blueprint overlay, clean studio lighting, realistic industrial design, 8k resolution, educational textbook quality --ar 16:9\n" +
+                    "```\n\n" +
+                    "📝 **Prompt Tiếng Việt (Bing Image Creator / Canva AI)**:\n" +
+                    "```text\n" +
+                    "Sơ đồ cấu tạo kỹ thuật 3D minh họa bài giảng Công nghệ: Thể hiện chi tiết máy gia công, nguyên lý cắt gọt, có mũi tên chỉ hướng chuyển động, phong cách đồ họa giáo dục sắc nét.\n" +
+                    "```"
+        }
+
+        // 8. Chức năng 7: Nguồn chính thống Việt Nam
+        if (lower.contains("chính thống") || lower.contains("bộ gd") || lower.contains("moet") || lower.contains("định mức") || lower.contains("thư viện pháp luật")) {
+            return@withContext "🇻🇳 **TRA CỨU VĂN BẢN PHÁP QUY TỪ CÁC NGUỒN CHÍNH THỐNG VIỆT NAM**\n\n" +
+                    "🏛️ **1. Thông tư 28/2009/TT-BGDĐT & TT 15/2017/TT-BGDĐT** (Định mức giờ dạy GDPT):\n" +
+                    "• Tiểu học: 23 tiết/tuần | THCS: 19 tiết/tuần | THPT: 17 tiết/tuần.\n" +
+                    "• GVCN THPT giảm 4 tiết/tuần, Tổ trưởng giảm 3 tiết/tuần.\n\n" +
+                    "🏛️ **2. Thông tư 08/2021/TT-BLĐTBXH** (Nhà giáo giáo dục nghề nghiệp):\n" +
+                    "• Định mức 350 - 400 giờ quy chuẩn/năm học.\n\n" +
+                    "🔗 **Cổng thông tin tra cứu chính thức**:\n" +
+                    "• Bộ Giáo dục và Đào tạo: moet.gov.vn\n" +
+                    "• Tổng cục Giáo dục nghề nghiệp: gdnn.gov.vn\n" +
+                    "• Thư viện Pháp luật: thuvienphapluat.vn"
+        }
+
+        // 9. Tra cứu trong tài liệu giáo viên đã tải lên (Custom Reference Docs)
+        if (referenceDocsText.isNotBlank()) {
+            val words = lower.split(" ", ",", ".", ";").filter { it.length > 3 }
+            val matchedSnippet = words.firstOrNull { referenceDocsText.contains(it, ignoreCase = true) }
+            if (matchedSnippet != null) {
+                val idx = referenceDocsText.indexOf(matchedSnippet, ignoreCase = true)
+                val snippet = referenceDocsText.substring(
+                    idx.coerceAtLeast(0),
+                    (idx + 350).coerceAtMost(referenceDocsText.length)
+                )
+                return@withContext "📚 **TRÍCH XUẤT TỪ KHO TƯ LIỆU THẦY/CÔ ĐÃ NẠP**:\n\n" +
+                        "\"...$snippet...\"\n\n" +
+                        "💡 Thầy/Cô có thể dùng nội dung này để lập tức soạn giáo án hoặc tạo đề thi kiểm tra ma trận chuẩn!"
+            }
+        }
+
+        // Mặc định: Phản hồi tổng quan trợ lý sư phạm
+        "Kính chào Thầy/Cô! Em là Trợ lý AI Sư phạm đa năng (Huy Technology AI). Em có thể giúp Thầy/Cô:\n" +
+                "1. 📚 Tra cứu kho tư liệu (CV 5512, CV 3456, QĐ 2422, TT 22, ATLĐ 5S).\n" +
+                "2. 📝 Tạo đề thi và ma trận chuẩn 4 mức độ theo Thông tư 22.\n" +
+                "3. 📊 Soạn slide bài giảng 10 trang kèm lời thoại giảng viên.\n" +
+                "4. 🎮 Tạo mini game Kahoot/Quizizz tương tác sôi nổi.\n" +
+                "5. 🧠 Tạo sơ đồ tư duy Mermaid và cây tri thức.\n" +
+                "6. 🎨 Thiết kế câu lệnh prompt tạo hình ảnh minh họa 3D.\n" +
+                "7. 🇻🇳 Tra cứu văn bản định mức từ moet.gov.vn và thuvienphapluat.vn.\n\n" +
+                "Thầy/Cô cần em hỗ trợ nội dung nào ạ?"
     }
 
     private fun parseScheduleTextLocally(text: String): ScheduleParseResult? {

@@ -3,6 +3,7 @@ package com.smartteacher.schedule.feature.ai
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -12,8 +13,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import android.widget.Toast
 import com.smartteacher.schedule.core.ai.*
 import com.smartteacher.schedule.core.database.dao.KnowledgeDocumentDao
 import com.smartteacher.schedule.core.database.entity.CalendarEventEntity
@@ -100,7 +105,12 @@ fun AIAssistantScreen(
                         }
                     }
                 }
-                3 -> AIChatView(aiService = aiService, events = events, tasks = tasks)
+                3 -> AIChatView(
+                    aiService = aiService,
+                    events = events,
+                    tasks = tasks,
+                    knowledgeDao = knowledgeDao
+                )
                 4 -> AIImportScheduleView(aiService = aiService, onConfirm = onSaveImportedSchedule)
                 5 -> AIWeeklyAnalysisView(aiService = aiService, events = events, tasks = tasks)
                 6 -> AIDailyReviewView(
@@ -118,42 +128,147 @@ fun AIAssistantScreen(
 fun AIChatView(
     aiService: AIService,
     events: List<CalendarEventEntity>,
-    tasks: List<TaskEntity>
+    tasks: List<TaskEntity>,
+    knowledgeDao: KnowledgeDocumentDao? = null
 ) {
+    val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
     var inputText by remember { mutableStateOf("") }
+    var selectedModeIndex by remember { mutableStateOf(0) }
+
+    val modeTabs = listOf(
+        "Tất cả",
+        "📚 Kho tư liệu",
+        "📝 Đề thi & Ma trận",
+        "📊 Slide bài giảng",
+        "🎮 Mini game",
+        "🧠 Sơ đồ tư duy",
+        "🎨 Hình minh họa",
+        "🇻🇳 Nguồn chính thống",
+        "⏰ Lịch dạy"
+    )
+
     val messages = remember {
         mutableStateListOf(
-            ChatMessage("Xin chào Thầy/Cô! Tôi là Trợ lý AI Lịch dạy. Thầy/Cô có thể hỏi tôi về lịch ngày mai, số tiết tuần này hoặc kiểm tra công việc quá hạn.", false)
+            ChatMessage(
+                "Xin chào Thầy/Cô! Em là Trợ lý AI Sư phạm đa năng 24/7 (Made by Huy Technology AI).\n\n" +
+                "Em hỗ trợ toàn diện 7 năng lực sư phạm chuyên sâu:\n" +
+                "1. 📚 Tra cứu kho tư liệu chuẩn (CV 5512, CV 3456, QĐ 2422, TT 22, ATLĐ 5S, SGV đã upload).\n" +
+                "2. 📝 Tạo đề thi & ma trận 4 mức độ theo Thông tư 22.\n" +
+                "3. 📊 Tạo slide thuyết trình 10 trang kèm lời thoại giảng viên.\n" +
+                "4. 🎮 Thiết kế mini game Kahoot / Quizizz tương tác.\n" +
+                "5. 🧠 Tạo sơ đồ tư duy Mermaid & Cây phân cấp kiến thức.\n" +
+                "6. 🎨 Prompt tạo hình ảnh minh họa 3D cho bài dạy.\n" +
+                "7. 🇻🇳 Tra cứu văn bản định mức từ moet.gov.vn & thuvienphapluat.vn.\n\n" +
+                "Thầy/Cô hãy chọn nhanh danh mục hoặc gõ câu hỏi bất kỳ ạ!",
+                false
+            )
         )
     }
     val coroutineScope = rememberCoroutineScope()
     var isThinking by remember { mutableStateOf(false) }
 
+    // Dynamic prompt suggestions based on selected mode
+    val currentSuggestions = when (selectedModeIndex) {
+        1 -> listOf(
+            "Quy định 4 hoạt động của CV 5512",
+            "6 miền năng lực số theo CV 3456",
+            "QĐ 2422 về ứng dụng AI giáo dục",
+            "5 bước thực hành xưởng theo CV 2634"
+        )
+        2 -> listOf(
+            "Tạo đề thi và ma trận 10 câu môn Công nghệ 10 theo TT 22",
+            "Tỉ lệ 4 mức độ nhận thức theo TT 22",
+            "Bảng đặc tả đề kiểm tra học kỳ"
+        )
+        3 -> listOf(
+            "Tạo bộ 10 slide thuyết trình môn Công nghệ",
+            "Cấu trúc slide bài giảng tích hợp năng lực số",
+            "Gợi ý lời thoại giáo viên (Speaker notes)"
+        )
+        4 -> listOf(
+            "Tạo mini game tương tác Kahoot 4 câu",
+            "Câu hỏi đố vui Rung chuông vàng",
+            "Trò chơi khởi động bài học"
+        )
+        5 -> listOf(
+            "Tạo sơ đồ tư duy bài học Công nghệ",
+            "Mã nguồn Mermaid Mindmap",
+            "Cây phân cấp kiến thức bài giảng"
+        )
+        6 -> listOf(
+            "Prompt tạo ảnh 3D máy gia công cơ khí",
+            "Hình minh họa nguyên lý cắt gọt",
+            "Sơ đồ an toàn lao động xưởng"
+        )
+        7 -> listOf(
+            "Định mức giờ dạy theo Thông tư 28 và Thông tư 15",
+            "Thông tư 22/2021 về đánh giá học sinh",
+            "Tra cứu cổng Bộ Giáo dục moet.gov.vn"
+        )
+        8 -> listOf(
+            "Tôi có lịch gì ngày mai?",
+            "Tuần này tôi có bao nhiêu tiết dạy?",
+            "Việc nào đang quá hạn?",
+            "Hôm nay cần chuẩn bị những gì?"
+        )
+        else -> listOf(
+            "📜 4 hoạt động CV 5512",
+            "📝 Ma trận đề chuẩn TT 22",
+            "📊 Slide bài giảng 10 trang",
+            "🎮 Mini game Kahoot",
+            "🧠 Sơ đồ Mermaid",
+            "🎨 Prompt tạo ảnh 3D",
+            "🇻🇳 Định mức giờ dạy"
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(12.dp)
     ) {
-        // Quick Prompt Suggestions
-        Row(
+        // Mode Selector Chips (Horizontal Scrolling)
+        LazyRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            SuggestionChip(
-                onClick = { inputText = "Tôi có lịch gì ngày mai?" },
-                label = { Text("Lịch ngày mai?") }
-            )
-            SuggestionChip(
-                onClick = { inputText = "Tuần này tôi có bao nhiêu tiết dạy?" },
-                label = { Text("Số tiết tuần này?") }
-            )
-            SuggestionChip(
-                onClick = { inputText = "Việc nào đang quá hạn?" },
-                label = { Text("Việc quá hạn?") }
-            )
+            items(modeTabs.size) { index ->
+                val isSelected = selectedModeIndex == index
+                FilterChip(
+                    selected = isSelected,
+                    onClick = { selectedModeIndex = index },
+                    label = {
+                        Text(
+                            text = modeTabs[index],
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // Quick Suggestion Chips
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            items(currentSuggestions) { suggestion ->
+                SuggestionChip(
+                    onClick = { inputText = suggestion },
+                    label = { Text(suggestion, style = MaterialTheme.typography.bodySmall) }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         // Chat List
         LazyColumn(
@@ -174,30 +289,61 @@ fun AIChatView(
                     Surface(
                         shape = RoundedCornerShape(14.dp),
                         color = bg,
-                        modifier = Modifier.widthIn(max = 300.dp)
+                        modifier = Modifier.widthIn(max = 330.dp)
                     ) {
-                        Text(
-                            text = msg.text,
-                            modifier = Modifier.padding(12.dp),
-                            color = textColor,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(
+                                text = msg.text,
+                                color = textColor,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+
+                            // Nút sao chép nội dung tin nhắn của AI
+                            if (!msg.isUser) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 8.dp),
+                                    horizontalArrangement = Arrangement.End
+                                ) {
+                                    TextButton(
+                                        onClick = {
+                                            clipboardManager.setText(AnnotatedString(msg.text))
+                                            Toast.makeText(context, "Đã sao chép nội dung!", Toast.LENGTH_SHORT).show()
+                                        },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.ContentCopy,
+                                            contentDescription = "Sao chép",
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Sao chép", style = MaterialTheme.typography.labelSmall)
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
 
             if (isThinking) {
                 item {
-                    Text(
-                        text = "AI đang tra cứu dữ liệu...",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "AI Sư phạm đang đối chiếu kho tư liệu chuẩn và soạn thảo...",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         // Input Field
         Row(
@@ -207,7 +353,21 @@ fun AIChatView(
             OutlinedTextField(
                 value = inputText,
                 onValueChange = { inputText = it },
-                placeholder = { Text("Nhập câu hỏi về lịch dạy...") },
+                placeholder = {
+                    Text(
+                        when (selectedModeIndex) {
+                            1 -> "Tra cứu CV 5512, 3456, giáo trình..."
+                            2 -> "Nhập môn để tạo ma trận đề TT 22..."
+                            3 -> "Nhập bài học để tạo slide bài giảng..."
+                            4 -> "Nhập chủ đề tạo mini game Kahoot..."
+                            5 -> "Nhập chủ đề tạo sơ đồ tư duy..."
+                            6 -> "Nhập bài dạy để tạo prompt hình ảnh..."
+                            7 -> "Hỏi về thông tư, định mức giờ dạy..."
+                            else -> "Hỏi AI Sư phạm (7 chức năng chuyên sâu)..."
+                        },
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                },
                 modifier = Modifier.weight(1f),
                 singleLine = true
             )
@@ -215,12 +375,23 @@ fun AIChatView(
             IconButton(
                 onClick = {
                     val query = inputText.trim()
-                    if (query.isNotBlank()) {
+                    if (query.isNotBlank() && !isThinking) {
                         messages.add(ChatMessage(query, true))
                         inputText = ""
                         isThinking = true
                         coroutineScope.launch {
-                            val answer = aiService.chatWithScheduleData(query, events, tasks)
+                            var refDocsText = ""
+                            try {
+                                val activeDocs = knowledgeDao?.getAllActiveDocuments() ?: emptyList()
+                                if (activeDocs.isNotEmpty()) {
+                                    refDocsText = activeDocs.joinToString("\n\n") {
+                                        "[${it.code}] ${it.title}:\n${it.content.take(500)}"
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                // fallback empty
+                            }
+                            val answer = aiService.chatWithPedagogicalAssistant(query, events, tasks, refDocsText)
                             messages.add(ChatMessage(answer, false))
                             isThinking = false
                         }

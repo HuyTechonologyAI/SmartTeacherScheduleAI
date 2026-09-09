@@ -5097,10 +5097,10 @@ export default function UnifiedTeacherScheduleApp() {
                 </span>
               </div>
               <div className="text-xs text-slate-300 grid sm:grid-cols-2 gap-2 pt-2 border-t border-slate-700/60">
-                <div>• Nền tảng: <strong className="text-white">Desktop (PC/Laptop) & Web App</strong></div>
-                <div>• Cơ sở dữ liệu: <strong className="text-white">Đám mây 2 chiều Supabase</strong></div>
-                <div>• Trợ lý AI: <strong className="text-white">Kho Pháp Quy CV 5512 & CV 2634</strong></div>
-                <div>• Tính năng mới: <strong className="text-emerald-400">Đồng bộ 2 chiều (Máy tính ⇄ Điện thoại)</strong></div>
+                <div>• Nền tảng: <strong className="text-white">Desktop (PC/Laptop), Android & Web App</strong></div>
+                <div>• Cơ sở dữ liệu: <strong className="text-white">Supabase Cloud Sync & Local Offline</strong></div>
+                <div>• Trợ lý AI: <strong className="text-white">Soạn giáo án CV 5512, Đề thi TT 22, Slide, Mindmap</strong></div>
+                <div>• Tính năng v1.5.0: <strong className="text-emerald-400">Sổ lớp, Điểm danh 1 chạm, Command Center & Khóa PIN</strong></div>
               </div>
             </div>
 

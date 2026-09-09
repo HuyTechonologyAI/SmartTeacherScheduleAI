@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://gvcncdsai.io.vn"),
   title: "Smart Teacher Schedule AI - Dạy Đúng Giờ, Làm Đúng Việc, Không Bỏ Sót",
   description:
-    "Ứng dụng Android chuyên nghiệp cho giáo viên với hệ thống nhắc lịch dạy kép 60m & 15m, chống tắt ngầm OEM, Tiện ích Widget màn hình chính 2-trong-1 và Trợ lý AI Gemini.",
+    "Hệ sinh thái Đa Nền Tảng (Android, Web, Desktop, iOS) cho giáo viên: Báo thức ca dạy kép 60m & 15m, tối ưu hóa đa tầng chống tắt ngầm, Sổ lớp & Điểm danh 1 chạm, Đồng bộ đám mây và Trợ lý AI Sư phạm CV 5512.",
   keywords: [
     "Smart Teacher Schedule AI",
     "Lịch dạy giáo viên",

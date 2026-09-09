@@ -103,7 +103,8 @@ object KnowledgeFileHelper {
                     ZipInputStream(FileInputStream(file)).use { zip ->
                         var entry = zip.nextEntry
                         while (entry != null) {
-                            if (entry.name == "word/document.xml") {
+                            val normalized = entry.name.replace("\\", "/").trimStart('/')
+                            if (normalized.equals("word/document.xml", ignoreCase = true)) {
                                 docXml = zip.bufferedReader(Charsets.UTF_8).readText()
                                 break
                             }
@@ -138,7 +139,7 @@ object KnowledgeFileHelper {
      */
     private fun cleanWordXmlToPlainText(xml: String): String {
         return xml
-            .replace(Regex("<w:p[ >]"), "\n")
+            .replace(Regex("<w:p[ >]"), "\n\n")
             .replace(Regex("<w:br[ />]"), "\n")
             .replace(Regex("<w:tab[ />]"), "\t")
             .replace(Regex("<[^>]+>"), "")
@@ -373,6 +374,34 @@ object KnowledgeFileHelper {
             context.startActivity(Intent.createChooser(intent, "Mở / Tải về: $title"))
         } catch (e: Exception) {
             Toast.makeText(context, "Lỗi khi mở file: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     * Tải về / Chia sẻ đúng tệp gốc nguyên bản (Word, PDF, Text...) mà Thầy/Cô đã tải lên
+     */
+    fun shareOrSaveOriginalFile(context: Context, filePath: String, originalName: String) {
+        val file = File(filePath)
+        if (!file.exists()) {
+            Toast.makeText(context, "Không tìm thấy tệp gốc đính kèm trên bộ nhớ máy!", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        try {
+            val authority = "${context.packageName}.fileprovider"
+            val contentUri = FileProvider.getUriForFile(context, authority, file)
+            val extension = getExtensionFromFileName(originalName.ifBlank { file.name }).lowercase()
+            val mimeType = getMimeType(extension)
+
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = mimeType
+                putExtra(Intent.EXTRA_STREAM, contentUri)
+                putExtra(Intent.EXTRA_SUBJECT, originalName)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(Intent.createChooser(intent, "Tải về / Chia sẻ tệp gốc: $originalName"))
+        } catch (e: Exception) {
+            Toast.makeText(context, "Lỗi khi chia sẻ tệp gốc: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 

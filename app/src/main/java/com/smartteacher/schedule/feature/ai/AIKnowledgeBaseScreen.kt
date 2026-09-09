@@ -311,6 +311,20 @@ fun AIKnowledgeBaseScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            if (doc.fileName.isNotBlank()) {
+                                Button(
+                                    onClick = {
+                                        KnowledgeFileHelper.shareOrSaveOriginalFile(context, doc.filePath, doc.fileName)
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                                ) {
+                                    Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(15.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Tải file .${doc.fileExtension.ifBlank { "gốc" }.uppercase()}", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+
                             // Tải về Word (.doc)
                             OutlinedButton(
                                 onClick = {
@@ -331,9 +345,9 @@ fun AIKnowledgeBaseScreen(
                                 },
                                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
                             ) {
-                                Icon(Icons.Default.Description, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.Description, contentDescription = null, modifier = Modifier.size(15.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Tải Word (.doc)", fontSize = 12.sp)
+                                Text("Xuất Word", fontSize = 11.sp)
                             }
 
                             // Tải về Text (.txt)
@@ -353,7 +367,7 @@ fun AIKnowledgeBaseScreen(
                                 },
                                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
                             ) {
-                                Text("Tải Text (.txt)", fontSize = 12.sp)
+                                Text("Text", fontSize = 11.sp)
                             }
                         }
 
@@ -618,28 +632,41 @@ fun KnowledgeDocumentCard(
                         Text("Xem trước", fontSize = 11.sp)
                     }
 
-                    TextButton(
-                        onClick = {
-                            val docFile = KnowledgeFileHelper.exportDocumentToDoc(
-                                context = context,
-                                title = doc.title,
-                                code = doc.code,
-                                category = doc.category,
-                                subject = doc.subject,
-                                targetLevel = doc.targetLevel,
-                                content = doc.content
-                            )
-                            if (docFile != null) {
-                                KnowledgeFileHelper.openOrShareFile(context, docFile, "application/msword", doc.title)
-                            } else {
-                                Toast.makeText(context, "Không thể xuất file Word!", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
-                        Icon(Icons.Default.Description, contentDescription = null, modifier = Modifier.size(15.dp))
-                        Spacer(modifier = Modifier.width(3.dp))
-                        Text("Tải Word", fontSize = 11.sp)
+                    if (doc.fileName.isNotBlank()) {
+                        TextButton(
+                            onClick = {
+                                KnowledgeFileHelper.shareOrSaveOriginalFile(context, doc.filePath, doc.fileName)
+                            },
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(15.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text("Tải .${doc.fileExtension.ifBlank { "FILE" }.uppercase()}", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    } else {
+                        TextButton(
+                            onClick = {
+                                val docFile = KnowledgeFileHelper.exportDocumentToDoc(
+                                    context = context,
+                                    title = doc.title,
+                                    code = doc.code,
+                                    category = doc.category,
+                                    subject = doc.subject,
+                                    targetLevel = doc.targetLevel,
+                                    content = doc.content
+                                )
+                                if (docFile != null) {
+                                    KnowledgeFileHelper.openOrShareFile(context, docFile, "application/msword", doc.title)
+                                } else {
+                                    Toast.makeText(context, "Không thể xuất file Word!", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Icon(Icons.Default.Description, contentDescription = null, modifier = Modifier.size(15.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text("Tải Word", fontSize = 11.sp)
+                        }
                     }
                 }
 

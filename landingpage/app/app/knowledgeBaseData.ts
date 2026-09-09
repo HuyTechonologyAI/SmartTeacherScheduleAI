@@ -1,5 +1,6 @@
 // Knowledge Base Data & RAG Anti-Hallucination Grounding Engine
 // Dành cho phiên bản Web & Desktop (Windows, macOS, Linux)
+import { saveOriginalFileToStorage, deleteOriginalFileFromStorage } from './knowledgeFileStorage';
 
 export interface KnowledgeDocument {
   id: string;
@@ -302,13 +303,14 @@ export function saveKnowledgeDocument(doc: KnowledgeDocument): boolean {
     const customDocs: KnowledgeDocument[] = raw ? JSON.parse(raw) : [];
     const index = customDocs.findIndex(d => d.id === doc.id);
 
-    // Deep copy doc
-    const docToSave: KnowledgeDocument = { ...doc };
-
-    // Strip large fileData (>50KB) to prevent localStorage QuotaExceededError
-    if (docToSave.fileData && docToSave.fileData.length > 50000) {
-      delete docToSave.fileData;
+    // Save full original file data to IndexedDB
+    if (doc.fileData) {
+      saveOriginalFileToStorage(doc.id, doc.fileData);
     }
+
+    // Deep copy doc for localStorage (strip fileData to preserve localStorage quota)
+    const docToSave: KnowledgeDocument = { ...doc };
+    delete docToSave.fileData;
 
     if (index >= 0) {
       customDocs[index] = docToSave;
@@ -337,6 +339,7 @@ export function saveKnowledgeDocument(doc: KnowledgeDocument): boolean {
 export function deleteCustomKnowledgeDocument(id: string): void {
   if (typeof window === 'undefined') return;
   try {
+    deleteOriginalFileFromStorage(id);
     const raw = localStorage.getItem(STORAGE_KEY);
     const customDocs: KnowledgeDocument[] = raw ? JSON.parse(raw) : [];
     const filtered = customDocs.filter(d => d.id !== id);
@@ -587,10 +590,12 @@ export function updateKnowledgeDocument(updatedDoc: KnowledgeDocument): boolean 
     const customDocs: KnowledgeDocument[] = raw ? JSON.parse(raw) : [];
     const index = customDocs.findIndex(d => d.id === updatedDoc.id);
 
-    const docToSave = { ...updatedDoc };
-    if (docToSave.fileData && docToSave.fileData.length > 50000) {
-      delete docToSave.fileData;
+    if (updatedDoc.fileData) {
+      saveOriginalFileToStorage(updatedDoc.id, updatedDoc.fileData);
     }
+
+    const docToSave = { ...updatedDoc };
+    delete docToSave.fileData;
 
     if (index >= 0) {
       customDocs[index] = docToSave;

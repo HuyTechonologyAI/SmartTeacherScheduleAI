@@ -1,5 +1,8 @@
 package com.smartteacher.schedule.feature.students
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -61,6 +64,78 @@ fun StudentManagementScreen(
     var newStudentCode by remember { mutableStateOf("") }
     var newStudentPhone by remember { mutableStateOf("") }
 
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            coroutineScope.launch(Dispatchers.IO) {
+                try {
+                    val rawText = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } ?: ""
+                    if (rawText.isNotBlank()) {
+                        val cName = selectedClass?.name ?: "CG24TC34"
+                        val cId = selectedClass?.id ?: "cls_cg24tc34"
+                        val lines = rawText.split("\n").map { it.trim() }.filter { it.isNotBlank() }
+                        val toInsert = mutableListOf<StudentEntity>()
+                        var count = students.size + 1
+
+                        for (line in lines) {
+                            val parts = line.split(Regex("[\\t,;]")).map { it.trim() }.filter { it.isNotBlank() }
+                            if (parts.isEmpty()) continue
+                            var name = parts[0].replace(Regex("^[0-9]+[.\\-)\\s]+"), "").trim()
+                            var code = ""
+                            var phone = ""
+                            var gender = "Nam"
+
+                            if (parts.size > 1) {
+                                if (parts[0].matches(Regex("^[A-Za-z0-9_-]+$"))) {
+                                    code = parts[0]
+                                    name = parts[1].replace(Regex("^[0-9]+[.\\-)\\s]+"), "").trim()
+                                    if (parts.getOrNull(2)?.contains("nữ", ignoreCase = true) == true) gender = "Nữ"
+                                    if (parts.size > 3) phone = parts[3].replace(Regex("[^0-9]"), "")
+                                } else {
+                                    name = parts[0].replace(Regex("^[0-9]+[.\\-)\\s]+"), "").trim()
+                                    if (parts.getOrNull(1)?.contains("nữ", ignoreCase = true) == true) gender = "Nữ"
+                                    if (parts.size > 2) phone = parts[2].replace(Regex("[^0-9]"), "")
+                                }
+                            }
+
+                            if (name.length >= 2 && !name.contains("họ và tên", ignoreCase = true)) {
+                                val stCode = if (code.isNotBlank()) code else "$cName-${String.format("%02d", count++)}"
+                                toInsert.add(StudentEntity(
+                                    id = "std_${System.currentTimeMillis()}_${toInsert.size}",
+                                    classId = cId,
+                                    className = cName,
+                                    studentCode = stCode,
+                                    fullName = name,
+                                    gender = gender,
+                                    parentPhone = phone,
+                                    kudosPoints = 5
+                                ))
+                            }
+                        }
+
+                        if (toInsert.isNotEmpty()) {
+                            db.studentDao().insertStudents(toInsert)
+                            CloudSyncManager.pushToCloud(context)
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(context, "Đã nạp thành công ${toInsert.size} học sinh từ tệp!", Toast.LENGTH_SHORT).show()
+                            }
+                        } else {
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(context, "Không nhận diện được danh sách học sinh từ tệp", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Lỗi đọc tệp: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+    }
+
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -76,6 +151,10 @@ fun StudentManagementScreen(
                     }
                 },
                 actions = {
+
+                    IconButton(onClick = { filePickerLauncher.launch("*/*") }) {
+                        Icon(imageVector = Icons.Default.UploadFile, contentDescription = "Tải file danh sách", tint = Color(0xFF10B981))
+                    }
                     IconButton(onClick = {
                         coroutineScope.launch(Dispatchers.IO) {
                             CloudSyncManager.syncBothWays(context)
@@ -121,6 +200,34 @@ fun StudentManagementScreen(
                             { Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp)) }
                         } else null
                     )
+                }
+            }
+
+
+            // File Upload & Quick Add Action Row
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Button(
+                    onClick = { filePickerLauncher.launch("*/*") },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(imageVector = Icons.Default.UploadFile, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(text = "Tải file danh sách (.csv, .txt)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+
+                OutlinedButton(
+                    onClick = { showAddDialog = true },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(text = "Thêm HS", fontSize = 12.sp)
                 }
             }
 

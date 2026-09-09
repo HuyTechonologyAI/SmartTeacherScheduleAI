@@ -64,7 +64,8 @@ import {
   getStoredAttendance,
   getAttendanceForSession,
   saveAttendanceRecords,
-  exportAttendanceToCsv
+  exportAttendanceToCsv,
+  parseStudentFile
 } from './studentRosterData';
 
 import AIAssistantWidget from '@/components/AIAssistantWidget';
@@ -344,6 +345,10 @@ export default function UnifiedTeacherScheduleApp() {
   const [showAddClassModal, setShowAddClassModal] = useState<boolean>(false);
   const [newClassName, setNewClassName] = useState<string>('');
   const [newClassGrade, setNewClassGrade] = useState<string>('');
+
+  const rosterFileInputRef = useRef<HTMLInputElement>(null);
+  const [isImportingFile, setIsImportingFile] = useState(false);
+
 
   // 1-Tap Attendance Session Modal
   const [attendanceEvent, setAttendanceEvent] = useState<CalendarEventItem | null>(null);
@@ -832,6 +837,34 @@ export default function UnifiedTeacherScheduleApp() {
     }
   };
 
+
+
+  // Handle direct file upload for class roster (.xlsx, .xls, .csv, .docx, .txt)
+  const handleRosterFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsImportingFile(true);
+    try {
+      const targetClass = selectedRosterClass || 'CG24TC34';
+      const result = await parseStudentFile(targetClass, targetClass, file);
+      if (result.success) {
+        // Refresh local student state
+        const allStudents = getStoredStudents();
+        setStudents(allStudents);
+        setAlertBanner(`🎉 ${result.message}`);
+        setTimeout(() => setAlertBanner(null), 5000);
+        // Automatically sync to cloud
+        pushToCloud(events, schedules, syncCode, false);
+      } else {
+        alert(result.message);
+      }
+    } catch (err: any) {
+      alert('Lỗi khi đọc tệp danh sách: ' + (err?.message || String(err)));
+    } finally {
+      setIsImportingFile(false);
+      if (rosterFileInputRef.current) rosterFileInputRef.current.value = '';
+    }
+  };
 
   // Open 1-Tap Attendance Modal for an Event
   const openAttendanceModal = (ev: CalendarEventItem) => {
@@ -2293,6 +2326,335 @@ export default function UnifiedTeacherScheduleApp() {
             </div>
           </div>
         )}
+
+        
+        {/* ================= TAB 2.5: LỚP HỌC & DANH SÁCH HỌC SINH (ROSTER & KUDOS) ================= */}
+        {activeTab === 'roster' && (
+          <div className="space-y-6 animate-fade-in">
+            {/* Hidden File Input for Excel / Word / CSV Upload */}
+            <input
+              type="file"
+              ref={rosterFileInputRef}
+              onChange={handleRosterFileUpload}
+              accept=".xlsx,.xls,.csv,.docx,.txt"
+              className="hidden"
+            />
+
+            {/* Header / Intro Card */}
+            <div className="bg-gradient-to-r from-cyan-900/40 via-blue-900/30 to-slate-800/50 border border-cyan-500/20 rounded-2xl p-5 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center shrink-0">
+                  <Users className="w-6 h-6 text-cyan-300" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                    Quản Lý Lớp Học & Danh Sách Học Sinh (Teacher Cockpit)
+                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold">
+                      Phase 1
+                    </span>
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Quản lý danh sách lớp, nề nếp, điểm danh 1-chạm theo ca dạy và khen thưởng tích cực (Kudos) đồng bộ Đám mây.
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons with Prominent File Upload */}
+              <div className="flex flex-wrap items-center gap-2.5">
+                {/* 1. NÚT TẢI FILE DANH SÁCH CHÍNH (EXCEL, WORD, CSV) */}
+                <button
+                  onClick={() => rosterFileInputRef.current?.click()}
+                  disabled={isImportingFile}
+                  title="Tải lên tệp danh sách học sinh từ máy tính (.xlsx, .xls, .csv, .docx)"
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-lg shadow-emerald-600/30 cursor-pointer disabled:opacity-50"
+                >
+                  <Upload className={`w-4 h-4 ${isImportingFile ? 'animate-bounce' : ''}`} />
+                  <span>{isImportingFile ? 'Đang đọc tệp...' : 'Tải file Excel / Word (.xlsx, .docx)'}</span>
+                </button>
+
+                {/* 2. Thêm học sinh thủ công */}
+                <button
+                  onClick={() => setShowAddStudentModal(true)}
+                  className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-2 transition-all shadow-md shadow-blue-600/20 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Thêm học sinh</span>
+                </button>
+
+                {/* 3. Dán danh sách nhanh */}
+                <button
+                  onClick={() => setShowImportRosterModal(true)}
+                  className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Dán văn bản</span>
+                </button>
+
+                {/* 4. Thêm Lớp mới */}
+                <button
+                  onClick={() => setShowAddClassModal(true)}
+                  className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Thêm Lớp</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Class Selector Tabs */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              {classrooms.map(c => {
+                const isSelected = selectedRosterClass.toLowerCase() === c.name.toLowerCase();
+                const classStudentCount = students.filter(s => s.className.toLowerCase() === c.name.toLowerCase()).length;
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => setSelectedRosterClass(c.name)}
+                    className={`px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer border ${
+                      isSelected
+                        ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-600/30'
+                        : 'bg-slate-800/80 text-slate-300 border-slate-700/80 hover:bg-slate-800 hover:text-white'
+                    }`}
+                  >
+                    <span>{c.name}</span>
+                    <span className={`px-1.5 py-0.5 rounded-full text-[11px] font-bold ${
+                      isSelected ? 'bg-blue-800 text-white' : 'bg-slate-700 text-slate-300'
+                    }`}>
+                      {classStudentCount} HS
+                    </span>
+                    {c.grade && <span className="text-[10px] opacity-70">({c.grade})</span>}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Class Overview Statistics & Top Kudos Podium */}
+            {(() => {
+              const currentClassStudents = students.filter(s => s.className.toLowerCase() === selectedRosterClass.toLowerCase());
+              const totalKudos = currentClassStudents.reduce((sum, s) => sum + (s.kudosPoints || 0), 0);
+              const sortedByKudos = [...currentClassStudents].sort((a, b) => (b.kudosPoints || 0) - (a.kudosPoints || 0));
+              const topThree = sortedByKudos.slice(0, 3);
+
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Stat Card 1: Total Students */}
+                  <div className="bg-slate-800/60 border border-slate-700/70 rounded-2xl p-4 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
+                      <Users className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400 font-medium">Sĩ số lớp {selectedRosterClass}</p>
+                      <p className="text-2xl font-black text-white">{currentClassStudents.length} <span className="text-xs font-normal text-slate-400">học sinh</span></p>
+                    </div>
+                  </div>
+
+                  {/* Stat Card 2: Total Kudos Points */}
+                  <div className="bg-slate-800/60 border border-slate-700/70 rounded-2xl p-4 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+                      <Award className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400 font-medium">Điểm thi đua nề nếp (Kudos)</p>
+                      <p className="text-2xl font-black text-amber-300">+{totalKudos} <span className="text-xs font-normal text-slate-400">điểm tích lũy</span></p>
+                    </div>
+                  </div>
+
+                  {/* Stat Card 3: Top Students Honor Podium */}
+                  <div className="bg-slate-800/60 border border-slate-700/70 rounded-2xl p-4">
+                    <p className="text-xs text-slate-400 font-medium mb-1.5 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Gương mẫu tuần này</span>
+                    </p>
+                    <div className="flex items-center gap-2 overflow-x-auto">
+                      {topThree.map((st, i) => (
+                        <div key={st.id} className="bg-slate-900/60 border border-slate-700 rounded-lg px-2.5 py-1 text-xs flex items-center gap-1.5 shrink-0">
+                          <span>{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
+                          <span className="font-semibold text-slate-200">{st.fullName.split(' ').slice(-2).join(' ')}</span>
+                          <span className="text-amber-400 font-bold">+{st.kudosPoints}đ</span>
+                        </div>
+                      ))}
+                      {topThree.length === 0 && (
+                        <span className="text-xs text-slate-500 italic">Chưa có dữ liệu học sinh</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Students Table Section */}
+            <div className="bg-slate-800/60 border border-slate-700/70 rounded-2xl overflow-hidden shadow-lg">
+              {/* Search & Action Bar */}
+              <div className="p-4 border-b border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="relative w-full sm:w-80">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    value={rosterSearch}
+                    onChange={(e) => setRosterSearch(e.target.value)}
+                    placeholder="Tìm theo tên, mã HS..."
+                    className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl bg-slate-900/80 border border-slate-700 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <button
+                    onClick={() => rosterFileInputRef.current?.click()}
+                    className="px-3 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Nạp file danh sách lớp</span>
+                  </button>
+                  <span className="text-xs text-slate-400 font-mono pl-2">
+                    {students.filter(s => s.className.toLowerCase() === selectedRosterClass.toLowerCase()).length} học sinh
+                  </span>
+                </div>
+              </div>
+
+              {/* Roster Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-900/60 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-700/80">
+                      <th className="py-3 px-4 w-12 text-center">STT</th>
+                      <th className="py-3 px-4 w-28">Mã HS</th>
+                      <th className="py-3 px-4">Họ và Tên</th>
+                      <th className="py-3 px-4 w-20 text-center">Giới tính</th>
+                      <th className="py-3 px-4 w-36 text-center">Nề nếp (Kudos)</th>
+                      <th className="py-3 px-4">Khen thưởng 1-chạm</th>
+                      <th className="py-3 px-4 w-36">SĐT Phụ huynh</th>
+                      <th className="py-3 px-4 w-20 text-center">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800 text-xs">
+                    {students
+                      .filter(s => s.className.toLowerCase() === selectedRosterClass.toLowerCase())
+                      .filter(s => !rosterSearch.trim() || s.fullName.toLowerCase().includes(rosterSearch.toLowerCase()) || s.studentCode.toLowerCase().includes(rosterSearch.toLowerCase()))
+                      .map((st, idx) => (
+                        <tr key={st.id} className="hover:bg-slate-800/40 transition-colors">
+                          <td className="py-3 px-4 text-center font-mono text-slate-400">{idx + 1}</td>
+                          <td className="py-3 px-4 font-mono font-semibold text-blue-400">{st.studentCode}</td>
+                          <td className="py-3 px-4 font-medium text-white">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
+                                st.gender === 'Nữ' ? 'bg-pink-500/20 text-pink-300' : 'bg-blue-500/20 text-blue-300'
+                              }`}>
+                                {st.fullName.trim().charAt(st.fullName.trim().lastIndexOf(' ') + 1) || 'A'}
+                              </div>
+                              <div>
+                                <p className="font-semibold text-slate-100">{st.fullName}</p>
+                                {st.notes && <p className="text-[10px] text-slate-400 italic">{st.notes}</p>}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${
+                              st.gender === 'Nữ' ? 'bg-pink-500/10 text-pink-300 border border-pink-500/20' : 'bg-blue-500/10 text-blue-300 border border-blue-500/20'
+                            }`}>
+                              {st.gender}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 font-bold font-mono">
+                              ⭐ +{st.kudosPoints || 0}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() => {
+                                  const updated = addKudosToStudent(st.id, 1, 'Phát biểu hăng hái');
+                                  setStudents(updated);
+                                }}
+                                title="Thưởng +1 điểm: Phát biểu xây dựng bài"
+                                className="px-2 py-1 rounded-lg bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 border border-blue-500/30 text-[11px] font-semibold transition-all cursor-pointer"
+                              >
+                                +1 Phát biểu
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const updated = addKudosToStudent(st.id, 2, 'Làm bài tập tốt');
+                                  setStudents(updated);
+                                }}
+                                title="Thưởng +2 điểm: Bài tập / Thao tác kỹ thuật tốt"
+                                className="px-2 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/30 text-[11px] font-semibold transition-all cursor-pointer"
+                              >
+                                +2 Bài tốt
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const updated = addKudosToStudent(st.id, 2, 'Thực hiện chuẩn 5S');
+                                  setStudents(updated);
+                                }}
+                                title="Thưởng +2 điểm: Vệ sinh xưởng & An toàn 5S"
+                                className="px-2 py-1 rounded-lg bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/30 text-[11px] font-semibold transition-all cursor-pointer"
+                              >
+                                +2 5S Xưởng
+                              </button>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-slate-300 font-mono">
+                            {st.parentPhone ? (
+                              <a
+                                href={`tel:${st.parentPhone}`}
+                                className="text-cyan-400 hover:underline flex items-center gap-1"
+                              >
+                                📞 {st.parentPhone}
+                              </a>
+                            ) : (
+                              <span className="text-slate-500 italic">--</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <button
+                              onClick={() => {
+                                if (confirm(`Xóa học sinh ${st.fullName} khỏi danh sách?`)) {
+                                  const updated = deleteStudent(st.id);
+                                  setStudents(updated);
+                                }
+                              }}
+                              className="p-1 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    {students.filter(s => s.className.toLowerCase() === selectedRosterClass.toLowerCase()).length === 0 && (
+                      <tr>
+                        <td colSpan={8} className="py-12 text-center text-slate-400">
+                          <div className="max-w-md mx-auto space-y-3">
+                            <FileSpreadsheet className="w-12 h-12 text-emerald-400/60 mx-auto" />
+                            <p className="font-semibold text-slate-200 text-sm">Lớp {selectedRosterClass} chưa có danh sách học sinh</p>
+                            <p className="text-xs text-slate-400">
+                              Thầy/Cô có thể bấm tải file Excel (.xlsx, .xls) hoặc file Word (.docx) của trường để hệ thống tự động nhận diện danh sách:
+                            </p>
+                            <div className="flex items-center justify-center gap-2 pt-2">
+                              <button
+                                onClick={() => rosterFileInputRef.current?.click()}
+                                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/30 cursor-pointer"
+                              >
+                                <Upload className="w-4 h-4" />
+                                <span>Tải file Excel / Word (.xlsx, .docx)</span>
+                              </button>
+                              <button
+                                onClick={() => setShowImportRosterModal(true)}
+                                className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 text-xs font-semibold cursor-pointer"
+                              >
+                                Dán văn bản
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
 
         {/* ================= TAB 3: SỔ BÁO GIẢNG (PEDAGOGICAL REPORT) ================= */}
         {activeTab === 'report' && (
@@ -5607,6 +5969,26 @@ export default function UnifiedTeacherScheduleApp() {
                 <X className="w-4 h-4" />
               </button>
             </div>
+            
+            {/* File Dropzone / Upload Box */}
+            <div
+              onClick={() => rosterFileInputRef.current?.click()}
+              className="border-2 border-dashed border-emerald-500/40 hover:border-emerald-400 bg-emerald-950/20 hover:bg-emerald-950/30 rounded-2xl p-4 text-center cursor-pointer transition-all mb-3"
+            >
+              <FileSpreadsheet className="w-8 h-8 text-emerald-400 mx-auto mb-1.5" />
+              <p className="text-xs font-bold text-emerald-300">
+                Bấm vào đây để Chọn file Excel (.xlsx, .xls) hoặc Word (.docx)
+              </p>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Hệ thống tự động trích xuất Họ tên, Mã số HS, Giới tính và SĐT Phụ huynh
+              </p>
+            </div>
+            <div className="flex items-center gap-2 my-2">
+              <div className="flex-1 h-[1px] bg-slate-800"></div>
+              <span className="text-[10px] text-slate-500 font-semibold uppercase">Hoặc dán trực tiếp danh sách</span>
+              <div className="flex-1 h-[1px] bg-slate-800"></div>
+            </div>
+
             <p className="text-xs text-slate-400 mb-2">
               Dán danh sách học sinh từ Excel, Word hoặc văn bản. Mỗi học sinh một dòng. Có thể dán cột Họ tên hoặc các cột: Mã HS [tab] Họ tên [tab] Giới tính [tab] SĐT.
             </p>

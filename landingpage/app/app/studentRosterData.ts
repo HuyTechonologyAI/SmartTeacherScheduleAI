@@ -1,3 +1,5 @@
+import * as XLSX from 'xlsx';
+import JSZip from 'jszip';
 /**
  * Quản lý Danh sách Lớp, Học sinh, Điểm danh 1-chạm & Điểm nề nếp (Kudos)
  * Smart Teacher Schedule - Phase 1: Teacher Cockpit Ecosystem
@@ -334,4 +336,256 @@ export function exportAttendanceToCsv(
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
+}
+
+
+export interface ParsedStudentItem {
+  studentCode: string;
+  fullName: string;
+  gender: 'Nam' | 'Nữ';
+  parentPhone?: string;
+  notes?: string;
+}
+
+export async function parseStudentFile(
+  classId: string,
+  className: string,
+  file: File
+): Promise<{ success: boolean; count: number; students: Student[]; message: string }> {
+  try {
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    const parsedItems: ParsedStudentItem[] = [];
+
+    if (ext === 'xlsx' || ext === 'xls' || ext === 'csv') {
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer, { type: 'array' });
+      const firstSheet = wb.SheetNames[0];
+      if (!firstSheet) {
+        return { success: false, count: 0, students: [], message: 'Tệp Excel không có trang tính dữ liệu.' };
+      }
+      const sheet = wb.Sheets[firstSheet];
+      const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+
+      if (!rows || rows.length === 0) {
+        return { success: false, count: 0, students: [], message: 'Tệp Excel trống không có dữ liệu.' };
+      }
+
+      // 1. Scan for header row
+      let headerRowIdx = -1;
+      let nameCol = -1;
+      let lastNameCol = -1;
+      let firstNameCol = -1;
+      let codeCol = -1;
+      let genderCol = -1;
+      let phoneCol = -1;
+      let noteCol = -1;
+
+      for (let r = 0; r < Math.min(rows.length, 15); r++) {
+        const row = rows[r].map(c => String(c).toLowerCase().trim());
+        const hasName = row.some(c => c.includes('họ và tên') || c.includes('họ tên') || c === 'tên' || c === 'họ' || c.includes('học sinh'));
+        if (hasName) {
+          headerRowIdx = r;
+          row.forEach((c, idx) => {
+            if (c.includes('họ và tên') || c.includes('họ tên') || c.includes('họ và chữ lót') || c === 'fullname') {
+              nameCol = idx;
+            } else if (c === 'họ' || c.includes('họ lót') || c.includes('họ đệm')) {
+              lastNameCol = idx;
+            } else if (c === 'tên' || c.includes('tên hs')) {
+              firstNameCol = idx;
+            } else if (c.includes('mã') || c.includes('mssv') || c.includes('code')) {
+              codeCol = idx;
+            } else if (c.includes('giới') || c.includes('phái') || c.includes('nam/nữ') || c === 'gender') {
+              genderCol = idx;
+            } else if (c.includes('thoại') || c.includes('sđt') || c.includes('sdt') || c.includes('phụ huynh') || c.includes('phone')) {
+              phoneCol = idx;
+            } else if (c.includes('ghi chú') || c.includes('note')) {
+              noteCol = idx;
+            }
+          });
+          break;
+        }
+      }
+
+      const startRow = headerRowIdx >= 0 ? headerRowIdx + 1 : 0;
+
+      for (let r = startRow; r < rows.length; r++) {
+        const row = rows[r];
+        if (!row || row.length === 0) continue;
+
+        let fullName = '';
+        if (nameCol >= 0 && row[nameCol]) {
+          fullName = String(row[nameCol]).trim();
+        } else if (lastNameCol >= 0 && firstNameCol >= 0) {
+          const lName = String(row[lastNameCol] || '').trim();
+          const fName = String(row[firstNameCol] || '').trim();
+          fullName = `${lName} ${fName}`.trim();
+        } else {
+          // Fallback: pick longest text column that looks like a person's name
+          for (let c = 0; c < row.length; c++) {
+            const val = String(row[c] || '').trim();
+            if (val.length >= 3 && !/^[0-9]+$/.test(val) && !val.includes('/') && !val.includes('@') && val.split(' ').length >= 2) {
+              fullName = val;
+              break;
+            }
+          }
+        }
+
+        // Clean name (remove leading numbers like "1. Nguyen Van A")
+        fullName = fullName.replace(/^[0-9]+[\.\-\)\s]+/, '').trim();
+        if (!fullName || fullName.length < 2) continue;
+        if (fullName.toLowerCase().includes('tổng cộng') || fullName.toLowerCase().includes('chữ ký') || fullName.toLowerCase().includes('ngày')) continue;
+
+        let code = codeCol >= 0 && row[codeCol] ? String(row[codeCol]).trim() : '';
+        let gender: 'Nam' | 'Nữ' = 'Nam';
+        if (genderCol >= 0 && row[genderCol]) {
+          const gStr = String(row[genderCol]).toLowerCase().trim();
+          if (gStr.includes('nữ') || gStr === 'f' || gStr === 'female') gender = 'Nữ';
+        }
+
+        let phone = phoneCol >= 0 && row[phoneCol] ? String(row[phoneCol]).replace(/[^0-9]/g, '') : '';
+        let note = noteCol >= 0 && row[noteCol] ? String(row[noteCol]).trim() : '';
+
+        parsedItems.push({
+          studentCode: code,
+          fullName,
+          gender,
+          parentPhone: phone,
+          notes: note
+        });
+      }
+    } else if (ext === 'docx') {
+      const zip = await JSZip.loadAsync(file);
+      const docXml = await zip.file('word/document.xml')?.async('text');
+      if (!docXml) {
+        return { success: false, count: 0, students: [], message: 'Không thể đọc nội dung file Word (.docx).' };
+      }
+
+      // Extract tables or text lines
+      const rowMatches = docXml.match(/<w:tr[\s>][\s\S]*?<\/w:tr>/g) || [];
+      if (rowMatches.length > 0) {
+        for (const rXml of rowMatches) {
+          const cellTexts: string[] = [];
+          const cellMatches = rXml.match(/<w:tc[\s>][\s\S]*?<\/w:tc>/g) || [];
+          for (const cXml of cellMatches) {
+            const clean = cXml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+            cellTexts.push(clean);
+          }
+          if (cellTexts.length >= 2) {
+            const candidateName = cellTexts.find(t => t.length >= 3 && t.split(' ').length >= 2 && !/^[0-9]+$/.test(t));
+            if (candidateName && !candidateName.toLowerCase().includes('họ và tên') && !candidateName.toLowerCase().includes('họ tên')) {
+              const code = cellTexts.find(t => /^[A-Za-z0-9_-]+$/.test(t) && t !== candidateName) || '';
+              const phone = cellTexts.find(t => /^[0-9]{8,11}$/.test(t.replace(/[^0-9]/g, ''))) || '';
+              const isFemale = cellTexts.some(t => t.toLowerCase().includes('nữ') || t.toLowerCase() === 'f');
+              parsedItems.push({
+                studentCode: code,
+                fullName: candidateName.replace(/^[0-9]+[\.\-\)\s]+/, '').trim(),
+                gender: isFemale ? 'Nữ' : 'Nam',
+                parentPhone: phone
+              });
+            }
+          }
+        }
+      } else {
+        // Parse raw paragraphs
+        const pMatches = docXml.match(/<w:p[\s>][\s\S]*?<\/w:p>/g) || [];
+        for (const pXml of pMatches) {
+          const clean = pXml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+          if (clean.length >= 4 && clean.split(' ').length >= 2) {
+            const fullName = clean.replace(/^[0-9]+[\.\-\)\s]+/, '').trim();
+            if (!fullName.toLowerCase().includes('danh sách') && !fullName.toLowerCase().includes('họ tên')) {
+              parsedItems.push({
+                studentCode: '',
+                fullName,
+                gender: 'Nam'
+              });
+            }
+          }
+        }
+      }
+    } else {
+      // Raw text or CSV
+      const rawText = await file.text();
+      const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      for (const line of lines) {
+        const parts = line.split(/[\t,;]/).map(p => p.trim()).filter(Boolean);
+        if (parts.length === 0) continue;
+        let fullName = parts[0].replace(/^[0-9]+[\.\-\)\s]+/, '').trim();
+        let code = '';
+        let gender: 'Nam' | 'Nữ' = 'Nam';
+        let phone = '';
+
+        if (parts.length > 1) {
+          if (/^[A-Za-z0-9_-]+$/.test(parts[0])) {
+            code = parts[0];
+            fullName = parts[1].replace(/^[0-9]+[\.\-\)\s]+/, '').trim();
+            if (parts[2]?.toLowerCase().includes('nữ') || parts[2]?.toLowerCase() === 'f') gender = 'Nữ';
+            if (parts[3]) phone = parts[3].replace(/[^0-9]/g, '');
+          } else {
+            fullName = parts[0].replace(/^[0-9]+[\.\-\)\s]+/, '').trim();
+            if (parts[1]?.toLowerCase().includes('nữ') || parts[1]?.toLowerCase() === 'f') gender = 'Nữ';
+            if (parts[2]) phone = parts[2].replace(/[^0-9]/g, '');
+          }
+        }
+
+        if (fullName && fullName.length >= 2 && !fullName.toLowerCase().includes('họ và tên')) {
+          parsedItems.push({
+            studentCode: code,
+            fullName,
+            gender,
+            parentPhone: phone
+          });
+        }
+      }
+    }
+
+    if (parsedItems.length === 0) {
+      return {
+        success: false,
+        count: 0,
+        students: [],
+        message: 'Không tìm thấy thông tin học sinh hợp lệ trong tệp. Thầy/Cô vui lòng kiểm tra lại định dạng tệp.'
+      };
+    }
+
+    // Convert to Student entities and store
+    const existing = getStoredStudents();
+    const existingInClass = existing.filter(s => s.className.toLowerCase() === className.toLowerCase());
+    let autoNum = existingInClass.length + 1;
+
+    const newStudents: Student[] = parsedItems.map(item => {
+      const code = item.studentCode || `${className}-${String(autoNum++).padStart(2, '0')}`;
+      return {
+        id: `std_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        classId,
+        className,
+        studentCode: code,
+        fullName: item.fullName,
+        gender: item.gender,
+        parentPhone: item.parentPhone || '',
+        kudosPoints: 5,
+        notes: item.notes || '',
+        updatedAt: Date.now()
+      };
+    });
+
+    const combined = [...existing, ...newStudents];
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('smart_teacher_students_v1', JSON.stringify(combined));
+    }
+
+    return {
+      success: true,
+      count: newStudents.length,
+      students: newStudents,
+      message: `Đã trích xuất và thêm thành công ${newStudents.length} học sinh vào lớp ${className}!`
+    };
+  } catch (err: any) {
+    console.error('Lỗi khi nạp tệp danh sách học sinh:', err);
+    return {
+      success: false,
+      count: 0,
+      students: [],
+      message: 'Lỗi khi đọc tệp: ' + (err?.message || String(err))
+    };
+  }
 }

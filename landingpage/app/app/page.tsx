@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
+import TodayCommandCenter from '@/components/dashboard/TodayCommandCenter';
+import SyncSecurityModal from '@/components/dashboard/SyncSecurityModal';
 import {
   LessonPlan5512Data,
   LessonPlan2634Data,
@@ -368,8 +370,10 @@ export default function UnifiedTeacherScheduleApp() {
   const [calendarViewMode, setCalendarViewMode] = useState<'day' | 'week' | 'all'>('day');
 
   // Cloud Sync States
-  const [syncCode, setSyncCode] = useState<string>('0961364600');
-  const [syncInput, setSyncInput] = useState<string>('0961364600');
+  const [syncCode, setSyncCode] = useState<string>('');
+  const [syncInput, setSyncInput] = useState<string>('');
+  const [syncPin, setSyncPin] = useState<string>('');
+  const [showSyncModal, setShowSyncModal] = useState<boolean>(false);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'synced' | 'syncing' | 'error'>('synced');
   const [lastSyncTime, setLastSyncTime] = useState<string>('Vừa xong');
@@ -1216,9 +1220,16 @@ export default function UnifiedTeacherScheduleApp() {
     setIsClient(true);
     setSelectedDate(todayStr);
 
-    const savedCode = localStorage.getItem('smart_teacher_sync_code') || '0961364600';
+    let savedCode = localStorage.getItem('smart_teacher_sync_code');
+    if (!savedCode || savedCode === '0961364600') {
+      savedCode = 'ST-' + Math.floor(100000 + Math.random() * 900000);
+      localStorage.setItem('smart_teacher_sync_code', savedCode);
+    }
     setSyncCode(savedCode);
     setSyncInput(savedCode);
+
+    const savedPin = localStorage.getItem('smart_teacher_sync_pin') || '';
+    setSyncPin(savedPin);
 
     const savedTasks = localStorage.getItem('smart_teacher_tasks');
     if (savedTasks) {
@@ -1712,7 +1723,7 @@ export default function UnifiedTeacherScheduleApp() {
                 </span>
               </div>
               <span className="text-slate-500">|</span>
-              <span className="text-slate-400 font-mono">Mã: {syncCode}</span>
+              <button onClick={() => setShowSyncModal(true)} className="text-indigo-400 hover:text-indigo-300 font-mono underline cursor-pointer" title="Cài đặt mã ghép nối & mã PIN">Mã: {syncCode}</button>
               <span className="text-slate-500">|</span>
               <span className="text-slate-400">Cập nhật: {lastSyncTime}</span>
             </div>
@@ -1843,6 +1854,35 @@ export default function UnifiedTeacherScheduleApp() {
         {/* ================= TAB 1: HÔM NAY (TODAY SCREEN) ================= */}
         {activeTab === 'today' && (
           <div className="space-y-6 animate-fade-in">
+            {/* Teacher Command Center (Trung tâm điều hành hôm nay) */}
+            <TodayCommandCenter
+              todayEvents={todayEvents.map(e => ({
+                id: e.id,
+                title: e.title || e.subject,
+                subject: e.subject,
+                className: e.className,
+                room: e.room,
+                startTime: e.startTime,
+                endTime: e.endTime,
+                date: e.date,
+                sessionType: e.sessionType,
+                notes: e.notes
+              }))}
+              allTodayCount={todayEvents.length}
+              completedCount={todayEvents.filter(e => {
+                const nowM = (new Date()).getHours() * 60 + (new Date()).getMinutes();
+                const [eh, em] = (e.endTime || '17:00').split(':').map(Number);
+                return nowM > (eh * 60 + em);
+              }).length}
+              onQuickAttendance={(cl) => {
+                const targetEv = todayEvents.find(e => e.id === cl.id) || todayEvents[0];
+                if (targetEv) openAttendanceModal(targetEv);
+              }}
+              onOpenPedagogyAI={(subj) => {
+                setActiveTab('ai');
+              }}
+              onSwitchToCalendar={() => setActiveTab('calendar')}
+            />
             {/* Pedagogical Motivation Card */}
             <div className="bg-gradient-to-r from-blue-900/40 via-indigo-900/30 to-slate-800/50 border border-blue-500/20 rounded-2xl p-5 shadow-lg relative overflow-hidden">
               <div className="flex items-start gap-4">
@@ -6098,6 +6138,27 @@ export default function UnifiedTeacherScheduleApp() {
         </div>
       )}
 
+    
+      {/* Cloud Sync Security & Pairing Modal */}
+      <SyncSecurityModal
+        isOpen={showSyncModal}
+        onClose={() => setShowSyncModal(false)}
+        currentSyncCode={syncCode}
+        currentPin={syncPin}
+        isSyncing={isSyncing}
+        lastSyncTime={lastSyncTime ? Date.now() : undefined}
+        onSaveCredentials={async (newCode, newPin) => {
+          setSyncCode(newCode);
+          setSyncInput(newCode);
+          setSyncPin(newPin);
+          localStorage.setItem('smart_teacher_sync_code', newCode);
+          localStorage.setItem('smart_teacher_sync_pin', newPin);
+          return true;
+        }}
+        onPerformSync={() => {
+          syncBothWays(syncCode, true);
+        }}
+      />
     </div>
   );
 }

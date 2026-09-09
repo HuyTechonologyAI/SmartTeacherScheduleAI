@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
+import { supabase } from '@/lib/supabase';
 
 const GIST_ID = process.env.SYNC_GIST_ID || '41b9d5b2c31bd3c543622a04b92188d3';
 const GITHUB_TOKEN = process.env.SYNC_GITHUB_TOKEN || process.env.GITHUB_TOKEN || ('gho_eCq3dHNiSNt8n' + 'F8OkdNkJg2ChXfHFs1HgBeG');
@@ -92,6 +94,8 @@ export interface AttendanceRecordPayload {
 }
 
 export interface SyncPayload {
+  pin?: string;
+  pinHash?: string;
   syncCode: string;
   deviceName?: string;
   platform?: string;
@@ -160,6 +164,88 @@ function generateEventsFromSchedules(schedules: SchedulePayload[]): CalendarEven
   }
 
   return events;
+}
+
+
+function hashPin(pin: string): string {
+  return crypto.createHash('sha256').update(pin.trim()).digest('hex');
+}
+
+async function fetchSyncStore(syncCode: string): Promise<SyncPayload | null> {
+  const cleanCode = syncCode.trim().replace(/[^a-zA-Z0-9_-]/g, '');
+  if (!cleanCode) return null;
+
+  const cached = memoryCache.get(cleanCode);
+  if (cached && Date.now() - cached.timestamp < 3000) {
+    return cached.data;
+  }
+
+  // 1. Check Supabase first
+  try {
+    const { data, error } = await supabase
+      .from('teacher_sync_stores')
+      .select('*')
+      .eq('sync_code', cleanCode)
+      .maybeSingle();
+
+    if (data && data.payload) {
+      const payload: SyncPayload = {
+        ...data.payload,
+        syncCode: cleanCode,
+        pinHash: data.pin_hash || data.payload.pinHash || undefined
+      };
+      memoryCache.set(cleanCode, { data: payload, timestamp: Date.now() });
+      return payload;
+    }
+  } catch (err) {
+    console.warn('Supabase fetch fallback to gist:', err);
+  }
+
+  // 2. Fallback to Gist for backward compatibility
+  const fromGist = await getFromGist(cleanCode);
+  if (fromGist) {
+    memoryCache.set(cleanCode, { data: fromGist, timestamp: Date.now() });
+    return fromGist;
+  }
+
+  return null;
+}
+
+async function saveSyncStore(payload: SyncPayload, pinToSet?: string): Promise<boolean> {
+  const cleanCode = payload.syncCode.trim().replace(/[^a-zA-Z0-9_-]/g, '');
+  memoryCache.set(cleanCode, { data: payload, timestamp: Date.now() });
+
+  let computedPinHash = payload.pinHash;
+  if (pinToSet && pinToSet.trim()) {
+    computedPinHash = hashPin(pinToSet);
+  }
+
+  // 1. Try Supabase
+  let savedSupabase = false;
+  try {
+    const { error } = await supabase
+      .from('teacher_sync_stores')
+      .upsert({
+        sync_code: cleanCode,
+        pin_hash: computedPinHash || null,
+        payload: { ...payload, pinHash: computedPinHash },
+        version: '1.5.0',
+        device_name: payload.deviceName || 'Smart Device',
+        platform: payload.platform || 'web',
+        updated_at: payload.updatedAt
+      });
+    if (!error) {
+      savedSupabase = true;
+    } else {
+      console.warn('Supabase upsert notice:', error.message);
+    }
+  } catch (err) {
+    console.warn('Supabase save error:', err);
+  }
+
+  // 2. Resilient backup to Gist
+  const savedGist = await saveToGist({ ...payload, pinHash: computedPinHash });
+  return savedSupabase || savedGist;
 }
 
 async function getFromGist(syncCode: string): Promise<SyncPayload | null> {
@@ -258,28 +344,40 @@ async function saveToGist(payload: SyncPayload): Promise<boolean> {
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const code = searchParams.get('code');
+  const code = searchParams.get('code') || searchParams.get('syncCode');
+  const incomingPin = searchParams.get('pin');
 
   if (!code) {
     return NextResponse.json(
-      { error: 'Thiếu mã đồng bộ (code parameter is required)' },
+      { error: 'Thiếu mã đồng bộ (Vui lòng cung cấp ?code=ST-XXXXXX)' },
       { status: 400 }
     );
   }
 
-  const data = await getFromGist(code);
+  const cleanCode = code.trim().replace(/[^a-zA-Z0-9_-]/g, '');
+  const data = await fetchSyncStore(cleanCode);
+
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': req.headers.get('origin') || '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
+
   if (!data) {
     return NextResponse.json(
-      { message: 'Chưa có dữ liệu đồng bộ cho mã này', syncCode: code, schedules: [], events: [] },
-      {
-        status: 200,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        }
-      }
+      { message: 'Chưa có dữ liệu đồng bộ cho mã này', syncCode: cleanCode, schedules: [], events: [] },
+      { status: 200, headers: corsHeaders }
     );
+  }
+
+  // Verify PIN if protected
+  if (data.pinHash) {
+    if (!incomingPin || hashPin(incomingPin) !== data.pinHash) {
+      return NextResponse.json(
+        { error: 'Mã PIN bảo mật không chính xác hoặc chưa được cung cấp.', pinRequired: true },
+        { status: 401, headers: corsHeaders }
+      );
+    }
   }
 
   return NextResponse.json({
@@ -288,6 +386,7 @@ export async function GET(req: NextRequest) {
     updatedAt: data.updatedAt,
     platform: data.platform,
     deviceName: data.deviceName,
+    hasPin: !!data.pinHash,
     schedules: data.schedules,
     events: data.events,
     knowledgeDocs: data.knowledgeDocs || [],
@@ -302,11 +401,7 @@ export async function GET(req: NextRequest) {
     totalStudents: (data.students || []).length,
     totalAttendance: (data.attendanceRecords || []).length
   }, {
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    }
+    headers: corsHeaders
   });
 }
 
@@ -617,7 +712,18 @@ export async function POST(req: NextRequest) {
     }
 
     // 1. Tải bản ghi đám mây hiện tại (nếu có) để hợp nhất 2 chiều thông minh
-    const existing = await getFromGist(cleanCode);
+    const existing = await fetchSyncStore(cleanCode);
+
+    // Verify PIN if existing store is protected
+    if (existing && existing.pinHash) {
+      const incomingPin = body.pin;
+      if (!incomingPin || hashPin(incomingPin) !== existing.pinHash) {
+        return NextResponse.json(
+          { error: 'Mã PIN bảo mật không chính xác. Không thể ghi đè dữ liệu.', pinRequired: true },
+          { status: 401 }
+        );
+      }
+    }
 
     // Hợp nhất danh sách các key đã xóa
     const combinedDeletedKeys = Array.from(
@@ -670,7 +776,7 @@ export async function POST(req: NextRequest) {
       attendanceRecords: finalAttendance
     };
 
-    const saved = await saveToGist(payload);
+    const saved = await saveSyncStore(payload, body.pin);
     if (!saved) {
       return NextResponse.json(
         { error: 'Không thể lưu dữ liệu đồng bộ đám mây' },

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import IosPwaGuideModal from "./dashboard/IosPwaGuideModal";
 import {
   Download,
   QrCode,
@@ -21,6 +22,7 @@ import {
 
 export default function HeroSection() {
   const [showQr, setShowQr] = useState(false);
+  const [showIosGuide, setShowIosGuide] = useState(false);
 
   const apkUrl =
     "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.5.0/SmartTeacherSchedule_v1.5.0_Release.apk";
@@ -122,18 +124,18 @@ export default function HeroSection() {
                 </Link>
 
                 {/* Primary iOS App Link */}
-                <Link
-                  href="/app"
-                  className="flex items-center justify-center space-x-2.5 px-4 py-3.5 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-900 hover:from-slate-800 hover:to-purple-800 text-white font-bold border-2 border-indigo-500/40 shadow-xl shadow-purple-950/40 hover:scale-[1.02] active:scale-[0.98] transition-all group"
+                <button
+                  onClick={() => setShowIosGuide(true)}
+                  className="flex items-center justify-center space-x-2.5 px-4 py-3.5 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-900 hover:from-slate-800 hover:to-purple-800 text-white font-bold border-2 border-indigo-500/40 shadow-xl shadow-purple-950/40 hover:scale-[1.02] active:scale-[0.98] transition-all group text-left cursor-pointer"
                 >
                   <Apple className="w-5 h-5 text-indigo-300 group-hover:scale-110 transition-transform shrink-0" />
-                  <div className="text-left">
+                  <div>
                     <div className="text-[10px] font-semibold uppercase tracking-wider text-indigo-300">
                       iPhone / iPad
                     </div>
-                    <div className="text-xs font-bold leading-tight">MỞ TRÊN iOS</div>
+                    <div className="text-xs font-bold leading-tight">CÀI PWA TRÊN iOS</div>
                   </div>
-                </Link>
+                </button>
               </div>
 
               {/* Secondary Actions: Desktop Zip, AAB & QR */}
@@ -333,6 +335,12 @@ export default function HeroSection() {
           </div>
         </div>
       </div>
+
+      {/* iOS PWA Install Guide Modal */}
+      <IosPwaGuideModal
+        isOpen={showIosGuide}
+        onClose={() => setShowIosGuide(false)}
+      />
     </section>
   );
 }

@@ -52,7 +52,7 @@ export default function PricingSection({ onSelectPlan }: PricingSectionProps) {
                     : "text-slate-400 hover:text-white"
                 }`}
               >
-                Thanh Toán Hàng Tháng
+                Xem Giá Theo Tháng
               </button>
               <button
                 onClick={() => setBillingCycle("yearly")}
@@ -62,9 +62,9 @@ export default function PricingSection({ onSelectPlan }: PricingSectionProps) {
                     : "text-slate-400 hover:text-white"
                 }`}
               >
-                <span>Thanh Toán Hàng Năm</span>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-extrabold">
-                  Tiết Kiệm 32%
+                <span>Xem Giá Theo Năm</span>
+                <span className="px-1.5 py-0.5 rounded-full bg-emerald-500 text-[10px] text-white font-extrabold">
+                  -20%
                 </span>
               </button>
             </div>
@@ -188,7 +188,7 @@ export default function PricingSection({ onSelectPlan }: PricingSectionProps) {
               onClick={() => handleChoosePlan("Gói Giáo Viên Pro (VIP Cá Nhân)")}
               className="mt-8 w-full py-4 px-4 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-extrabold text-sm text-center shadow-lg shadow-indigo-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
             >
-              <span>Đăng Ký Gói Pro Ngay</span>
+              <span>Đăng Ký Tư Vấn Bản Pro (Kích Hoạt Nhanh)</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

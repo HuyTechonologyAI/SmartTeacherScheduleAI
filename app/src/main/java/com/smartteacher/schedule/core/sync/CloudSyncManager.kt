@@ -47,14 +47,17 @@ object CloudSyncManager {
     private val gson = Gson()
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
+    private const val KEY_SYNC_PIN = "sync_pin"
+
     /**
-     * Lấy hoặc tạo mã đồng bộ đám mây duy nhất cho giáo viên (VD: 0961364600 hoặc ST-883921)
+     * Lấy hoặc tạo mã đồng bộ đám mây duy nhất cho giáo viên (VD: ST-883921 hoặc mã cá nhân)
      */
     fun getSyncCode(context: Context): String {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         var code = prefs.getString(KEY_SYNC_CODE, null)
-        if (code.isNullOrBlank()) {
-            code = "0961364600"
+        if (code.isNullOrBlank() || code == "0961364600") {
+            val randomNum = (100000..999999).random()
+            code = "ST-$randomNum"
             prefs.edit().putString(KEY_SYNC_CODE, code).apply()
         }
         return code
@@ -71,6 +74,18 @@ object CloudSyncManager {
                 .putString(KEY_SYNC_CODE, clean)
                 .apply()
         }
+    }
+
+    fun getSyncPin(context: Context): String? {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getString(KEY_SYNC_PIN, null)
+    }
+
+    fun setSyncPin(context: Context, pin: String?) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY_SYNC_PIN, pin?.trim())
+            .apply()
     }
 
     fun getLastSyncTime(context: Context): Long {
@@ -234,8 +249,12 @@ object CloudSyncManager {
                 add("file_giao_trinh_cn10.docx")
             }
 
+            val pin = getSyncPin(context)
             val rootObj = JsonObject().apply {
                 addProperty("syncCode", syncCode)
+                if (!pin.isNullOrBlank()) {
+                    addProperty("pin", pin)
+                }
                 addProperty("platform", "android")
                 addProperty("deviceName", "${Build.MANUFACTURER} ${Build.MODEL}")
                 addProperty("updatedAt", System.currentTimeMillis())
@@ -280,7 +299,12 @@ object CloudSyncManager {
     suspend fun pullFromCloud(context: Context): Result<Int> = withContext(Dispatchers.IO) {
         try {
             val syncCode = getSyncCode(context)
-            val url = "$BASE_SYNC_URL?code=$syncCode"
+            val pin = getSyncPin(context)
+            val url = if (!pin.isNullOrBlank()) {
+                "$BASE_SYNC_URL?code=$syncCode&pin=$pin"
+            } else {
+                "$BASE_SYNC_URL?code=$syncCode"
+            }
 
             val request = Request.Builder()
                 .url(url)

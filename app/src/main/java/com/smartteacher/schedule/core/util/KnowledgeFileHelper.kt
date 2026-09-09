@@ -248,4 +248,140 @@ object KnowledgeFileHelper {
             else -> "*/*"
         }
     }
+
+    /**
+     * Xuất nội dung tài liệu thành tệp Microsoft Word (.doc) theo chuẩn văn bản sư phạm
+     */
+    fun exportDocumentToDoc(
+        context: Context,
+        title: String,
+        code: String,
+        category: String,
+        subject: String,
+        targetLevel: String,
+        content: String
+    ): File? {
+        return try {
+            val exportDir = File(context.cacheDir, "exported_docs")
+            if (!exportDir.exists()) exportDir.mkdirs()
+
+            val sanitizedTitle = title.replace("[^a-zA-Z0-9_ -]".toRegex(), "").trim().replace("\\s+".toRegex(), "_")
+            val fileName = "${code}_${sanitizedTitle}.doc"
+            val targetFile = File(exportDir, fileName)
+
+            val categoryLabel = when (category) {
+                "GIAO_TRINH" -> "GIÁO TRÌNH CHUYÊN MÔN / TÀI LIỆU GIẢNG DẠY"
+                "DE_CUONG" -> "ĐỀ CƯƠNG CHI TIẾT HỌC PHẦN / MÔN HỌC"
+                "PHAP_QUY" -> "VĂN BẢN QUY PHẠM PHÁP LUẬT / CÔNG VĂN CHUYÊN MÔN"
+                "QUY_CHUAN_XUONG" -> "TIÊU CHUẨN AN TOÀN LAO ĐỘNG & QUY TẮC 5S"
+                else -> "TƯ LIỆU SƯ PHẠM ĐỐI CHIẾU AI"
+            }
+
+            val htmlContent = buildString {
+                append("<!DOCTYPE html><html xmlns:w=\"urn:schemas-microsoft-com:office:word\"><head><meta charset=\"utf-8\">")
+                append("<title>").append(escapeHtml(title)).append("</title>")
+                append("<style>")
+                append("@page { size: A4 portrait; margin: 2cm 2cm 2cm 2cm; }")
+                append("body { font-family: 'Times New Roman', Times, serif; font-size: 13pt; line-height: 1.4; color: #000; }")
+                append(".header-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }")
+                append(".header-table td { vertical-align: top; font-size: 12pt; border: none; padding: 0; }")
+                append(".doc-title { font-size: 15pt; font-weight: bold; text-align: center; text-transform: uppercase; margin: 20px 0 10px 0; }")
+                append(".doc-meta { width: 100%; border-collapse: collapse; margin: 15px 0 25px 0; }")
+                append(".doc-meta td { border: 1px solid #777; padding: 6px 10px; font-size: 11pt; }")
+                append(".content { text-align: justify; white-space: pre-wrap; word-break: break-word; font-size: 13pt; line-height: 1.5; }")
+                append(".footer-sign { width: 100%; margin-top: 40px; border-collapse: collapse; }")
+                append(".footer-sign td { width: 50%; text-align: center; font-size: 12pt; border: none; vertical-align: top; }")
+                append("</style></head><body>")
+
+                append("<table class=\"header-table\"><tr>")
+                append("<td style=\"width: 45%; text-align: center;\">")
+                append("<strong>BỘ GIÁO DỤC VÀ ĐÀO TẠO</strong><br/>")
+                append("<strong>CƠ SỞ DỮ LIỆU ĐỐI CHIẾU AI</strong><br/>")
+                append("Số / Mã: <strong>").append(escapeHtml(code)).append("</strong>")
+                append("</td>")
+                append("<td style=\"width: 55%; text-align: center;\">")
+                append("<strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong><br/>")
+                append("<strong><u>Độc lập - Tự do - Hạnh phúc</u></strong>")
+                append("</td></tr></table>")
+
+                append("<div class=\"doc-title\">").append(escapeHtml(title)).append("</div>")
+
+                append("<table class=\"doc-meta\">")
+                append("<tr><td><strong>Phân loại:</strong> ").append(escapeHtml(categoryLabel)).append("</td>")
+                append("<td><strong>Môn học:</strong> ").append(escapeHtml(subject)).append("</td></tr>")
+                append("<tr><td><strong>Trình độ / Cấp học:</strong> ").append(escapeHtml(targetLevel)).append("</td>")
+                append("<td><strong>Mã ký hiệu:</strong> ").append(escapeHtml(code)).append("</td></tr>")
+                append("</table>")
+
+                append("<div class=\"content\">").append(escapeHtml(content)).append("</div>")
+
+                append("<table class=\"footer-sign\"><tr>")
+                append("<td><strong>CÁN BỘ / TỔ BỘ MÔN</strong><br/><em>(Ký, ghi rõ họ tên)</em><br/><br/><br/><br/></td>")
+                append("<td><em>Ngày ..... tháng ..... năm 20...</em><br/><strong>NGƯỜI DUYỆT / LÃNH ĐẠO ĐƠN VỊ</strong><br/><em>(Ký, đóng dấu)</em><br/><br/><br/><br/></td>")
+                append("</tr></table>")
+
+                append("</body></html>")
+            }
+
+            targetFile.writeText(htmlContent, Charsets.UTF_8)
+            targetFile
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    /**
+     * Xuất nội dung tài liệu thành tệp văn bản thuần (.txt)
+     */
+    fun exportDocumentToTxt(
+        context: Context,
+        title: String,
+        code: String,
+        content: String
+    ): File? {
+        return try {
+            val exportDir = File(context.cacheDir, "exported_docs")
+            if (!exportDir.exists()) exportDir.mkdirs()
+
+            val sanitizedTitle = title.replace("[^a-zA-Z0-9_ -]".toRegex(), "").trim().replace("\\s+".toRegex(), "_")
+            val fileName = "${code}_${sanitizedTitle}.txt"
+            val targetFile = File(exportDir, fileName)
+
+            targetFile.writeText(content, Charsets.UTF_8)
+            targetFile
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    /**
+     * Chia sẻ hoặc mở file đã xuất bằng ứng dụng hỗ trợ
+     */
+    fun openOrShareFile(context: Context, file: File, mimeType: String, title: String) {
+        try {
+            val authority = "${context.packageName}.fileprovider"
+            val uri = FileProvider.getUriForFile(context, authority, file)
+
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = mimeType
+                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_SUBJECT, title)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(Intent.createChooser(intent, "Mở / Tải về: $title"))
+        } catch (e: Exception) {
+            Toast.makeText(context, "Lỗi khi mở file: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun escapeHtml(text: String): String {
+        return text
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#39;")
+    }
 }

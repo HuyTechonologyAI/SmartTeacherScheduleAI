@@ -20,7 +20,10 @@ import {
   saveKnowledgeDocument,
   deleteCustomKnowledgeDocument,
   toggleKnowledgeDocumentActive,
-  getActiveReferenceContext
+  getActiveReferenceContext,
+  updateKnowledgeDocument,
+  exportKnowledgeDocToWord,
+  exportKnowledgeDocToTxt
 } from './knowledgeBaseData';
 
 import {
@@ -349,6 +352,65 @@ export default function UnifiedTeacherScheduleApp() {
   const [kbAttachedFileType, setKbAttachedFileType] = useState('');
   const [kbAttachedFileData, setKbAttachedFileData] = useState('');
   const [kbIsExtracting, setKbIsExtracting] = useState(false);
+
+  // Edit / Update Knowledge Document States
+  const [kbEditingDoc, setKbEditingDoc] = useState<KnowledgeDocument | null>(null);
+  const [kbEditTitle, setKbEditTitle] = useState('');
+  const [kbEditCode, setKbEditCode] = useState('');
+  const [kbEditCategory, setKbEditCategory] = useState<'GIAO_TRINH' | 'DE_CUONG' | 'PHAP_QUY' | 'ATLD_5S'>('GIAO_TRINH');
+  const [kbEditSubject, setKbEditSubject] = useState('ALL');
+  const [kbEditLevel, setKbEditLevel] = useState('ALL');
+  const [kbEditContent, setKbEditContent] = useState('');
+  const [kbEditFileName, setKbEditFileName] = useState('');
+  const [kbEditFileSize, setKbEditFileSize] = useState(0);
+  const [kbEditFileType, setKbEditFileType] = useState('');
+  const [kbEditFileData, setKbEditFileData] = useState('');
+  const [kbEditIsExtracting, setKbEditIsExtracting] = useState(false);
+
+  const openKbEditModal = (doc: KnowledgeDocument) => {
+    setKbEditingDoc(doc);
+    setKbEditTitle(doc.title);
+    setKbEditCode(doc.code);
+    setKbEditCategory(doc.category as any);
+    setKbEditSubject(doc.subject);
+    setKbEditLevel(doc.targetLevel);
+    setKbEditContent(doc.content);
+    setKbEditFileName(doc.fileName || '');
+    setKbEditFileSize(doc.fileSize || 0);
+    setKbEditFileType(doc.fileType || '');
+    setKbEditFileData(doc.fileData || '');
+  };
+
+  const handleSaveKbEditDoc = () => {
+    if (!kbEditingDoc) return;
+    if (!kbEditTitle.trim() || (!kbEditContent.trim() && !kbEditFileName)) {
+      alert('Vui lòng nhập Tên tài liệu hoặc đính kèm tệp!');
+      return;
+    }
+    const updatedDoc: KnowledgeDocument = {
+      ...kbEditingDoc,
+      title: kbEditTitle.trim(),
+      code: kbEditCode.trim() || kbEditingDoc.code,
+      category: kbEditCategory,
+      subject: kbEditSubject.trim() || 'ALL',
+      targetLevel: kbEditLevel.trim() || 'ALL',
+      content: kbEditContent.trim() || ('Tài liệu: ' + kbEditFileName),
+      fileName: kbEditFileName || undefined,
+      fileSize: kbEditFileSize || undefined,
+      fileType: kbEditFileType || undefined,
+      fileData: kbEditFileData || undefined
+    };
+    const saved = updateKnowledgeDocument(updatedDoc);
+    if (saved) {
+      refreshKnowledgeDocs();
+      if (kbViewingDoc && kbViewingDoc.id === updatedDoc.id) {
+        setKbViewingDoc(updatedDoc);
+      }
+      setKbEditingDoc(null);
+    } else {
+      alert('Có lỗi khi lưu cập nhật tài liệu!');
+    }
+  };
 
   const refreshKnowledgeDocs = () => {
     setKnowledgeDocs(getResolvedKnowledgeDocuments());
@@ -2693,60 +2755,119 @@ export default function UnifiedTeacherScheduleApp() {
                           </div>
                         )}
 
-                        {/* Actions */}
-                        <div className="flex items-center justify-between pt-1 flex-wrap gap-2">
-                          <div className="flex items-center gap-3">
+                        {/* Actions: Xem trước, Tải về Word/Text, Tải tệp gốc, Sửa, Xóa */}
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-700/50 flex-wrap gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <button
                               type="button"
                               onClick={() => setKbViewingDoc(doc)}
-                              className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1.5 cursor-pointer py-1"
+                              className="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
+                              title="Xem toàn văn và chi tiết tài liệu"
                             >
                               <Eye className="w-3.5 h-3.5" />
-                              <span>Đọc toàn văn</span>
+                              <span>Xem trước</span>
                             </button>
+
+                            <button
+                              type="button"
+                              onClick={() => exportKnowledgeDocToWord(doc)}
+                              className="px-2.5 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
+                              title="Tải về file Microsoft Word (.doc) quy chuẩn"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              <span>Tải Word</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => exportKnowledgeDocToTxt(doc)}
+                              className="px-2.5 py-1.5 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
+                              title="Tải về file văn bản thuần (.txt)"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                              <span>Tải Text</span>
+                            </button>
+
                             {doc.fileData && (
                               <a
                                 href={doc.fileData}
-                                download={doc.fileName || 'tai_lieu'}
-                                className="text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1.5 cursor-pointer py-1"
+                                download={doc.fileName || `${doc.code}_${doc.title}`}
+                                className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 hover:text-amber-300 text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
+                                title="Tải về tệp gốc đã đính kèm"
                               >
-                                <Download className="w-3.5 h-3.5" />
-                                <span>Tải tệp gốc</span>
+                                <Paperclip className="w-3.5 h-3.5" />
+                                <span>Tệp gốc</span>
                               </a>
                             )}
                           </div>
 
-                          {!doc.isBuiltIn && (
+                          <div className="flex items-center gap-2">
                             <button
                               type="button"
-                              onClick={() => {
-                                if (confirm(`Xác nhận xóa tài liệu '${doc.title}' khỏi cơ sở dữ liệu đối chiếu?`)) {
-                                  deleteCustomKnowledgeDocument(doc.id);
-                                  refreshKnowledgeDocs();
-                                }
-                              }}
-                              className="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1 cursor-pointer py-1"
+                              onClick={() => openKbEditModal(doc)}
+                              className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
+                              title="Chỉnh sửa hoặc bổ sung tệp đính kèm mới"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
-                              <span>Xóa</span>
+                              <Edit3 className="w-3.5 h-3.5 text-amber-400" />
+                              <span>Sửa</span>
                             </button>
-                          )}
+
+                            {!doc.isBuiltIn && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (confirm(`Xác nhận xóa tài liệu '${doc.title}' khỏi cơ sở dữ liệu đối chiếu?`)) {
+                                    deleteCustomKnowledgeDocument(doc.id);
+                                    refreshKnowledgeDocs();
+                                  }
+                                }}
+                                className="p-1.5 rounded-lg hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 text-xs cursor-pointer transition-colors"
+                                title="Xóa tài liệu nạp thêm"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
                 </div>
 
-                {/* Modal Xem Toàn Văn */}
+                {/* Modal Xem Toàn Văn (Preview & Export Toolbar) */}
                 {kbViewingDoc && (
                   <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-                    <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl">
+                    <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl">
+                      {/* Header */}
                       <div className="p-4 sm:p-5 border-b border-slate-800 flex items-start justify-between gap-3">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs text-emerald-400 font-mono font-bold">{kbViewingDoc.code}</span>
-                            <span className="text-xs text-slate-400">• Môn: {kbViewingDoc.subject} • Cấp: {kbViewingDoc.targetLevel}</span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                            <span className="text-xs text-emerald-400 font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                              {kbViewingDoc.code}
+                            </span>
+                            <span className="text-xs text-slate-400">
+                              Môn: <strong className="text-slate-200">{kbViewingDoc.subject}</strong> • Cấp: <strong className="text-slate-200">{kbViewingDoc.targetLevel}</strong>
+                            </span>
+                            <span className="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">
+                              {kbViewingDoc.category === 'GIAO_TRINH' ? '📘 Giáo trình nghề' :
+                               kbViewingDoc.category === 'DE_CUONG' ? '📋 Đề cương môn học' :
+                               kbViewingDoc.category === 'PHAP_QUY' ? '🏛️ Văn bản pháp quy' :
+                               kbViewingDoc.category === 'ATLD_5S' ? '🛡️ Tiêu chuẩn ATLĐ & 5S' : '📄 Tư liệu'}
+                            </span>
                           </div>
-                          <h3 className="text-base sm:text-lg font-bold text-white">{kbViewingDoc.title}</h3>
+                          <h3 className="text-base sm:text-lg font-bold text-white leading-snug">
+                            {kbViewingDoc.title}
+                          </h3>
+                          {kbViewingDoc.fileName && (
+                            <div className="flex items-center gap-2 mt-2 text-xs text-emerald-300 bg-emerald-500/10 px-2.5 py-1 rounded-lg w-fit border border-emerald-500/20">
+                              <Paperclip className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                              <span className="font-semibold">{kbViewingDoc.fileName}</span>
+                              {kbViewingDoc.fileSize ? (
+                                <span className="text-slate-400 text-[11px]">
+                                  ({(kbViewingDoc.fileSize / 1024).toFixed(0)} KB)
+                                </span>
+                              ) : null}
+                            </div>
+                          )}
                         </div>
                         <button
                           type="button"
@@ -2756,16 +2877,349 @@ export default function UnifiedTeacherScheduleApp() {
                           <X className="w-5 h-5" />
                         </button>
                       </div>
-                      <div className="p-5 overflow-y-auto flex-1 text-xs sm:text-sm text-slate-200 whitespace-pre-wrap leading-relaxed font-sans">
+
+                      {/* Content Preview */}
+                      <div className="p-5 overflow-y-auto flex-1 text-xs sm:text-sm text-slate-200 whitespace-pre-wrap leading-relaxed font-sans bg-slate-950/40">
                         {kbViewingDoc.content}
                       </div>
-                      <div className="p-3.5 border-t border-slate-800 flex justify-end">
+
+                      {/* Footer Toolbar: Download Word, Download Text, Download Original, Edit, Close */}
+                      <div className="p-3.5 border-t border-slate-800 flex items-center justify-between flex-wrap gap-2.5 bg-slate-900/90">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => exportKnowledgeDocToWord(kbViewingDoc)}
+                            className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-blue-600/20 transition-all"
+                            title="Xuất file Microsoft Word (.doc) có quốc hiệu, trích yếu sư phạm"
+                          >
+                            <Download className="w-4 h-4" />
+                            <span>Tải bản Word (.doc)</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => exportKnowledgeDocToTxt(kbViewingDoc)}
+                            className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+                            title="Tải bản văn bản thô (.txt)"
+                          >
+                            <FileText className="w-4 h-4" />
+                            <span>Tải bản Text (.txt)</span>
+                          </button>
+
+                          {kbViewingDoc.fileData && (
+                            <a
+                              href={kbViewingDoc.fileData}
+                              download={kbViewingDoc.fileName || `${kbViewingDoc.code}_${kbViewingDoc.title}`}
+                              className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-600/20 transition-all"
+                              title="Tải tệp gốc đính kèm"
+                            >
+                              <Paperclip className="w-4 h-4" />
+                              <span>Tải tệp gốc</span>
+                            </a>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              openKbEditModal(kbViewingDoc);
+                            }}
+                            className="px-3 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+                            title="Cập nhật nội dung hoặc đính kèm tệp mới"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                            <span>Chỉnh sửa / Cập nhật</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setKbViewingDoc(null)}
+                            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold cursor-pointer"
+                          >
+                            Đóng
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                
+                {/* Modal Chỉnh Sửa / Bổ Sung Tài Liệu */}
+                {kbEditingDoc && (
+                  <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-2xl">
+                      <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between">
+                        <div>
+                          <h3 className="text-base font-bold text-white flex items-center gap-2">
+                            <Edit3 className="w-5 h-5 text-amber-400" />
+                            <span>Cập Nhật / Bổ Sung Tư Liệu</span>
+                          </h3>
+                          {kbEditingDoc.isBuiltIn && (
+                            <p className="text-[11px] text-amber-400/90 mt-1">
+                              🏛️ Bạn đang hiệu chỉnh văn bản pháp quy/tiêu chuẩn gốc. Hệ thống sẽ lưu thành phiên bản bổ sung cho đơn vị của bạn.
+                            </p>
+                          )}
+                        </div>
                         <button
                           type="button"
-                          onClick={() => setKbViewingDoc(null)}
-                          className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold cursor-pointer"
+                          onClick={() => setKbEditingDoc(null)}
+                          className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
                         >
-                          Đóng
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      <div className="p-5 overflow-y-auto flex-1 space-y-4">
+                        <div>
+                          <label className="text-xs font-bold text-slate-300 block mb-1.5">
+                            Tên tài liệu / Văn bản / Giáo trình <span className="text-rose-400">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={kbEditTitle}
+                            onChange={(e) => setKbEditTitle(e.target.value)}
+                            placeholder="Ví dụ: Đề cương chi tiết môn Tiện CNC hoặc Giáo trình Khí cụ điện"
+                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-500"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs font-bold text-slate-300 block mb-1.5">Mã ký hiệu</label>
+                            <input
+                              type="text"
+                              value={kbEditCode}
+                              onChange={(e) => setKbEditCode(e.target.value)}
+                              placeholder="Mã số văn bản..."
+                              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-bold text-slate-300 block mb-1.5">Môn học áp dụng</label>
+                            <input
+                              type="text"
+                              value={kbEditSubject}
+                              onChange={(e) => setKbEditSubject(e.target.value)}
+                              placeholder="ALL hoặc Toán, Tiện CNC..."
+                              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs font-bold text-slate-300 block mb-1.5">Cấp học / Trình độ</label>
+                            <input
+                              type="text"
+                              value={kbEditLevel}
+                              onChange={(e) => setKbEditLevel(e.target.value)}
+                              placeholder="ALL, THPT, Trung cấp, Cao đẳng..."
+                              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-bold text-slate-300 block mb-1.5">Phân loại</label>
+                            <select
+                              value={kbEditCategory}
+                              onChange={(e) => setKbEditCategory(e.target.value as any)}
+                              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                            >
+                              <option value="GIAO_TRINH">Giáo trình nghề</option>
+                              <option value="DE_CUONG">Đề cương môn học</option>
+                              <option value="PHAP_QUY">Văn bản pháp quy</option>
+                              <option value="ATLD_5S">Tiêu chuẩn ATLĐ & 5S</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Đính kèm / Đổi tệp tài liệu mới */}
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                            <span className="flex items-center gap-1.5 text-amber-400">
+                              <Paperclip className="w-4 h-4" />
+                              <span>ĐÍNH KÈM HOẶC THAY THẾ TỆP TÀI LIỆU</span>
+                            </span>
+                            <span className="text-[11px] font-normal text-slate-400">Word, PDF, Text...</span>
+                          </label>
+
+                          {!kbEditFileName ? (
+                            <label className="block p-4 rounded-2xl border-2 border-dashed border-slate-700 hover:border-amber-500/60 bg-slate-800/40 hover:bg-slate-800/70 cursor-pointer transition-all text-center group">
+                              <input
+                                type="file"
+                                accept=".docx,.doc,.pdf,.txt,.md,.rtf,.xlsx,.xls,.pptx"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  setKbEditIsExtracting(true);
+                                  const fileName = file.name;
+                                  const fileSize = file.size;
+                                  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+
+                                  setKbEditFileName(fileName);
+                                  setKbEditFileSize(fileSize);
+                                  setKbEditFileType(file.type || ext);
+
+                                  const dataReader = new FileReader();
+                                  dataReader.onload = () => setKbEditFileData(dataReader.result as string);
+                                  dataReader.readAsDataURL(file);
+
+                                  if (['txt', 'md', 'csv', 'json', 'xml', 'html'].includes(ext)) {
+                                    const textReader = new FileReader();
+                                    textReader.onload = () => {
+                                      setKbEditContent((textReader.result as string) || '');
+                                      setKbEditIsExtracting(false);
+                                    };
+                                    textReader.readAsText(file);
+                                  } else {
+                                    const bufferReader = new FileReader();
+                                    bufferReader.onload = () => {
+                                      try {
+                                        const arrayBuffer = bufferReader.result as ArrayBuffer;
+                                        const bytes = new Uint8Array(arrayBuffer);
+                                        const latinStr = new TextDecoder('iso-8859-1').decode(bytes);
+                                        let textContent = '';
+                                        if (latinStr.includes('<w:p') || latinStr.includes('<w:t')) {
+                                          const textMatches = latinStr.match(/<w:t[^>]*>([^<]+)<\/w:t>/g);
+                                          if (textMatches && textMatches.length > 0) {
+                                            textContent = textMatches.map(m => m.replace(/<[^>]+>/g, '')).join(' ');
+                                          }
+                                        }
+                                        if (!textContent) {
+                                          textContent = 'Tài liệu: ' + fileName + ' (' + (fileSize / 1024).toFixed(1) + ' KB)\nĐã đính kèm tệp gốc an toàn phục vụ đối chiếu sư phạm AI.';
+                                        }
+                                        setKbEditContent(textContent);
+                                      } catch (err) {
+                                        setKbEditContent('Tài liệu đính kèm: ' + fileName);
+                                      }
+                                      setKbEditIsExtracting(false);
+                                    };
+                                    bufferReader.readAsArrayBuffer(file);
+                                  }
+                                }}
+                                className="hidden"
+                              />
+                              <div className="flex flex-col items-center justify-center gap-1.5">
+                                <div className="w-9 h-9 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
+                                  {kbEditIsExtracting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                                </div>
+                                <div className="text-xs font-bold text-white group-hover:text-amber-400 transition-colors">
+                                  {kbEditIsExtracting ? 'Đang trích xuất nội dung...' : 'BẤM ĐỂ ĐÍNH KÈM TỆP VĂN BẢN'}
+                                </div>
+                              </div>
+                            </label>
+                          ) : (
+                            <div className="p-3.5 rounded-2xl bg-amber-950/30 border border-amber-500/30 flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center shrink-0">
+                                  <Paperclip className="w-4 h-4" />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="text-xs font-bold text-amber-300 truncate">{kbEditFileName}</div>
+                                  <div className="text-[10px] text-slate-400">
+                                    {(kbEditFileSize / 1024).toFixed(1)} KB • {kbEditContent.length.toLocaleString()} ký tự
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <label className="text-[11px] font-semibold text-amber-400 hover:text-amber-300 cursor-pointer px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 transition-colors">
+                                  Đổi tệp
+                                  <input
+                                    type="file"
+                                    accept=".docx,.doc,.pdf,.txt,.md,.rtf,.xlsx,.xls,.pptx"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (!file) return;
+                                      setKbEditIsExtracting(true);
+                                      const fileName = file.name;
+                                      const fileSize = file.size;
+                                      const ext = fileName.split('.').pop()?.toLowerCase() || '';
+                                      setKbEditFileName(fileName);
+                                      setKbEditFileSize(fileSize);
+                                      setKbEditFileType(file.type || ext);
+                                      const dataReader = new FileReader();
+                                      dataReader.onload = () => setKbEditFileData(dataReader.result as string);
+                                      dataReader.readAsDataURL(file);
+                                      if (['txt', 'md', 'csv', 'json', 'xml', 'html'].includes(ext)) {
+                                        const textReader = new FileReader();
+                                        textReader.onload = () => {
+                                          setKbEditContent((textReader.result as string) || '');
+                                          setKbEditIsExtracting(false);
+                                        };
+                                        textReader.readAsText(file);
+                                      } else {
+                                        const bufferReader = new FileReader();
+                                        bufferReader.onload = () => {
+                                          try {
+                                            const arrayBuffer = bufferReader.result as ArrayBuffer;
+                                            const bytes = new Uint8Array(arrayBuffer);
+                                            const latinStr = new TextDecoder('iso-8859-1').decode(bytes);
+                                            let textContent = '';
+                                            if (latinStr.includes('<w:p') || latinStr.includes('<w:t')) {
+                                              const textMatches = latinStr.match(/<w:t[^>]*>([^<]+)<\/w:t>/g);
+                                              if (textMatches && textMatches.length > 0) {
+                                                textContent = textMatches.map(m => m.replace(/<[^>]+>/g, '')).join(' ');
+                                              }
+                                            }
+                                            setKbEditContent(textContent || ('Tài liệu: ' + fileName + ' (' + (fileSize / 1024).toFixed(1) + ' KB)'));
+                                          } catch (err) {
+                                            setKbEditContent('Tài liệu đính kèm: ' + fileName);
+                                          }
+                                          setKbEditIsExtracting(false);
+                                        };
+                                        bufferReader.readAsArrayBuffer(file);
+                                      }
+                                    }}
+                                    className="hidden"
+                                  />
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setKbEditFileName('');
+                                    setKbEditFileSize(0);
+                                    setKbEditFileType('');
+                                    setKbEditFileData('');
+                                  }}
+                                  className="p-1 rounded-lg hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 cursor-pointer"
+                                  title="Gỡ tệp"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-bold text-slate-300 block mb-1.5">
+                            Nội dung chi tiết (Dành cho AI đối chiếu và xuất văn bản)
+                          </label>
+                          <textarea
+                            rows={8}
+                            value={kbEditContent}
+                            onChange={(e) => setKbEditContent(e.target.value)}
+                            className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-amber-500 font-mono leading-relaxed"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="p-4 border-t border-slate-800 flex justify-end gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => setKbEditingDoc(null)}
+                          className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold cursor-pointer"
+                        >
+                          Hủy
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveKbEditDoc}
+                          className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs cursor-pointer shadow-lg shadow-amber-500/20 transition-all flex items-center gap-1.5"
+                        >
+                          <Check className="w-4 h-4" />
+                          <span>Lưu Cập Nhật</span>
                         </button>
                       </div>
                     </div>

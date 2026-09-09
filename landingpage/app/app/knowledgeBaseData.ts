@@ -417,3 +417,198 @@ export function getActiveReferenceContext(subject: string = '', category: string
 
   return relevantDocs.map(d => `【${d.title} (${d.code})】\n${d.content}`).join('\n\n---\n');
 }
+
+export function exportKnowledgeDocToWord(doc: KnowledgeDocument): void {
+  if (typeof window === 'undefined') return;
+
+  const categoryNameMap: Record<string, string> = {
+    PHAP_QUY: 'VĂN BẢN PHÁP QUY SƯ PHẠM',
+    GIAO_TRINH: 'GIÁO TRÌNH ĐÀO TẠO NGHỀ',
+    DE_CUONG: 'ĐỀ CƯƠNG CHI TIẾT HỌC PHẦN',
+    ATLD_5S: 'TIÊU CHUẨN AN TOÀN LAO ĐỘNG & 5S',
+    NGAN_HANG_DE: 'NGÂN HÀNG ĐỀ THI & MA TRẬN'
+  };
+
+  const categoryTitle = categoryNameMap[doc.category] || 'TÀI LIỆU SƯ PHẠM';
+  const cleanDate = new Date(doc.createdAt).toLocaleDateString('vi-VN');
+
+  const formattedContent = doc.content
+    .split('\n')
+    .map(line => line.trim() ? `<p style="margin: 6px 0; text-align: justify; text-justify: inter-word;">${line}</p>` : `<p style="margin: 4px 0;">&nbsp;</p>`)
+    .join('');
+
+  const html = `<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="utf-8">
+  <title>${doc.title}</title>
+  <!--[if gte mso 9]>
+  <xml>
+    <w:WordDocument>
+      <w:View>Print</w:View>
+      <w:Zoom>100</w:Zoom>
+      <w:DoNotOptimizeForBrowser/>
+    </w:WordDocument>
+  </xml>
+  <![endif]-->
+  <style>
+    @page {
+      size: A4;
+      margin: 20mm 20mm 20mm 25mm;
+    }
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 13pt;
+      line-height: 1.35;
+      color: #000;
+    }
+    .header-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    .header-table td {
+      vertical-align: top;
+      padding: 0;
+    }
+    .doc-title {
+      text-align: center;
+      font-size: 15pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin: 20px 0 10px 0;
+    }
+    .doc-subtitle {
+      text-align: center;
+      font-style: italic;
+      font-size: 12pt;
+      margin-bottom: 25px;
+    }
+    .meta-box {
+      border: 1px solid #666;
+      background-color: #f9f9f9;
+      padding: 10px 15px;
+      margin-bottom: 20px;
+      font-size: 11pt;
+    }
+    .content-body {
+      font-size: 13pt;
+    }
+  </style>
+</head>
+<body>
+  <table class="header-table">
+    <tr>
+      <td style="width: 50%; text-align: center;">
+        <span style="font-size: 11pt; font-weight: bold; text-transform: uppercase;">SMART TEACHER SCHEDULE AI</span><br/>
+        <span style="font-size: 10.5pt;">KHO TƯ LIỆU CHUẨN SƯ PHẠM</span><br/>
+        <span style="font-size: 10pt; font-style: italic;">Số hiệu: ${doc.code}</span>
+      </td>
+      <td style="width: 50%; text-align: center;">
+        <span style="font-size: 11pt; font-weight: bold; text-transform: uppercase;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</span><br/>
+        <span style="font-size: 11pt; font-weight: bold;">Độc lập - Tự do - Hạnh phúc</span><br/>
+        <span style="font-size: 10pt; font-style: italic;">Ngày lưu trữ: ${cleanDate}</span>
+      </td>
+    </tr>
+  </table>
+
+  <div class="doc-title">${doc.title}</div>
+  <div class="doc-subtitle">Phân loại: ${categoryTitle} • Môn học: ${doc.subject} • Cấp học: ${doc.targetLevel}</div>
+
+  <div class="meta-box">
+    <strong>THÔNG TIN TÀI LIỆU ĐỐI CHIẾU AI:</strong><br/>
+    • Mã văn bản: <strong>${doc.code}</strong><br/>
+    • Danh mục: <strong>${categoryTitle}</strong><br/>
+    • Trình độ / Cấp học áp dụng: <strong>${doc.targetLevel}</strong><br/>
+    • Phạm vi môn học: <strong>${doc.subject}</strong><br/>
+    ${doc.fileName ? `• Tệp đính kèm gốc: <strong>${doc.fileName}</strong> (${doc.fileSize ? (doc.fileSize / 1024).toFixed(1) + ' KB' : ''})<br/>` : ''}
+    • Cơ sở pháp lý / Trích yếu: Căn cứ chuẩn hóa chuyên môn phục vụ giảng dạy và kiểm tra đánh giá.
+  </div>
+
+  <hr style="border: 0.5px solid #999; margin: 15px 0 25px 0;" />
+
+  <div class="content-body">
+    ${formattedContent}
+  </div>
+
+  <br/><br/>
+  <table style="width: 100%; border-collapse: collapse; margin-top: 30px;">
+    <tr>
+      <td style="width: 50%;"></td>
+      <td style="width: 50%; text-align: center;">
+        <span style="font-size: 11pt; font-style: italic;">Hệ thống Smart Teacher Schedule AI</span><br/>
+        <span style="font-size: 11pt; font-weight: bold;">GIÁO VIÊN BỘ MÔN / TỔ CHUYÊN MÔN</span><br/>
+        <span style="font-size: 10pt; font-style: italic;">(Ký và xác nhận áp dụng)</span>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  const blob = new Blob(['\ufeff', html], { type: 'application/msword;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const safeTitle = (doc.code + '_' + doc.title).replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EF9]/g, '_').substring(0, 50);
+  a.href = url;
+  a.download = `${safeTitle}.doc`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export function exportKnowledgeDocToTxt(doc: KnowledgeDocument): void {
+  if (typeof window === 'undefined') return;
+  const text = `======================================================================
+${doc.title.toUpperCase()}
+Mã số: ${doc.code} | Phân loại: ${doc.category}
+Môn học: ${doc.subject} | Cấp học: ${doc.targetLevel}
+Ngày tạo: ${new Date(doc.createdAt).toLocaleString('vi-VN')}
+======================================================================
+
+${doc.content}
+`;
+  const blob = new Blob(['\ufeff', text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const safeTitle = (doc.code + '_' + doc.title).replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EF9]/g, '_').substring(0, 50);
+  a.href = url;
+  a.download = `${safeTitle}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export function updateKnowledgeDocument(updatedDoc: KnowledgeDocument): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const customDocs: KnowledgeDocument[] = raw ? JSON.parse(raw) : [];
+    const index = customDocs.findIndex(d => d.id === updatedDoc.id);
+
+    const docToSave = { ...updatedDoc };
+    if (docToSave.fileData && docToSave.fileData.length > 50000) {
+      delete docToSave.fileData;
+    }
+
+    if (index >= 0) {
+      customDocs[index] = docToSave;
+    } else {
+      // If it was a built-in doc that teacher edited/supplemented, save as customized copy
+      customDocs.unshift({
+        ...docToSave,
+        id: 'custom-' + Date.now(),
+        code: docToSave.code + '-UPDATED',
+        isBuiltIn: false,
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(customDocs));
+    return true;
+  } catch (e) {
+    console.error('Failed to update knowledge document', e);
+    return false;
+  }
+}

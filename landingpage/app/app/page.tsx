@@ -28,7 +28,9 @@ import {
 import {
   extractFullTextFromFile,
   downloadOriginalUploadedFile,
-  getOriginalFileFromStorage
+  getOriginalFileFromStorage,
+  saveOriginalFileToStorage,
+  dataUrlToBlobUrl
 } from './knowledgeFileStorage';
 
 import {
@@ -373,12 +375,29 @@ export default function UnifiedTeacherScheduleApp() {
   const [kbEditIsExtracting, setKbEditIsExtracting] = useState(false);
   const [kbPreviewPdfUrl, setKbPreviewPdfUrl] = useState<string | null>(null);
   const [kbPreviewMode, setKbPreviewMode] = useState<'AUTO' | 'TEXT' | 'PDF'>('AUTO');
+  const [kbPreviewIsLoading, setKbPreviewIsLoading] = useState(false);
+  const [kbPreviewStatusText, setKbPreviewStatusText] = useState('');
 
   useEffect(() => {
+    let activeBlobUrl: string | null = null;
     if (kbViewingDoc) {
-      if (kbViewingDoc.fileName?.toLowerCase().endsWith('.pdf')) {
-        getOriginalFileFromStorage(kbViewingDoc.id).then(url => {
-          setKbPreviewPdfUrl(url || kbViewingDoc.fileData || null);
+      const isPdf = kbViewingDoc.fileName?.toLowerCase().endsWith('.pdf') || kbViewingDoc.fileType?.includes('pdf');
+      if (isPdf) {
+        setKbPreviewIsLoading(true);
+        setKbPreviewStatusText('Đang nạp dữ liệu xem trước...');
+        getOriginalFileFromStorage(kbViewingDoc.id).then(rawUrl => {
+          const finalUrl = rawUrl || kbViewingDoc.fileData || null;
+          if (finalUrl) {
+            const blobUrl = dataUrlToBlobUrl(finalUrl);
+            activeBlobUrl = blobUrl;
+            setKbPreviewPdfUrl(blobUrl);
+          } else {
+            setKbPreviewPdfUrl(null);
+          }
+          setKbPreviewIsLoading(false);
+        }).catch(() => {
+          setKbPreviewPdfUrl(null);
+          setKbPreviewIsLoading(false);
         });
       } else {
         setKbPreviewPdfUrl(null);
@@ -386,7 +405,68 @@ export default function UnifiedTeacherScheduleApp() {
     } else {
       setKbPreviewPdfUrl(null);
     }
+
+    return () => {
+      if (activeBlobUrl && activeBlobUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(activeBlobUrl);
+      }
+    };
   }, [kbViewingDoc]);
+
+  const handleAttachFileToCurrentDoc = async (file: File, doc: KnowledgeDocument) => {
+    if (!file || !doc) return;
+    try {
+      setKbPreviewIsLoading(true);
+      setKbPreviewStatusText('Đang nạp tệp và trích xuất toàn văn từng trang...');
+      const fileName = file.name;
+      const fileSize = file.size;
+      const fileType = file.type || fileName.split('.').pop()?.toLowerCase() || '';
+
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const dataUrl = reader.result as string;
+          // 1. Lưu ngay tệp gốc vào IndexedDB
+          await saveOriginalFileToStorage(doc.id, dataUrl);
+
+          // 2. Trích xuất toàn văn với PDF.js / JSZip
+          setKbPreviewStatusText('Đang giải mã văn bản với AI...');
+          const fullText = await extractFullTextFromFile(file);
+
+          // 3. Cập nhật bản ghi document
+          const updatedDoc: KnowledgeDocument = {
+            ...doc,
+            fileName,
+            fileSize,
+            fileType,
+            content: fullText,
+          };
+
+          // 4. Lưu vào localStorage
+          saveKnowledgeDocument(updatedDoc);
+
+          // 5. Cập nhật state giao diện
+          refreshKnowledgeDocs();
+          setKbViewingDoc(updatedDoc);
+
+          if (fileName.toLowerCase().endsWith('.pdf') || fileType.includes('pdf')) {
+            const blobUrl = dataUrlToBlobUrl(dataUrl);
+            setKbPreviewPdfUrl(blobUrl);
+            setKbPreviewMode('AUTO');
+          }
+          setKbPreviewIsLoading(false);
+        } catch (subErr) {
+          console.error('Lỗi khi xử lý trích xuất tệp', subErr);
+          setKbPreviewIsLoading(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Lỗi khi nạp tệp cho tài liệu', err);
+      setKbPreviewIsLoading(false);
+      alert('Có lỗi khi nạp tệp: ' + String(err));
+    }
+  };
 
   const processAttachedKnowledgeFile = async (file: File, isEdit: boolean) => {
     if (!file) return;
@@ -2947,30 +3027,72 @@ export default function UnifiedTeacherScheduleApp() {
                       </div>
 
                       {/* Content Preview: Hỗ trợ xem trực quan PDF hoặc xem toàn văn nội dung trích xuất */}
-                      {kbViewingDoc.fileName?.toLowerCase().endsWith('.pdf') && kbPreviewPdfUrl && kbPreviewMode !== 'TEXT' ? (
-                        <div className="flex-1 flex flex-col p-4 bg-slate-950/70 overflow-hidden min-h-[520px]">
-                          <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-xs text-slate-300">
+                      {kbPreviewIsLoading ? (
+                        <div className="flex-1 flex flex-col items-center justify-center p-12 bg-slate-950/70 min-h-[450px]">
+                          <div className="w-10 h-10 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4" />
+                          <div className="text-sm font-semibold text-emerald-400">
+                            {kbPreviewStatusText || 'Đang xử lý tài liệu...'}
+                          </div>
+                          <div className="text-xs text-slate-400 mt-1">
+                            Hệ thống đang giải mã và trích xuất từng trang
+                          </div>
+                        </div>
+                      ) : kbViewingDoc.fileName?.toLowerCase().endsWith('.pdf') && kbPreviewPdfUrl && kbPreviewMode !== 'TEXT' ? (
+                        <div className="flex-1 flex flex-col p-4 bg-slate-950/70 overflow-hidden min-h-[550px]">
+                          <div className="flex items-center justify-between pb-2.5 mb-2 border-b border-slate-800 text-xs text-slate-300">
                             <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
                               <FileText className="w-4 h-4" />
-                              <span>Bản xem trước PDF trực quan nguyên gốc</span>
+                              <span>Bản xem trước PDF trực quan nguyên bản gốc</span>
                             </span>
                             <button
                               type="button"
                               onClick={() => setKbPreviewMode('TEXT')}
-                              className="text-xs text-blue-400 hover:text-blue-300 underline cursor-pointer"
+                              className="text-xs text-blue-400 hover:text-blue-300 underline cursor-pointer font-medium"
                             >
-                              Xem toàn văn văn bản trích xuất AI
+                              Chuyển sang xem toàn văn trích xuất AI
                             </button>
                           </div>
                           <iframe
                             src={kbPreviewPdfUrl}
                             className="w-full flex-1 rounded-xl border border-slate-700 bg-white"
-                            style={{ minHeight: '500px' }}
+                            style={{ minHeight: '520px' }}
                             title={kbViewingDoc.title}
                           />
                         </div>
                       ) : (
                         <div className="p-5 overflow-y-auto flex-1 text-xs sm:text-sm text-slate-200 whitespace-pre-wrap leading-relaxed font-sans bg-slate-950/40">
+                          {/* Card nhắc nạp tệp nếu tài liệu cũ chưa có tệp đệm trong IndexedDB */}
+                          {!kbPreviewPdfUrl && kbViewingDoc.fileName?.toLowerCase().endsWith('.pdf') && (
+                            <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/5 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                                  <Upload className="w-5 h-5" />
+                                </div>
+                                <div>
+                                  <div className="text-xs font-bold text-amber-300">
+                                    Kích hoạt xem trực quan & Trích xuất toàn văn cho tài liệu này
+                                  </div>
+                                  <div className="text-[11px] text-slate-300">
+                                    Tài liệu này được lưu từ phiên bản trước. Thầy/Cô hãy chọn tệp <strong>{kbViewingDoc.fileName}</strong> một lần để nạp bộ nhớ đệm và hiển thị PDF trực quan!
+                                  </div>
+                                </div>
+                              </div>
+                              <label className="shrink-0 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md transition-all">
+                                <Paperclip className="w-3.5 h-3.5" />
+                                <span>Chọn tệp để xem ngay</span>
+                                <input
+                                  type="file"
+                                  className="hidden"
+                                  accept=".pdf,.docx,.doc,.txt"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleAttachFileToCurrentDoc(file, kbViewingDoc);
+                                  }}
+                                />
+                              </label>
+                            </div>
+                          )}
+
                           {kbViewingDoc.fileName?.toLowerCase().endsWith('.pdf') && (
                             <div className="mb-3 p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-between">
                               <span className="text-xs text-blue-300 font-medium">Đang hiển thị toàn văn nội dung văn bản trích xuất cho AI</span>

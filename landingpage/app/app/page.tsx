@@ -29,6 +29,7 @@ import {
   KnowledgeDocument,
   getResolvedKnowledgeDocuments,
   mergeKnowledgeDocumentsFromCloud,
+  getDeletedKnowledgeDocKeys,
   saveKnowledgeDocument,
   deleteCustomKnowledgeDocument,
   toggleKnowledgeDocumentActive,
@@ -805,7 +806,8 @@ export default function UnifiedTeacherScheduleApp() {
           updatedAt: nowTs,
           events: curEvents,
           schedules: curSchedules,
-          knowledgeDocs: docsPayload
+          knowledgeDocs: docsPayload,
+          deletedKnowledgeDocKeys: getDeletedKnowledgeDocKeys()
         })
       });
       if (res.ok) {
@@ -819,8 +821,8 @@ export default function UnifiedTeacherScheduleApp() {
           setSchedules(result.schedules);
           localStorage.setItem('smart_teacher_schedules', JSON.stringify(result.schedules));
         }
-        if (Array.isArray(result.knowledgeDocs) && result.knowledgeDocs.length > 0) {
-          mergeKnowledgeDocumentsFromCloud(result.knowledgeDocs);
+        if (Array.isArray(result.knowledgeDocs)) {
+          mergeKnowledgeDocumentsFromCloud(result.knowledgeDocs, result.deletedKnowledgeDocKeys || []);
           refreshKnowledgeDocs();
         }
 
@@ -903,8 +905,8 @@ export default function UnifiedTeacherScheduleApp() {
           localStorage.setItem('smart_teacher_events', JSON.stringify(mergedEvents));
           localStorage.setItem('smart_teacher_schedules', JSON.stringify(mergedSchedules));
 
-          if (Array.isArray(data.knowledgeDocs) && data.knowledgeDocs.length > 0) {
-            mergeKnowledgeDocumentsFromCloud(data.knowledgeDocs);
+          if (Array.isArray(data.knowledgeDocs)) {
+            mergeKnowledgeDocumentsFromCloud(data.knowledgeDocs, data.deletedKnowledgeDocKeys || []);
             refreshKnowledgeDocs();
           }
 
@@ -915,8 +917,8 @@ export default function UnifiedTeacherScheduleApp() {
           }
           return true;
         } else {
-          if (Array.isArray(data.knowledgeDocs) && data.knowledgeDocs.length > 0) {
-            mergeKnowledgeDocumentsFromCloud(data.knowledgeDocs);
+          if (Array.isArray(data.knowledgeDocs)) {
+            mergeKnowledgeDocumentsFromCloud(data.knowledgeDocs, data.deletedKnowledgeDocKeys || []);
             refreshKnowledgeDocs();
             setSyncStatus('synced');
             setLastSyncTime(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));

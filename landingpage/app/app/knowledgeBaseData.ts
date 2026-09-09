@@ -282,48 +282,122 @@ II. NGUYÊN TẮC BIÊN SOẠN BỘ ĐỀ KIỂM TRA CHUẨN SƯ PHẠM:
 ];
 
 const STORAGE_KEY = 'smart_teacher_knowledge_docs_custom';
+const BUILTIN_OVERRIDE_KEY = 'smart_teacher_builtin_overrides';
+const BUILTIN_CUSTOM_DATA_KEY = 'smart_teacher_builtin_custom_data';
+const DELETED_STORAGE_KEY = 'smart_teacher_knowledge_docs_deleted';
+
+export function isDocBlacklisted(doc: { id?: string; code?: string; title?: string; fileName?: string }): boolean {
+  const fn = (doc.fileName || '').toLowerCase();
+  const code = (doc.code || '').toLowerCase();
+  const id = (doc.id || '').toLowerCase();
+  const title = (doc.title || '').toLowerCase();
+  if (fn.includes('giao_trinh_cn10') || code.includes('gt-cn10') || id.includes('custom_7') || title.includes('công nghệ 10 (chuẩn mô đun')) {
+    return true;
+  }
+  return false;
+}
+
+export function getCanonicalBuiltinId(doc: { id?: string; code?: string; title?: string }): string | null {
+  const code = (doc.code || '').toLowerCase();
+  const id = (doc.id || '').toLowerCase();
+  const title = (doc.title || '').toLowerCase();
+
+  if (id === 'builtin-cv-5512' || code.includes('5512') || title.includes('5512')) return 'builtin-cv-5512';
+  if (id === 'builtin-cv-3456' || code.includes('3456') || title.includes('3456')) return 'builtin-cv-3456';
+  if (id === 'builtin-qd-2422' || code.includes('2422') || title.includes('2422')) return 'builtin-qd-2422';
+  if (id === 'builtin-cv-2634' || code.includes('2634') || title.includes('2634')) return 'builtin-cv-2634';
+  if (id === 'builtin-tt-22' || code.includes('tt_22') || code.includes('tt 22') || id.includes('tt-22') || title.includes('thông tư 22')) return 'builtin-tt-22';
+  if (id === 'builtin-atld-5s' || code.includes('5s') || code.includes('atld') || title.includes('5s') || title.includes('an toàn lao động')) return 'builtin-atld-5s';
+  return null;
+}
+
+export function getDeletedKnowledgeDocKeys(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(DELETED_STORAGE_KEY);
+    const keys: string[] = raw ? JSON.parse(raw) : [];
+    if (!keys.includes('custom_7')) keys.push('custom_7');
+    if (!keys.includes('gt-cn10')) keys.push('gt-cn10');
+    if (!keys.includes('giao_trinh_cn10.docx')) keys.push('giao_trinh_cn10.docx');
+    return keys;
+  } catch (e) {
+    return ['custom_7', 'gt-cn10', 'giao_trinh_cn10.docx'];
+  }
+}
+
+export function addDeletedKnowledgeDocKey(key: string): void {
+  if (typeof window === 'undefined' || !key) return;
+  try {
+    const keys = getDeletedKnowledgeDocKeys();
+    const clean = key.toLowerCase().trim();
+    if (!keys.includes(clean)) {
+      keys.push(clean);
+      localStorage.setItem(DELETED_STORAGE_KEY, JSON.stringify(keys));
+    }
+  } catch (e) {}
+}
+
+function getBuiltinCustomData(): Record<string, Partial<KnowledgeDocument>> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(BUILTIN_CUSTOM_DATA_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveBuiltinCustomData(data: Record<string, Partial<KnowledgeDocument>>): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(BUILTIN_CUSTOM_DATA_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.error('Failed to save builtin custom data', e);
+  }
+}
 
 export function getAllKnowledgeDocuments(): KnowledgeDocument[] {
-  if (typeof window === 'undefined') {
-    return BUILT_IN_KNOWLEDGE_DOCUMENTS;
-  }
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const customDocs: KnowledgeDocument[] = raw ? JSON.parse(raw) : [];
-    return [...BUILT_IN_KNOWLEDGE_DOCUMENTS, ...customDocs];
-  } catch (e) {
-    console.error('Failed to parse knowledge docs from localStorage', e);
-    return BUILT_IN_KNOWLEDGE_DOCUMENTS;
-  }
+  return getResolvedKnowledgeDocuments();
 }
 
 export function saveKnowledgeDocument(doc: KnowledgeDocument): boolean {
   if (typeof window === 'undefined') return false;
+  if (isDocBlacklisted(doc)) return false;
+
+  const canonicalBuiltin = getCanonicalBuiltinId(doc);
+  if (canonicalBuiltin) {
+    return updateKnowledgeDocument({
+      ...doc,
+      id: canonicalBuiltin
+    });
+  }
+
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    const customDocs: KnowledgeDocument[] = raw ? JSON.parse(raw) : [];
-    const index = customDocs.findIndex(d => d.id === doc.id);
+    let customDocs: KnowledgeDocument[] = raw ? JSON.parse(raw) : [];
 
-    // Save full original file data to IndexedDB
     if (doc.fileData) {
       saveOriginalFileToStorage(doc.id, doc.fileData);
     }
 
-    // Deep copy doc for localStorage (strip fileData to preserve localStorage quota)
     const docToSave: KnowledgeDocument = { ...doc };
     delete docToSave.fileData;
+
+    const index = customDocs.findIndex(d => 
+      d.id === doc.id || 
+      (doc.fileName && d.fileName && d.fileName.toLowerCase().trim() === doc.fileName.toLowerCase().trim())
+    );
 
     if (index >= 0) {
       customDocs[index] = docToSave;
     } else {
-      customDocs.unshift(docToSave); // Add to top so new doc appears first!
+      customDocs.unshift(docToSave);
     }
 
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(customDocs));
       return true;
     } catch (quotaErr) {
-      console.warn('LocalStorage quota exceeded! Cleaning fileData from all custom docs and retrying...', quotaErr);
       const cleanDocs = customDocs.map(d => {
         const { fileData, ...rest } = d;
         return rest;
@@ -343,6 +417,12 @@ export function deleteCustomKnowledgeDocument(id: string): void {
     deleteOriginalFileFromStorage(id);
     const raw = localStorage.getItem(STORAGE_KEY);
     const customDocs: KnowledgeDocument[] = raw ? JSON.parse(raw) : [];
+    const docToDelete = customDocs.find(d => d.id === id);
+
+    addDeletedKnowledgeDocKey(id);
+    if (docToDelete?.code) addDeletedKnowledgeDocKey(docToDelete.code);
+    if (docToDelete?.fileName) addDeletedKnowledgeDocKey(docToDelete.fileName);
+
     const filtered = customDocs.filter(d => d.id !== id);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
   } catch (e) {
@@ -352,19 +432,27 @@ export function deleteCustomKnowledgeDocument(id: string): void {
 
 export function toggleKnowledgeDocumentActive(id: string, isActive: boolean): void {
   if (typeof window === 'undefined') return;
-  // If it's a built-in doc, track override in localStorage
-  const BUILTIN_OVERRIDE_KEY = 'smart_teacher_builtin_overrides';
-  try {
-    let overrides: Record<string, boolean> = {};
-    const raw = localStorage.getItem(BUILTIN_OVERRIDE_KEY);
-    if (raw) overrides = JSON.parse(raw);
-    overrides[id] = isActive;
-    localStorage.setItem(BUILTIN_OVERRIDE_KEY, JSON.stringify(overrides));
-  } catch (e) {
-    console.error('Failed to update builtin status override', e);
+  const canonicalBuiltinId = getCanonicalBuiltinId({ id });
+
+  if (canonicalBuiltinId) {
+    try {
+      let overrides: Record<string, boolean> = {};
+      const raw = localStorage.getItem(BUILTIN_OVERRIDE_KEY);
+      if (raw) overrides = JSON.parse(raw);
+      overrides[canonicalBuiltinId] = isActive;
+      localStorage.setItem(BUILTIN_OVERRIDE_KEY, JSON.stringify(overrides));
+
+      const builtinCustomData = getBuiltinCustomData();
+      if (builtinCustomData[canonicalBuiltinId]) {
+        builtinCustomData[canonicalBuiltinId].isActive = isActive;
+        saveBuiltinCustomData(builtinCustomData);
+      }
+    } catch (e) {
+      console.error('Failed to update builtin status override', e);
+    }
+    return;
   }
 
-  // Also check if it's in customDocs
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
@@ -380,8 +468,10 @@ export function toggleKnowledgeDocumentActive(id: string, isActive: boolean): vo
   }
 }
 
-
-export function mergeKnowledgeDocumentsFromCloud(incomingDocs: KnowledgeDocument[]): { updatedCount: number; addedCount: number } {
+export function mergeKnowledgeDocumentsFromCloud(
+  incomingDocs: KnowledgeDocument[],
+  incomingDeletedKeys: string[] = []
+): { updatedCount: number; addedCount: number } {
   if (typeof window === 'undefined' || !Array.isArray(incomingDocs) || incomingDocs.length === 0) {
     return { updatedCount: 0, addedCount: 0 };
   }
@@ -390,10 +480,15 @@ export function mergeKnowledgeDocumentsFromCloud(incomingDocs: KnowledgeDocument
   let updatedCount = 0;
 
   try {
+    for (const k of incomingDeletedKeys) {
+      addDeletedKnowledgeDocKey(k);
+    }
+    const deletedKeys = new Set(getDeletedKnowledgeDocKeys().map(k => k.toLowerCase()));
+
     const rawCustom = localStorage.getItem(STORAGE_KEY);
     let customDocs: KnowledgeDocument[] = rawCustom ? JSON.parse(rawCustom) : [];
 
-    const BUILTIN_OVERRIDE_KEY = 'smart_teacher_builtin_overrides';
+    const builtinCustomData = getBuiltinCustomData();
     let overrides: Record<string, boolean> = {};
     try {
       const rawOv = localStorage.getItem(BUILTIN_OVERRIDE_KEY);
@@ -402,27 +497,46 @@ export function mergeKnowledgeDocumentsFromCloud(incomingDocs: KnowledgeDocument
 
     for (const inc of incomingDocs) {
       if (!inc || !inc.title) continue;
+      if (isDocBlacklisted(inc)) continue;
 
-      const incCode = (inc.code || '').toLowerCase().trim();
-      const incId = (inc.id || '').toLowerCase().trim();
+      const incId = (inc.id || '').toLowerCase();
+      const incCode = (inc.code || '').toLowerCase();
+      const incFile = (inc.fileName || '').toLowerCase();
 
-      const matchedBuiltin = BUILT_IN_KNOWLEDGE_DOCUMENTS.find(b => 
-        b.id.toLowerCase() === incId || 
-        b.code.toLowerCase().trim() === incCode ||
-        (incCode && b.code.toLowerCase().replace(/[^a-z0-9]/g, '') === incCode.replace(/[^a-z0-9]/g, ''))
-      );
+      if (deletedKeys.has(incId) || deletedKeys.has(incCode) || (incFile && deletedKeys.has(incFile))) {
+        continue;
+      }
 
-      if (matchedBuiltin || inc.isBuiltIn) {
-        const targetId = matchedBuiltin ? matchedBuiltin.id : inc.id;
-        if (targetId && typeof inc.isActive === 'boolean') {
+      const canonicalBuiltinId = getCanonicalBuiltinId(inc);
+
+      if (canonicalBuiltinId || inc.isBuiltIn) {
+        const targetId = canonicalBuiltinId || inc.id;
+        if (typeof inc.isActive === 'boolean') {
           overrides[targetId] = inc.isActive;
+        }
+
+        if (targetId && (inc.fileName || (inc.content && inc.content.length > 500))) {
+          const prev = builtinCustomData[targetId];
+          const prevTs = Number(prev?.updatedAt) || 0;
+          const incTs = Number(inc.updatedAt) || 0;
+          if (inc.fileName && (!prev?.fileName || incTs >= prevTs)) {
+            builtinCustomData[targetId] = {
+              ...prev,
+              fileName: inc.fileName,
+              fileSize: inc.fileSize,
+              fileType: inc.fileType,
+              content: inc.content || prev?.content,
+              updatedAt: incTs || Date.now()
+            };
+          }
         }
         continue;
       }
 
+      // Custom document:
       const existingIdx = customDocs.findIndex(d => 
         (d.id && inc.id && d.id === inc.id) ||
-        (d.code && inc.code && d.code.toLowerCase().trim() === inc.code.toLowerCase().trim()) ||
+        (inc.fileName && d.fileName && d.fileName.toLowerCase().trim() === inc.fileName.toLowerCase().trim()) ||
         (d.title.toLowerCase().trim() === inc.title.toLowerCase().trim() && (d.subject || 'ALL').toLowerCase().trim() === (inc.subject || 'ALL').toLowerCase().trim())
       );
 
@@ -460,8 +574,16 @@ export function mergeKnowledgeDocumentsFromCloud(incomingDocs: KnowledgeDocument
       }
     }
 
+    customDocs = customDocs.filter(d => {
+      if (isDocBlacklisted(d)) return false;
+      if (d.id && deletedKeys.has(d.id.toLowerCase())) return false;
+      if (getCanonicalBuiltinId(d)) return false;
+      return true;
+    });
+
     localStorage.setItem(STORAGE_KEY, JSON.stringify(customDocs));
     localStorage.setItem(BUILTIN_OVERRIDE_KEY, JSON.stringify(overrides));
+    saveBuiltinCustomData(builtinCustomData);
   } catch (e) {
     console.error('Error merging knowledge documents from cloud:', e);
   }
@@ -471,25 +593,72 @@ export function mergeKnowledgeDocumentsFromCloud(incomingDocs: KnowledgeDocument
 
 export function getResolvedKnowledgeDocuments(): KnowledgeDocument[] {
   if (typeof window === 'undefined') return BUILT_IN_KNOWLEDGE_DOCUMENTS;
-  const BUILTIN_OVERRIDE_KEY = 'smart_teacher_builtin_overrides';
-  let overrides: Record<string, boolean> = {};
-  try {
-    const raw = localStorage.getItem(BUILTIN_OVERRIDE_KEY);
-    if (raw) overrides = JSON.parse(raw);
-  } catch (e) {}
+
+  const overrides: Record<string, boolean> = (() => {
+    try {
+      const raw = localStorage.getItem(BUILTIN_OVERRIDE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  })();
+
+  const builtinCustomData = getBuiltinCustomData();
+  const deletedKeys = new Set(getDeletedKnowledgeDocKeys().map(k => k.toLowerCase()));
 
   const builtins = BUILT_IN_KNOWLEDGE_DOCUMENTS.map(doc => {
-    if (doc.id in overrides) {
-      return { ...doc, isActive: overrides[doc.id] };
+    const custom = builtinCustomData[doc.id];
+    let resolved = { ...doc };
+    if (custom) {
+      resolved = {
+        ...resolved,
+        title: custom.title || resolved.title,
+        content: custom.content || resolved.content,
+        fileName: custom.fileName !== undefined ? custom.fileName : resolved.fileName,
+        fileSize: custom.fileSize !== undefined ? custom.fileSize : resolved.fileSize,
+        fileType: custom.fileType !== undefined ? custom.fileType : resolved.fileType,
+        updatedAt: custom.updatedAt || resolved.updatedAt
+      };
     }
-    return doc;
+    if (doc.id in overrides) {
+      resolved.isActive = overrides[doc.id];
+    } else if (custom && typeof custom.isActive === 'boolean') {
+      resolved.isActive = custom.isActive;
+    }
+    return resolved;
   });
 
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    const customDocs: KnowledgeDocument[] = raw ? JSON.parse(raw) : [];
-    // Place customDocs first so user's uploaded syllabus/documents are displayed at the very top!
-    return [...customDocs, ...builtins];
+    const rawCustomDocs: KnowledgeDocument[] = raw ? JSON.parse(raw) : [];
+
+    const cleanCustomDocs = rawCustomDocs.filter(doc => {
+      if (isDocBlacklisted(doc)) return false;
+      if (doc.id && deletedKeys.has(doc.id.toLowerCase())) return false;
+      if (doc.code && deletedKeys.has(doc.code.toLowerCase())) return false;
+      if (doc.fileName && deletedKeys.has(doc.fileName.toLowerCase())) return false;
+
+      const builtinId = getCanonicalBuiltinId(doc);
+      if (builtinId) {
+        if (doc.fileName && !builtinCustomData[builtinId]?.fileName) {
+          builtinCustomData[builtinId] = {
+            ...builtinCustomData[builtinId],
+            fileName: doc.fileName,
+            fileSize: doc.fileSize,
+            fileType: doc.fileType,
+            content: doc.content || builtinCustomData[builtinId]?.content,
+            updatedAt: Date.now()
+          };
+          saveBuiltinCustomData(builtinCustomData);
+        }
+        return false;
+      }
+      return true;
+    });
+
+    if (cleanCustomDocs.length !== rawCustomDocs.length) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanCustomDocs));
+    }
+
+    return [...cleanCustomDocs, ...builtins];
   } catch (e) {
     return builtins;
   }
@@ -675,14 +844,49 @@ ${doc.content}
 
 export function updateKnowledgeDocument(updatedDoc: KnowledgeDocument): boolean {
   if (typeof window === 'undefined') return false;
+  if (isDocBlacklisted(updatedDoc)) return false;
+
   try {
+    const canonicalBuiltinId = getCanonicalBuiltinId(updatedDoc);
+
+    // Save full original file data to IndexedDB
+    if (updatedDoc.fileData) {
+      saveOriginalFileToStorage(canonicalBuiltinId || updatedDoc.id, updatedDoc.fileData);
+    }
+
+    if (canonicalBuiltinId) {
+      // It's a built-in document! Update its custom properties directly without cloning!
+      const builtinCustomData = getBuiltinCustomData();
+      builtinCustomData[canonicalBuiltinId] = {
+        title: updatedDoc.title,
+        content: updatedDoc.content,
+        fileName: updatedDoc.fileName,
+        fileSize: updatedDoc.fileSize,
+        fileType: updatedDoc.fileType,
+        isActive: updatedDoc.isActive !== false,
+        updatedAt: Date.now()
+      };
+      saveBuiltinCustomData(builtinCustomData);
+
+      // Clean out any legacy customized clone copy from customDocs in localStorage
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const customDocs: KnowledgeDocument[] = JSON.parse(raw);
+        const filtered = customDocs.filter(d => getCanonicalBuiltinId(d) !== canonicalBuiltinId && !d.code.includes('-UPDATED'));
+        if (filtered.length !== customDocs.length) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+        }
+      }
+      return true;
+    }
+
+    // Custom document:
     const raw = localStorage.getItem(STORAGE_KEY);
     const customDocs: KnowledgeDocument[] = raw ? JSON.parse(raw) : [];
-    const index = customDocs.findIndex(d => d.id === updatedDoc.id);
-
-    if (updatedDoc.fileData) {
-      saveOriginalFileToStorage(updatedDoc.id, updatedDoc.fileData);
-    }
+    const index = customDocs.findIndex(d => 
+      d.id === updatedDoc.id || 
+      (updatedDoc.fileName && d.fileName && d.fileName.toLowerCase().trim() === updatedDoc.fileName.toLowerCase().trim())
+    );
 
     const docToSave = { ...updatedDoc };
     delete docToSave.fileData;
@@ -690,14 +894,7 @@ export function updateKnowledgeDocument(updatedDoc: KnowledgeDocument): boolean 
     if (index >= 0) {
       customDocs[index] = docToSave;
     } else {
-      // If it was a built-in doc that teacher edited/supplemented, save as customized copy
-      customDocs.unshift({
-        ...docToSave,
-        id: 'custom-' + Date.now(),
-        code: docToSave.code + '-UPDATED',
-        isBuiltIn: false,
-        createdAt: new Date().toISOString()
-      });
+      customDocs.unshift(docToSave);
     }
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(customDocs));

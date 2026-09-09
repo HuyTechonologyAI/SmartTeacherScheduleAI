@@ -51,6 +51,7 @@ export interface KnowledgeDocPayload {
   fileSize?: number;
   fileType?: string;
   updatedAt?: number;
+  isDeleted?: boolean;
 }
 
 export interface SyncPayload {
@@ -61,6 +62,7 @@ export interface SyncPayload {
   schedules: SchedulePayload[];
   events: CalendarEventPayload[];
   knowledgeDocs?: KnowledgeDocPayload[];
+  deletedKnowledgeDocKeys?: string[];
 }
 
 const memoryCache = new Map<string, { data: SyncPayload; timestamp: number }>();
@@ -243,6 +245,7 @@ export async function GET(req: NextRequest) {
     schedules: data.schedules,
     events: data.events,
     knowledgeDocs: data.knowledgeDocs || [],
+    deletedKnowledgeDocKeys: data.deletedKnowledgeDocKeys || [],
     totalEvents: data.events.length,
     totalSchedules: data.schedules.length,
     totalKnowledgeDocs: (data.knowledgeDocs || []).length
@@ -288,32 +291,169 @@ function mergeSchedules(existing: SchedulePayload[], incoming: SchedulePayload[]
 }
 
 
-function mergeKnowledgeDocs(existing: KnowledgeDocPayload[], incoming: KnowledgeDocPayload[]): KnowledgeDocPayload[] {
-  const map = new Map<string, KnowledgeDocPayload>();
+export function getCanonicalKnowledgeDocKey(doc: { id?: string; code?: string; title?: string; fileName?: string }): string {
+  const code = (doc.code || '').toLowerCase().trim();
+  const id = (doc.id || '').toLowerCase().trim();
+  const title = (doc.title || '').toLowerCase().trim();
+  const fileName = (doc.fileName || '').toLowerCase().trim();
 
-  const getKey = (doc: KnowledgeDocPayload) => {
-    return (doc.code || doc.id || doc.title).toLowerCase().trim();
+  // 1. Blacklist dummy test docs (like Giao_trinh_CN10.docx)
+  if (fileName.includes('giao_trinh_cn10') || code.includes('gt-cn10') || id.includes('custom_7') || title.includes('công nghệ 10 (chuẩn mô đun')) {
+    return 'blacklisted_gt_cn10';
+  }
+
+  // 2. Map standard 6 built-ins to unified canonical keys
+  if (code.includes('5512') || id.includes('5512') || title.includes('5512')) return 'builtin_cv_5512';
+  if (code.includes('3456') || id.includes('3456') || title.includes('3456')) return 'builtin_cv_3456';
+  if (code.includes('2422') || id.includes('2422') || title.includes('2422')) return 'builtin_qd_2422';
+  if (code.includes('2634') || id.includes('2634') || title.includes('2634')) return 'builtin_cv_2634';
+  if (code.includes('tt_22') || code.includes('tt 22') || id.includes('tt-22') || id.includes('tt_22') || title.includes('thông tư 22') || title.includes('tt 22')) return 'builtin_tt_22';
+  if (code.includes('5s') || code.includes('atld') || id.includes('5s') || id.includes('atld') || title.includes('5s') || title.includes('an toàn lao động')) return 'builtin_atld_5s';
+
+  // 3. Custom files: Key by fileName if available
+  if (fileName) {
+    return 'file_' + fileName.replace(/\s+/g, '_');
+  }
+
+  // 4. Custom text/doc: Key by normalized title
+  const cleanTitle = title.replace(/[^a-z0-9à-ỹ]/gi, '_').replace(/_+/g, '_');
+  return `custom_${cleanTitle}`;
+}
+
+function mergeKnowledgeDocs(
+  existing: KnowledgeDocPayload[],
+  incoming: KnowledgeDocPayload[],
+  deletedKeys: string[] = []
+): KnowledgeDocPayload[] {
+  const map = new Map<string, KnowledgeDocPayload>();
+  const deletedSet = new Set<string>(deletedKeys.map(k => k.toLowerCase().trim()));
+
+  // Always blacklist Giao_trinh_CN10
+  deletedSet.add('blacklisted_gt_cn10');
+  deletedSet.add('custom_7');
+  deletedSet.add('gt-cn10');
+  deletedSet.add('giao_trinh_cn10.docx');
+  deletedSet.add('file_giao_trinh_cn10.docx');
+
+  const isDocDeleted = (doc: KnowledgeDocPayload) => {
+    if (doc.isDeleted) return true;
+    const key = getCanonicalKnowledgeDocKey(doc);
+    if (key === 'blacklisted_gt_cn10') return true;
+    if (deletedSet.has(key)) return true;
+    if (doc.id && deletedSet.has(doc.id.toLowerCase().trim())) return true;
+    if (doc.code && deletedSet.has(doc.code.toLowerCase().trim())) return true;
+    if (doc.fileName && deletedSet.has(doc.fileName.toLowerCase().trim())) return true;
+    return false;
   };
 
   for (const d of existing) {
-    map.set(getKey(d), d);
+    if (isDocDeleted(d)) continue;
+    const key = getCanonicalKnowledgeDocKey(d);
+    map.set(key, d);
   }
 
   for (const inc of incoming) {
-    const key = getKey(inc);
+    if (isDocDeleted(inc)) {
+      const key = getCanonicalKnowledgeDocKey(inc);
+      map.delete(key);
+      continue;
+    }
+
+    const key = getCanonicalKnowledgeDocKey(inc);
     const prev = map.get(key);
     if (!prev) {
       map.set(key, inc);
     } else {
+      const incHasFile = Boolean(inc.fileName && inc.fileName.trim());
+      const prevHasFile = Boolean(prev.fileName && prev.fileName.trim());
       const prevTs = Number(prev.updatedAt) || 0;
       const incTs = Number(inc.updatedAt) || 0;
-      if (incTs >= prevTs) {
+
+      if (incHasFile && !prevHasFile) {
+        map.set(key, inc);
+      } else if (!incHasFile && prevHasFile) {
+        if (incTs >= prevTs) {
+          map.set(key, {
+            ...inc,
+            fileName: prev.fileName,
+            fileSize: prev.fileSize,
+            fileType: prev.fileType,
+            content: (inc.content && inc.content.length > 500) ? inc.content : (prev.content || inc.content)
+          });
+        }
+      } else if (incTs >= prevTs) {
         map.set(key, inc);
       }
     }
   }
 
-  return Array.from(map.values());
+  const canonicalTitles: Record<string, { id: string; code: string; title: string; category: string; targetLevel: string }> = {
+    builtin_cv_5512: {
+      id: 'builtin-cv-5512',
+      code: 'CV 5512/BGDĐT-GDTrH',
+      title: 'Công văn 5512/BGDĐT-GDTrH - Xây dựng và tổ chức thực hiện kế hoạch giáo dục của nhà trường',
+      category: 'PHAP_QUY',
+      targetLevel: 'Phổ thông'
+    },
+    builtin_cv_3456: {
+      id: 'builtin-cv-3456',
+      code: 'CV 3456/BGDĐT-GDPT',
+      title: 'Công văn 3456/BGDĐT-GDPT - Triển khai Khung năng lực số cho học sinh phổ thông và GDTX',
+      category: 'PHAP_QUY',
+      targetLevel: 'Phổ thông'
+    },
+    builtin_qd_2422: {
+      id: 'builtin-qd-2422',
+      code: 'QĐ 2422/QĐ-BGDĐT',
+      title: 'Quyết định 2422/QĐ-BGDĐT - Khung nội dung giáo dục Trí tuệ nhân tạo (AI) cho học sinh phổ thông',
+      category: 'PHAP_QUY',
+      targetLevel: 'Phổ thông'
+    },
+    builtin_cv_2634: {
+      id: 'builtin-cv-2634',
+      code: 'CV 2634/TCGDNN-ĐTCQ',
+      title: 'Công văn 2634/TCGDNN-ĐTCQ - Hướng dẫn biên soạn giáo án tích hợp và thực hành nghề xưởng',
+      category: 'PHAP_QUY',
+      targetLevel: 'Nghề nghiệp'
+    },
+    builtin_tt_22: {
+      id: 'builtin-tt-22',
+      code: 'TT 22/2021/TT-BGDĐT',
+      title: 'Thông tư 22/2021/TT-BGDĐT - Đánh giá học sinh THCS, THPT và Khung Ma trận Đề 4 mức độ',
+      category: 'PHAP_QUY',
+      targetLevel: 'ALL'
+    },
+    builtin_atld_5s: {
+      id: 'builtin-atld-5s',
+      code: 'TCVN-ATLD-5S',
+      title: 'Tiêu chuẩn Kỹ thuật An toàn Lao động Xưởng Thực hành & Quy chuẩn 5S',
+      category: 'ATLD',
+      targetLevel: 'Nghề nghiệp'
+    }
+  };
+
+  const results: KnowledgeDocPayload[] = [];
+  for (const [key, doc] of map.entries()) {
+    if (canonicalTitles[key]) {
+      const meta = canonicalTitles[key];
+      results.push({
+        ...doc,
+        id: meta.id,
+        code: meta.code,
+        title: meta.title,
+        category: meta.category,
+        targetLevel: meta.targetLevel,
+        isBuiltIn: true
+      });
+    } else {
+      results.push({
+        ...doc,
+        isBuiltIn: false
+      });
+    }
+  }
+
+  return results;
 }
 
 function mergeEvents(existing: CalendarEventPayload[], incoming: CalendarEventPayload[]): CalendarEventPayload[] {
@@ -369,6 +509,7 @@ export async function POST(req: NextRequest) {
     const incomingSchedules: SchedulePayload[] = Array.isArray(body.schedules) ? body.schedules : [];
     let incomingEvents: CalendarEventPayload[] = Array.isArray(body.events) ? body.events : [];
     const incomingKnowledgeDocs: KnowledgeDocPayload[] = Array.isArray(body.knowledgeDocs) ? body.knowledgeDocs : [];
+    const incomingDeletedKeys: string[] = Array.isArray(body.deletedKnowledgeDocKeys) ? body.deletedKnowledgeDocKeys : [];
 
     if (incomingEvents.length === 0 && incomingSchedules.length > 0) {
       incomingEvents = generateEventsFromSchedules(incomingSchedules);
@@ -376,6 +517,18 @@ export async function POST(req: NextRequest) {
 
     // 1. Tải bản ghi đám mây hiện tại (nếu có) để hợp nhất 2 chiều thông minh
     const existing = await getFromGist(cleanCode);
+
+    // Hợp nhất danh sách các key đã xóa
+    const combinedDeletedKeys = Array.from(
+      new Set([
+        ...(existing?.deletedKnowledgeDocKeys || []),
+        ...incomingDeletedKeys,
+        'custom_7',
+        'gt-cn10',
+        'giao_trinh_cn10.docx',
+        'file_giao_trinh_cn10.docx'
+      ])
+    );
 
     let finalSchedules = incomingSchedules;
     let finalEvents = incomingEvents;
@@ -385,7 +538,9 @@ export async function POST(req: NextRequest) {
       // Hợp nhất ca dạy, lịch mẫu và tài liệu theo mốc thời gian sửa đổi (Last-Write-Wins per item)
       finalSchedules = mergeSchedules(existing.schedules || [], incomingSchedules);
       finalEvents = mergeEvents(existing.events || [], incomingEvents);
-      finalKnowledgeDocs = mergeKnowledgeDocs(existing.knowledgeDocs || [], incomingKnowledgeDocs);
+      finalKnowledgeDocs = mergeKnowledgeDocs(existing.knowledgeDocs || [], incomingKnowledgeDocs, combinedDeletedKeys);
+    } else {
+      finalKnowledgeDocs = mergeKnowledgeDocs([], incomingKnowledgeDocs, combinedDeletedKeys);
     }
 
     const maxUpdatedAt = Math.max(
@@ -401,7 +556,8 @@ export async function POST(req: NextRequest) {
       updatedAt: maxUpdatedAt,
       schedules: finalSchedules,
       events: finalEvents,
-      knowledgeDocs: finalKnowledgeDocs
+      knowledgeDocs: finalKnowledgeDocs,
+      deletedKnowledgeDocKeys: combinedDeletedKeys
     };
 
     const saved = await saveToGist(payload);
@@ -420,6 +576,7 @@ export async function POST(req: NextRequest) {
       schedules: payload.schedules,
       events: payload.events,
       knowledgeDocs: payload.knowledgeDocs || [],
+      deletedKnowledgeDocKeys: combinedDeletedKeys,
       totalEvents: payload.events.length,
       totalSchedules: payload.schedules.length,
       totalKnowledgeDocs: (payload.knowledgeDocs || []).length

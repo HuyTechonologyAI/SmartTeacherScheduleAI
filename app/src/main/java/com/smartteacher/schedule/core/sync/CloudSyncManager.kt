@@ -150,6 +150,12 @@ object CloudSyncManager {
             val knowledgeDocsArray = JsonArray()
             val allDocs = db.knowledgeDocumentDao().getAllDocumentsList()
             for (doc in allDocs) {
+                // Ignore blacklisted dummy test documents
+                if (doc.fileName.contains("giao_trinh_cn10", ignoreCase = true) ||
+                    doc.code.contains("gt-cn10", ignoreCase = true) ||
+                    doc.title.contains("công nghệ 10 (chuẩn mô đun", ignoreCase = true)) {
+                    continue
+                }
                 val item = JsonObject().apply {
                     addProperty("id", if (doc.isBuiltIn) doc.code else "custom_${doc.id}")
                     addProperty("code", doc.code)
@@ -168,6 +174,13 @@ object CloudSyncManager {
                 knowledgeDocsArray.add(item)
             }
 
+            val deletedKeysArray = JsonArray().apply {
+                add("custom_7")
+                add("gt-cn10")
+                add("giao_trinh_cn10.docx")
+                add("file_giao_trinh_cn10.docx")
+            }
+
             val rootObj = JsonObject().apply {
                 addProperty("syncCode", syncCode)
                 addProperty("platform", "android")
@@ -175,10 +188,11 @@ object CloudSyncManager {
                 addProperty("updatedAt", System.currentTimeMillis())
                 addProperty("totalEvents", allEvents.size)
                 addProperty("totalSchedules", schedules.size)
-                addProperty("totalKnowledgeDocs", allDocs.size)
+                addProperty("totalKnowledgeDocs", knowledgeDocsArray.size())
                 add("events", eventsArray)
                 add("schedules", schedulesArray)
                 add("knowledgeDocs", knowledgeDocsArray)
+                add("deletedKnowledgeDocKeys", deletedKeysArray)
             }
 
             val requestBody = rootObj.toString().toRequestBody(jsonMediaType)
@@ -411,13 +425,75 @@ object CloudSyncManager {
             }
 
             // 3. Cập nhật tài liệu giáo trình, đề cương và văn bản chuẩn (knowledge_documents)
+            var currentDocs = db.knowledgeDocumentDao().getAllDocumentsList()
+
+            // A. Purge any blacklisted documents (e.g. Giao_trinh_CN10.docx)
+            val blacklistedDocs = currentDocs.filter {
+                it.fileName.contains("giao_trinh_cn10", ignoreCase = true) ||
+                it.code.contains("gt-cn10", ignoreCase = true) ||
+                it.title.contains("công nghệ 10 (chuẩn mô đun", ignoreCase = true)
+            }
+            for (b in blacklistedDocs) {
+                db.knowledgeDocumentDao().deleteDocument(b)
+                changedCount++
+            }
+
+            // B. Purge any duplicate non-builtin clones of built-in documents (e.g. older -UPDATED copies)
+            val duplicateClones = currentDocs.filter {
+                !it.isBuiltIn && (
+                    it.code.contains("-UPDATED", ignoreCase = true) ||
+                    it.code.equals("CV_5512", ignoreCase = true) ||
+                    it.code.equals("CV_3456_BGDDT", ignoreCase = true) ||
+                    it.code.equals("QD_2422_BGDDT", ignoreCase = true) ||
+                    it.code.equals("CV_2634", ignoreCase = true) ||
+                    it.code.equals("TT_22_BGDDT", ignoreCase = true) ||
+                    it.code.equals("QUY_CHUAN_5S_ATLD", ignoreCase = true) ||
+                    it.title.contains("5512", ignoreCase = true) ||
+                    it.title.contains("3456", ignoreCase = true) ||
+                    it.title.contains("2422", ignoreCase = true)
+                )
+            }
+            for (dup in duplicateClones) {
+                db.knowledgeDocumentDao().deleteDocument(dup)
+                changedCount++
+            }
+
+            // C. Process deleted keys from cloud
+            val deletedDocsArray = jsonObject.getAsJsonArray("deletedKnowledgeDocKeys")
+            if (deletedDocsArray != null && deletedDocsArray.size() > 0) {
+                val deletedKeySet = mutableSetOf<String>()
+                for (delElem in deletedDocsArray) {
+                    deletedKeySet.add(delElem.asString.trim().lowercase())
+                }
+                val toDelete = currentDocs.filter {
+                    !it.isBuiltIn && (
+                        deletedKeySet.contains(it.id.toString()) ||
+                        deletedKeySet.contains("custom_${it.id}".lowercase()) ||
+                        deletedKeySet.contains(it.code.lowercase()) ||
+                        deletedKeySet.contains(it.fileName.lowercase())
+                    )
+                }
+                for (del in toDelete) {
+                    db.knowledgeDocumentDao().deleteDocument(del)
+                    changedCount++
+                }
+            }
+
+            // Refresh currentDocs after deletions
+            currentDocs = db.knowledgeDocumentDao().getAllDocumentsList()
+
             if (docsArray != null && docsArray.size() > 0) {
-                val currentDocs = db.knowledgeDocumentDao().getAllDocumentsList()
                 for (elem in docsArray) {
                     val item = elem.asJsonObject
-                    val code = item.get("code")?.asString ?: item.get("id")?.asString ?: ""
+                    val rawCode = item.get("code")?.asString ?: item.get("id")?.asString ?: ""
                     val title = item.get("title")?.asString ?: ""
-                    if (code.isBlank() && title.isBlank()) continue
+                    if (rawCode.isBlank() && title.isBlank()) continue
+
+                    val fileName = item.get("fileName")?.asString ?: ""
+                    // Skip blacklisted
+                    if (fileName.contains("giao_trinh_cn10", ignoreCase = true) || rawCode.contains("gt-cn10", ignoreCase = true)) {
+                        continue
+                    }
 
                     val category = item.get("category")?.asString ?: "GIAO_TRINH"
                     val subject = item.get("subject")?.asString ?: "ALL"
@@ -425,14 +501,50 @@ object CloudSyncManager {
                     val content = item.get("content")?.asString ?: ""
                     val isBuiltIn = item.get("isBuiltIn")?.asBoolean ?: false
                     val isActive = if (item.has("isActive")) item.get("isActive").asBoolean else true
-                    val fileName = item.get("fileName")?.asString ?: ""
                     val fileSize = item.get("fileSize")?.asLong ?: 0L
                     val fileType = item.get("fileType")?.asString ?: ""
                     val itemUpdatedAt = item.get("updatedAt")?.asLong ?: System.currentTimeMillis()
 
+                    // Check if it matches one of the 6 canonical built-in documents in Android
+                    val targetBuiltinCode = when {
+                        rawCode.contains("5512", ignoreCase = true) || title.contains("5512", ignoreCase = true) -> "CV_5512"
+                        rawCode.contains("3456", ignoreCase = true) || title.contains("3456", ignoreCase = true) -> "CV_3456_BGDDT"
+                        rawCode.contains("2422", ignoreCase = true) || title.contains("2422", ignoreCase = true) -> "QD_2422_BGDDT"
+                        rawCode.contains("2634", ignoreCase = true) || title.contains("2634", ignoreCase = true) -> "CV_2634"
+                        rawCode.contains("tt_22", ignoreCase = true) || rawCode.contains("tt 22", ignoreCase = true) || title.contains("22/2021", ignoreCase = true) || title.contains("thông tư 22", ignoreCase = true) -> "TT_22_BGDDT"
+                        rawCode.contains("5s", ignoreCase = true) || rawCode.contains("atld", ignoreCase = true) || title.contains("5s", ignoreCase = true) || title.contains("an toàn", ignoreCase = true) -> "QUY_CHUAN_5S_ATLD"
+                        else -> null
+                    }
+
+                    if (targetBuiltinCode != null) {
+                        val builtinDoc = currentDocs.find { it.code == targetBuiltinCode }
+                        if (builtinDoc != null) {
+                            val isDiff = (fileName.isNotBlank() && builtinDoc.fileName != fileName) ||
+                                         (content.length > 500 && builtinDoc.content != content) ||
+                                         builtinDoc.isActive != isActive
+                            if (isDiff) {
+                                val updated = builtinDoc.copy(
+                                    isActive = isActive,
+                                    fileName = if (fileName.isNotBlank()) fileName else builtinDoc.fileName,
+                                    fileSizeBytes = if (fileSize > 0) fileSize else builtinDoc.fileSizeBytes,
+                                    fileExtension = if (fileType.isNotBlank()) fileType else builtinDoc.fileExtension,
+                                    content = if (content.length > 500) content else builtinDoc.content,
+                                    updatedAt = itemUpdatedAt
+                                )
+                                db.knowledgeDocumentDao().updateDocument(updated)
+                                changedCount++
+                            }
+                        }
+                        continue
+                    }
+
+                    // Custom document matching
                     val existing = currentDocs.find {
-                        it.code.equals(code, ignoreCase = true) ||
-                        (it.title.equals(title, ignoreCase = true) && it.subject.equals(subject, ignoreCase = true))
+                        !it.isBuiltIn && (
+                            (fileName.isNotBlank() && it.fileName.equals(fileName, ignoreCase = true)) ||
+                            it.code.equals(rawCode, ignoreCase = true) ||
+                            (it.title.equals(title, ignoreCase = true) && it.subject.equals(subject, ignoreCase = true))
+                        )
                     }
 
                     if (existing != null) {
@@ -460,15 +572,15 @@ object CloudSyncManager {
                             db.knowledgeDocumentDao().updateDocument(updated)
                             changedCount++
                         }
-                    } else {
+                    } else if (category != "PHAP_QUY") {
                         val newDoc = KnowledgeDocumentEntity(
-                            code = if (code.isNotBlank()) code else "DOC_${System.currentTimeMillis()}",
+                            code = if (rawCode.isNotBlank()) rawCode else "DOC_${System.currentTimeMillis()}",
                             title = title,
                             category = category,
                             subject = subject,
                             targetLevel = targetLevel,
                             content = content,
-                            isBuiltIn = isBuiltIn,
+                            isBuiltIn = false,
                             isActive = isActive,
                             fileName = fileName,
                             fileSizeBytes = fileSize,

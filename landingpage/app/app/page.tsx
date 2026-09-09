@@ -6,12 +6,23 @@ import {
   LessonPlan5512Data,
   LessonPlan2634Data,
   ExamMatrixData,
+  LessonSlideItem,
+  MiniGameQuestion,
+  VideoStoryboardScene,
+  LessonMindmapData,
+  LessonPlanAuditResult,
+  FullLessonPackage,
   generateLessonPlan5512,
   generateLessonPlan2634,
   generateExamMatrix,
   lessonPlan5512ToHtml,
   lessonPlan2634ToHtml,
   examMatrixToHtml,
+  generateComprehensiveLessonPlanPackage,
+  slidesToHtml,
+  miniGameToTxt,
+  videoScriptToHtml,
+  fullPackageToDocHtml,
   downloadWordDoc
 } from './lessonPlanAi';
 import {
@@ -23,7 +34,9 @@ import {
   getActiveReferenceContext,
   updateKnowledgeDocument,
   exportKnowledgeDocToWord,
-  exportKnowledgeDocToTxt
+  exportKnowledgeDocToTxt,
+  findMatchingKnowledgeDocument,
+  MatchedDocResult
 } from './knowledgeBaseData';
 import {
   extractFullTextFromFile,
@@ -83,7 +96,10 @@ import {
   ChevronLeft,
   CalendarDays,
   ExternalLink,
-  Edit3
+  Edit3,
+  Gamepad2,
+  Video,
+  Network
 } from 'lucide-react';
 
 export interface CalendarEventItem {
@@ -578,6 +594,102 @@ export default function UnifiedTeacherScheduleApp() {
   const [plannerResult5512, setPlannerResult5512] = useState<LessonPlan5512Data | null>(null);
   const [plannerResult2634, setPlannerResult2634] = useState<LessonPlan2634Data | null>(null);
   const [plannerIsGenerating, setPlannerIsGenerating] = useState(false);
+
+  // New Multi-Modal Planner & Digital Competency States
+  const [plannerClassFilter, setPlannerClassFilter] = useState('ALL');
+  const [plannerMatchedDocResult, setPlannerMatchedDocResult] = useState<MatchedDocResult | null>(null);
+  const [plannerFullPackage, setPlannerFullPackage] = useState<FullLessonPackage | null>(null);
+  const [plannerActiveResultTab, setPlannerActiveResultTab] = useState<'plan' | 'slides' | 'game' | 'video' | 'mindmap' | 'audit'>('plan');
+  const [plannerStepProgress, setPlannerStepProgress] = useState('');
+
+  // Hàm chọn ca dạy và tự động trích xuất tiết học, tên bài và khớp nối tài liệu giáo trình
+  const selectPlannerEvent = (ev: CalendarEventItem) => {
+    setPlannerSelectedEventId(ev.id);
+    setPlannerSubject(ev.subject || '');
+    setPlannerClass(ev.className || '');
+    setPlannerDuration(ev.sessionType?.includes('Thực hành') ? '4' : '1');
+
+    const rawNote = ev.notes || '';
+    const rawTitle = ev.title || '';
+    const combined = (rawNote + ' ' + rawTitle).trim();
+
+    let inferredLesson = '';
+    const lessonMatch = combined.match(/(?:bài\s*[0-9]+[^:\-]*[:\-]\s*)([^,\n\r]+)/i);
+    if (lessonMatch) {
+      inferredLesson = lessonMatch[0].trim();
+    } else if (rawNote.trim()) {
+      inferredLesson = rawNote.trim();
+    } else {
+      inferredLesson = ev.title || ev.subject;
+    }
+
+    setPlannerLessonTitle(inferredLesson);
+    setPlannerModuleTitle(inferredLesson);
+
+    // Khớp nối tài liệu từ Kho tư liệu chuẩn
+    const matched = findMatchingKnowledgeDocument(ev.subject, ev.className, inferredLesson);
+    setPlannerMatchedDocResult(matched);
+  };
+
+  // Hàm sinh kế hoạch bài giảng trọn gói đa phương tiện 5 bước
+  const handleGenerateFullLessonPackage = () => {
+    const title = plannerLessonTitle.trim();
+    if (!title) {
+      alert('Vui lòng nhập hoặc chọn Tên bài dạy!');
+      return;
+    }
+
+    setPlannerIsGenerating(true);
+    setPlannerStepProgress('Bước 1/5: Thiết lập Kế hoạch bài dạy chuẩn quy chuẩn...');
+
+    setTimeout(() => {
+      setPlannerStepProgress('Bước 2/5: Soạn thảo kịch bản Slide thuyết trình PowerPoint...');
+      setTimeout(() => {
+        setPlannerStepProgress('Bước 3/5: Thiết kế bộ câu hỏi Mini Game tương tác...');
+        setTimeout(() => {
+          setPlannerStepProgress('Bước 4/5: Xây dựng kịch bản Video bài giảng vi mô...');
+          setTimeout(() => {
+            setPlannerStepProgress('Bước 5/5: Vẽ Sơ đồ tư duy & Chấm điểm Năng lực số...');
+
+            const durationNum = Number(plannerDuration) || (plannerStandard === 5512 ? 1 : 4);
+            const selectedEv = events.find(e => e.id === plannerSelectedEventId);
+            const sessionInfoStr = selectedEv
+              ? `${selectedEv.date} • Ca: ${selectedEv.startTime}-${selectedEv.endTime} (Phòng: ${selectedEv.room || 'Lớp học'})`
+              : 'Theo phân phối chương trình';
+
+            const pkg = generateComprehensiveLessonPlanPackage({
+              lessonTitle: title,
+              subject: plannerSubject || 'Chung',
+              className: plannerClass || 'Toàn trường',
+              sessionInfo: sessionInfoStr,
+              standard: plannerStandard,
+              durationMinutes: durationNum * (plannerStandard === 5512 ? 45 : 60),
+              customRequirements: plannerRequirements,
+              matchedDoc: plannerMatchedDocResult?.doc ? {
+                code: plannerMatchedDocResult.doc.code,
+                title: plannerMatchedDocResult.doc.title,
+                fileName: plannerMatchedDocResult.doc.fileName,
+                relevantSnippet: plannerMatchedDocResult.relevantSnippet
+              } : null,
+              referenceContext: getActiveReferenceContext(plannerSubject, plannerStandard === 5512 ? 'PHAP_QUY' : 'ATLD_5S')
+            });
+
+            setPlannerFullPackage(pkg);
+            if (plannerStandard === 5512) {
+              setPlannerResult5512(pkg.plan5512 || null);
+              setPlannerResult2634(null);
+            } else {
+              setPlannerResult2634(pkg.plan2634 || null);
+              setPlannerResult5512(null);
+            }
+            setPlannerActiveResultTab('plan');
+            setPlannerIsGenerating(false);
+            setPlannerStepProgress('');
+          }, 350);
+        }, 350);
+      }, 350);
+    }, 350);
+  };
 
   // Exam Matrix States
   const [examTopic, setExamTopic] = useState('');
@@ -2114,41 +2226,116 @@ export default function UnifiedTeacherScheduleApp() {
                     </div>
                   </div>
 
-                  {/* Fast Pick from synched schedule */}
-                  {events.length > 0 && (
-                    <div className="pt-2">
-                      <label className="text-xs font-bold text-slate-300 block mb-1.5">
-                        2. Chọn nhanh từ 288 ca dạy đã đồng bộ của Thầy/Cô:
+                  {/* ================= 2. BỘ LỌC LỚP HỌC & CHỌN CA DẠY ĐÃ LÊN LỊCH ================= */}
+                  <div className="pt-2 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <label className="text-xs font-bold text-slate-300 block">
+                        2. Chọn Lớp học & Ca dạy đã lên lịch trước:
                       </label>
-                      <div className="flex items-center gap-2 overflow-x-auto pb-2 text-xs">
-                        {events.slice(0, 12).map((ev) => {
-                          const isSel = plannerSelectedEventId === ev.id;
-                          return (
-                            <button
-                              key={ev.id}
-                              type="button"
-                              onClick={() => {
-                                setPlannerSelectedEventId(ev.id);
-                                setPlannerLessonTitle(ev.title || ev.subject);
-                                setPlannerModuleTitle(ev.title || ev.subject);
-                                setPlannerSubject(ev.subject);
-                                setPlannerClass(ev.className);
-                                setPlannerDuration(ev.sessionType?.includes('Thực hành') ? '4.0' : '1');
-                              }}
-                              className={`px-3 py-1.5 rounded-xl border whitespace-nowrap text-left transition-all cursor-pointer ${
-                                isSel
-                                  ? 'bg-blue-600 text-white border-blue-400 font-semibold shadow'
-                                  : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
-                              }`}
-                            >
-                              <div className="font-bold">{ev.title || ev.subject}</div>
-                              <div className="text-[10px] opacity-80">{ev.className} • {ev.date}</div>
-                            </button>
-                          );
-                        })}
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-slate-400">Lọc theo Lớp:</span>
+                        <select
+                          value={plannerClassFilter}
+                          onChange={(e) => setPlannerClassFilter(e.target.value)}
+                          className="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+                        >
+                          <option value="ALL">Tất cả các lớp ({events.length} ca dạy)</option>
+                          {Array.from(new Set(events.map(ev => ev.className).filter(Boolean))).sort().map(cls => (
+                            <option key={cls} value={cls}>Lớp {cls} ({events.filter(e => e.className === cls).length} ca)</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
-                  )}
+
+                    {events.length > 0 ? (
+                      <div className="flex items-center gap-2.5 overflow-x-auto pb-2 text-xs">
+                        {(plannerClassFilter === 'ALL' ? events : events.filter(e => e.className === plannerClassFilter))
+                          .slice(0, 16)
+                          .map((ev) => {
+                            const isSel = plannerSelectedEventId === ev.id;
+                            return (
+                              <button
+                                key={ev.id}
+                                type="button"
+                                onClick={() => selectPlannerEvent(ev)}
+                                className={`px-3.5 py-2 rounded-xl border text-left transition-all shrink-0 cursor-pointer ${
+                                  isSel
+                                    ? 'bg-blue-600 text-white border-blue-400 font-semibold shadow-lg shadow-blue-500/25 ring-1 ring-white/30'
+                                    : 'bg-slate-900/90 border-slate-700 text-slate-300 hover:border-slate-500 hover:bg-slate-800'
+                                }`}
+                                style={{ minWidth: '170px' }}
+                              >
+                                <div className="font-bold flex items-center justify-between gap-1">
+                                  <span className="truncate max-w-[130px]">{ev.title || ev.subject}</span>
+                                  {isSel && <CheckCircle2 className="w-3.5 h-3.5 text-white shrink-0" />}
+                                </div>
+                                <div className="text-[10.5px] opacity-85 mt-0.5">
+                                  {ev.className} • {ev.date}
+                                </div>
+                                {ev.notes ? (
+                                  <div className="text-[10px] text-amber-300/90 truncate max-w-[150px] mt-0.5 font-mono">
+                                    📝 {ev.notes}
+                                  </div>
+                                ) : (
+                                  <div className="text-[10px] opacity-60 mt-0.5">
+                                    {ev.startTime} - {ev.endTime}
+                                  </div>
+                                )}
+                              </button>
+                            );
+                          })}
+                      </div>
+                    ) : (
+                      <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-400">
+                        Chưa có lịch dạy đồng bộ. Thầy/Cô có thể nhập trực tiếp thông tin bên dưới hoặc đồng bộ lịch từ điện thoại.
+                      </div>
+                    )}
+
+                    {/* Thẻ hiển thị khớp nối Kho tư liệu chuẩn */}
+                    {plannerMatchedDocResult?.doc ? (
+                      <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-2.5 text-xs animate-fade-in">
+                        <BookOpen className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-emerald-300">
+                              Đã khớp nối thành công với tài liệu:
+                            </span>
+                            <span className="font-semibold text-white bg-emerald-600/30 px-2 py-0.5 rounded border border-emerald-500/30">
+                              {plannerMatchedDocResult.doc.title}
+                            </span>
+                            <span className="text-[10px] font-mono text-emerald-400">
+                              ({plannerMatchedDocResult.doc.code})
+                            </span>
+                          </div>
+                          {plannerMatchedDocResult.doc.fileName && (
+                            <div className="text-[11px] text-slate-300 mt-1 flex items-center gap-1">
+                              <Paperclip className="w-3 h-3 text-emerald-400" />
+                              <span>Tệp đính kèm: <strong>{plannerMatchedDocResult.doc.fileName}</strong></span>
+                            </div>
+                          )}
+                          {plannerMatchedDocResult.relevantSnippet && (
+                            <div className="mt-1.5 p-2 rounded bg-slate-900/80 border border-emerald-500/20 text-[11px] text-slate-300 line-clamp-2 italic">
+                              "{plannerMatchedDocResult.relevantSnippet.slice(0, 180)}..."
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-2.5 rounded-xl bg-slate-900/70 border border-slate-800 flex items-center justify-between gap-2 text-[11px] text-slate-400">
+                        <span className="flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                          <span>AI sẽ tự động dò tìm giáo trình trong Kho tư liệu tương ứng với Môn học và Khối lớp.</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setAiSubTab('knowledge')}
+                          className="text-blue-400 hover:text-blue-300 underline cursor-pointer shrink-0 font-medium"
+                        >
+                          Mở Kho Tư Liệu
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Inputs */}
                   <div className="pt-2 space-y-3">
@@ -2176,8 +2363,14 @@ export default function UnifiedTeacherScheduleApp() {
                       <input
                         type="text"
                         value={plannerLessonTitle}
-                        onChange={(e) => setPlannerLessonTitle(e.target.value)}
-                        placeholder={plannerStandard === 5512 ? 'Ví dụ: Bài 12: Phân chia tế bào và Nguyên phân' : 'Ví dụ: Gia công tiện ren tam giác hệ mét trên máy tiện CNC'}
+                        onChange={(e) => {
+                          setPlannerLessonTitle(e.target.value);
+                          if (plannerSubject) {
+                            const matched = findMatchingKnowledgeDocument(plannerSubject, plannerClass, e.target.value);
+                            setPlannerMatchedDocResult(matched);
+                          }
+                        }}
+                        placeholder={plannerStandard === 5512 ? 'Ví dụ: Bài 1: Khái quát về công nghệ' : 'Ví dụ: Gia công tiện ren tam giác hệ mét trên máy tiện CNC'}
                         className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-blue-500"
                       />
                     </div>
@@ -2188,8 +2381,14 @@ export default function UnifiedTeacherScheduleApp() {
                         <input
                           type="text"
                           value={plannerSubject}
-                          onChange={(e) => setPlannerSubject(e.target.value)}
-                          placeholder="Toán, Cắt gọt kim loại..."
+                          onChange={(e) => {
+                            setPlannerSubject(e.target.value);
+                            if (e.target.value) {
+                              const matched = findMatchingKnowledgeDocument(e.target.value, plannerClass, plannerLessonTitle);
+                              setPlannerMatchedDocResult(matched);
+                            }
+                          }}
+                          placeholder="Công nghệ, Toán, Cắt gọt kim loại..."
                           className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-blue-500"
                         />
                       </div>
@@ -2221,75 +2420,36 @@ export default function UnifiedTeacherScheduleApp() {
 
                     <div>
                       <span className="text-[11px] text-slate-400 mb-1 block">
-                        {plannerStandard === 5512 ? 'Yêu cầu sư phạm bổ sung / Thiết bị dạy học:' : 'Yêu cầu ATLĐ, Máy móc thiết bị, Phôi mẫu & Quy chuẩn 5S:'}
+                        {plannerStandard === 5512 ? 'Yêu cầu sư phạm bổ sung / Thiết bị dạy học số:' : 'Yêu cầu ATLĐ, Máy móc thiết bị, Phôi mẫu & Quy chuẩn 5S:'}
                       </span>
                       <input
                         type="text"
                         value={plannerRequirements}
                         onChange={(e) => setPlannerRequirements(e.target.value)}
-                        placeholder={plannerStandard === 5512 ? 'Máy chiếu, video tư liệu, phiếu học tập số 1...' : 'Máy tiện vạn năng T616, phôi nhôm D50, kính bảo hộ, quy trình 5S...'}
+                        placeholder={plannerStandard === 5512 ? 'Tivi tương tác, video mô phỏng, phần mềm Kahoot, phiếu học tập số...' : 'Máy tiện vạn năng T616, kính bảo hộ, quy trình 5S xưởng...'}
                         className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-blue-500"
                       />
                     </div>
                   </div>
 
-                  {/* Generate Button */}
+                  {/* Nút Sinh Kế Hoạch Bài Giảng Trọn Gói AI (Quy trình 5 bước) */}
                   <div className="pt-2">
                     <button
                       type="button"
                       disabled={plannerIsGenerating}
-                      onClick={() => {
-                        const title = plannerLessonTitle.trim();
-                        if (!title) {
-                          alert('Vui lòng nhập Tên bài dạy!');
-                          return;
-                        }
-                        setPlannerIsGenerating(true);
-                        setTimeout(() => {
-                          if (plannerStandard === 5512) {
-                            const refContext = getActiveReferenceContext(plannerSubject, 'PHAP_QUY');
-                            const p = generateLessonPlan5512(
-                              title,
-                              plannerSubject,
-                              plannerClass,
-                              Number(plannerDuration) || 1,
-                              plannerRequirements,
-                              refContext
-                            );
-                            setPlannerResult5512(p);
-                            setPlannerResult2634(null);
-                          } else {
-                            const refContext = getActiveReferenceContext(plannerSubject, 'ATLD_5S');
-                            const p = generateLessonPlan2634(
-                              plannerModuleTitle || title,
-                              plannerSubject,
-                              plannerClass,
-                              (Number(plannerDuration) || 4) * 60,
-                              plannerRequirements,
-                              refContext
-                            );
-                            p.moduleTitle = plannerModuleTitle || title;
-                            p.objectives.knowledge = `Nắm vững quy trình kỹ thuật ${title} theo tài liệu nghề ${plannerSubject}.`;
-                            setPlannerResult2634(p);
-                            setPlannerResult5512(null);
-                          }
-                          setPlannerIsGenerating(false);
-                        }, 400);
-                      }}
-                      className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50"
+                      onClick={handleGenerateFullLessonPackage}
+                      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-600 hover:from-blue-500 hover:via-indigo-500 hover:to-teal-500 text-white font-bold text-sm shadow-xl shadow-blue-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50"
                     >
                       {plannerIsGenerating ? (
                         <>
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                          <span>AI đang thiết kế Kế hoạch bài dạy chuẩn quy chuẩn...</span>
+                          <Loader2 className="w-4 h-4 animate-spin text-white" />
+                          <span className="font-semibold">{plannerStepProgress || 'AI đang xử lý quy trình 5 bước...'}</span>
                         </>
                       ) : (
                         <>
                           <Sparkles className="w-4 h-4 text-amber-300" />
                           <span>
-                            {plannerStandard === 5512
-                              ? '⚡ Sinh Kế Hoạch Bài Dạy Chuẩn Công Văn 5512'
-                              : '⚡ Sinh Giáo Án Thực Hành Nghề Chuẩn Công Văn 2634'}
+                            ⚡ KÍCH HOẠT SINH BÀI GIẢNG TRỌN GÓI AI (GIÁO ÁN • SLIDE • GAME • VIDEO • MINDMAP • CHẤM ĐIỂM)
                           </span>
                         </>
                       )}
@@ -2297,18 +2457,65 @@ export default function UnifiedTeacherScheduleApp() {
                   </div>
                 </div>
 
-                {/* Generated Result View */}
-                {(plannerResult5512 || plannerResult2634) && (
-                  <div className="bg-slate-800/70 border border-slate-700/80 rounded-2xl p-5 space-y-4 shadow-xl animate-fade-in">
-                    {/* Action Bar */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-slate-900/80 border border-slate-700/70">
-                      <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400">
-                        <CheckCircle2 className="w-4 h-4" />
-                        <span>Kế hoạch bài dạy đã sẵn sàng! Có thể tải file Word (.doc) mở 100% offline.</span>
+                {/* ================= KHUNG KẾT QUẢ ĐA PHƯƠNG TIỆN 6 TAB ================= */}
+                {(plannerFullPackage || plannerResult5512 || plannerResult2634) && (
+                  <div className="bg-slate-800/70 border border-slate-700/80 rounded-2xl p-4 sm:p-5 space-y-4 shadow-2xl animate-fade-in">
+                    {/* Header Thanh Công Cụ Toàn Cục */}
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 p-4 rounded-xl bg-slate-900/90 border border-slate-700/80">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-bold border border-blue-500/30">
+                            {plannerStandard === 5512 ? 'Công Văn 5512' : 'Công Văn 2634'}
+                          </span>
+                          <span className="text-xs font-semibold text-white">
+                            {plannerFullPackage?.lessonTitle || plannerLessonTitle}
+                          </span>
+                          <span className="text-xs text-slate-400">
+                            ({plannerClass} • Môn {plannerSubject})
+                          </span>
+                        </div>
+                        {plannerFullPackage?.auditScore && (
+                          <div className="flex items-center gap-2 mt-1.5 text-xs">
+                            <span className="flex items-center gap-1 text-emerald-400 font-bold">
+                              <Award className="w-3.5 h-3.5" />
+                              <span>Điểm Năng Lực Số: {plannerFullPackage.auditScore.totalScore}/100</span>
+                            </span>
+                            <span className="text-slate-400">•</span>
+                            <span className="text-emerald-300 font-semibold">
+                              Xếp loại: {plannerFullPackage.auditScore.rating}
+                            </span>
+                            {plannerFullPackage.sourceDocMatched && (
+                              <>
+                                <span className="text-slate-400">•</span>
+                                <span className="text-slate-300 truncate max-w-[200px]" title={plannerFullPackage.sourceDocMatched.title}>
+                                  📘 {plannerFullPackage.sourceDocMatched.title}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        )}
                       </div>
 
+                      {/* Các Nút Xuất Bản Nhanh */}
                       <div className="flex items-center gap-2 flex-wrap">
-                        {/* Download Word Doc Button */}
+                        {/* Tải Trọn Bộ Hồ Sơ Word */}
+                        {plannerFullPackage && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const html = fullPackageToDocHtml(plannerFullPackage);
+                              const fName = `HoSo_BaiGiang_${plannerFullPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
+                              downloadWordDoc(fName, html);
+                            }}
+                            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-600/25 transition-all cursor-pointer"
+                            title="Tải toàn bộ Hồ sơ gồm Giáo án, Slide, Game, Video Script và Bảng chấm điểm vào 1 file Word duy nhất"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Tải Trọn Bộ Hồ Sơ (.doc)</span>
+                          </button>
+                        )}
+
+                        {/* Tải Giáo án Word đơn lẻ */}
                         <button
                           type="button"
                           onClick={() => {
@@ -2322,13 +2529,14 @@ export default function UnifiedTeacherScheduleApp() {
                               downloadWordDoc(fName, html);
                             }
                           }}
-                          className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 shadow transition-all cursor-pointer"
+                          className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow transition-all cursor-pointer"
+                          title="Tải riêng file Kế hoạch bài dạy chuẩn Word"
                         >
-                          <Download className="w-3.5 h-3.5" />
-                          <span>Tải file Word (.doc)</span>
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>Tải Giáo Án (.doc)</span>
                         </button>
 
-                        {/* Attach to Selected Event Button */}
+                        {/* Đính kèm vào ca dạy */}
                         {plannerSelectedEventId && (
                           <button
                             type="button"
@@ -2352,113 +2560,517 @@ export default function UnifiedTeacherScheduleApp() {
                               setEvents(updated);
                               localStorage.setItem('smart_teacher_events', JSON.stringify(updated));
                               if (syncCode) pushToCloud(updated, schedules, syncCode);
-                              alert(`Đã đính kèm '${docName}' trực tiếp vào ca dạy và tự động đồng bộ đám mây!`);
+                              alert(`Đã đính kèm '${docName}' trực tiếp vào ca dạy và tự động đồng bộ đám mây 2 chiều!`);
                             }}
-                            className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow transition-all cursor-pointer"
+                            className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow transition-all cursor-pointer"
+                            title="Lưu kèm vào ca dạy đã chọn và đồng bộ sang điện thoại"
                           >
                             <Paperclip className="w-3.5 h-3.5" />
-                            <span>Đính kèm vào ca dạy</span>
+                            <span>Đính kèm ca dạy</span>
                           </button>
                         )}
-
-                        {/* Copy button */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const text = plannerResult5512
-                              ? JSON.stringify(plannerResult5512, null, 2)
-                              : JSON.stringify(plannerResult2634, null, 2);
-                            navigator.clipboard.writeText(text);
-                            alert('Đã sao chép nội dung vào bộ nhớ tạm!');
-                          }}
-                          className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-medium flex items-center gap-1 cursor-pointer"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>Sao chép</span>
-                        </button>
                       </div>
                     </div>
 
-                    {/* Preview CV 5512 */}
-                    {plannerResult5512 && (
-                      <div className="bg-slate-900/90 border border-slate-700/70 rounded-xl p-5 space-y-4 text-xs sm:text-sm text-slate-200">
-                        <div className="text-center pb-3 border-b border-slate-700">
-                          <span className="text-xs uppercase tracking-widest text-slate-400 font-semibold block">
-                            KẾ HOẠCH BÀI DẠY (CHUẨN CÔNG VĂN 5512/BGDĐT-GDTrH)
+                    {/* Thanh Điều Hướng 6 Tab Kết Quả */}
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-700 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setPlannerActiveResultTab('plan')}
+                        className={`px-3.5 py-2 rounded-t-xl font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                          plannerActiveResultTab === 'plan'
+                            ? 'bg-blue-600 text-white shadow'
+                            : 'bg-slate-900/60 text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>1. Giáo Án Chuẩn</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setPlannerActiveResultTab('slides')}
+                        className={`px-3.5 py-2 rounded-t-xl font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                          plannerActiveResultTab === 'slides'
+                            ? 'bg-sky-600 text-white shadow'
+                            : 'bg-slate-900/60 text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        <Monitor className="w-3.5 h-3.5" />
+                        <span>2. Slide Thuyết Trình ({plannerFullPackage?.slides.length || 8})</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setPlannerActiveResultTab('game')}
+                        className={`px-3.5 py-2 rounded-t-xl font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                          plannerActiveResultTab === 'game'
+                            ? 'bg-purple-600 text-white shadow'
+                            : 'bg-slate-900/60 text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        <Gamepad2 className="w-3.5 h-3.5" />
+                        <span>3. Mini Game Tương Tác</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setPlannerActiveResultTab('video')}
+                        className={`px-3.5 py-2 rounded-t-xl font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                          plannerActiveResultTab === 'video'
+                            ? 'bg-amber-600 text-white shadow'
+                            : 'bg-slate-900/60 text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        <Video className="w-3.5 h-3.5" />
+                        <span>4. Video Bài Giảng</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setPlannerActiveResultTab('mindmap')}
+                        className={`px-3.5 py-2 rounded-t-xl font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                          plannerActiveResultTab === 'mindmap'
+                            ? 'bg-teal-600 text-white shadow'
+                            : 'bg-slate-900/60 text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        <Network className="w-3.5 h-3.5" />
+                        <span>5. Sơ Đồ Tư Duy</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setPlannerActiveResultTab('audit')}
+                        className={`px-3.5 py-2 rounded-t-xl font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                          plannerActiveResultTab === 'audit'
+                            ? 'bg-emerald-600 text-white shadow'
+                            : 'bg-slate-900/60 text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        <Award className="w-3.5 h-3.5" />
+                        <span>6. Chấm Điểm Năng Lực Số ({plannerFullPackage?.auditScore.totalScore || 96}đ)</span>
+                      </button>
+                    </div>
+
+                    {/* ================= TAB 1: KẾ HOẠCH BÀI DẠY (GIÁO ÁN) ================= */}
+                    {plannerActiveResultTab === 'plan' && (
+                      <div className="space-y-4">
+                        {plannerResult5512 && (
+                          <div className="bg-slate-900/90 border border-slate-700/70 rounded-xl p-5 space-y-4 text-xs sm:text-sm text-slate-200">
+                            <div className="text-center pb-3 border-b border-slate-700">
+                              <span className="text-xs uppercase tracking-widest text-slate-400 font-semibold block">
+                                KẾ HOẠCH BÀI DẠY (CHUẨN CÔNG VĂN 5512/BGDĐT-GDTrH)
+                              </span>
+                              <h4 className="text-base font-bold text-white mt-1">{plannerResult5512.lessonTitle}</h4>
+                              <p className="text-xs text-slate-400 mt-0.5">
+                                Môn: {plannerResult5512.subject} • Khối: {plannerResult5512.grade} • Thời lượng: {plannerResult5512.durationMinutes} tiết
+                              </p>
+                              {plannerFullPackage?.sourceDocMatched && (
+                                <div className="mt-2 text-xs text-emerald-400 font-medium">
+                                  📘 Căn cứ đối chiếu: {plannerFullPackage.sourceDocMatched.title}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="space-y-2">
+                              <h5 className="font-bold text-blue-400 uppercase text-xs">I. Mục tiêu bài học:</h5>
+                              <p><strong className="text-slate-300">1. Kiến thức:</strong> {plannerResult5512.objectives.knowledge}</p>
+                              <p><strong className="text-slate-300">2. Năng lực:</strong> {plannerResult5512.objectives.competencies}</p>
+                              <p><strong className="text-slate-300">3. Phẩm chất:</strong> {plannerResult5512.objectives.qualities}</p>
+                            </div>
+
+                            <div className="space-y-2">
+                              <h5 className="font-bold text-blue-400 uppercase text-xs">II. Thiết bị dạy học và học liệu số:</h5>
+                              <p><strong className="text-slate-300">• Giáo viên:</strong> {plannerResult5512.equipment.teacherEquipment}</p>
+                              <p><strong className="text-slate-300">• Học sinh:</strong> {plannerResult5512.equipment.studentEquipment}</p>
+                            </div>
+
+                            <div className="space-y-3 pt-2">
+                              <h5 className="font-bold text-blue-400 uppercase text-xs">III. Tiến trình dạy học (4 Hoạt động bắt buộc):</h5>
+                              {[plannerResult5512.activity1Opening, plannerResult5512.activity2Knowledge, plannerResult5512.activity3Practice, plannerResult5512.activity4Application].map((act, idx) => (
+                                <div key={idx} className="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700/60 space-y-1.5 text-xs">
+                                  <span className="font-bold text-white text-xs block">{act.name}</span>
+                                  <p><strong className="text-slate-400">• Mục tiêu:</strong> {act.objective}</p>
+                                  <p><strong className="text-slate-400">• Nội dung:</strong> {act.content}</p>
+                                  <p><strong className="text-slate-400">• Sản phẩm:</strong> {act.product}</p>
+                                  <p><strong className="text-slate-400">• Tổ chức thực hiện:</strong> {act.implementation}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {plannerResult2634 && (
+                          <div className="bg-slate-900/90 border border-slate-700/70 rounded-xl p-5 space-y-4 text-xs sm:text-sm text-slate-200">
+                            <div className="text-center pb-3 border-b border-slate-700">
+                              <span className="text-xs uppercase tracking-widest text-amber-400 font-semibold block">
+                                GIÁO ÁN BÀI DẠY THỰC HÀNH NGHỀ (CHUẨN CÔNG VĂN 2634/GDNN)
+                              </span>
+                              <h4 className="text-base font-bold text-white mt-1">{plannerResult2634.moduleTitle}</h4>
+                              <p className="text-xs text-slate-400 mt-0.5">
+                                Nghề: {plannerResult2634.occupation} • Trình độ: {plannerResult2634.level} • Thời lượng: {plannerResult2634.durationMinutes} giờ
+                              </p>
+                            </div>
+
+                            <div className="space-y-2">
+                              <h5 className="font-bold text-amber-400 uppercase text-xs">I. Mục tiêu đào tạo nghề:</h5>
+                              <p><strong className="text-slate-300">1. Kiến thức nghề:</strong> {plannerResult2634.objectives.knowledge}</p>
+                              <p><strong className="text-slate-300">2. Kỹ năng thực hành:</strong> {plannerResult2634.objectives.skills}</p>
+                              <p><strong className="text-slate-300">3. An toàn lao động & 5S:</strong> {plannerResult2634.objectives.autonomyAndSafety}</p>
+                            </div>
+
+                            <div className="space-y-2">
+                              <h5 className="font-bold text-amber-400 uppercase text-xs">II. Điều kiện thực hiện (Xưởng thực hành):</h5>
+                              <p><strong className="text-slate-300">• Máy móc thiết bị:</strong> {plannerResult2634.conditions.equipmentAndMachines}</p>
+                              <p><strong className="text-slate-300">• Vật tư phôi mẫu:</strong> {plannerResult2634.conditions.materialsAndWorkpieces}</p>
+                              <p><strong className="text-slate-300">• Trang bị BHLĐ & 5S:</strong> {plannerResult2634.conditions.safetyAnd5S}</p>
+                            </div>
+
+                            <div className="space-y-3 pt-2">
+                              <h5 className="font-bold text-amber-400 uppercase text-xs">III. Tiến trình thực hiện tại xưởng (4 Bước thực hành):</h5>
+                              {[plannerResult2634.step1Orientation, plannerResult2634.step2Demonstration, plannerResult2634.step3Practice, plannerResult2634.step4Evaluation].map((st, idx) => (
+                                <div key={idx} className="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700/60 space-y-1.5 text-xs">
+                                  <span className="font-bold text-white text-xs block">{st.name}</span>
+                                  <p><strong className="text-slate-400">• Hoạt động GV:</strong> {st.teacherActivity}</p>
+                                  <p><strong className="text-slate-400">• Hoạt động HS:</strong> {st.studentActivity}</p>
+                                  <p className="text-red-400 font-semibold">• Lưu ý ATLĐ & 5S: {st.safetyAndKeyPoints}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ================= TAB 2: KỊCH BẢN SLIDE THUYẾT TRÌNH ================= */}
+                    {plannerActiveResultTab === 'slides' && plannerFullPackage && (
+                      <div className="space-y-4 animate-fade-in">
+                        <div className="flex items-center justify-between p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 text-xs">
+                          <span className="text-sky-300 font-semibold">
+                            🖥️ Kịch bản bài giảng gồm {plannerFullPackage.slides.length} slide trình chiếu PowerPoint đồng bộ.
                           </span>
-                          <h4 className="text-base font-bold text-white mt-1">{plannerResult5512.lessonTitle}</h4>
-                          <p className="text-xs text-slate-400 mt-0.5">
-                            Môn: {plannerResult5512.subject} • Khối: {plannerResult5512.grade} • Thời lượng: {plannerResult5512.durationMinutes} tiết
-                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const html = slidesToHtml(plannerFullPackage.slides, plannerFullPackage.lessonTitle, plannerFullPackage.subject);
+                              downloadWordDoc(`Slide_${plannerFullPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`, html);
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold flex items-center gap-1 cursor-pointer"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Tải Kịch Bản Slide (.doc)</span>
+                          </button>
                         </div>
 
-                        <div className="space-y-2">
-                          <h5 className="font-bold text-blue-400 uppercase text-xs">I. Mục tiêu bài học:</h5>
-                          <p><strong className="text-slate-300">1. Kiến thức:</strong> {plannerResult5512.objectives.knowledge}</p>
-                          <p><strong className="text-slate-300">2. Năng lực:</strong> {plannerResult5512.objectives.competencies}</p>
-                          <p><strong className="text-slate-300">3. Phẩm chất:</strong> {plannerResult5512.objectives.qualities}</p>
-                        </div>
-
-                        <div className="space-y-2">
-                          <h5 className="font-bold text-blue-400 uppercase text-xs">II. Thiết bị dạy học và học liệu:</h5>
-                          <p><strong className="text-slate-300">• Giáo viên:</strong> {plannerResult5512.equipment.teacherEquipment}</p>
-                          <p><strong className="text-slate-300">• Học sinh:</strong> {plannerResult5512.equipment.studentEquipment}</p>
-                        </div>
-
-                        <div className="space-y-3 pt-2">
-                          <h5 className="font-bold text-blue-400 uppercase text-xs">III. Tiến trình dạy học (4 Hoạt động chuẩn):</h5>
-                          
-                          {[plannerResult5512.activity1Opening, plannerResult5512.activity2Knowledge, plannerResult5512.activity3Practice, plannerResult5512.activity4Application].map((act, idx) => (
-                            <div key={idx} className="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700/60 space-y-1.5 text-xs">
-                              <span className="font-bold text-white text-xs block">{act.name}</span>
-                              <p><strong className="text-slate-400">• Mục tiêu:</strong> {act.objective}</p>
-                              <p><strong className="text-slate-400">• Nội dung:</strong> {act.content}</p>
-                              <p><strong className="text-slate-400">• Sản phẩm:</strong> {act.product}</p>
-                              <p><strong className="text-slate-400">• Tổ chức thực hiện:</strong> {act.implementation}</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                          {plannerFullPackage.slides.map((s) => (
+                            <div key={s.slideNumber} className="p-4 rounded-xl bg-slate-900/90 border border-slate-700/70 space-y-2.5 text-xs">
+                              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                                <span className="font-bold text-sky-400">SLIDE {s.slideNumber}: {s.title}</span>
+                              </div>
+                              <div>
+                                <strong className="text-slate-300 block mb-1">📌 Nội dung trình chiếu:</strong>
+                                <ul className="list-disc pl-4 space-y-1 text-slate-300">
+                                  {s.bulletPoints.map((bp, i) => (
+                                    <li key={i}>{bp}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                              <div className="p-2.5 rounded-lg bg-slate-800/80 border border-slate-700/50 text-emerald-300">
+                                <span className="font-bold block mb-0.5">🗣️ Lời giảng của Giáo viên:</span>
+                                <p className="italic text-slate-300">{s.speakerNotes}</p>
+                              </div>
+                              <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px]">
+                                <strong>🖼️ Gợi ý hình ảnh:</strong> {s.visualSuggestion}
+                              </div>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    {/* Preview CV 2634 */}
-                    {plannerResult2634 && (
-                      <div className="bg-slate-900/90 border border-slate-700/70 rounded-xl p-5 space-y-4 text-xs sm:text-sm text-slate-200">
-                        <div className="text-center pb-3 border-b border-slate-700">
-                          <span className="text-xs uppercase tracking-widest text-amber-400 font-semibold block">
-                            GIÁO ÁN BÀI DẠY THỰC HÀNH NGHỀ (CHUẨN CÔNG VĂN 2634/GDNN)
+                    {/* ================= TAB 3: CÂU HỎI MINI GAME ================= */}
+                    {plannerActiveResultTab === 'game' && plannerFullPackage && (
+                      <div className="space-y-4 animate-fade-in">
+                        <div className="flex items-center justify-between p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs">
+                          <span className="text-purple-300 font-semibold">
+                            🎮 Bộ {plannerFullPackage.miniGame.length} câu hỏi tương tác sẵn sàng nạp vào Kahoot, Quizizz, Blooket.
                           </span>
-                          <h4 className="text-base font-bold text-white mt-1">{plannerResult2634.moduleTitle}</h4>
-                          <p className="text-xs text-slate-400 mt-0.5">
-                            Nghề: {plannerResult2634.occupation} • Trình độ: {plannerResult2634.level} • Thời lượng: {plannerResult2634.durationMinutes} giờ
-                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const txt = miniGameToTxt(plannerFullPackage.miniGame, plannerFullPackage.lessonTitle);
+                              const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = `MiniGame_${plannerFullPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.txt`;
+                              document.body.appendChild(a);
+                              a.click();
+                              document.body.removeChild(a);
+                              URL.revokeObjectURL(url);
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold flex items-center gap-1 cursor-pointer"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Tải File Câu Hỏi (.txt)</span>
+                          </button>
                         </div>
 
-                        <div className="space-y-2">
-                          <h5 className="font-bold text-amber-400 uppercase text-xs">I. Mục tiêu đào tạo nghề:</h5>
-                          <p><strong className="text-slate-300">1. Kiến thức nghề:</strong> {plannerResult2634.objectives.knowledge}</p>
-                          <p><strong className="text-slate-300">2. Kỹ năng thực hành:</strong> {plannerResult2634.objectives.skills}</p>
-                          <p><strong className="text-slate-300">3. An toàn lao động & 5S:</strong> {plannerResult2634.objectives.autonomyAndSafety}</p>
-                        </div>
+                        <div className="space-y-3">
+                          {plannerFullPackage.miniGame.map((q) => (
+                            <div key={q.id} className="p-4 rounded-xl bg-slate-900/90 border border-slate-700/70 space-y-2.5 text-xs">
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-white text-sm">Câu {q.id}: {q.question}</span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-semibold text-[10px]">
+                                    {q.bloomLevel}
+                                  </span>
+                                  <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[10px]">
+                                    ⏱️ {q.timeLimitSeconds}s • {q.points}đ
+                                  </span>
+                                </div>
+                              </div>
 
-                        <div className="space-y-2">
-                          <h5 className="font-bold text-amber-400 uppercase text-xs">II. Điều kiện thực hiện (Xưởng thực hành):</h5>
-                          <p><strong className="text-slate-300">• Máy móc thiết bị:</strong> {plannerResult2634.conditions.equipmentAndMachines}</p>
-                          <p><strong className="text-slate-300">• Vật tư phôi mẫu:</strong> {plannerResult2634.conditions.materialsAndWorkpieces}</p>
-                          <p><strong className="text-slate-300">• Trang bị BHLĐ & 5S:</strong> {plannerResult2634.conditions.safetyAnd5S}</p>
-                        </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                                {q.options.map((opt, i) => {
+                                  const optKey = opt.charAt(0);
+                                  const isCorrect = optKey === q.correctAnswer;
+                                  return (
+                                    <div
+                                      key={i}
+                                      className={`p-2.5 rounded-lg border text-xs flex items-center justify-between ${
+                                        isCorrect
+                                          ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-semibold'
+                                          : 'bg-slate-800/60 border-slate-700/50 text-slate-300'
+                                      }`}
+                                    >
+                                      <span>{opt}</span>
+                                      {isCorrect && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
+                                    </div>
+                                  );
+                                })}
+                              </div>
 
-                        <div className="space-y-3 pt-2">
-                          <h5 className="font-bold text-amber-400 uppercase text-xs">III. Tiến trình thực hiện tại xưởng (4 Bước thực hành):</h5>
-                          
-                          {[plannerResult2634.step1Orientation, plannerResult2634.step2Demonstration, plannerResult2634.step3Practice, plannerResult2634.step4Evaluation].map((st, idx) => (
-                            <div key={idx} className="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700/60 space-y-1.5 text-xs">
-                              <span className="font-bold text-white text-xs block">{st.name}</span>
-                              <p><strong className="text-slate-400">• Hoạt động GV:</strong> {st.teacherActivity}</p>
-                              <p><strong className="text-slate-400">• Hoạt động HS:</strong> {st.studentActivity}</p>
-                              <p className="text-red-400 font-semibold">• Lưu ý ATLĐ & 5S: {st.safetyAndKeyPoints}</p>
+                              <div className="p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-300 text-[11px]">
+                                <strong>💡 Giải thích sư phạm:</strong> {q.explanation}
+                              </div>
                             </div>
                           ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ================= TAB 4: KỊCH BẢN VIDEO VI MÔ ================= */}
+                    {plannerActiveResultTab === 'video' && plannerFullPackage && (
+                      <div className="space-y-4 animate-fade-in">
+                        <div className="flex items-center justify-between p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs">
+                          <span className="text-amber-300 font-semibold">
+                            🎬 Kịch bản Video vi mô (Microlearning) gồm {plannerFullPackage.videoScript.length} phân cảnh chi tiết (3-5 phút).
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const html = videoScriptToHtml(plannerFullPackage.videoScript, plannerFullPackage.lessonTitle, plannerFullPackage.subject);
+                              downloadWordDoc(`KichBan_Video_${plannerFullPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`, html);
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold flex items-center gap-1 cursor-pointer"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Tải Kịch Bản Video (.doc)</span>
+                          </button>
+                        </div>
+
+                        <div className="space-y-3">
+                          {plannerFullPackage.videoScript.map((sc) => (
+                            <div key={sc.sceneNumber} className="p-4 rounded-xl bg-slate-900/90 border border-slate-700/70 space-y-2.5 text-xs">
+                              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                                <span className="font-bold text-amber-400 text-sm">
+                                  Phân cảnh {sc.sceneNumber}: {sc.title}
+                                </span>
+                                <span className="text-[11px] font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
+                                  {sc.duration}
+                                </span>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                  <strong className="text-slate-300 block mb-1">🖼️ Mô tả hình ảnh (Visual):</strong>
+                                  <p className="text-slate-300">{sc.visualDescription}</p>
+                                  <div className="mt-2 text-[11px] text-amber-300">
+                                    <strong>Chữ trên màn hình:</strong> {sc.onScreenText}
+                                  </div>
+                                </div>
+                                <div className="p-3 rounded-lg bg-slate-800/80 border border-slate-700/60">
+                                  <strong className="text-emerald-300 block mb-1">🎙️ Lời bình thuyết minh (Voiceover):</strong>
+                                  <p className="italic text-slate-200">"{sc.voiceover}"</p>
+                                </div>
+                              </div>
+
+                              <div className="p-2.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-[11px] flex items-center justify-between gap-2">
+                                <div>
+                                  <strong>AI Video Prompt:</strong> <i>{sc.aiPromptSuggestion}</i>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(sc.aiPromptSuggestion);
+                                    alert('Đã sao chép Prompt tạo video AI!');
+                                  }}
+                                  className="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold shrink-0 cursor-pointer"
+                                >
+                                  Copy Prompt
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ================= TAB 5: SƠ ĐỒ TƯ DUY (MINDMAP) ================= */}
+                    {plannerActiveResultTab === 'mindmap' && plannerFullPackage && (
+                      <div className="space-y-4 animate-fade-in">
+                        <div className="flex items-center justify-between p-3 rounded-xl bg-teal-500/10 border border-teal-500/20 text-xs">
+                          <span className="text-teal-300 font-semibold">
+                            🧠 Cấu trúc Sơ đồ tư duy bài học phân cấp mạch lạc.
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(plannerFullPackage.mindmap.mermaidCode);
+                              alert('Đã sao chép mã Mermaid Mindmap vào bộ nhớ tạm!');
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white font-bold flex items-center gap-1 cursor-pointer"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>Sao Chép Mã Mermaid</span>
+                          </button>
+                        </div>
+
+                        {/* Mindmap Tree Cards */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                          {plannerFullPackage.mindmap.branches.map((b, idx) => (
+                            <div key={idx} className="p-4 rounded-xl bg-slate-900/90 border border-teal-500/30 space-y-2 text-xs">
+                              <h5 className="font-bold text-teal-300 text-sm flex items-center gap-1.5">
+                                <Network className="w-4 h-4 text-teal-400" />
+                                <span>{b.title}</span>
+                              </h5>
+                              <ul className="list-disc pl-5 space-y-1.5 text-slate-300">
+                                {b.subItems.map((item, i) => (
+                                  <li key={i}>{item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Mermaid Code Box */}
+                        <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                          <span className="text-xs font-mono text-slate-400 block">Cú pháp Mermaid Mindmap:</span>
+                          <pre className="text-xs font-mono text-teal-300 overflow-x-auto p-3 bg-slate-900 rounded-lg">
+                            {plannerFullPackage.mindmap.mermaidCode}
+                          </pre>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ================= TAB 6: RÀ SOÁT & CHẤM ĐIỂM NĂNG LỰC SỐ ================= */}
+                    {plannerActiveResultTab === 'audit' && plannerFullPackage && (
+                      <div className="space-y-4 animate-fade-in">
+                        {/* Tổng quan Điểm Số */}
+                        <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-600/20 via-teal-600/20 to-blue-600/20 border-2 border-emerald-500/40 flex flex-col sm:flex-row items-center justify-between gap-4">
+                          <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center font-bold text-2xl shrink-0">
+                              {plannerFullPackage.auditScore.totalScore}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-base font-bold text-white">
+                                  ĐÁNH GIÁ: XẾP LOẠI {plannerFullPackage.auditScore.rating.toUpperCase()}
+                                </h4>
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30">
+                                  {plannerFullPackage.auditScore.totalScore}/100 ĐIỂM
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-300 mt-1">
+                                {plannerFullPackage.auditScore.digitalCompetencyReview.levelAchieved}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const html = fullPackageToDocHtml(plannerFullPackage);
+                                downloadWordDoc(`HoSo_DanhGia_${plannerFullPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`, html);
+                              }}
+                              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              <span>Xuất Biên Bản Rà Soát (.doc)</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Bảng Chi Tiết 4 Tiêu Chí */}
+                        <div className="bg-slate-900/90 border border-slate-700/70 rounded-xl overflow-hidden">
+                          <table className="w-full text-xs text-left">
+                            <thead className="bg-slate-800 text-slate-300 font-bold border-b border-slate-700">
+                              <tr>
+                                <th className="p-3">Tiêu Chí Đánh Giá</th>
+                                <th className="p-3 w-24 text-center">Điểm Số</th>
+                                <th className="p-3">Nhận Xét & Căn Cứ Pháp Quy</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-800">
+                              {plannerFullPackage.auditScore.criteria.map((c, i) => (
+                                <tr key={i} className="hover:bg-slate-800/40">
+                                  <td className="p-3 font-semibold text-white">
+                                    {c.name}
+                                    <span className="block text-[10px] text-slate-400 font-normal mt-0.5">
+                                      {c.standardRef}
+                                    </span>
+                                  </td>
+                                  <td className="p-3 text-center font-bold text-emerald-400 text-sm">
+                                    {c.actualScore} / {c.maxScore}
+                                  </td>
+                                  <td className="p-3 text-slate-300">
+                                    {c.feedback}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Điểm mạnh & Khuyến nghị */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+                          <div className="p-4 rounded-xl bg-slate-900/90 border border-emerald-500/30 space-y-2">
+                            <strong className="text-emerald-400 flex items-center gap-1.5 font-bold">
+                              <CheckCircle2 className="w-4 h-4" />
+                              <span>Điểm Mạnh Nổi Bật:</span>
+                            </strong>
+                            <ul className="list-disc pl-4 space-y-1 text-slate-300">
+                              {plannerFullPackage.auditScore.strengths.map((st, i) => (
+                                <li key={i}>{st}</li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          <div className="p-4 rounded-xl bg-slate-900/90 border border-amber-500/30 space-y-2">
+                            <strong className="text-amber-400 flex items-center gap-1.5 font-bold">
+                              <Sparkles className="w-4 h-4" />
+                              <span>Khuyến Nghị Tối Ưu Sư Phạm:</span>
+                            </strong>
+                            <ul className="list-disc pl-4 space-y-1 text-slate-300">
+                              {plannerFullPackage.auditScore.suggestions.map((sg, i) => (
+                                <li key={i}>{sg}</li>
+                              ))}
+                            </ul>
+                          </div>
                         </div>
                       </div>
                     )}

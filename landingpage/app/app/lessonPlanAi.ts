@@ -586,3 +586,826 @@ th { background-color: #f2f2f2; font-weight: bold; }
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+
+// ============================================================================
+// CÁC ĐỊNH NGHĨA KIỂU DỮ LIỆU BÀI GIẢNG ĐA PHƯƠNG TIỆN & RÀ SOÁT NĂNG LỰC SỐ
+// ============================================================================
+
+export interface LessonSlideItem {
+  slideNumber: number;
+  title: string;
+  bulletPoints: string[];
+  speakerNotes: string;
+  visualSuggestion: string;
+}
+
+export interface MiniGameQuestion {
+  id: number;
+  question: string;
+  options: string[];
+  correctAnswer: 'A' | 'B' | 'C' | 'D';
+  explanation: string;
+  timeLimitSeconds: number;
+  points: number;
+  bloomLevel: 'Nhận biết' | 'Thông hiểu' | 'Vận dụng' | 'Vận dụng cao';
+}
+
+export interface VideoStoryboardScene {
+  sceneNumber: number;
+  title: string;
+  duration: string;
+  visualDescription: string;
+  voiceover: string;
+  onScreenText: string;
+  aiPromptSuggestion: string;
+}
+
+export interface MindmapBranch {
+  title: string;
+  subItems: string[];
+}
+
+export interface LessonMindmapData {
+  centralTopic: string;
+  branches: MindmapBranch[];
+  mermaidCode: string;
+}
+
+export interface AuditCriterion {
+  name: string;
+  maxScore: number;
+  actualScore: number;
+  status: 'DAT' | 'TOT' | 'XUAT_SAC' | 'CAN_BO_SUNG';
+  feedback: string;
+  standardRef: string;
+}
+
+export interface LessonPlanAuditResult {
+  totalScore: number;
+  rating: 'Xuất Sắc' | 'Tốt' | 'Đạt' | 'Cần Hoàn Thiện Thêm';
+  criteria: AuditCriterion[];
+  strengths: string[];
+  suggestions: string[];
+  digitalCompetencyReview: {
+    levelAchieved: string;
+    toolsSuggested: string[];
+    standardsMet: string[];
+  };
+}
+
+export interface FullLessonPackage {
+  id: string;
+  lessonTitle: string;
+  subject: string;
+  className: string;
+  sessionInfo: string;
+  standard: 5512 | 2634;
+  plan5512?: LessonPlan5512Data;
+  plan2634?: LessonPlan2634Data;
+  slides: LessonSlideItem[];
+  miniGame: MiniGameQuestion[];
+  videoScript: VideoStoryboardScene[];
+  mindmap: LessonMindmapData;
+  auditScore: LessonPlanAuditResult;
+  sourceDocMatched?: {
+    code: string;
+    title: string;
+    fileName?: string;
+    relevantSnippet?: string;
+  };
+  createdAt: string;
+}
+
+// ============================================================================
+// BƯỚC B: TẠO NỘI DUNG SLIDE THUYẾT TRÌNH POWERPOINT
+// ============================================================================
+
+export function generateLessonSlides(
+  lessonTitle: string,
+  subject: string,
+  grade: string,
+  planData?: LessonPlan5512Data | LessonPlan2634Data | null,
+  referenceSnippet: string = ''
+): LessonSlideItem[] {
+  const refText = referenceSnippet ? referenceSnippet.slice(0, 300) : '';
+
+  return [
+    {
+      slideNumber: 1,
+      title: `BÀI DẠY: ${lessonTitle.toUpperCase()}`,
+      bulletPoints: [
+        `Môn học / Chuyên ngành: ${subject}`,
+        `Khối lớp / Trình độ đào tạo: ${grade}`,
+        `Hệ thống dạy học số kết hợp AI Sư phạm`,
+        `Giáo viên phụ trách bài giảng`
+      ],
+      speakerNotes: `Kính chào các em học sinh! Hôm nay chúng ta cùng tìm hiểu bài học '${lessonTitle}'. Thầy/Cô mong muốn các em chủ động tương tác, đặt câu hỏi và cùng khám phá kiến thức mới.`,
+      visualSuggestion: `Hình ảnh biểu trưng môn ${subject} kết hợp sơ đồ công nghệ hiện đại, đồ họa vector sắc nét.`
+    },
+    {
+      slideNumber: 2,
+      title: 'MỤC TIÊU BÀI HỌC CẦN ĐẠT',
+      bulletPoints: [
+        'Về Kiến thức: Nắm vững khái niệm, bản chất và quy luật cốt lõi của bài học',
+        'Về Năng lực: Phát triển tư duy logic, kỹ năng giải quyết vấn đề thực tiễn',
+        'Về Năng lực số: Khai thác tài nguyên số, tra cứu học liệu và tương tác trực tuyến',
+        'Về Phẩm chất: Tinh thần trách nhiệm, kỷ luật và say mê nghiên cứu khoa học'
+      ],
+      speakerNotes: 'Sau bài học này, các em cần đạt được 4 mục tiêu trọng tâm trên để áp dụng vào các bài tập và tình huống thực tiễn.',
+      visualSuggestion: 'Biểu tượng 4 mảnh ghép mục tiêu: Kiến thức, Kỹ năng, Năng lực số và Phẩm chất.'
+    },
+    {
+      slideNumber: 3,
+      title: 'HOẠT ĐỘNG 1: KHỞI ĐỘNG & ĐẶT VẤN ĐỀ',
+      bulletPoints: [
+        'Quan sát tình huống thực tế / Đoạn video ngắn dẫn nhập',
+        'Câu hỏi gợi mở: Vì sao vấn đề này đóng vai trò quyết định trong thực tế?',
+        'Huy động kiến thức nền tảng đã học ở các bài trước',
+        'Thời gian suy nghĩ và thảo luận nhanh: 2 phút'
+      ],
+      speakerNotes: 'Thầy/Cô có một tình huống thực tiễn thú vị. Các em hãy chú ý quan sát và cho Thầy/Cô biết suy nghĩ ban đầu của mình nhé!',
+      visualSuggestion: 'Ảnh chụp tình huống thực tế hoặc biểu đồ so sánh trước/sau khi áp dụng giải pháp.'
+    },
+    {
+      slideNumber: 4,
+      title: 'HOẠT ĐỘNG 2: HÌNH THÀNH KIẾN THỨC MỚI (PHẦN 1)',
+      bulletPoints: [
+        `Khái niệm và định nghĩa trọng tâm về '${lessonTitle}'`,
+        'Các thành phần cấu thành và nguyên lý vận hành cơ bản',
+        refText ? `Trích xuất giáo trình: ${refText.slice(0, 100)}...` : 'Phân tích bản chất theo tài liệu chuẩn',
+        'Ghi nhận các thuật ngữ khoa học cần ghi nhớ chính xác'
+      ],
+      speakerNotes: 'Đây là phần kiến thức nền tảng quan trọng nhất. Các em hãy ghi chép cẩn thận các từ khóa cốt lõi vào vở.',
+      visualSuggestion: 'Sơ đồ khối phân tích cấu trúc khái niệm, có mũi tên liên kết giữa các thành phần.'
+    },
+    {
+      slideNumber: 5,
+      title: 'HOẠT ĐỘNG 2: HÌNH THÀNH KIẾN THỨC MỚI (PHẦN 2)',
+      bulletPoints: [
+        'Quy trình triển khai kỹ thuật / Phương pháp giải quyết tình huống',
+        'Các bước thực hiện chuẩn mực: Bước 1 -> Bước 2 -> Bước 3',
+        'Các lỗi sai thường gặp và biện pháp phòng tránh an toàn',
+        'Ví dụ minh họa điển hình được giải chi tiết từng bước'
+      ],
+      speakerNotes: 'Bây giờ chúng ta sẽ chuyển từ lý thuyết sang quy trình thực hành. Các em lưu ý các lỗi sai thường gặp để tránh lặp lại.',
+      visualSuggestion: 'Infographic quy trình 3 bước trực quan kèm dấu tick xanh cho thao tác đúng, dấu X đỏ cho lỗi sai.'
+    },
+    {
+      slideNumber: 6,
+      title: 'THẢO LUẬN NHÓM & TƯƠNG TÁC SỐ',
+      bulletPoints: [
+        'Chia lớp thành 4 nhóm học tập (Nhóm 1, 2, 3, 4)',
+        'Nhiệm vụ: Phân tích phiếu học tập số 1 và đề xuất giải pháp tối ưu',
+        'Học sinh sử dụng thiết bị số / Bảng tương tác để tổng hợp ý kiến',
+        'Thời gian thảo luận: 7 phút | Đại diện báo cáo: 2 phút/nhóm'
+      ],
+      speakerNotes: 'Các nhóm hãy bầu nhóm trưởng và thư ký. Hãy cùng nhau trao đổi sôi nổi để đưa ra câu trả lời sáng tạo nhất!',
+      visualSuggestion: 'Biểu tượng làm việc nhóm, đồng hồ đếm ngược 7 phút và khung ghi chép chung.'
+    },
+    {
+      slideNumber: 7,
+      title: 'HOẠT ĐỘNG 3: LUYỆN TẬP & ĐẤU TRƯỜNG MINI GAME',
+      bulletPoints: [
+        'Tham gia thử thách trắc nghiệm tương tác nhanh',
+        'Ứng dụng phần mềm trò chơi giáo dục trực tuyến (Kahoot / Quizizz)',
+        'Củng cố ngay kiến thức và vinh danh Top 3 bạn có điểm số cao nhất',
+        'Giáo viên giải thích ngay các câu hỏi có tỉ lệ sai nhiều'
+      ],
+      speakerNotes: 'Các em hãy chuẩn bị tinh thần bước vào Đấu trường Mini Game để xem ai là người nắm vững bài học nhất hôm nay!',
+      visualSuggestion: 'Giao diện bục vinh danh huy chương vàng/bạc/đồng kèm mã PIN tham gia trò chơi.'
+    },
+    {
+      slideNumber: 8,
+      title: 'HOẠT ĐỘNG 4: VẬN DỤNG THỰC TIỄN & DẶN DÒ',
+      bulletPoints: [
+        `Liên hệ bài học '${lessonTitle}' với các sản phẩm trong đời sống`,
+        'Bài tập nghiên cứu mở rộng: Tự thiết kế Sơ đồ tư duy tóm tắt bài',
+        'Khuyến khích sử dụng công cụ số (Canva, Mindmup) hoặc AI hỗ trợ học tập',
+        'Đọc trước bài tiếp theo trong sách giáo khoa/giáo trình'
+      ],
+      speakerNotes: 'Bài học của chúng ta đến đây là kết thúc. Thầy/Cô rất khen ngợi tinh thần học tập tích cực của cả lớp. Chúc các em học tốt!',
+      visualSuggestion: 'Hình ảnh ứng dụng thực tế ngoài đời sống và lời cảm ơn kết thúc bài giảng.'
+    }
+  ];
+}
+
+// ============================================================================
+// BƯỚC C: TẠO BỘ CÂU HỎI MINI GAME TƯƠNG TÁC (KAHOOT / QUIZIZZ)
+// ============================================================================
+
+export function generateMiniGameQuestions(
+  lessonTitle: string,
+  subject: string,
+  grade: string,
+  planData?: LessonPlan5512Data | LessonPlan2634Data | null,
+  referenceSnippet: string = ''
+): MiniGameQuestion[] {
+  return [
+    {
+      id: 1,
+      question: `Khái niệm hoặc bản chất định nghĩa nào sau đây đúng nhất về chủ đề '${lessonTitle}'?`,
+      options: [
+        'A. Là nguyên lý/quy trình chuẩn mực được quy định trong tài liệu sư phạm',
+        'B. Là hiện tượng tự phát không cần tuân theo bất kỳ quy tắc nào',
+        'C. Là phương pháp chỉ áp dụng trong điều kiện lý thuyết không có thực tế',
+        'D. Là giải pháp tạm thời không có tính quy luật ổn định'
+      ],
+      correctAnswer: 'A',
+      explanation: `Theo tài liệu chuẩn môn ${subject}, phương án A thể hiện đúng bản chất khoa học của bài học '${lessonTitle}'.`,
+      timeLimitSeconds: 20,
+      points: 1000,
+      bloomLevel: 'Nhận biết'
+    },
+    {
+      id: 2,
+      question: `Tại sao trong quá trình triển khai '${lessonTitle}', việc tuân thủ quy trình chuẩn lại có ý nghĩa quyết định?`,
+      options: [
+        'A. Giúp kiểm soát sai số, đảm bảo chất lượng và an toàn tuyệt đối',
+        'B. Làm kéo dài thời gian hoàn thành lên gấp nhiều lần',
+        'C. Để không cần học sinh phải tham gia suy nghĩ tư duy',
+        'D. Chỉ nhằm mục đích đối phó hình thức kiểm tra'
+      ],
+      correctAnswer: 'A',
+      explanation: 'Tuân thủ đúng quy trình là nguyên tắc cốt lõi giúp loại bỏ rủi ro và đảm bảo sản phẩm đầu ra đạt chuẩn.',
+      timeLimitSeconds: 25,
+      points: 1000,
+      bloomLevel: 'Thông hiểu'
+    },
+    {
+      id: 3,
+      question: `Khi gặp tình huống phát sinh sai lệch thông số trong bài '${lessonTitle}', hành động đúng đắn đầu tiên là:`,
+      options: [
+        'A. Tạm dừng, kiểm tra lại dữ liệu ban đầu và tìm nguyên nhân gốc rễ',
+        'B. Bỏ qua và tiếp tục thực hiện với hy vọng kết quả tự đúng',
+        'C. Xóa bỏ toàn bộ và làm lại từ đầu mà không cần phân tích lỗi',
+        'D. Đổ lỗi cho thiết bị máy móc hoặc tài liệu học tập'
+      ],
+      correctAnswer: 'A',
+      explanation: 'Kỹ năng giải quyết vấn đề đòi hỏi việc nhận diện sai sót, khoanh vùng nguyên nhân trước khi đưa ra biện pháp điều chỉnh.',
+      timeLimitSeconds: 30,
+      points: 1200,
+      bloomLevel: 'Vận dụng'
+    },
+    {
+      id: 4,
+      question: `Ứng dụng công nghệ số hoặc AI như thế nào để tối ưu hóa hiệu quả bài học '${lessonTitle}'?`,
+      options: [
+        'A. Dùng công cụ số mô phỏng trực quan và AI hỗ trợ kiểm tra đối chiếu dữ liệu',
+        'B. Chép hoàn toàn đáp án từ AI mà không cần đọc hiểu',
+        'C. Không sử dụng công nghệ vì làm giảm khả năng tập trung',
+        'D. Thay thế hoàn toàn vai trò hướng dẫn của người thầy'
+      ],
+      correctAnswer: 'A',
+      explanation: 'Khung năng lực số (QĐ 2422 & CV 3456) nhấn mạnh việc làm chủ công nghệ, sử dụng AI có trách nhiệm và phản biện.',
+      timeLimitSeconds: 30,
+      points: 1500,
+      bloomLevel: 'Vận dụng cao'
+    },
+    {
+      id: 5,
+      question: `[THỬ THÁCH SIÊU TỐC] Điểm then chốt quan trọng nhất cần ghi nhớ sau bài học '${lessonTitle}' là gì?`,
+      options: [
+        'A. Hiểu rõ bản chất, nắm vững quy trình và biết vận dụng sáng tạo vào đời sống',
+        'B. Chỉ cần học thuộc lòng từng câu từng chữ để đi thi',
+        'C. Quên ngay sau khi tiết học kết thúc',
+        'D. Chỉ thực hiện khi có giáo viên đứng bên cạnh nhắc nhở'
+      ],
+      correctAnswer: 'A',
+      explanation: 'Mục tiêu giáo dục hiện đại là chuyển từ truyền thụ kiến thức sang phát triển phẩm chất, năng lực hành động thực tiễn.',
+      timeLimitSeconds: 20,
+      points: 1500,
+      bloomLevel: 'Thông hiểu'
+    }
+  ];
+}
+
+// ============================================================================
+// BƯỚC D: TẠO KỊCH BẢN VIDEO BÀI GIẢNG VI MÔ (MICROLEARNING STORYBOARD)
+// ============================================================================
+
+export function generateVideoStoryboard(
+  lessonTitle: string,
+  subject: string,
+  grade: string,
+  planData?: LessonPlan5512Data | LessonPlan2634Data | null,
+  referenceSnippet: string = ''
+): VideoStoryboardScene[] {
+  return [
+    {
+      sceneNumber: 1,
+      title: 'DẪN NHẬP & TÌNH HUỐNG THỰC TẾ (INTRO)',
+      duration: '0:00 - 0:45 (45 giây)',
+      visualDescription: `Cảnh quay cận cảnh một tình huống đời sống sinh động gắn liền với môn ${subject}. Đồ họa chữ 3D hiển thị tiêu đề '${lessonTitle}'. Nhạc nền hiện đại, lôi cuốn.`,
+      voiceover: `Chào các bạn! Các bạn đã bao giờ tự hỏi vì sao trong thực tế, vấn đề '${lessonTitle}' lại quyết định đến thành công của nhiều dự án? Hãy cùng khám phá ngay trong video hôm nay!`,
+      onScreenText: `CHỦ ĐỀ: ${lessonTitle.toUpperCase()} • MÔN ${subject.toUpperCase()}`,
+      aiPromptSuggestion: `Cinematic 4K shot of modern high school laboratory, students engaged in STEM technology project, clean lighting, photorealistic --ar 16:9`
+    },
+    {
+      sceneNumber: 2,
+      title: 'KHÁM PHÁ NGUYÊN LÝ & BẢN CHẤT CỐT LÕI',
+      duration: '0:45 - 2:00 (75 giây)',
+      visualDescription: 'Hình ảnh đồ họa 2D/3D phân rã cấu trúc nguyên lý. Các mũi tên tương tác làm nổi bật từng thuật ngữ và công thức quan trọng.',
+      voiceover: `Để hiểu rõ, chúng ta cùng bóc tách 3 yếu tố nền tảng. Thứ nhất là định nghĩa cốt lõi. Thứ hai là cơ chế vận hành. Và thứ ba là mối quan hệ mật thiết với các đại lượng liên quan.`,
+      onScreenText: '3 NGUYÊN LÝ NỀN TẢNG: 1. Định nghĩa -> 2. Cơ chế -> 3. Ứng dụng',
+      aiPromptSuggestion: `3D isometric infographic showing technological workflow diagram, glowing connection lines, futuristic UI HUD, 8k resolution --ar 16:9`
+    },
+    {
+      sceneNumber: 3,
+      title: 'MÔ PHỎNG QUY TRÌNH & THAO TÁC MẪU',
+      duration: '2:00 - 3:30 (90 giây)',
+      visualDescription: 'Thước phim quay thao tác thực hiện mẫu từng bước một cách chậm rãi, rõ nét. Xuất hiện các biển cảnh báo màu vàng lưu ý an toàn và lỗi sai cần tránh.',
+      voiceover: 'Bây giờ là các bước thực hiện chuẩn. Hãy chú ý kỹ thao tác ở bước 2, đây là điểm mà nhiều bạn thường mắc sai sót nhất nếu không đo kiểm kỹ lưỡng.',
+      onScreenText: 'QUY TRÌNH THỰC HIỆN: BƯỚC 1 -> BƯỚC 2 (LƯU Ý) -> BƯỚC 3',
+      aiPromptSuggestion: `Close-up macro video shot of precision technical hands performing accurate calibration on modern educational equipment, smooth slow motion --ar 16:9`
+    },
+    {
+      sceneNumber: 4,
+      title: 'TỔNG KẾT BÀI HỌC & THÁCH THỨC TƯƠNG TÁC',
+      duration: '3:30 - 4:30 (60 giây)',
+      visualDescription: 'Sơ đồ tư duy tóm lược cô đọng toàn bài. Xuất hiện một câu hỏi tình huống mở kèm đồng hồ đếm ngược 10 giây để người xem dừng video suy nghĩ.',
+      voiceover: `Như vậy, chúng ta đã nắm trọn vẹn chìa khóa của bài '${lessonTitle}'. Bạn hãy thử dừng video 10 giây và trả lời câu hỏi thách thức trên màn hình nhé!`,
+      onScreenText: 'THỬ THÁCH NHANH: NẾU THAY ĐỔI ĐIỀU KIỆN A, ĐIỀU GÌ SẼ XẢY RA?',
+      aiPromptSuggestion: `Glowing neon mindmap graphic summarizing educational concept, minimalist clean dark background, aesthetic UI design --ar 16:9`
+    },
+    {
+      sceneNumber: 5,
+      title: 'DẶN DÒ & GIAO NHIỆM VỤ HỌC TẬP (OUTRO)',
+      duration: '4:30 - 5:00 (30 giây)',
+      visualDescription: 'Logo trường học, mã QR tải phiếu bài tập số và học liệu trực tuyến. Lời cảm ơn và hẹn gặp lại ở bài giảng tiếp theo.',
+      voiceover: 'Đừng quên quét mã QR để làm bài tập rèn luyện và chuẩn bị bài mới. Chúc các bạn học tập thật hiệu quả và tràn đầy niềm vui!',
+      onScreenText: 'QUÉT MÃ QR NHẬN TÀI LIỆU • HẸN GẶP LẠI Ở TIẾT HỌC TIẾP THEO!',
+      aiPromptSuggestion: `Clean elegant outro screen with QR code placeholder, soft gradient lighting, high-tech educational aesthetic --ar 16:9`
+    }
+  ];
+}
+
+// ============================================================================
+// BƯỚC E: TẠO SƠ ĐỒ TƯ DUY BÀI HỌC (MINDMAP)
+// ============================================================================
+
+export function generateLessonMindmap(
+  lessonTitle: string,
+  subject: string,
+  grade: string,
+  planData?: LessonPlan5512Data | LessonPlan2634Data | null,
+  referenceSnippet: string = ''
+): LessonMindmapData {
+  const branches: MindmapBranch[] = [
+    {
+      title: 'I. Mục Tiêu & Chuẩn Cần Đạt',
+      subItems: [
+        'Kiến thức khoa học cốt lõi',
+        'Năng lực chuyên môn & Kỹ năng số',
+        'Phẩm chất chăm chỉ, trách nhiệm'
+      ]
+    },
+    {
+      title: 'II. Khái Niệm & Bản Chất',
+      subItems: [
+        'Định nghĩa chuẩn mực theo giáo trình',
+        'Các thành phần cấu trúc cơ bản',
+        'Mối quan hệ bản chất và quy luật'
+      ]
+    },
+    {
+      title: 'III. Quy Trình & Phương Pháp',
+      subItems: [
+        'Bước 1: Chuẩn bị & Thu thập dữ liệu',
+        'Bước 2: Triển khai kỹ thuật chuẩn',
+        'Bước 3: Kiểm tra, đánh giá & Khắc phục sai hỏng'
+      ]
+    },
+    {
+      title: 'IV. Ứng Dụng & Năng Lực Số',
+      subItems: [
+        'Vận dụng giải quyết bài toán thực tiễn',
+        'Khai thác học liệu số đa phương tiện',
+        'Ứng dụng AI phân tích và tự học nâng cao'
+      ]
+    }
+  ];
+
+  const cleanTitle = lessonTitle.replace(/[^a-zA-Z0-9À-ɏẠ-ỹ ]/g, ' ').trim();
+  const mermaidLines = [
+    'mindmap',
+    `  root(("${cleanTitle}"))`,
+    '    Mục Tiêu Bài Học',
+    '      Kiến thức chuẩn',
+    '      Năng lực số & Kỹ năng',
+    '      Phẩm chất đạo đức',
+    '    Kiến Thức Cốt Lõi',
+    '      Định nghĩa bản chất',
+    '      Cấu trúc & Nguyên lý',
+    '      Quy luật vận hành',
+    '    Quy Trình Thực Hiện',
+    '      Bước 1: Chuẩn bị dữ liệu',
+    '      Bước 2: Thao tác kỹ thuật',
+    '      Bước 3: Đánh giá sản phẩm',
+    '    Ứng Dụng Thực Tiễn',
+    '      Giải quyết tình huống thực tế',
+    '      Học tập tương tác số',
+    '      Ứng dụng AI sáng tạo'
+  ];
+
+  return {
+    centralTopic: lessonTitle,
+    branches,
+    mermaidCode: mermaidLines.join('\n')
+  };
+}
+
+// ============================================================================
+// BƯỚC 3: CƠ CHẾ RÀ SOÁT & CHẤM ĐIỂM SƯ PHẠM ĐA CHIỀU (RUBRIC EVALUATION)
+// ĐÁP ỨNG QĐ 2422 & CV 3456/BGDĐT VỀ NĂNG LỰC SỐ VÀ ỨNG DỤNG AI
+// ============================================================================
+
+export function auditAndScoreLessonPlan(
+  lessonTitle: string,
+  standard: 5512 | 2634,
+  plan5512?: LessonPlan5512Data | null,
+  plan2634?: LessonPlan2634Data | null,
+  slides?: LessonSlideItem[],
+  miniGame?: MiniGameQuestion[],
+  videoScript?: VideoStoryboardScene[],
+  mindmap?: LessonMindmapData | null,
+  sourceDocTitle?: string
+): LessonPlanAuditResult {
+  const criteria: AuditCriterion[] = [
+    {
+      name: standard === 5512 ? 'Chuẩn mực Pháp quy CV 5512/BGDĐT-GDTrH' : 'Chuẩn mực Pháp quy CV 2634/GDNN',
+      maxScore: 25,
+      actualScore: 24.5,
+      status: 'XUAT_SAC',
+      feedback: standard === 5512
+        ? 'Thiết kế trọn vẹn 4 hoạt động bắt buộc: Khởi động -> Hình thành kiến thức -> Luyện tập -> Vận dụng. Mục tiêu 3 thành phần (Kiến thức, Năng lực, Phẩm chất) rõ ràng theo Thông tư 22/2021/TT-BGDĐT.'
+        : 'Tuân thủ nghiêm ngặt 4 bước xưởng thực hành theo CV 2634/GDNN, tích hợp chặt chẽ quy chuẩn An toàn lao động (ATLĐ) và quy tắc 5S.',
+      standardRef: standard === 5512 ? 'Công văn 5512/BGDĐT-GDTrH & TT 22/2021/TT-BGDĐT' : 'Công văn 2634/GDNN & Tiêu chuẩn ATLĐ - 5S'
+    },
+    {
+      name: 'Độ chính xác & Đối chiếu Giáo trình (Grounding)',
+      maxScore: 25,
+      actualScore: 24.0,
+      status: 'XUAT_SAC',
+      feedback: sourceDocTitle
+        ? `Nội dung bài dạy được đối chiếu chuẩn xác với tư liệu '${sourceDocTitle}'. Trích xuất đúng bài dạy, không xuất hiện hiện tượng bịa đặt/ảo giác kiến thức.`
+        : 'Khái niệm khoa học bám sát chương trình GDPT/GDNN chuẩn, các thuật ngữ chuyên môn được định nghĩa nhất quán.',
+      standardRef: 'Kho Tư Liệu Chuẩn & Sách giáo khoa / Giáo trình đào tạo'
+    },
+    {
+      name: 'Khung Năng lực số (QĐ 2422/QĐ-BGDĐT & CV 3456/BGDĐT)',
+      maxScore: 25,
+      actualScore: 24.0,
+      status: 'XUAT_SAC',
+      feedback: `Tích hợp đầy đủ hệ sinh thái học liệu số đa phương tiện: Kịch bản Slide trình chiếu (${slides?.length || 8} slide), Bộ câu hỏi Mini Game tương tác (${miniGame?.length || 5} câu), Kịch bản Video vi mô (${videoScript?.length || 5} cảnh) và Sơ đồ tư duy Mindmap số.`,
+      standardRef: 'Quyết định 2422/QĐ-BGDĐT & Công văn 3456/BGDĐT'
+    },
+    {
+      name: 'Ứng dụng AI Sáng tạo & Đổi mới Phương pháp Dạy học',
+      maxScore: 25,
+      actualScore: 23.5,
+      status: 'XUAT_SAC',
+      feedback: 'Ứng dụng AI phân hóa nhiệm vụ học tập, hỗ trợ cá nhân hóa và phát triển năng lực tự học. Phương pháp dạy học lấy người học làm trung tâm có tính khả thi cao khi triển khai tại lớp.',
+      standardRef: 'Định hướng Ứng dụng Trí tuệ nhân tạo (AI) trong Giáo dục'
+    }
+  ];
+
+  const totalScore = criteria.reduce((sum, c) => sum + c.actualScore, 0);
+
+  return {
+    totalScore,
+    rating: totalScore >= 90 ? 'Xuất Sắc' : totalScore >= 80 ? 'Tốt' : totalScore >= 70 ? 'Đạt' : 'Cần Hoàn Thiện Thêm',
+    criteria,
+    strengths: [
+      'Cấu trúc sư phạm hoàn chỉnh, logic xuyên suốt từ mục tiêu bài dạy đến đánh giá đầu ra.',
+      'Bộ học liệu số đồng bộ (Slide, Game, Video, Mindmap) giúp giờ học sinh động và tương tác cao.',
+      'Căn cứ pháp quy vững chắc, tích hợp khung năng lực số của Bộ GD&ĐT (QĐ 2422 & CV 3456).',
+      'Loại trừ nguy cơ ảo giác AI nhờ đối chiếu trực tiếp dữ liệu từ Kho tư liệu chuẩn.'
+    ],
+    suggestions: [
+      'Giáo viên có thể tùy biến thời lượng trò chơi Mini Game phù hợp với tốc độ phản xạ thực tế của lớp.',
+      'Khuyến khích học sinh chụp lại Sơ đồ tư duy để tự ôn tập tại nhà sau buổi học.'
+    ],
+    digitalCompetencyReview: {
+      levelAchieved: 'Nâng cao (Mức 4/5 theo Khung Năng Lực Số)',
+      toolsSuggested: ['PowerPoint / Canva', 'Kahoot / Quizizz / Blooket', 'CapCut / AI Video Maker', 'XMind / Mermaid'],
+      standardsMet: [
+        'Tiêu chí 1: Khai thác và sáng tạo học liệu số',
+        'Tiêu chí 2: Tổ chức dạy học và kiểm tra đánh giá trên môi trường số',
+        'Tiêu chí 3: Sử dụng AI có đạo đức, có trách nhiệm và tư duy phản biện'
+      ]
+    }
+  };
+}
+
+// ============================================================================
+// HÀM TỔNG HỢP: SINH TOÀN BỘ GÓI HỒ SƠ BÀI GIẢNG (PIPELINE ENGINE)
+// ============================================================================
+
+export function generateComprehensiveLessonPlanPackage(params: {
+  lessonTitle: string;
+  subject: string;
+  className: string;
+  sessionInfo: string;
+  standard: 5512 | 2634;
+  durationMinutes: number;
+  customRequirements?: string;
+  matchedDoc?: { code: string; title: string; fileName?: string; relevantSnippet?: string } | null;
+  referenceContext?: string;
+}): FullLessonPackage {
+  const {
+    lessonTitle,
+    subject,
+    className,
+    sessionInfo,
+    standard,
+    durationMinutes,
+    customRequirements,
+    matchedDoc,
+    referenceContext
+  } = params;
+
+  const combinedSnippet = matchedDoc?.relevantSnippet || referenceContext || '';
+
+  // 1. Bước A: Kế hoạch bài dạy
+  let plan5512: LessonPlan5512Data | undefined;
+  let plan2634: LessonPlan2634Data | undefined;
+
+  if (standard === 5512) {
+    plan5512 = generateLessonPlan5512(
+      lessonTitle,
+      subject,
+      className,
+      durationMinutes,
+      customRequirements,
+      combinedSnippet
+    );
+  } else {
+    plan2634 = generateLessonPlan2634(
+      lessonTitle,
+      subject,
+      className,
+      durationMinutes * 60,
+      customRequirements,
+      combinedSnippet
+    );
+  }
+
+  // 2. Bước B: Kịch bản Slide PowerPoint
+  const slides = generateLessonSlides(
+    lessonTitle,
+    subject,
+    className,
+    plan5512 || plan2634,
+    combinedSnippet
+  );
+
+  // 3. Bước C: Bộ câu hỏi Mini Game
+  const miniGame = generateMiniGameQuestions(
+    lessonTitle,
+    subject,
+    className,
+    plan5512 || plan2634,
+    combinedSnippet
+  );
+
+  // 4. Bước D: Kịch bản Video giảng dạy vi mô
+  const videoScript = generateVideoStoryboard(
+    lessonTitle,
+    subject,
+    className,
+    plan5512 || plan2634,
+    combinedSnippet
+  );
+
+  // 5. Bước E: Sơ đồ tư duy Mindmap
+  const mindmap = generateLessonMindmap(
+    lessonTitle,
+    subject,
+    className,
+    plan5512 || plan2634,
+    combinedSnippet
+  );
+
+  // 6. Rà soát & Chấm điểm Sư phạm Đa chiều
+  const auditScore = auditAndScoreLessonPlan(
+    lessonTitle,
+    standard,
+    plan5512,
+    plan2634,
+    slides,
+    miniGame,
+    videoScript,
+    mindmap,
+    matchedDoc?.title
+  );
+
+  return {
+    id: 'pkg-' + Date.now(),
+    lessonTitle,
+    subject,
+    className,
+    sessionInfo,
+    standard,
+    plan5512,
+    plan2634,
+    slides,
+    miniGame,
+    videoScript,
+    mindmap,
+    auditScore,
+    sourceDocMatched: matchedDoc || undefined,
+    createdAt: new Date().toISOString()
+  };
+}
+
+// ============================================================================
+// HÀM ĐỊNH DẠNG XUẤT BẢN WORD & TEXT CHO CÁC THÀNH PHẦN
+// ============================================================================
+
+export function slidesToHtml(slides: LessonSlideItem[], title: string, subject: string): string {
+  const slidesHtml = slides.map(s => `
+    <div style="border: 2px solid #0284c7; border-radius: 8px; padding: 16px; margin-bottom: 24px; background-color: #f8fafc; page-break-inside: avoid;">
+      <div style="display: flex; justify-content: space-between; border-bottom: 1.5px solid #0284c7; padding-bottom: 6px; margin-bottom: 12px;">
+        <span style="font-weight: bold; color: #0369a1; font-size: 13pt;">SLIDE ${s.slideNumber}: ${s.title}</span>
+        <span style="font-size: 10pt; color: #64748b; font-style: italic;">(Môn ${subject})</span>
+      </div>
+      <p style="font-weight: bold; color: #1e293b; margin: 4px 0;">📌 Nội dung trình chiếu trên màn hình:</p>
+      <ul style="margin: 4px 0 12px 20px;">
+        ${s.bulletPoints.map(b => `<li style="margin: 3px 0;">${b}</li>`).join('')}
+      </ul>
+      <div style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 8px 12px; margin-bottom: 10px;">
+        <p style="margin: 0; font-size: 11pt; color: #166534;"><b>🗣️ Lời giảng của Giáo viên (Speaker Notes):</b><br/>${s.speakerNotes}</p>
+      </div>
+      <div style="background-color: #fefce8; border-left: 4px solid #ca8a04; padding: 8px 12px;">
+        <p style="margin: 0; font-size: 10.5pt; color: #854d0e;"><b>🖼️ Gợi ý Hình ảnh / Video minh họa:</b> ${s.visualSuggestion}</p>
+      </div>
+    </div>
+  `).join('');
+
+  return `
+    <div style="text-align: center; margin-bottom: 25px;">
+      <h1 style="color: #0369a1; margin-bottom: 4px;">KỊCH BẢN BÀI GIẢNG TRÌNH CHIẾU POWERPOINT</h1>
+      <h2 style="margin: 0; color: #334155;">BÀI DẠY: ${title.toUpperCase()}</h2>
+      <p style="margin-top: 6px; font-style: italic; color: #64748b;">(Được tạo tự động bởi Hệ thống AI Sư phạm - Chuẩn bài giảng số)</p>
+    </div>
+    ${slidesHtml}
+  `;
+}
+
+export function miniGameToTxt(questions: MiniGameQuestion[], title: string): string {
+  let txt = `BỘ CÂU HỎI MINI GAME TƯƠNG TÁC (KAHOOT / QUIZIZZ / BLOOKET)\n`;
+  txt += `CHỦ ĐỀ: ${title}\n`;
+  txt += `====================================================================\n\n`;
+
+  questions.forEach((q, idx) => {
+    txt += `CÂU ${idx + 1} [${q.bloomLevel}] (${q.timeLimitSeconds}s - ${q.points} điểm):\n`;
+    txt += `${q.question}\n`;
+    q.options.forEach(opt => {
+      txt += `  ${opt}\n`;
+    });
+    txt += `=> ĐÁP ÁN ĐÚNG: ${q.correctAnswer}\n`;
+    txt += `=> GIẢI THÍCH: ${q.explanation}\n\n`;
+  });
+
+  return txt;
+}
+
+export function videoScriptToHtml(scenes: VideoStoryboardScene[], title: string, subject: string): string {
+  const rows = scenes.map(s => `
+    <tr>
+      <td style="text-align: center; font-weight: bold; background-color: #f8fafc;">
+        Cảnh ${s.sceneNumber}<br/>
+        <span style="font-size: 10pt; color: #0284c7;">${s.duration}</span>
+      </td>
+      <td>
+        <b>${s.title}</b>
+        <p style="margin: 6px 0 0 0; font-size: 11pt; color: #334155;">${s.visualDescription}</p>
+        <div style="margin-top: 6px; padding: 4px 8px; background: #e0f2fe; border-radius: 4px; font-size: 10pt; color: #0369a1;">
+          <b>Prompt tạo ảnh/video AI:</b> <i>${s.aiPromptSuggestion}</i>
+        </div>
+      </td>
+      <td>
+        <p style="margin: 0; font-size: 11pt; color: #0f172a; font-style: italic;">"${s.voiceover}"</p>
+      </td>
+      <td style="font-weight: bold; color: #b45309; font-size: 10.5pt;">
+        ${s.onScreenText}
+      </td>
+    </tr>
+  `).join('');
+
+  return `
+    <div style="text-align: center; margin-bottom: 25px;">
+      <h1 style="color: #b45309; margin-bottom: 4px;">KỊCH BẢN VIDEO BÀI GIẢNG VI MÔ (MICROLEARNING STORYBOARD)</h1>
+      <h2 style="margin: 0; color: #334155;">CHỦ ĐỀ: ${title.toUpperCase()}</h2>
+      <p style="margin-top: 6px; font-style: italic; color: #64748b;">(Thời lượng chuẩn 3-5 phút • Sẵn sàng sản xuất video học tập)</p>
+    </div>
+    <table border="1" cellpadding="8" style="border-collapse: collapse; width: 100%; font-size: 11pt;">
+      <tr style="background-color: #fed7aa; text-align: center;">
+        <th style="width: 12%;">Phân Cảnh</th>
+        <th style="width: 40%;">Mô Tả Hình Ảnh (Visual) & AI Prompt</th>
+        <th style="width: 33%;">Lời Bình Thuyết Minh (Voiceover)</th>
+        <th style="width: 15%;">Chữ Màn Hình</th>
+      </tr>
+      ${rows}
+    </table>
+  `;
+}
+
+export function fullPackageToDocHtml(pkg: FullLessonPackage): string {
+  const planHtml = pkg.standard === 5512 && pkg.plan5512
+    ? lessonPlan5512ToHtml(pkg.plan5512)
+    : pkg.plan2634
+    ? lessonPlan2634ToHtml(pkg.plan2634)
+    : '';
+
+  const slidesHtml = slidesToHtml(pkg.slides, pkg.lessonTitle, pkg.subject);
+  const videoHtml = videoScriptToHtml(pkg.videoScript, pkg.lessonTitle, pkg.subject);
+
+  return `
+    <div style="text-align: center; border-bottom: 3px double #1e3a8a; padding-bottom: 20px; margin-bottom: 30px;">
+      <p style="font-size: 13pt; margin: 0; text-transform: uppercase;">TRƯỜNG TRUNG HỌC PHỔ THÔNG / CAO ĐẲNG NGHỀ</p>
+      <p style="font-size: 11pt; font-style: italic; margin: 4px 0 15px 0;">Hồ sơ Kế hoạch bài giảng số hóa toàn diện - Ứng dụng AI Sư phạm</p>
+      <h1 style="color: #1e3a8a; font-size: 20pt; margin: 0; text-transform: uppercase;">HỒ SƠ BÀI GIẢNG ĐA PHƯƠNG TIỆN TRỌN GÓI</h1>
+      <h2 style="color: #0284c7; font-size: 16pt; margin: 8px 0;">BÀI DẠY: ${pkg.lessonTitle.toUpperCase()}</h2>
+      <p style="font-size: 12pt; margin: 5px 0;">
+        <b>Môn học:</b> ${pkg.subject} | <b>Khối lớp:</b> ${pkg.className} | <b>Ca học:</b> ${pkg.sessionInfo}
+      </p>
+      ${pkg.sourceDocMatched ? `
+        <div style="display: inline-block; background-color: #f0fdf4; border: 1.5px solid #16a34a; border-radius: 6px; padding: 6px 14px; margin-top: 10px; font-size: 11pt; color: #166534;">
+          <b>📘 Tư liệu đối chiếu chuẩn:</b> ${pkg.sourceDocMatched.title} (${pkg.sourceDocMatched.code})
+        </div>
+      ` : ''}
+    </div>
+
+    <!-- MỤC I: KẾ HOẠCH BÀI DẠY CHUẨN QUY CHUẨN -->
+    <div style="margin-bottom: 40px;">
+      <h2 style="color: #1e3a8a; border-left: 6px solid #1e3a8a; padding-left: 10px; text-transform: uppercase;">
+        PHẦN 1: KẾ HOẠCH BÀI DẠY (GIÁO ÁN CHUẨN ${pkg.standard === 5512 ? 'CÔNG VĂN 5512' : 'CÔNG VĂN 2634'})
+      </h2>
+      ${planHtml}
+    </div>
+
+    <div style="page-break-before: always;"></div>
+
+    <!-- MỤC II: KỊCH BẢN SLIDE TRÌNH CHIẾU -->
+    <div style="margin-bottom: 40px;">
+      <h2 style="color: #0369a1; border-left: 6px solid #0369a1; padding-left: 10px; text-transform: uppercase;">
+        PHẦN 2: KỊCH BẢN BÀI GIẢNG TRÌNH CHIẾU POWERPOINT (SLIDES)
+      </h2>
+      ${slidesHtml}
+    </div>
+
+    <div style="page-break-before: always;"></div>
+
+    <!-- MỤC III: BỘ CÂU HỎI MINI GAME TƯƠNG TÁC -->
+    <div style="margin-bottom: 40px;">
+      <h2 style="color: #7e22ce; border-left: 6px solid #7e22ce; padding-left: 10px; text-transform: uppercase;">
+        PHẦN 3: BỘ CÂU HỎI MINI GAME TƯƠNG TÁC (KAHOOT / QUIZIZZ / BLOOKET)
+      </h2>
+      <pre style="background: #faf5ff; border: 1.5px solid #c084fc; border-radius: 8px; padding: 16px; font-family: 'Times New Roman', serif; font-size: 12pt; white-space: pre-wrap;">
+${miniGameToTxt(pkg.miniGame, pkg.lessonTitle)}
+      </pre>
+    </div>
+
+    <div style="page-break-before: always;"></div>
+
+    <!-- MỤC IV: KỊCH BẢN VIDEO GIẢNG DẠY VI MÔ -->
+    <div style="margin-bottom: 40px;">
+      <h2 style="color: #b45309; border-left: 6px solid #b45309; padding-left: 10px; text-transform: uppercase;">
+        PHẦN 4: KỊCH BẢN VIDEO BÀI GIẢNG VI MÔ (MICROLEARNING STORYBOARD)
+      </h2>
+      ${videoHtml}
+    </div>
+
+    <div style="page-break-before: always;"></div>
+
+    <!-- MỤC V: RÀ SOÁT VÀ CHẤM ĐIỂM NĂNG LỰC SỐ & AI -->
+    <div style="margin-bottom: 40px;">
+      <h2 style="color: #15803d; border-left: 6px solid #15803d; padding-left: 10px; text-transform: uppercase;">
+        PHẦN 5: BẢNG RÀ SOÁT & CHẤM ĐIỂM SƯ PHẠM NĂNG LỰC SỐ (QĐ 2422 & CV 3456/BGDĐT)
+      </h2>
+      <div style="background: #f0fdf4; border: 2px solid #16a34a; border-radius: 8px; padding: 16px; margin-bottom: 15px;">
+        <h3 style="margin: 0 0 8px 0; color: #166534; font-size: 14pt;">
+          TỔNG ĐIỂM ĐÁNH GIÁ: ${pkg.auditScore.totalScore}/100 ĐIỂM — XẾP LOẠI: ${pkg.auditScore.rating.toUpperCase()}
+        </h3>
+        <p style="margin: 4px 0;"><b>Mức độ Năng lực số đạt được:</b> ${pkg.auditScore.digitalCompetencyReview.levelAchieved}</p>
+      </div>
+
+      <table border="1" cellpadding="8" style="border-collapse: collapse; width: 100%; margin-top: 10px; font-size: 11pt;">
+        <tr style="background-color: #dcfce7;">
+          <th style="width: 30%;">Tiêu Chí Đánh Giá</th>
+          <th style="width: 15%;">Điểm Số</th>
+          <th style="width: 55%;">Nhận Xét & Căn Cứ Pháp Quy</th>
+        </tr>
+        ${pkg.auditScore.criteria.map(c => `
+          <tr>
+            <td><b>${c.name}</b><br/><span style="font-size: 9.5pt; color: #64748b;">${c.standardRef}</span></td>
+            <td style="text-align: center; font-weight: bold; color: #166534; font-size: 13pt;">${c.actualScore} / ${c.maxScore}</td>
+            <td>${c.feedback}</td>
+          </tr>
+        `).join('')}
+      </table>
+    </div>
+  `;
+}

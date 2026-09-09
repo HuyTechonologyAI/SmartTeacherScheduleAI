@@ -617,3 +617,139 @@ export function updateKnowledgeDocument(updatedDoc: KnowledgeDocument): boolean 
     return false;
   }
 }
+
+export interface MatchedDocResult {
+  doc: KnowledgeDocument | null;
+  relevantSnippet: string;
+  confidence: number;
+}
+
+/**
+ * Tìm kiếm và khớp nối chính xác giáo trình / tài liệu đính kèm từ Kho tư liệu
+ * dựa trên Môn học, Khối lớp và Tiết/Bài học (ví dụ: Lớp 10, Môn Công nghệ, Tiết 1 Bài 1)
+ */
+export function findMatchingKnowledgeDocument(
+  subject: string = '',
+  gradeOrClass: string = '',
+  lessonTitleOrQuery: string = ''
+): MatchedDocResult {
+  const allDocs = getResolvedKnowledgeDocuments();
+  if (allDocs.length === 0) {
+    return { doc: null, relevantSnippet: '', confidence: 0 };
+  }
+
+  const cleanSubj = subject.toLowerCase().trim();
+  const cleanQuery = lessonTitleOrQuery.toLowerCase().trim();
+
+  // Trích xuất số khối lớp (ví dụ: "10" từ "10A1", "Lớp 10")
+  const gradeMatch = gradeOrClass.match(/\b(10|11|12|[1-9])\b/);
+  const gradeNum = gradeMatch ? gradeMatch[1] : '';
+
+  let bestDoc: KnowledgeDocument | null = null;
+  let highestScore = -1;
+
+  for (const doc of allDocs) {
+    let score = 0;
+    const docTitle = doc.title.toLowerCase();
+    const docSubj = doc.subject.toLowerCase();
+    const docLevel = doc.targetLevel.toLowerCase();
+    const docFileName = (doc.fileName || '').toLowerCase();
+    const docContent = (doc.content || '').toLowerCase();
+
+    // 1. Khớp môn học
+    if (cleanSubj && (docSubj.includes(cleanSubj) || cleanSubj.includes(docSubj) || docTitle.includes(cleanSubj) || docFileName.includes(cleanSubj))) {
+      score += 40;
+    } else if (docSubj === 'all') {
+      score += 10;
+    }
+
+    // 2. Khớp khối lớp
+    if (gradeNum) {
+      if (docLevel.includes(gradeNum) || docTitle.includes(gradeNum) || docFileName.includes(gradeNum)) {
+        score += 30;
+      }
+    }
+
+    // 3. Ưu tiên loại Giáo trình nghề hoặc Đề cương
+    if (doc.category === 'GIAO_TRINH' || doc.category === 'DE_CUONG') {
+      score += 25;
+    }
+
+    // 4. Ưu tiên tài liệu Thầy/Cô đã tự tải lên (Custom uploaded document)
+    if (!doc.isBuiltIn) {
+      score += 20;
+    }
+
+    // 5. Khớp từ khóa bài học hoặc tiết dạy
+    if (cleanQuery) {
+      const lessonNumMatch = cleanQuery.match(/(?:bài|tiết|chương|phần)\s*([0-9]+)/i);
+      if (lessonNumMatch) {
+        const lessonNum = lessonNumMatch[1];
+        if (docContent.includes(`bài ${lessonNum}`) || docContent.includes(`bài số ${lessonNum}`) || docTitle.includes(`bài ${lessonNum}`)) {
+          score += 35;
+        }
+      }
+
+      const words = cleanQuery.split(/[\s,.:;_\-]+/).filter(w => w.length > 3);
+      let matchCount = 0;
+      for (const w of words) {
+        if (docContent.includes(w) || docTitle.includes(w)) {
+          matchCount++;
+        }
+      }
+      score += Math.min(30, matchCount * 6);
+    }
+
+    if (score > highestScore) {
+      highestScore = score;
+      bestDoc = doc;
+    }
+  }
+
+  if (!bestDoc || highestScore < 15) {
+    return { doc: null, relevantSnippet: '', confidence: 0 };
+  }
+
+  // Trích xuất phân đoạn nội dung bám sát bài học
+  let snippet = '';
+  const fullContent = bestDoc.content || '';
+  if (cleanQuery && fullContent.length > 0) {
+    const lessonNumMatch = cleanQuery.match(/(?:bài|tiết|chương)\s*([0-9]+)/i);
+    let targetIndex = -1;
+    if (lessonNumMatch) {
+      const p = new RegExp(`bài\\s*${lessonNumMatch[1]}\\b`, 'i');
+      targetIndex = fullContent.search(p);
+    }
+    if (targetIndex < 0) {
+      const words = cleanQuery.split(/[\s,.:;_\-]+/).filter(w => w.length > 3);
+      for (const w of words) {
+        const idx = fullContent.toLowerCase().indexOf(w);
+        if (idx >= 0) {
+          targetIndex = idx;
+          break;
+        }
+      }
+    }
+
+    if (targetIndex >= 0) {
+      const start = Math.max(0, targetIndex - 100);
+      const end = Math.min(fullContent.length, targetIndex + 1400);
+      snippet = fullContent.substring(start, end).trim();
+      if (start > 0) snippet = '...' + snippet;
+      if (end < fullContent.length) snippet = snippet + '...';
+    } else {
+      snippet = fullContent.substring(0, 1000).trim();
+      if (fullContent.length > 1000) snippet += '...';
+    }
+  } else {
+    snippet = fullContent.substring(0, 1000).trim();
+    if (fullContent.length > 1000) snippet += '...';
+  }
+
+  return {
+    doc: bestDoc,
+    relevantSnippet: snippet,
+    confidence: Math.min(100, Math.round(highestScore))
+  };
+}
+

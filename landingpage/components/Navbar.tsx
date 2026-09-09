@@ -79,7 +79,7 @@ export default function Navbar() {
             </Link>
 
             <a
-              href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.4.0/SmartTeacherSchedule_v1.4.0_Release.apk"
+              href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.5.0/SmartTeacherSchedule_v1.5.0_Release.apk"
               className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-semibold text-sm shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all"
             >
               <Download className="w-4 h-4" />
@@ -158,7 +158,7 @@ export default function Navbar() {
             </Link>
 
             <a
-              href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.4.0/SmartTeacherSchedule_v1.4.0_Release.apk"
+              href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.5.0/SmartTeacherSchedule_v1.5.0_Release.apk"
               className="flex items-center justify-center space-x-2 w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-semibold text-center shadow-lg"
             >
               <Download className="w-4 h-4" />

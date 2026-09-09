@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Smart Teacher Schedule AI - Trợ lý Lịch Dạy & Nhắc Việc Giáo Viên",
     description:
-      "Tải app v1.2.5 ngay: Báo thức kép 60m & 15m, chống tắt ngầm khi dọn RAM, Widget màn hình chính và tự động làm mới 00:00 hằng ngày.",
+      "Tải app v1.5.0 ngay: Hệ sinh thái Đa Nền Tảng (Android, Web, Desktop), Soạn giáo án AI chuẩn CV 5512 & CV 2634, Kho tư liệu đối chiếu và Đồng bộ Đám mây 2 chiều.",
     images: [
       {
         url: "/feature_banner.jpg",

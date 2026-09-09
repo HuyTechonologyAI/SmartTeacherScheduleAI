@@ -23,11 +23,11 @@ export default function HeroSection() {
   const [showQr, setShowQr] = useState(false);
 
   const apkUrl =
-    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.4.0/SmartTeacherSchedule_v1.4.0_Release.apk";
+    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.5.0/SmartTeacherSchedule_v1.5.0_Release.apk";
   const aabUrl =
-    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.4.0/SmartTeacherSchedule_v1.4.0_Release.aab";
+    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.5.0/SmartTeacherSchedule_v1.5.0_Release.aab";
   const desktopUrl =
-    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.4.0/SmartTeacherSchedule_v1.4.0_Desktop.zip";
+    "https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.5.0/SmartTeacherSchedule_v1.5.0_Desktop.zip";
 
   return (
     <section

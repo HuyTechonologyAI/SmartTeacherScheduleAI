@@ -17,6 +17,7 @@ export interface KnowledgeDocument {
   fileSize?: number;
   fileType?: string;
   fileData?: string;
+  updatedAt?: number;
 }
 
 export const BUILT_IN_KNOWLEDGE_DOCUMENTS: KnowledgeDocument[] = [
@@ -377,6 +378,95 @@ export function toggleKnowledgeDocumentActive(id: string, isActive: boolean): vo
   } catch (e) {
     console.error('Failed to update custom doc status', e);
   }
+}
+
+
+export function mergeKnowledgeDocumentsFromCloud(incomingDocs: KnowledgeDocument[]): { updatedCount: number; addedCount: number } {
+  if (typeof window === 'undefined' || !Array.isArray(incomingDocs) || incomingDocs.length === 0) {
+    return { updatedCount: 0, addedCount: 0 };
+  }
+
+  let addedCount = 0;
+  let updatedCount = 0;
+
+  try {
+    const rawCustom = localStorage.getItem(STORAGE_KEY);
+    let customDocs: KnowledgeDocument[] = rawCustom ? JSON.parse(rawCustom) : [];
+
+    const BUILTIN_OVERRIDE_KEY = 'smart_teacher_builtin_overrides';
+    let overrides: Record<string, boolean> = {};
+    try {
+      const rawOv = localStorage.getItem(BUILTIN_OVERRIDE_KEY);
+      if (rawOv) overrides = JSON.parse(rawOv);
+    } catch (e) {}
+
+    for (const inc of incomingDocs) {
+      if (!inc || !inc.title) continue;
+
+      const incCode = (inc.code || '').toLowerCase().trim();
+      const incId = (inc.id || '').toLowerCase().trim();
+
+      const matchedBuiltin = BUILT_IN_KNOWLEDGE_DOCUMENTS.find(b => 
+        b.id.toLowerCase() === incId || 
+        b.code.toLowerCase().trim() === incCode ||
+        (incCode && b.code.toLowerCase().replace(/[^a-z0-9]/g, '') === incCode.replace(/[^a-z0-9]/g, ''))
+      );
+
+      if (matchedBuiltin || inc.isBuiltIn) {
+        const targetId = matchedBuiltin ? matchedBuiltin.id : inc.id;
+        if (targetId && typeof inc.isActive === 'boolean') {
+          overrides[targetId] = inc.isActive;
+        }
+        continue;
+      }
+
+      const existingIdx = customDocs.findIndex(d => 
+        (d.id && inc.id && d.id === inc.id) ||
+        (d.code && inc.code && d.code.toLowerCase().trim() === inc.code.toLowerCase().trim()) ||
+        (d.title.toLowerCase().trim() === inc.title.toLowerCase().trim() && (d.subject || 'ALL').toLowerCase().trim() === (inc.subject || 'ALL').toLowerCase().trim())
+      );
+
+      const docToStore: KnowledgeDocument = {
+        id: inc.id || ('custom-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6)),
+        code: inc.code || 'DOC-CUSTOM',
+        title: inc.title,
+        category: (inc.category as any) || 'GIAO_TRINH',
+        subject: inc.subject || 'ALL',
+        targetLevel: inc.targetLevel || 'ALL',
+        content: inc.content || '',
+        isBuiltIn: false,
+        isActive: inc.isActive !== false,
+        createdAt: inc.createdAt || new Date().toISOString(),
+        fileName: inc.fileName,
+        fileSize: inc.fileSize,
+        fileType: inc.fileType,
+        updatedAt: inc.updatedAt || Date.now()
+      };
+
+      if (existingIdx >= 0) {
+        const existingDoc = customDocs[existingIdx];
+        const existingTs = Number(existingDoc.updatedAt) || 0;
+        const incTs = Number(docToStore.updatedAt) || 0;
+        if (incTs >= existingTs) {
+          if (!docToStore.fileData && existingDoc.fileData) {
+            docToStore.fileData = existingDoc.fileData;
+          }
+          customDocs[existingIdx] = docToStore;
+          updatedCount++;
+        }
+      } else {
+        customDocs.unshift(docToStore);
+        addedCount++;
+      }
+    }
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(customDocs));
+    localStorage.setItem(BUILTIN_OVERRIDE_KEY, JSON.stringify(overrides));
+  } catch (e) {
+    console.error('Error merging knowledge documents from cloud:', e);
+  }
+
+  return { updatedCount, addedCount };
 }
 
 export function getResolvedKnowledgeDocuments(): KnowledgeDocument[] {

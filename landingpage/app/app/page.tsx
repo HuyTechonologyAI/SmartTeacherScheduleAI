@@ -28,6 +28,7 @@ import {
 import {
   KnowledgeDocument,
   getResolvedKnowledgeDocuments,
+  mergeKnowledgeDocumentsFromCloud,
   saveKnowledgeDocument,
   deleteCustomKnowledgeDocument,
   toggleKnowledgeDocumentActive,
@@ -567,6 +568,7 @@ export default function UnifiedTeacherScheduleApp() {
     const saved = updateKnowledgeDocument(updatedDoc);
     if (saved) {
       refreshKnowledgeDocs();
+      pushToCloud(events, schedules, syncCode, false);
       if (kbViewingDoc && kbViewingDoc.id === updatedDoc.id) {
         setKbViewingDoc(updatedDoc);
       }
@@ -776,6 +778,23 @@ export default function UnifiedTeacherScheduleApp() {
     try {
       const nowTs = Date.now();
       localStorage.setItem('smart_teacher_last_local_update', nowTs.toString());
+      const allKnowledgeDocs = getResolvedKnowledgeDocuments();
+      const docsPayload = allKnowledgeDocs.map(d => ({
+        id: d.id,
+        code: d.code,
+        title: d.title,
+        category: d.category,
+        subject: d.subject,
+        targetLevel: d.targetLevel,
+        content: d.content,
+        isBuiltIn: d.isBuiltIn,
+        isActive: d.isActive,
+        fileName: d.fileName,
+        fileSize: d.fileSize,
+        fileType: d.fileType,
+        updatedAt: d.updatedAt || nowTs
+      }));
+
       const res = await fetch('/api/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -785,7 +804,8 @@ export default function UnifiedTeacherScheduleApp() {
           deviceName: 'Máy tính Giáo viên (Windows/Mac/Web)',
           updatedAt: nowTs,
           events: curEvents,
-          schedules: curSchedules
+          schedules: curSchedules,
+          knowledgeDocs: docsPayload
         })
       });
       if (res.ok) {
@@ -799,14 +819,19 @@ export default function UnifiedTeacherScheduleApp() {
           setSchedules(result.schedules);
           localStorage.setItem('smart_teacher_schedules', JSON.stringify(result.schedules));
         }
+        if (Array.isArray(result.knowledgeDocs) && result.knowledgeDocs.length > 0) {
+          mergeKnowledgeDocumentsFromCloud(result.knowledgeDocs);
+          refreshKnowledgeDocs();
+        }
 
         const count = result.totalEvents || curEvents.length;
+        const totalDocs = result.totalKnowledgeDocs || allKnowledgeDocs.length;
         setSyncStatus('synced');
         setLastSyncTime(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-        setAlertBanner(`🟢 Đã đồng bộ & hợp nhất ${count} ca dạy lên Đám mây! Điện thoại sẽ nhận được ngay.`);
+        setAlertBanner(`🟢 Đã đồng bộ & hợp nhất ${count} ca dạy và ${totalDocs} tài liệu/giáo trình lên Đám mây! Điện thoại sẽ nhận được ngay.`);
         setTimeout(() => setAlertBanner(null), 5000);
         if (isManual) {
-          alert(`🎉 ĐẨY LÊN ĐÁM MÂY THÀNH CÔNG!\n\nĐã gửi & hợp nhất ${count} ca dạy và ${result.totalSchedules || curSchedules.length} lịch mẫu học kỳ lên Đám mây!\n\nThầy/Cô mở app trên điện thoại và bấm "Đồng bộ 2 chiều" (hoặc "Nhận từ PC") để nhận dữ liệu mới nhất từ máy tính nhé!\nMã đồng bộ: ${code}`);
+          alert(`🎉 ĐẨY LÊN ĐÁM MÂY THÀNH CÔNG!\n\nĐã gửi & hợp nhất ${count} ca dạy, ${result.totalSchedules || curSchedules.length} lịch mẫu học kỳ và ${totalDocs} tài liệu giáo trình/pháp quy lên Đám mây!\n\nThầy/Cô mở app trên điện thoại và bấm "Đồng bộ 2 chiều" (hoặc "Nhận từ PC") để nhận dữ liệu mới nhất từ máy tính nhé!\nMã đồng bộ: ${code}`);
         }
         return true;
       } else {
@@ -877,14 +902,31 @@ export default function UnifiedTeacherScheduleApp() {
           setSchedules(mergedSchedules);
           localStorage.setItem('smart_teacher_events', JSON.stringify(mergedEvents));
           localStorage.setItem('smart_teacher_schedules', JSON.stringify(mergedSchedules));
+
+          if (Array.isArray(data.knowledgeDocs) && data.knowledgeDocs.length > 0) {
+            mergeKnowledgeDocumentsFromCloud(data.knowledgeDocs);
+            refreshKnowledgeDocs();
+          }
+
           setSyncStatus('synced');
           setLastSyncTime(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
           if (isManual) {
-            alert(`🎉 ĐỒNG BỘ 2 CHIỀU THÀNH CÔNG!\n\nĐã tải về đầy đủ ${mergedEvents.length} ca dạy (${mergedSchedules.length} lịch mẫu học kỳ) khớp hoàn toàn với điện thoại!\nMã đồng bộ: ${code}`);
+            alert(`🎉 ĐỒNG BỘ 2 CHIỀU THÀNH CÔNG!\n\nĐã tải về đầy đủ ${mergedEvents.length} ca dạy (${mergedSchedules.length} lịch mẫu học kỳ) và cập nhật tài liệu giáo trình khớp hoàn toàn với điện thoại!\nMã đồng bộ: ${code}`);
           }
           return true;
-        } else if (isManual) {
-          alert(`⚠️ Chưa có lịch trên đám mây cho mã "${code}".\nThầy/Cô vui lòng mở app trên điện thoại ➔ Cài đặt ➔ Bấm "Đồng bộ đám mây ngay" trước nhé!`);
+        } else {
+          if (Array.isArray(data.knowledgeDocs) && data.knowledgeDocs.length > 0) {
+            mergeKnowledgeDocumentsFromCloud(data.knowledgeDocs);
+            refreshKnowledgeDocs();
+            setSyncStatus('synced');
+            setLastSyncTime(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+            if (isManual) {
+              alert(`🎉 ĐÃ CẬP NHẬT TÀI LIỆU!\n\nĐã nhận và đồng bộ ${data.knowledgeDocs.length} tài liệu giáo trình từ điện thoại!\nMã đồng bộ: ${code}`);
+            }
+            return true;
+          } else if (isManual) {
+            alert(`⚠️ Chưa có dữ liệu trên đám mây cho mã "${code}".\nThầy/Cô vui lòng mở app trên điện thoại ➔ Cài đặt ➔ Bấm "Đồng bộ đám mây ngay" trước nhé!`);
+          }
         }
       }
     } catch (e) {
@@ -3478,6 +3520,7 @@ export default function UnifiedTeacherScheduleApp() {
                               onClick={() => {
                                 toggleKnowledgeDocumentActive(doc.id, !doc.isActive);
                                 refreshKnowledgeDocs();
+                                pushToCloud(events, schedules, syncCode, false);
                               }}
                               className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer ${
                                 doc.isActive ? 'bg-emerald-500' : 'bg-slate-700'
@@ -3579,6 +3622,7 @@ export default function UnifiedTeacherScheduleApp() {
                                   if (confirm(`Xác nhận xóa tài liệu '${doc.title}' khỏi cơ sở dữ liệu đối chiếu?`)) {
                                     deleteCustomKnowledgeDocument(doc.id);
                                     refreshKnowledgeDocs();
+                                    pushToCloud(events, schedules, syncCode, false);
                                   }
                                 }}
                                 className="p-1.5 rounded-lg hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 text-xs cursor-pointer transition-colors"
@@ -4187,6 +4231,7 @@ export default function UnifiedTeacherScheduleApp() {
                             const savedOk = saveKnowledgeDocument(newDoc);
                             if (savedOk) {
                               refreshKnowledgeDocs();
+                              pushToCloud(events, schedules, syncCode, false);
                               setKbFilter('ALL'); // Reset filter to ALL so document is immediately displayed!
                               setKbSearch('');    // Clear any search term
                               setKbShowAddModal(false);

@@ -10,6 +10,9 @@ interface KnowledgeDocumentDao {
     @Query("SELECT * FROM knowledge_documents ORDER BY isBuiltIn ASC, createdAt DESC")
     fun getAllDocumentsFlow(): Flow<List<KnowledgeDocumentEntity>>
 
+    @Query("SELECT * FROM knowledge_documents ORDER BY isBuiltIn ASC, createdAt DESC")
+    suspend fun getAllDocumentsList(): List<KnowledgeDocumentEntity>
+
     @Query("SELECT * FROM knowledge_documents WHERE isActive = 1 ORDER BY isBuiltIn ASC, createdAt DESC")
     fun getAllActiveDocumentsFlow(): Flow<List<KnowledgeDocumentEntity>>
 

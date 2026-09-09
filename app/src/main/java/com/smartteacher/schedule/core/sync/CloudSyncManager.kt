@@ -8,6 +8,7 @@ import com.google.gson.JsonObject
 import com.smartteacher.schedule.core.database.SmartTeacherDatabase
 import com.smartteacher.schedule.core.database.entity.CalendarEventEntity
 import com.smartteacher.schedule.core.database.entity.TeachingScheduleEntity
+import com.smartteacher.schedule.core.database.entity.KnowledgeDocumentEntity
 import com.smartteacher.schedule.core.util.ScheduleSyncManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -145,6 +146,28 @@ object CloudSyncManager {
                 schedulesArray.add(item)
             }
 
+            // 3. Đóng gói danh sách giáo trình, đề cương và tài liệu chuẩn (Knowledge Documents)
+            val knowledgeDocsArray = JsonArray()
+            val allDocs = db.knowledgeDocumentDao().getAllDocumentsList()
+            for (doc in allDocs) {
+                val item = JsonObject().apply {
+                    addProperty("id", if (doc.isBuiltIn) doc.code else "custom_${doc.id}")
+                    addProperty("code", doc.code)
+                    addProperty("title", doc.title)
+                    addProperty("category", doc.category)
+                    addProperty("subject", doc.subject)
+                    addProperty("targetLevel", doc.targetLevel)
+                    addProperty("content", doc.content)
+                    addProperty("isBuiltIn", doc.isBuiltIn)
+                    addProperty("isActive", doc.isActive)
+                    addProperty("fileName", doc.fileName)
+                    addProperty("fileSize", doc.fileSizeBytes)
+                    addProperty("fileType", doc.fileExtension)
+                    addProperty("updatedAt", doc.updatedAt)
+                }
+                knowledgeDocsArray.add(item)
+            }
+
             val rootObj = JsonObject().apply {
                 addProperty("syncCode", syncCode)
                 addProperty("platform", "android")
@@ -152,8 +175,10 @@ object CloudSyncManager {
                 addProperty("updatedAt", System.currentTimeMillis())
                 addProperty("totalEvents", allEvents.size)
                 addProperty("totalSchedules", schedules.size)
+                addProperty("totalKnowledgeDocs", allDocs.size)
                 add("events", eventsArray)
                 add("schedules", schedulesArray)
+                add("knowledgeDocs", knowledgeDocsArray)
             }
 
             val requestBody = rootObj.toString().toRequestBody(jsonMediaType)
@@ -206,8 +231,11 @@ object CloudSyncManager {
             val jsonObject = gson.fromJson(responseBody, JsonObject::class.java)
             val schedulesArray = jsonObject.getAsJsonArray("schedules")
             val eventsArray = jsonObject.getAsJsonArray("events")
+            val docsArray = jsonObject.getAsJsonArray("knowledgeDocs")
 
-            if ((schedulesArray == null || schedulesArray.size() == 0) && (eventsArray == null || eventsArray.size() == 0)) {
+            if ((schedulesArray == null || schedulesArray.size() == 0) &&
+                (eventsArray == null || eventsArray.size() == 0) &&
+                (docsArray == null || docsArray.size() == 0)) {
                 return@withContext Result.success(0)
             }
 
@@ -382,6 +410,77 @@ object CloudSyncManager {
                 }
             }
 
+            // 3. Cập nhật tài liệu giáo trình, đề cương và văn bản chuẩn (knowledge_documents)
+            if (docsArray != null && docsArray.size() > 0) {
+                val currentDocs = db.knowledgeDocumentDao().getAllDocumentsList()
+                for (elem in docsArray) {
+                    val item = elem.asJsonObject
+                    val code = item.get("code")?.asString ?: item.get("id")?.asString ?: ""
+                    val title = item.get("title")?.asString ?: ""
+                    if (code.isBlank() && title.isBlank()) continue
+
+                    val category = item.get("category")?.asString ?: "GIAO_TRINH"
+                    val subject = item.get("subject")?.asString ?: "ALL"
+                    val targetLevel = item.get("targetLevel")?.asString ?: "ALL"
+                    val content = item.get("content")?.asString ?: ""
+                    val isBuiltIn = item.get("isBuiltIn")?.asBoolean ?: false
+                    val isActive = if (item.has("isActive")) item.get("isActive").asBoolean else true
+                    val fileName = item.get("fileName")?.asString ?: ""
+                    val fileSize = item.get("fileSize")?.asLong ?: 0L
+                    val fileType = item.get("fileType")?.asString ?: ""
+                    val itemUpdatedAt = item.get("updatedAt")?.asLong ?: System.currentTimeMillis()
+
+                    val existing = currentDocs.find {
+                        it.code.equals(code, ignoreCase = true) ||
+                        (it.title.equals(title, ignoreCase = true) && it.subject.equals(subject, ignoreCase = true))
+                    }
+
+                    if (existing != null) {
+                        val isDiff = existing.title != title ||
+                                     existing.category != category ||
+                                     existing.subject != subject ||
+                                     existing.targetLevel != targetLevel ||
+                                     existing.content != content ||
+                                     existing.isActive != isActive ||
+                                     existing.fileName != fileName
+
+                        if (isDiff && itemUpdatedAt >= existing.updatedAt) {
+                            val updated = existing.copy(
+                                title = title,
+                                category = category,
+                                subject = subject,
+                                targetLevel = targetLevel,
+                                content = content,
+                                isActive = isActive,
+                                fileName = if (fileName.isNotBlank()) fileName else existing.fileName,
+                                fileSizeBytes = if (fileSize > 0) fileSize else existing.fileSizeBytes,
+                                fileExtension = if (fileType.isNotBlank()) fileType else existing.fileExtension,
+                                updatedAt = itemUpdatedAt
+                            )
+                            db.knowledgeDocumentDao().updateDocument(updated)
+                            changedCount++
+                        }
+                    } else {
+                        val newDoc = KnowledgeDocumentEntity(
+                            code = if (code.isNotBlank()) code else "DOC_${System.currentTimeMillis()}",
+                            title = title,
+                            category = category,
+                            subject = subject,
+                            targetLevel = targetLevel,
+                            content = content,
+                            isBuiltIn = isBuiltIn,
+                            isActive = isActive,
+                            fileName = fileName,
+                            fileSizeBytes = fileSize,
+                            fileExtension = fileType,
+                            updatedAt = itemUpdatedAt
+                        )
+                        db.knowledgeDocumentDao().insertDocument(newDoc)
+                        changedCount++
+                    }
+                }
+            }
+
             // Tự động kiểm tra và sinh bù các ca dạy còn thiếu (Self-Healing)
             val healed = ScheduleSyncManager.syncAndSelfHeal(context)
             changedCount += healed
@@ -440,9 +539,11 @@ object CloudSyncManager {
             val db = SmartTeacherDatabase.getInstance(context)
             val currentEvents = db.calendarEventDao().getAllEventsSync()
             val currentSchedules = db.teachingScheduleDao().getAllActiveSchedulesList()
+            val currentDocs = db.knowledgeDocumentDao().getAllDocumentsList()
 
             val hasLocalNewerEdits = currentEvents.any { it.updatedAt > lastSync } ||
-                                     currentSchedules.any { it.updatedAt > lastSync }
+                                     currentSchedules.any { it.updatedAt > lastSync } ||
+                                     currentDocs.any { it.updatedAt > lastSync }
 
             var pushedCount = 0
             if (hasLocalNewerEdits || lastSync == 0L) {
@@ -454,13 +555,13 @@ object CloudSyncManager {
 
             val msg = when {
                 pulledChanges > 0 && pushedCount > 0 ->
-                    "Đồng bộ 2 chiều thành công: Đã nhận $pulledChanges ca mới từ Máy tính & Đẩy $pushedCount ca từ Điện thoại!"
+                    "Đồng bộ 2 chiều thành công: Đã nhận $pulledChanges mục mới (lịch dạy/tài liệu) từ Máy tính & Đẩy $pushedCount mục từ Điện thoại!"
                 pulledChanges > 0 ->
-                    "Đồng bộ thành công: Đã cập nhật $pulledChanges ca dạy mới nhất từ Máy tính về Điện thoại!"
+                    "Đồng bộ thành công: Đã cập nhật $pulledChanges mục mới nhất (lịch dạy/giáo trình) từ Máy tính về Điện thoại!"
                 pushedCount > 0 ->
-                    "Đồng bộ thành công: Đã lưu & đẩy $pushedCount ca dạy từ Điện thoại lên Đám mây!"
+                    "Đồng bộ thành công: Đã lưu & đẩy $pushedCount mục từ Điện thoại lên Đám mây!"
                 else ->
-                    "Dữ liệu giữa Điện thoại và Máy tính đã hoàn toàn khớp nhau (${currentEvents.size} ca dạy)!"
+                    "Dữ liệu giữa Điện thoại và Máy tính đã hoàn toàn khớp nhau (${currentEvents.size} ca dạy, ${currentDocs.size} tài liệu giáo trình)!"
             }
 
             Result.success(msg)

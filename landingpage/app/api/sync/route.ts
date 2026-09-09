@@ -37,6 +37,22 @@ export interface CalendarEventPayload {
   updatedAt?: number;
 }
 
+export interface KnowledgeDocPayload {
+  id: string;
+  code: string;
+  title: string;
+  category: string;
+  subject: string;
+  targetLevel: string;
+  content: string;
+  isBuiltIn?: boolean;
+  isActive?: boolean;
+  fileName?: string;
+  fileSize?: number;
+  fileType?: string;
+  updatedAt?: number;
+}
+
 export interface SyncPayload {
   syncCode: string;
   deviceName?: string;
@@ -44,6 +60,7 @@ export interface SyncPayload {
   updatedAt: number;
   schedules: SchedulePayload[];
   events: CalendarEventPayload[];
+  knowledgeDocs?: KnowledgeDocPayload[];
 }
 
 const memoryCache = new Map<string, { data: SyncPayload; timestamp: number }>();
@@ -141,13 +158,15 @@ async function getFromGist(syncCode: string): Promise<SyncPayload | null> {
       events = generateEventsFromSchedules(schedules);
     }
 
+    const knowledgeDocs: KnowledgeDocPayload[] = Array.isArray(parsed.knowledgeDocs) ? parsed.knowledgeDocs : [];
     const syncPayload: SyncPayload = {
       syncCode: cleanCode,
       deviceName: parsed.deviceName || 'Smart Device',
       platform: parsed.platform || 'cloud',
       updatedAt: parsed.updatedAt || Date.now(),
       schedules,
-      events
+      events,
+      knowledgeDocs
     };
 
     memoryCache.set(cleanCode, { data: syncPayload, timestamp: Date.now() });
@@ -223,8 +242,10 @@ export async function GET(req: NextRequest) {
     deviceName: data.deviceName,
     schedules: data.schedules,
     events: data.events,
+    knowledgeDocs: data.knowledgeDocs || [],
     totalEvents: data.events.length,
-    totalSchedules: data.schedules.length
+    totalSchedules: data.schedules.length,
+    totalKnowledgeDocs: (data.knowledgeDocs || []).length
   }, {
     headers: {
       'Access-Control-Allow-Origin': '*',
@@ -247,6 +268,35 @@ function mergeSchedules(existing: SchedulePayload[], incoming: SchedulePayload[]
 
   for (const s of existing) {
     map.set(getKey(s), s);
+  }
+
+  for (const inc of incoming) {
+    const key = getKey(inc);
+    const prev = map.get(key);
+    if (!prev) {
+      map.set(key, inc);
+    } else {
+      const prevTs = Number(prev.updatedAt) || 0;
+      const incTs = Number(inc.updatedAt) || 0;
+      if (incTs >= prevTs) {
+        map.set(key, inc);
+      }
+    }
+  }
+
+  return Array.from(map.values());
+}
+
+
+function mergeKnowledgeDocs(existing: KnowledgeDocPayload[], incoming: KnowledgeDocPayload[]): KnowledgeDocPayload[] {
+  const map = new Map<string, KnowledgeDocPayload>();
+
+  const getKey = (doc: KnowledgeDocPayload) => {
+    return (doc.code || doc.id || doc.title).toLowerCase().trim();
+  };
+
+  for (const d of existing) {
+    map.set(getKey(d), d);
   }
 
   for (const inc of incoming) {
@@ -318,6 +368,7 @@ export async function POST(req: NextRequest) {
     const cleanCode = body.syncCode.trim().replace(/[^a-zA-Z0-9_-]/g, '');
     const incomingSchedules: SchedulePayload[] = Array.isArray(body.schedules) ? body.schedules : [];
     let incomingEvents: CalendarEventPayload[] = Array.isArray(body.events) ? body.events : [];
+    const incomingKnowledgeDocs: KnowledgeDocPayload[] = Array.isArray(body.knowledgeDocs) ? body.knowledgeDocs : [];
 
     if (incomingEvents.length === 0 && incomingSchedules.length > 0) {
       incomingEvents = generateEventsFromSchedules(incomingSchedules);
@@ -328,11 +379,13 @@ export async function POST(req: NextRequest) {
 
     let finalSchedules = incomingSchedules;
     let finalEvents = incomingEvents;
+    let finalKnowledgeDocs = incomingKnowledgeDocs;
 
     if (existing && !body.forceOverwrite) {
-      // Hợp nhất ca dạy và lịch mẫu theo mốc thời gian sửa đổi (Last-Write-Wins per item)
+      // Hợp nhất ca dạy, lịch mẫu và tài liệu theo mốc thời gian sửa đổi (Last-Write-Wins per item)
       finalSchedules = mergeSchedules(existing.schedules || [], incomingSchedules);
       finalEvents = mergeEvents(existing.events || [], incomingEvents);
+      finalKnowledgeDocs = mergeKnowledgeDocs(existing.knowledgeDocs || [], incomingKnowledgeDocs);
     }
 
     const maxUpdatedAt = Math.max(
@@ -347,7 +400,8 @@ export async function POST(req: NextRequest) {
       platform: body.platform || 'web',
       updatedAt: maxUpdatedAt,
       schedules: finalSchedules,
-      events: finalEvents
+      events: finalEvents,
+      knowledgeDocs: finalKnowledgeDocs
     };
 
     const saved = await saveToGist(payload);
@@ -360,13 +414,15 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Đã hợp nhất và đồng bộ thành công ${payload.events.length} ca dạy (${payload.schedules.length} lịch mẫu) lên Đám mây!`,
+      message: `Đã hợp nhất và đồng bộ thành công ${payload.events.length} ca dạy (${payload.schedules.length} lịch mẫu, ${payload.knowledgeDocs?.length || 0} tài liệu giáo trình) lên Đám mây!`,
       syncCode: payload.syncCode,
       updatedAt: payload.updatedAt,
       schedules: payload.schedules,
       events: payload.events,
+      knowledgeDocs: payload.knowledgeDocs || [],
       totalEvents: payload.events.length,
-      totalSchedules: payload.schedules.length
+      totalSchedules: payload.schedules.length,
+      totalKnowledgeDocs: (payload.knowledgeDocs || []).length
     }, {
       headers: {
         'Access-Control-Allow-Origin': '*',

@@ -47,6 +47,26 @@ import {
   saveOriginalFileToStorage,
   dataUrlToBlobUrl
 } from './knowledgeFileStorage';
+import {
+  Classroom,
+  Student,
+  AttendanceRecord,
+  AttendanceStatus,
+  getStoredClassrooms,
+  saveClassroom,
+  deleteClassroom,
+  getStoredStudents,
+  getStudentsByClass,
+  saveStudent,
+  deleteStudent,
+  addKudosToStudent,
+  importStudentsFromText,
+  getStoredAttendance,
+  getAttendanceForSession,
+  saveAttendanceRecords,
+  exportAttendanceToCsv
+} from './studentRosterData';
+
 import AIAssistantWidget from '@/components/AIAssistantWidget';
 import { AiPedagogyMode, processPedagogicalAiQuery } from '@/components/aiPedagogyEngine';
 
@@ -100,6 +120,12 @@ import {
   ChevronLeft,
   CalendarDays,
   ExternalLink,
+  CheckSquare,
+  UserPlus,
+  Trophy,
+  Star,
+  UserX,
+  UserCheck,
   Edit3,
   Gamepad2,
   Video,
@@ -297,8 +323,31 @@ export function mergeEventsDesktop(current: CalendarEventItem[], incoming: Calen
 }
 
 export default function UnifiedTeacherScheduleApp() {
-  const [activeTab, setActiveTab] = useState<'today' | 'calendar' | 'report' | 'ai' | 'settings'>('today');
+  const [activeTab, setActiveTab] = useState<'today' | 'calendar' | 'roster' | 'report' | 'ai' | 'settings'>('today');
   const [isClient, setIsClient] = useState(false);
+
+
+  // ================= PHASE 1: CLASS ROSTER & ATTENDANCE STATES =================
+  const [classrooms, setClassrooms] = useState<Classroom[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [selectedRosterClass, setSelectedRosterClass] = useState<string>('CG24TC34');
+  const [rosterSearch, setRosterSearch] = useState<string>('');
+  const [showAddStudentModal, setShowAddStudentModal] = useState<boolean>(false);
+  const [newStudentName, setNewStudentName] = useState<string>('');
+  const [newStudentCode, setNewStudentCode] = useState<string>('');
+  const [newStudentGender, setNewStudentGender] = useState<'Nam' | 'Nữ'>('Nam');
+  const [newStudentPhone, setNewStudentPhone] = useState<string>('');
+  const [newStudentNotes, setNewStudentNotes] = useState<string>('');
+  const [showImportRosterModal, setShowImportRosterModal] = useState<boolean>(false);
+  const [importRosterText, setImportRosterText] = useState<string>('');
+  const [showAddClassModal, setShowAddClassModal] = useState<boolean>(false);
+  const [newClassName, setNewClassName] = useState<string>('');
+  const [newClassGrade, setNewClassGrade] = useState<string>('');
+
+  // 1-Tap Attendance Session Modal
+  const [attendanceEvent, setAttendanceEvent] = useState<CalendarEventItem | null>(null);
+  const [sessionAttendanceMap, setSessionAttendanceMap] = useState<Record<string, AttendanceRecord>>({});
 
   // Core Data States
   const [events, setEvents] = useState<CalendarEventItem[]>([]);
@@ -783,6 +832,136 @@ export default function UnifiedTeacherScheduleApp() {
     }
   };
 
+
+  // Open 1-Tap Attendance Modal for an Event
+  const openAttendanceModal = (ev: CalendarEventItem) => {
+    const classStudents = getStudentsByClass(ev.className);
+    const existingRecs = getAttendanceForSession(ev.date, ev.className, ev.id);
+    const map: Record<string, AttendanceRecord> = {};
+
+    classStudents.forEach(st => {
+      const found = existingRecs.find(r => r.studentId === st.id);
+      if (found) {
+        map[st.id] = { ...found };
+      } else {
+        // Default: PRESENT
+        map[st.id] = {
+          id: `att_${Date.now()}_${st.id}`,
+          date: ev.date,
+          eventId: ev.id,
+          studentId: st.id,
+          className: ev.className,
+          status: 'PRESENT',
+          kudosDelta: 0,
+          updatedAt: Date.now()
+        };
+      }
+    });
+
+    setSessionAttendanceMap(map);
+    setAttendanceEvent(ev);
+  };
+
+  // 1-Tap cycle status: PRESENT -> ABSENT_EXCUSED -> ABSENT_UNEXCUSED -> LATE -> PRESENT
+  const cycleAttendanceStatus = (studentId: string) => {
+    setSessionAttendanceMap(prev => {
+      const cur = prev[studentId];
+      if (!cur) return prev;
+      let nextStatus: AttendanceStatus = 'PRESENT';
+      if (cur.status === 'PRESENT') nextStatus = 'ABSENT_EXCUSED';
+      else if (cur.status === 'ABSENT_EXCUSED') nextStatus = 'ABSENT_UNEXCUSED';
+      else if (cur.status === 'ABSENT_UNEXCUSED') nextStatus = 'LATE';
+      else nextStatus = 'PRESENT';
+
+      return {
+        ...prev,
+        [studentId]: {
+          ...cur,
+          status: nextStatus,
+          updatedAt: Date.now()
+        }
+      };
+    });
+  };
+
+  // Add Kudos Praise directly in session
+  const addSessionKudos = (studentId: string, points: number, reason: string) => {
+    setSessionAttendanceMap(prev => {
+      const cur = prev[studentId];
+      if (!cur) return prev;
+      return {
+        ...prev,
+        [studentId]: {
+          ...cur,
+          kudosDelta: (cur.kudosDelta || 0) + points,
+          note: reason,
+          updatedAt: Date.now()
+        }
+      };
+    });
+    // Also increment student total kudos points
+    const updated = addKudosToStudent(studentId, points, reason);
+    setStudents(updated);
+  };
+
+  // Save Attendance to LocalStorage and Cloud
+  const handleSaveAttendance = () => {
+    if (!attendanceEvent) return;
+    const recordsToSave = Object.values(sessionAttendanceMap);
+    const updatedAll = saveAttendanceRecords(recordsToSave);
+    setAttendanceRecords(updatedAll);
+    setAttendanceEvent(null);
+    setAlertBanner(`🟢 Đã lưu điểm danh lớp ${attendanceEvent.className} (${recordsToSave.length} học sinh)!`);
+    setTimeout(() => setAlertBanner(null), 4000);
+    // Push update to cloud
+    pushToCloud(events, schedules, syncCode, false);
+  };
+
+  // Mark all present
+  const handleMarkAllPresent = () => {
+    setSessionAttendanceMap(prev => {
+      const next: Record<string, AttendanceRecord> = {};
+      for (const [sId, rec] of Object.entries(prev)) {
+        next[sId] = { ...rec, status: 'PRESENT', updatedAt: Date.now() };
+      }
+      return next;
+    });
+  };
+
+  // Copy Attendance to Zalo / Clipboard
+  const handleCopyAttendanceZalo = () => {
+    if (!attendanceEvent) return;
+    const classStudents = getStudentsByClass(attendanceEvent.className);
+    const recs = Object.values(sessionAttendanceMap);
+    const presentCount = recs.filter(r => r.status === 'PRESENT').length;
+    const excusedCount = recs.filter(r => r.status === 'ABSENT_EXCUSED').length;
+    const unexcusedCount = recs.filter(r => r.status === 'ABSENT_UNEXCUSED').length;
+    const lateCount = recs.filter(r => r.status === 'LATE').length;
+
+    let msg = `📢 [BÁO CÁO ĐIỂM DANH] Lớp: ${attendanceEvent.className}\n`;
+    msg += `📅 Tiết dạy: ${attendanceEvent.subject} (${attendanceEvent.startTime} - ${attendanceEvent.endTime}, Ngày ${attendanceEvent.date})\n`;
+    msg += `📍 Phòng: ${attendanceEvent.room}\n`;
+    msg += `👥 Sĩ số: ${presentCount}/${classStudents.length} Có mặt\n`;
+    if (excusedCount > 0) {
+      const names = classStudents.filter(s => sessionAttendanceMap[s.id]?.status === 'ABSENT_EXCUSED').map(s => s.fullName).join(', ');
+      msg += `🟡 Vắng có phép (${excusedCount}): ${names}\n`;
+    }
+    if (unexcusedCount > 0) {
+      const names = classStudents.filter(s => sessionAttendanceMap[s.id]?.status === 'ABSENT_UNEXCUSED').map(s => s.fullName).join(', ');
+      msg += `🔴 Vắng không phép (${unexcusedCount}): ${names}\n`;
+    }
+    if (lateCount > 0) {
+      const names = classStudents.filter(s => sessionAttendanceMap[s.id]?.status === 'LATE').map(s => s.fullName).join(', ');
+      msg += `🟠 Đi trễ (${lateCount}): ${names}\n`;
+    }
+    msg += `✨ Smart Teacher Schedule AI - Đồng bộ sư phạm thông minh`;
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(msg);
+      alert('Đã sao chép nội dung điểm danh để gửi Zalo cho GVCN / Phụ huynh!');
+    }
+  };
+
   // Push to Cloud (Máy tính -> Đám mây -> Điện thoại)
   const pushToCloud = async (curEvents: CalendarEventItem[], curSchedules: ScheduleItem[], code = syncCode, isManual = false) => {
     if (!code) return false;
@@ -819,6 +998,9 @@ export default function UnifiedTeacherScheduleApp() {
           events: curEvents,
           schedules: curSchedules,
           knowledgeDocs: docsPayload,
+          classrooms: getStoredClassrooms(),
+          students: getStoredStudents(),
+          attendanceRecords: getStoredAttendance(),
           deletedKnowledgeDocKeys: getDeletedKnowledgeDocKeys()
         })
       });
@@ -833,6 +1015,20 @@ export default function UnifiedTeacherScheduleApp() {
           setSchedules(result.schedules);
           localStorage.setItem('smart_teacher_schedules', JSON.stringify(result.schedules));
         }
+
+        if (Array.isArray(result.classrooms) && result.classrooms.length > 0) {
+          setClassrooms(result.classrooms);
+          localStorage.setItem('smart_teacher_classrooms_v1', JSON.stringify(result.classrooms));
+        }
+        if (Array.isArray(result.students) && result.students.length > 0) {
+          setStudents(result.students);
+          localStorage.setItem('smart_teacher_students_v1', JSON.stringify(result.students));
+        }
+        if (Array.isArray(result.attendanceRecords) && result.attendanceRecords.length > 0) {
+          setAttendanceRecords(result.attendanceRecords);
+          localStorage.setItem('smart_teacher_attendance_v1', JSON.stringify(result.attendanceRecords));
+        }
+
         if (Array.isArray(result.knowledgeDocs)) {
           mergeKnowledgeDocumentsFromCloud(result.knowledgeDocs, result.deletedKnowledgeDocKeys || []);
           refreshKnowledgeDocs();
@@ -1433,6 +1629,16 @@ export default function UnifiedTeacherScheduleApp() {
     document.body.removeChild(link);
   };
 
+
+  const getAttendanceBadgeForEvent = (ev: CalendarEventItem) => {
+    const classStudents = getStudentsByClass(ev.className);
+    if (classStudents.length === 0) return null;
+    const recs = getAttendanceForSession(ev.date, ev.className, ev.id);
+    if (recs.length === 0) return null;
+    const present = recs.filter(r => r.status === 'PRESENT').length;
+    return `${present}/${classStudents.length}`;
+  };
+
   if (!isClient) return null;
 
   const todayDayInfo = getDayInfo(todayStr);
@@ -1539,6 +1745,21 @@ export default function UnifiedTeacherScheduleApp() {
             <span>Lịch dạy 288 ca</span>
             <span className="px-1.5 py-0.2 rounded-full text-xs bg-slate-800 text-slate-300 font-bold">
               {events.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('roster')}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all whitespace-nowrap ${
+              activeTab === 'roster'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>Lớp & Học Sinh</span>
+            <span className="px-1.5 py-0.2 rounded-full text-xs bg-slate-800 text-cyan-300 font-bold">
+              {students.length} HS
             </span>
           </button>
 
@@ -1718,6 +1939,20 @@ export default function UnifiedTeacherScheduleApp() {
 
                           {/* Action Buttons (Unified: Sửa, Xoá, Đính kèm file) */}
                           <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+
+                            <button
+                              onClick={() => openAttendanceModal(ev)}
+                              title="Điểm danh 1-chạm & Tích điểm nề nếp cho ca dạy này"
+                              className="p-2 px-3 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 transition-all text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                              <span>Điểm danh</span>
+                              {getAttendanceBadgeForEvent(ev) && (
+                                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/20 text-emerald-300 font-bold">
+                                  {getAttendanceBadgeForEvent(ev)}
+                                </span>
+                              )}
+                            </button>
                             <button
                               onClick={() => {
                                 setAttachingEvent(ev);
@@ -5040,6 +5275,447 @@ export default function UnifiedTeacherScheduleApp() {
         </div>
       )}
       <AIAssistantWidget />
+
+      {/* ================= 1-TAP ATTENDANCE SESSION MODAL ================= */}
+      {attendanceEvent && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-scale-in">
+            {/* Header */}
+            <div className="p-5 border-b border-slate-800 bg-slate-950/60 flex items-start justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold">
+                    📋 ĐIỂM DANH 1-CHẠM
+                  </span>
+                  <span className="text-xs text-slate-400 font-mono">
+                    {attendanceEvent.startTime} - {attendanceEvent.endTime} • Ngày {attendanceEvent.date}
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold text-white mt-1">
+                  {attendanceEvent.subject} - Lớp {attendanceEvent.className}
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Phòng: {attendanceEvent.room} • Thao tác: Chạm 1 lần vào thẻ học sinh để đổi trạng thái Có mặt / Vắng / Đi trễ.
+                </p>
+              </div>
+
+              <button
+                onClick={() => setAttendanceEvent(null)}
+                className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Attendance Status Summary Counters */}
+            {(() => {
+              const recs = Object.values(sessionAttendanceMap);
+              const presentCount = recs.filter(r => r.status === 'PRESENT').length;
+              const excusedCount = recs.filter(r => r.status === 'ABSENT_EXCUSED').length;
+              const unexcusedCount = recs.filter(r => r.status === 'ABSENT_UNEXCUSED').length;
+              const lateCount = recs.filter(r => r.status === 'LATE').length;
+
+              return (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-4 border-b border-slate-800/80 bg-slate-900/60">
+                  <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-2.5 text-center">
+                    <p className="text-[11px] text-emerald-400 font-semibold">🟢 Có mặt</p>
+                    <p className="text-xl font-black text-emerald-300">{presentCount}/{recs.length}</p>
+                  </div>
+                  <div className="bg-amber-950/30 border border-amber-500/30 rounded-xl p-2.5 text-center">
+                    <p className="text-[11px] text-amber-400 font-semibold">🟡 Vắng có phép</p>
+                    <p className="text-xl font-black text-amber-300">{excusedCount}</p>
+                  </div>
+                  <div className="bg-rose-950/30 border border-rose-500/30 rounded-xl p-2.5 text-center">
+                    <p className="text-[11px] text-rose-400 font-semibold">🔴 Vắng không phép</p>
+                    <p className="text-xl font-black text-rose-300">{unexcusedCount}</p>
+                  </div>
+                  <div className="bg-orange-950/30 border border-orange-500/30 rounded-xl p-2.5 text-center">
+                    <p className="text-[11px] text-orange-400 font-semibold">🟠 Đi trễ</p>
+                    <p className="text-xl font-black text-orange-300">{lateCount}</p>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Students Grid */}
+            <div className="p-5 overflow-y-auto flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {getStudentsByClass(attendanceEvent.className).map(st => {
+                const rec = sessionAttendanceMap[st.id] || { status: 'PRESENT', kudosDelta: 0 };
+                const isPresent = rec.status === 'PRESENT';
+                const isExcused = rec.status === 'ABSENT_EXCUSED';
+                const isUnexcused = rec.status === 'ABSENT_UNEXCUSED';
+                const isLate = rec.status === 'LATE';
+
+                return (
+                  <div
+                    key={st.id}
+                    className={`border rounded-2xl p-3.5 transition-all flex flex-col justify-between gap-2.5 cursor-pointer select-none ${
+                      isPresent
+                        ? 'bg-emerald-950/20 border-emerald-500/40 hover:border-emerald-400'
+                        : isExcused
+                        ? 'bg-amber-950/20 border-amber-500/50 hover:border-amber-400'
+                        : isUnexcused
+                        ? 'bg-rose-950/20 border-rose-500/50 hover:border-rose-400'
+                        : 'bg-orange-950/20 border-orange-500/50 hover:border-orange-400'
+                    }`}
+                  >
+                    <div
+                      onClick={() => cycleAttendanceStatus(st.id)}
+                      className="flex items-start justify-between gap-2"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
+                          isPresent ? 'bg-emerald-500/20 text-emerald-300' : isExcused ? 'bg-amber-500/20 text-amber-300' : isUnexcused ? 'bg-rose-500/20 text-rose-300' : 'bg-orange-500/20 text-orange-300'
+                        }`}>
+                          {st.fullName.trim().charAt(st.fullName.trim().lastIndexOf(' ') + 1) || 'A'}
+                        </div>
+                        <div>
+                          <p className="font-bold text-sm text-white">{st.fullName}</p>
+                          <p className="text-[11px] text-slate-400 font-mono">{st.studentCode}</p>
+                        </div>
+                      </div>
+
+                      {/* Status Badge */}
+                      <span className={`text-[11px] px-2.5 py-1 rounded-full font-bold border ${
+                        isPresent
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                          : isExcused
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                          : isUnexcused
+                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                          : 'bg-orange-500/20 text-orange-300 border-orange-500/30'
+                      }`}>
+                        {isPresent ? '🟢 Có mặt' : isExcused ? '🟡 Vắng (CP)' : isUnexcused ? '🔴 Vắng (KP)' : '🟠 Đi trễ'}
+                      </span>
+                    </div>
+
+                    {/* Quick Kudos Praise Buttons in Session */}
+                    <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addSessionKudos(st.id, 1, 'Phát biểu trong ca học');
+                          }}
+                          className="px-2 py-0.5 rounded bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 text-[10px] font-bold"
+                        >
+                          +1 Phát biểu
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addSessionKudos(st.id, 2, 'Làm bài xuất sắc');
+                          }}
+                          className="px-2 py-0.5 rounded bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 text-[10px] font-bold"
+                        >
+                          +2 Bài tốt
+                        </button>
+                      </div>
+
+                      {rec.kudosDelta > 0 && (
+                        <span className="text-[11px] text-amber-400 font-bold">+{rec.kudosDelta}đ</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer Action Bar */}
+            <div className="p-4 border-t border-slate-800 bg-slate-950/80 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleMarkAllPresent}
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer"
+                >
+                  Tất cả có mặt
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const classStudents = getStudentsByClass(attendanceEvent.className);
+                    exportAttendanceToCsv(attendanceEvent.subject, attendanceEvent.className, attendanceEvent.date, classStudents, sessionAttendanceMap);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/20 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Xuất CSV / Excel</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCopyAttendanceZalo}
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/20 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span>Báo cáo Zalo</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAttendanceEvent(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveAttendance}
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-600/30 cursor-pointer"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Lưu & Đồng bộ Cloud</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: THÊM HỌC SINH MỚI ================= */}
+      {showAddStudentModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+              <h3 className="font-bold text-base text-white">Thêm Học Sinh Mới</h3>
+              <button onClick={() => setShowAddStudentModal(false)} className="text-slate-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-400 mb-1 font-semibold">Lớp học</label>
+                <select
+                  value={selectedRosterClass}
+                  onChange={(e) => setSelectedRosterClass(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white"
+                >
+                  {classrooms.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-slate-400 mb-1 font-semibold">Họ và tên học sinh *</label>
+                <input
+                  type="text"
+                  value={newStudentName}
+                  onChange={(e) => setNewStudentName(e.target.value)}
+                  placeholder="VD: Nguyễn Hoàng Nam"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-slate-400 mb-1 font-semibold">Mã số HS</label>
+                  <input
+                    type="text"
+                    value={newStudentCode}
+                    onChange={(e) => setNewStudentCode(e.target.value)}
+                    placeholder="VD: CG24-10"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 mb-1 font-semibold">Giới tính</label>
+                  <select
+                    value={newStudentGender}
+                    onChange={(e) => setNewStudentGender(e.target.value as any)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white"
+                  >
+                    <option value="Nam">Nam</option>
+                    <option value="Nữ">Nữ</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-slate-400 mb-1 font-semibold">SĐT Phụ huynh</label>
+                <input
+                  type="tel"
+                  value={newStudentPhone}
+                  onChange={(e) => setNewStudentPhone(e.target.value)}
+                  placeholder="VD: 0981234567"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-400 mb-1 font-semibold">Ghi chú</label>
+                <input
+                  type="text"
+                  value={newStudentNotes}
+                  onChange={(e) => setNewStudentNotes(e.target.value)}
+                  placeholder="VD: Tổ trưởng, khéo tay..."
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-5">
+              <button
+                onClick={() => setShowAddStudentModal(false)}
+                className="px-3.5 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={() => {
+                  if (!newStudentName.trim()) {
+                    alert('Vui lòng nhập họ và tên học sinh!');
+                    return;
+                  }
+                  const code = newStudentCode.trim() || `${selectedRosterClass}-${String(students.length + 1).padStart(2, '0')}`;
+                  const newStd: Student = {
+                    id: `std_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+                    classId: selectedRosterClass,
+                    className: selectedRosterClass,
+                    studentCode: code,
+                    fullName: newStudentName.trim(),
+                    gender: newStudentGender,
+                    parentPhone: newStudentPhone.trim(),
+                    kudosPoints: 5,
+                    notes: newStudentNotes.trim(),
+                    updatedAt: Date.now()
+                  };
+                  const updated = saveStudent(newStd);
+                  setStudents(updated);
+                  setNewStudentName('');
+                  setNewStudentCode('');
+                  setNewStudentPhone('');
+                  setNewStudentNotes('');
+                  setShowAddStudentModal(false);
+                }}
+                className="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs"
+              >
+                Lưu học sinh
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: DÁN DANH SÁCH HỌC SINH TỪ EXCEL/WORD ================= */}
+      {showImportRosterModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-5 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+              <h3 className="font-bold text-base text-white flex items-center gap-2">
+                <Download className="w-4 h-4 text-cyan-400" />
+                <span>Nhập Danh Sách Nhanh Cho Lớp {selectedRosterClass}</span>
+              </h3>
+              <button onClick={() => setShowImportRosterModal(false)} className="text-slate-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-slate-400 mb-2">
+              Dán danh sách học sinh từ Excel, Word hoặc văn bản. Mỗi học sinh một dòng. Có thể dán cột Họ tên hoặc các cột: Mã HS [tab] Họ tên [tab] Giới tính [tab] SĐT.
+            </p>
+            <textarea
+              rows={8}
+              value={importRosterText}
+              onChange={(e) => setImportRosterText(e.target.value)}
+              placeholder="1. Nguyễn Văn An
+2. Trần Thị Bích
+3. Lê Hoàng Dũng..."
+              className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 font-mono focus:outline-none focus:border-blue-500"
+            />
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                onClick={() => setShowImportRosterModal(false)}
+                className="px-3.5 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={() => {
+                  if (!importRosterText.trim()) {
+                    alert('Vui lòng dán danh sách học sinh vào ô văn bản!');
+                    return;
+                  }
+                  const updated = importStudentsFromText(selectedRosterClass, selectedRosterClass, importRosterText);
+                  setStudents(updated);
+                  setImportRosterText('');
+                  setShowImportRosterModal(false);
+                  alert(`Đã nhập thành công danh sách học sinh vào lớp ${selectedRosterClass}!`);
+                }}
+                className="px-4 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs"
+              >
+                Nhập danh sách
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: THÊM LỚP HỌC MỚI ================= */}
+      {showAddClassModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-5 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+              <h3 className="font-bold text-base text-white">Thêm Lớp Học Mới</h3>
+              <button onClick={() => setShowAddClassModal(false)} className="text-slate-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-400 mb-1 font-semibold">Tên lớp học * (VD: 11A2, CĐCK03)</label>
+                <input
+                  type="text"
+                  value={newClassName}
+                  onChange={(e) => setNewClassName(e.target.value)}
+                  placeholder="VD: 11A2"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white font-bold"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-400 mb-1 font-semibold">Khối / Bậc đào tạo</label>
+                <input
+                  type="text"
+                  value={newClassGrade}
+                  onChange={(e) => setNewClassGrade(e.target.value)}
+                  placeholder="VD: Khối 11 hoặc Cao đẳng K03"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-white"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-5">
+              <button
+                onClick={() => setShowAddClassModal(false)}
+                className="px-3.5 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={() => {
+                  if (!newClassName.trim()) {
+                    alert('Vui lòng nhập tên lớp!');
+                    return;
+                  }
+                  const newCls: Classroom = {
+                    id: `cls_${newClassName.trim().toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
+                    name: newClassName.trim().toUpperCase(),
+                    grade: newClassGrade.trim(),
+                    totalStudents: 0,
+                    academicYear: '2024-2025',
+                    updatedAt: Date.now()
+                  };
+                  const updated = saveClassroom(newCls);
+                  setClassrooms(updated);
+                  setSelectedRosterClass(newCls.name);
+                  setNewClassName('');
+                  setNewClassGrade('');
+                  setShowAddClassModal(false);
+                }}
+                className="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs"
+              >
+                Tạo lớp
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

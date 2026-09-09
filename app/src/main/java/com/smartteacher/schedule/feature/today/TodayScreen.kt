@@ -88,6 +88,9 @@ fun TodayScreen(
     var editingEvent by remember { mutableStateOf<CalendarEventEntity?>(null) }
     var deletingEvent by remember { mutableStateOf<CalendarEventEntity?>(null) }
     var viewingDocumentsEvent by remember { mutableStateOf<CalendarEventEntity?>(null) }
+    var attendanceTargetEvent by remember { mutableStateOf<CalendarEventEntity?>(null) }
+    var showStudentManagementDialog by remember { mutableStateOf(false) }
+
 
     if (viewingDocumentsEvent != null) {
         val currentDocEvent = viewingDocumentsEvent!!
@@ -151,6 +154,25 @@ fun TodayScreen(
                 }
             }
         )
+    }
+
+
+    if (attendanceTargetEvent != null) {
+        com.smartteacher.schedule.feature.students.QuickAttendanceDialog(
+            event = attendanceTargetEvent!!,
+            onDismiss = { attendanceTargetEvent = null }
+        )
+    }
+
+    if (showStudentManagementDialog) {
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { showStudentManagementDialog = false },
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            com.smartteacher.schedule.feature.students.StudentManagementScreen(
+                onNavigateBack = { showStudentManagementDialog = false }
+            )
+        }
     }
 
     var showWidgetHelpDialog by remember { mutableStateOf(false) }
@@ -578,6 +600,7 @@ fun TodayScreen(
                     TimelineEventCard(
                         event = event,
                         attachmentsCount = eventAttachments.size,
+                        onAttendance = { attendanceTargetEvent = event },
                         onViewAttachments = { viewingDocumentsEvent = event },
                         onClick = { editingEvent = event },
                         onEdit = { editingEvent = event },
@@ -873,6 +896,7 @@ fun StatCard(
 fun TimelineEventCard(
     event: CalendarEventEntity,
     attachmentsCount: Int = 0,
+    onAttendance: () -> Unit = {},
     onViewAttachments: () -> Unit = {},
     onClick: () -> Unit,
     onEdit: () -> Unit,
@@ -1030,6 +1054,30 @@ fun TimelineEventCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+
+                // Button 0: Điểm danh (Attendance)
+                Button(
+                    onClick = onAttendance,
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    modifier = Modifier.height(34.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669))
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = "Điểm danh",
+                        tint = Color.White,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Điểm danh",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+
                     // Button 2: Chỉnh sửa (Edit)
                     OutlinedButton(
                         onClick = onEdit,

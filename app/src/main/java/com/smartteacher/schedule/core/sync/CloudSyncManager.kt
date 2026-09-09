@@ -9,6 +9,9 @@ import com.smartteacher.schedule.core.database.SmartTeacherDatabase
 import com.smartteacher.schedule.core.database.entity.CalendarEventEntity
 import com.smartteacher.schedule.core.database.entity.TeachingScheduleEntity
 import com.smartteacher.schedule.core.database.entity.KnowledgeDocumentEntity
+import com.smartteacher.schedule.core.database.entity.ClassroomEntity
+import com.smartteacher.schedule.core.database.entity.StudentEntity
+import com.smartteacher.schedule.core.database.entity.AttendanceRecordEntity
 import com.smartteacher.schedule.core.util.ScheduleSyncManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -174,6 +177,56 @@ object CloudSyncManager {
                 knowledgeDocsArray.add(item)
             }
 
+
+            val classroomsArray = JsonArray()
+            val allClassrooms = db.classroomDao().getAllClassrooms()
+            for (c in allClassrooms) {
+                classroomsArray.add(JsonObject().apply {
+                    addProperty("id", c.id)
+                    addProperty("name", c.name)
+                    addProperty("grade", c.grade)
+                    addProperty("totalStudents", c.totalStudents)
+                    addProperty("academicYear", c.academicYear)
+                    addProperty("notes", c.notes)
+                    addProperty("updatedAt", c.updatedAt)
+                })
+            }
+
+            val studentsArray = JsonArray()
+            val allStudents = db.studentDao().getAllStudents()
+            for (st in allStudents) {
+                studentsArray.add(JsonObject().apply {
+                    addProperty("id", st.id)
+                    addProperty("classId", st.classId)
+                    addProperty("className", st.className)
+                    addProperty("studentCode", st.studentCode)
+                    addProperty("fullName", st.fullName)
+                    addProperty("gender", st.gender)
+                    addProperty("parentPhone", st.parentPhone)
+                    addProperty("parentName", st.parentName)
+                    addProperty("kudosPoints", st.kudosPoints)
+                    addProperty("notes", st.notes)
+                    addProperty("updatedAt", st.updatedAt)
+                })
+            }
+
+            val attendanceArray = JsonArray()
+            val allAttendance = db.attendanceDao().getAllAttendance()
+            for (att in allAttendance) {
+                attendanceArray.add(JsonObject().apply {
+                    addProperty("id", att.id)
+                    addProperty("date", att.date)
+                    addProperty("eventId", att.eventId)
+                    addProperty("scheduleId", att.scheduleId)
+                    addProperty("studentId", att.studentId)
+                    addProperty("className", att.className)
+                    addProperty("status", att.status)
+                    addProperty("kudosDelta", att.kudosDelta)
+                    addProperty("note", att.note)
+                    addProperty("updatedAt", att.updatedAt)
+                })
+            }
+
             val deletedKeysArray = JsonArray().apply {
                 add("custom_7")
                 add("gt-cn10")
@@ -193,6 +246,9 @@ object CloudSyncManager {
                 add("schedules", schedulesArray)
                 add("knowledgeDocs", knowledgeDocsArray)
                 add("deletedKnowledgeDocKeys", deletedKeysArray)
+                add("classrooms", classroomsArray)
+                add("students", studentsArray)
+                add("attendanceRecords", attendanceArray)
             }
 
             val requestBody = rootObj.toString().toRequestBody(jsonMediaType)
@@ -243,8 +299,71 @@ object CloudSyncManager {
             }
 
             val jsonObject = gson.fromJson(responseBody, JsonObject::class.java)
+            val db = SmartTeacherDatabase.getInstance(context)
             val schedulesArray = jsonObject.getAsJsonArray("schedules")
             val eventsArray = jsonObject.getAsJsonArray("events")
+
+            val classroomsArray = jsonObject.getAsJsonArray("classrooms")
+            if (classroomsArray != null && classroomsArray.size() > 0) {
+                val list = mutableListOf<ClassroomEntity>()
+                for (i in 0 until classroomsArray.size()) {
+                    val obj = classroomsArray.get(i).asJsonObject
+                    list.add(ClassroomEntity(
+                        id = obj.get("id")?.asString ?: "cls_${System.currentTimeMillis()}",
+                        name = obj.get("name")?.asString ?: "",
+                        grade = obj.get("grade")?.asString ?: "",
+                        totalStudents = obj.get("totalStudents")?.asInt ?: 0,
+                        academicYear = obj.get("academicYear")?.asString ?: "2024-2025",
+                        notes = obj.get("notes")?.asString ?: "",
+                        updatedAt = obj.get("updatedAt")?.asLong ?: System.currentTimeMillis()
+                    ))
+                }
+                db.classroomDao().insertClassrooms(list)
+            }
+
+            val studentsArray = jsonObject.getAsJsonArray("students")
+            if (studentsArray != null && studentsArray.size() > 0) {
+                val list = mutableListOf<StudentEntity>()
+                for (i in 0 until studentsArray.size()) {
+                    val obj = studentsArray.get(i).asJsonObject
+                    list.add(StudentEntity(
+                        id = obj.get("id")?.asString ?: "std_${System.currentTimeMillis()}",
+                        classId = obj.get("classId")?.asString ?: "",
+                        className = obj.get("className")?.asString ?: "",
+                        studentCode = obj.get("studentCode")?.asString ?: "",
+                        fullName = obj.get("fullName")?.asString ?: "",
+                        gender = obj.get("gender")?.asString ?: "Nam",
+                        parentPhone = obj.get("parentPhone")?.asString ?: "",
+                        parentName = obj.get("parentName")?.asString ?: "",
+                        kudosPoints = obj.get("kudosPoints")?.asInt ?: 0,
+                        notes = obj.get("notes")?.asString ?: "",
+                        updatedAt = obj.get("updatedAt")?.asLong ?: System.currentTimeMillis()
+                    ))
+                }
+                db.studentDao().insertStudents(list)
+            }
+
+            val attendanceArray = jsonObject.getAsJsonArray("attendanceRecords")
+            if (attendanceArray != null && attendanceArray.size() > 0) {
+                val list = mutableListOf<AttendanceRecordEntity>()
+                for (i in 0 until attendanceArray.size()) {
+                    val obj = attendanceArray.get(i).asJsonObject
+                    list.add(AttendanceRecordEntity(
+                        id = obj.get("id")?.asString ?: "att_${System.currentTimeMillis()}",
+                        date = obj.get("date")?.asString ?: "",
+                        eventId = obj.get("eventId")?.asString ?: "",
+                        scheduleId = obj.get("scheduleId")?.asString ?: "",
+                        studentId = obj.get("studentId")?.asString ?: "",
+                        className = obj.get("className")?.asString ?: "",
+                        status = obj.get("status")?.asString ?: "PRESENT",
+                        kudosDelta = obj.get("kudosDelta")?.asInt ?: 0,
+                        note = obj.get("note")?.asString ?: "",
+                        updatedAt = obj.get("updatedAt")?.asLong ?: System.currentTimeMillis()
+                    ))
+                }
+                db.attendanceDao().insertRecords(list)
+            }
+
             val docsArray = jsonObject.getAsJsonArray("knowledgeDocs")
 
             if ((schedulesArray == null || schedulesArray.size() == 0) &&
@@ -253,7 +372,6 @@ object CloudSyncManager {
                 return@withContext Result.success(0)
             }
 
-            val db = SmartTeacherDatabase.getInstance(context)
             var changedCount = 0
 
             // 1. Cập nhật các mẫu định kỳ (teaching_schedules)

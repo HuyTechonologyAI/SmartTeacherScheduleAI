@@ -54,6 +54,43 @@ export interface KnowledgeDocPayload {
   isDeleted?: boolean;
 }
 
+export interface ClassroomPayload {
+  id: string;
+  name: string;
+  grade?: string;
+  totalStudents?: number;
+  academicYear?: string;
+  notes?: string;
+  updatedAt?: number;
+}
+
+export interface StudentPayload {
+  id: string;
+  classId: string;
+  className: string;
+  studentCode?: string;
+  fullName: string;
+  gender?: string;
+  parentPhone?: string;
+  parentName?: string;
+  kudosPoints?: number;
+  notes?: string;
+  updatedAt?: number;
+}
+
+export interface AttendanceRecordPayload {
+  id: string;
+  date: string;
+  eventId?: string;
+  scheduleId?: string;
+  studentId: string;
+  className: string;
+  status: 'PRESENT' | 'ABSENT_EXCUSED' | 'ABSENT_UNEXCUSED' | 'LATE';
+  kudosDelta?: number;
+  note?: string;
+  updatedAt?: number;
+}
+
 export interface SyncPayload {
   syncCode: string;
   deviceName?: string;
@@ -63,6 +100,9 @@ export interface SyncPayload {
   events: CalendarEventPayload[];
   knowledgeDocs?: KnowledgeDocPayload[];
   deletedKnowledgeDocKeys?: string[];
+  classrooms?: ClassroomPayload[];
+  students?: StudentPayload[];
+  attendanceRecords?: AttendanceRecordPayload[];
 }
 
 const memoryCache = new Map<string, { data: SyncPayload; timestamp: number }>();
@@ -161,6 +201,9 @@ async function getFromGist(syncCode: string): Promise<SyncPayload | null> {
     }
 
     const knowledgeDocs: KnowledgeDocPayload[] = Array.isArray(parsed.knowledgeDocs) ? parsed.knowledgeDocs : [];
+    const classrooms: ClassroomPayload[] = Array.isArray(parsed.classrooms) ? parsed.classrooms : [];
+    const students: StudentPayload[] = Array.isArray(parsed.students) ? parsed.students : [];
+    const attendanceRecords: AttendanceRecordPayload[] = Array.isArray(parsed.attendanceRecords) ? parsed.attendanceRecords : [];
     const syncPayload: SyncPayload = {
       syncCode: cleanCode,
       deviceName: parsed.deviceName || 'Smart Device',
@@ -168,7 +211,10 @@ async function getFromGist(syncCode: string): Promise<SyncPayload | null> {
       updatedAt: parsed.updatedAt || Date.now(),
       schedules,
       events,
-      knowledgeDocs
+      knowledgeDocs,
+      classrooms,
+      students,
+      attendanceRecords
     };
 
     memoryCache.set(cleanCode, { data: syncPayload, timestamp: Date.now() });
@@ -246,9 +292,15 @@ export async function GET(req: NextRequest) {
     events: data.events,
     knowledgeDocs: data.knowledgeDocs || [],
     deletedKnowledgeDocKeys: data.deletedKnowledgeDocKeys || [],
+    classrooms: data.classrooms || [],
+    students: data.students || [],
+    attendanceRecords: data.attendanceRecords || [],
     totalEvents: data.events.length,
     totalSchedules: data.schedules.length,
-    totalKnowledgeDocs: (data.knowledgeDocs || []).length
+    totalKnowledgeDocs: (data.knowledgeDocs || []).length,
+    totalClassrooms: (data.classrooms || []).length,
+    totalStudents: (data.students || []).length,
+    totalAttendance: (data.attendanceRecords || []).length
   }, {
     headers: {
       'Access-Control-Allow-Origin': '*',
@@ -456,6 +508,52 @@ function mergeKnowledgeDocs(
   return results;
 }
 
+
+function mergeClassrooms(existing: ClassroomPayload[], incoming: ClassroomPayload[]): ClassroomPayload[] {
+  const map = new Map<string, ClassroomPayload>();
+  const getKey = (c: ClassroomPayload) => (c.name || c.id).toLowerCase().trim();
+  for (const c of existing) map.set(getKey(c), c);
+  for (const inc of incoming) {
+    const key = getKey(inc);
+    const prev = map.get(key);
+    if (!prev || (Number(inc.updatedAt) || 0) >= (Number(prev.updatedAt) || 0)) {
+      map.set(key, inc);
+    }
+  }
+  return Array.from(map.values());
+}
+
+function mergeStudents(existing: StudentPayload[], incoming: StudentPayload[]): StudentPayload[] {
+  const map = new Map<string, StudentPayload>();
+  const getKey = (s: StudentPayload) => {
+    if (s.id && !s.id.startsWith('std_temp')) return s.id;
+    return `${(s.className || '').toLowerCase().trim()}__${(s.fullName || '').toLowerCase().trim()}`;
+  };
+  for (const s of existing) map.set(getKey(s), s);
+  for (const inc of incoming) {
+    const key = getKey(inc);
+    const prev = map.get(key);
+    if (!prev || (Number(inc.updatedAt) || 0) >= (Number(prev.updatedAt) || 0)) {
+      map.set(key, inc);
+    }
+  }
+  return Array.from(map.values());
+}
+
+function mergeAttendance(existing: AttendanceRecordPayload[], incoming: AttendanceRecordPayload[]): AttendanceRecordPayload[] {
+  const map = new Map<string, AttendanceRecordPayload>();
+  const getKey = (a: AttendanceRecordPayload) => `${a.date}_${a.studentId}_${a.eventId || 'noev'}`;
+  for (const a of existing) map.set(getKey(a), a);
+  for (const inc of incoming) {
+    const key = getKey(inc);
+    const prev = map.get(key);
+    if (!prev || (Number(inc.updatedAt) || 0) >= (Number(prev.updatedAt) || 0)) {
+      map.set(key, inc);
+    }
+  }
+  return Array.from(map.values());
+}
+
 function mergeEvents(existing: CalendarEventPayload[], incoming: CalendarEventPayload[]): CalendarEventPayload[] {
   const map = new Map<string, CalendarEventPayload>();
 
@@ -510,6 +608,9 @@ export async function POST(req: NextRequest) {
     let incomingEvents: CalendarEventPayload[] = Array.isArray(body.events) ? body.events : [];
     const incomingKnowledgeDocs: KnowledgeDocPayload[] = Array.isArray(body.knowledgeDocs) ? body.knowledgeDocs : [];
     const incomingDeletedKeys: string[] = Array.isArray(body.deletedKnowledgeDocKeys) ? body.deletedKnowledgeDocKeys : [];
+    const incomingClassrooms: ClassroomPayload[] = Array.isArray(body.classrooms) ? body.classrooms : [];
+    const incomingStudents: StudentPayload[] = Array.isArray(body.students) ? body.students : [];
+    const incomingAttendance: AttendanceRecordPayload[] = Array.isArray(body.attendanceRecords) ? body.attendanceRecords : [];
 
     if (incomingEvents.length === 0 && incomingSchedules.length > 0) {
       incomingEvents = generateEventsFromSchedules(incomingSchedules);
@@ -533,12 +634,18 @@ export async function POST(req: NextRequest) {
     let finalSchedules = incomingSchedules;
     let finalEvents = incomingEvents;
     let finalKnowledgeDocs = incomingKnowledgeDocs;
+    let finalClassrooms = incomingClassrooms;
+    let finalStudents = incomingStudents;
+    let finalAttendance = incomingAttendance;
 
     if (existing && !body.forceOverwrite) {
       // Hợp nhất ca dạy, lịch mẫu và tài liệu theo mốc thời gian sửa đổi (Last-Write-Wins per item)
       finalSchedules = mergeSchedules(existing.schedules || [], incomingSchedules);
       finalEvents = mergeEvents(existing.events || [], incomingEvents);
       finalKnowledgeDocs = mergeKnowledgeDocs(existing.knowledgeDocs || [], incomingKnowledgeDocs, combinedDeletedKeys);
+      finalClassrooms = mergeClassrooms(existing.classrooms || [], incomingClassrooms);
+      finalStudents = mergeStudents(existing.students || [], incomingStudents);
+      finalAttendance = mergeAttendance(existing.attendanceRecords || [], incomingAttendance);
     } else {
       finalKnowledgeDocs = mergeKnowledgeDocs([], incomingKnowledgeDocs, combinedDeletedKeys);
     }
@@ -557,7 +664,10 @@ export async function POST(req: NextRequest) {
       schedules: finalSchedules,
       events: finalEvents,
       knowledgeDocs: finalKnowledgeDocs,
-      deletedKnowledgeDocKeys: combinedDeletedKeys
+      deletedKnowledgeDocKeys: combinedDeletedKeys,
+      classrooms: finalClassrooms,
+      students: finalStudents,
+      attendanceRecords: finalAttendance
     };
 
     const saved = await saveToGist(payload);
@@ -577,9 +687,15 @@ export async function POST(req: NextRequest) {
       events: payload.events,
       knowledgeDocs: payload.knowledgeDocs || [],
       deletedKnowledgeDocKeys: combinedDeletedKeys,
+      classrooms: payload.classrooms || [],
+      students: payload.students || [],
+      attendanceRecords: payload.attendanceRecords || [],
       totalEvents: payload.events.length,
       totalSchedules: payload.schedules.length,
-      totalKnowledgeDocs: (payload.knowledgeDocs || []).length
+      totalKnowledgeDocs: (payload.knowledgeDocs || []).length,
+      totalClassrooms: (payload.classrooms || []).length,
+      totalStudents: (payload.students || []).length,
+      totalAttendance: (payload.attendanceRecords || []).length
     }, {
       headers: {
         'Access-Control-Allow-Origin': '*',

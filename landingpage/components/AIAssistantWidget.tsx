@@ -186,11 +186,11 @@ export default function AIAssistantWidget() {
       };
     }
 
-    if (query.includes("1.4.2") || query.includes("1.4") || query.includes("mới nhất") || query.includes("phiên bản")) {
+    if (query.includes("1.5.0") || query.includes("1.4") || query.includes("mới nhất") || query.includes("phiên bản")) {
       return {
-        text: `Dạ, phiên bản mới nhất **v1.4.2** mang đến 3 nâng cấp công nghệ và nghiệp vụ sư phạm đột phá:\n\n1. ☁️ **Đồng bộ 2 chiều Máy tính ⇄ Điện thoại (Two-Way Cloud Sync)**:\n• Thầy/Cô có thể chỉnh sửa ca dạy, đổi tiết, thêm ca dạy mới ngay trên màn hình lớn Máy tính PC và bấm **[Đẩy lên ĐT]** hoặc **[Đồng bộ 2 chiều]** để lịch cập nhật tức thì về điện thoại.\n• Đầy đủ tính năng tạo ca dạy mới với tùy chọn lặp lại cả học kỳ.\n\n2. 🏛️ **Kho Tư Liệu Pháp Quy Đối Chiếu Chuẩn (Anti-Hallucination Grounding Engine)**:\n• AI biên soạn giáo án dựa 100% trên cơ sở dữ liệu Công văn 5512/BGDĐT, Công văn 2634/TCGDNN và tài liệu chuẩn do Thầy/Cô cung cấp, tuyệt đối không tự bịa hay ảo tưởng thông tin.\n• Có nút **[+ Thêm tư liệu mới]** để Thầy/Cô nạp giáo trình riêng, đề cương môn học và quy chuẩn an toàn nghề nghiệp.\n\n3. 📱 **Tối ưu trải nghiệm Đa nền tảng**:\n• Chuông báo kép 60p & 15p hoạt động bền bỉ, chống tắt ngầm trên Tecno, Xiaomi, Samsung...`,
+        text: `Dạ, phiên bản mới nhất **v1.5.0** mang đến 3 nâng cấp công nghệ và nghiệp vụ sư phạm đột phá:\n\n1. ☁️ **Đồng bộ 2 chiều Máy tính ⇄ Điện thoại (Two-Way Cloud Sync)**:\n• Thầy/Cô có thể chỉnh sửa ca dạy, đổi tiết, thêm ca dạy mới ngay trên màn hình lớn Máy tính PC và bấm **[Đẩy lên ĐT]** hoặc **[Đồng bộ 2 chiều]** để lịch cập nhật tức thì về điện thoại.\n• Đầy đủ tính năng tạo ca dạy mới với tùy chọn lặp lại cả học kỳ.\n\n2. 🏛️ **Kho Tư Liệu Pháp Quy Đối Chiếu Chuẩn (Anti-Hallucination Grounding Engine)**:\n• AI biên soạn giáo án dựa 100% trên cơ sở dữ liệu Công văn 5512/BGDĐT, Công văn 2634/TCGDNN và tài liệu chuẩn do Thầy/Cô cung cấp, tuyệt đối không tự bịa hay ảo tưởng thông tin.\n• Có nút **[+ Thêm tư liệu mới]** để Thầy/Cô nạp giáo trình riêng, đề cương môn học và quy chuẩn an toàn nghề nghiệp.\n\n3. 📱 **Tối ưu trải nghiệm Đa nền tảng**:\n• Chuông báo kép 60p & 15p hoạt động bền bỉ, chống tắt ngầm trên Tecno, Xiaomi, Samsung...`,
         quickActions: [
-          { label: "📥 Tải APK v1.4.2 ngay", action: "huong_dan_cai_dat" },
+          { label: "📥 Tải APK v1.5.0 ngay", action: "huong_dan_cai_dat" },
           { label: "☁️ Hướng dẫn đồng bộ 2 chiều", action: "dong_bo_2_chieu" }
         ],
       };
@@ -198,7 +198,7 @@ export default function AIAssistantWidget() {
 
     if (query.includes("cài") || query.includes("tải") || query.includes("apk") || query.includes("huong_dan_cai_dat")) {
       return {
-        text: `Dạ, để cài đặt bản v1.4.2 trên điện thoại Android hoặc Máy tính PC, Thầy/Cô làm theo các bước sau ạ:\n\n📱 **Dành cho Android**: Bấm nút **[TẢI APK v1.4.2]** ở đầu trang hoặc quét mã QR ➔ Mở tệp vừa tải ➔ Chọn **Cài đặt**.\n\n💻 **Dành cho Máy tính PC (Windows/Mac/Linux)**: Bấm **[MỞ BẢN DESKTOP]** để dùng trực tiếp bản Web App v1.4.2 với đầy đủ tính năng soạn giáo án AI, kho tư liệu và đồng bộ 2 chiều, hoặc cài đặt qua Chrome/Edge bằng biểu tượng Install App trên thanh địa chỉ.\n\n☁️ **Đồng bộ thời gian thực 2 chiều**: Chỉ cần nhập cùng **Mã Đồng Bộ Giáo Viên** (trong Cài đặt) là dữ liệu tự động cập nhật xuyên suốt giữa điện thoại và máy tính!`,
+        text: `Dạ, để cài đặt bản v1.5.0 trên điện thoại Android hoặc Máy tính PC, Thầy/Cô làm theo các bước sau ạ:\n\n📱 **Dành cho Android**: Bấm nút **[TẢI APK v1.5.0]** ở đầu trang hoặc quét mã QR ➔ Mở tệp vừa tải ➔ Chọn **Cài đặt**.\n\n💻 **Dành cho Máy tính PC (Windows/Mac/Linux)**: Bấm **[MỞ BẢN DESKTOP]** để dùng trực tiếp bản Web App v1.5.0 với đầy đủ tính năng soạn giáo án AI, kho tư liệu và đồng bộ 2 chiều, hoặc cài đặt qua Chrome/Edge bằng biểu tượng Install App trên thanh địa chỉ.\n\n☁️ **Đồng bộ thời gian thực 2 chiều**: Chỉ cần nhập cùng **Mã Đồng Bộ Giáo Viên** (trong Cài đặt) là dữ liệu tự động cập nhật xuyên suốt giữa điện thoại và máy tính!`,
         quickActions: [
           { label: "🔋 Làm sao để app không bị tắt ngầm?", action: "chong_tat_ngam" },
           { label: "🖼️ Cách bật Widget màn hình chính?", action: "bat_widget" },

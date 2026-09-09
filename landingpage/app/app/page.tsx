@@ -1378,7 +1378,7 @@ export default function UnifiedTeacherScheduleApp() {
               <div className="flex items-center space-x-2">
                 <h1 className="text-lg font-bold tracking-tight text-white">Smart Teacher Schedule AI</h1>
                 <span className="text-xs px-2.5 py-0.5 rounded-full bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold flex items-center gap-1.5 shadow-sm">
-                  <Monitor className="w-3.5 h-3.5 text-cyan-400" /> Desktop & Web v1.4.2
+                  <Monitor className="w-3.5 h-3.5 text-cyan-400" /> Desktop & Web v1.5.0
                 </span>
               </div>
               <p className="text-xs text-slate-400">
@@ -4229,14 +4229,14 @@ export default function UnifiedTeacherScheduleApp() {
                     <h3 className="text-base font-bold text-white flex items-center gap-2">
                       Smart Teacher Schedule AI
                       <span className="px-2 py-0.5 rounded-md bg-indigo-500/30 text-cyan-300 border border-indigo-500/40 text-xs font-mono font-bold">
-                        v1.4.2
+                        v1.5.0
                       </span>
                     </h3>
                     <p className="text-xs text-slate-400">Đơn vị phát triển: Huy Technology AI • Hotline/Zalo: 0961364600</p>
                   </div>
                 </div>
                 <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold">
-                  ✓ Phiên bản chính thức v1.4.2
+                  ✓ Phiên bản chính thức v1.5.0
                 </span>
               </div>
               <div className="text-xs text-slate-300 grid sm:grid-cols-2 gap-2 pt-2 border-t border-slate-700/60">

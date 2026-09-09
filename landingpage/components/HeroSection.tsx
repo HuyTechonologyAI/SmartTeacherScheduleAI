@@ -48,7 +48,7 @@ export default function HeroSection() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              <span>Phiên bản v1.4.2 chính thức phát hành</span>
+              <span>Phiên bản v1.5.0 chính thức phát hành</span>
               <span className="text-slate-500">•</span>
               <span className="text-cyan-300">Hệ Sinh Thái Đa Nền Tảng & Đồng Bộ 2 Chiều</span>
             </div>
@@ -87,7 +87,7 @@ export default function HeroSection() {
                   </div>
                 </div>
                 <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">
-                  Bản v1.4.2 Đa Nền Tảng
+                  Bản v1.5.0 Đa Nền Tảng
                 </span>
               </div>
 
@@ -103,7 +103,7 @@ export default function HeroSection() {
                     <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-100">
                       Điện thoại Android
                     </div>
-                    <div className="text-xs font-bold leading-tight">TẢI APK v1.4.2</div>
+                    <div className="text-xs font-bold leading-tight">TẢI APK v1.5.0</div>
                   </div>
                 </a>
 
@@ -185,7 +185,7 @@ export default function HeroSection() {
                       <p className="font-bold text-emerald-400 flex items-center gap-1">
                         <Smartphone className="w-3.5 h-3.5" /> Quét Tải APK (Android)
                       </p>
-                      <p className="text-[11px] text-slate-400">Mở Camera quét để tải file APK v1.4.2 trực tiếp về máy.</p>
+                      <p className="text-[11px] text-slate-400">Mở Camera quét để tải file APK v1.5.0 trực tiếp về máy.</p>
                     </div>
                   </div>
 

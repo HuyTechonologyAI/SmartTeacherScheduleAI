@@ -118,7 +118,7 @@ export default function FeatureSection() {
                 {/* Footer Checkmark */}
                 <div className="pt-4 border-t border-white/5 flex items-center text-xs text-emerald-400 font-semibold gap-1.5">
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Đã tối ưu trên bản v1.4.2</span>
+                  <span>Đã tối ưu trên bản v1.5.0</span>
                 </div>
               </div>
             );

@@ -12,6 +12,10 @@ export interface KnowledgeDocument {
   isBuiltIn: boolean;
   isActive: boolean;
   createdAt: string;
+  fileName?: string;
+  fileSize?: number;
+  fileType?: string;
+  fileData?: string;
 }
 
 export const BUILT_IN_KNOWLEDGE_DOCUMENTS: KnowledgeDocument[] = [

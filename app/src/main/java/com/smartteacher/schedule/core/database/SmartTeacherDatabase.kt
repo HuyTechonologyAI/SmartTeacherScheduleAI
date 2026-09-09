@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
         LessonAttachmentEntity::class,
         KnowledgeDocumentEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -112,6 +112,15 @@ abstract class SmartTeacherDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_5_6 = object : androidx.room.migration.Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `knowledge_documents` ADD COLUMN `fileName` TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE `knowledge_documents` ADD COLUMN `filePath` TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE `knowledge_documents` ADD COLUMN `fileSizeBytes` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `knowledge_documents` ADD COLUMN `fileExtension` TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         fun getInstance(context: Context): SmartTeacherDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -119,7 +128,7 @@ abstract class SmartTeacherDatabase : RoomDatabase() {
                     SmartTeacherDatabase::class.java,
                     "smart_teacher_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .fallbackToDestructiveMigration()
                     .addCallback(object : Callback() {
                         override fun onCreate(db: SupportSQLiteDatabase) {

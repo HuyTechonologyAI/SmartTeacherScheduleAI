@@ -29,6 +29,10 @@ data class KnowledgeDocumentEntity(
     val content: String, // Toàn văn nội dung cốt lõi, chuẩn đầu ra, quy trình bắt buộc
     val isBuiltIn: Boolean = false, // true nếu là văn bản pháp quy gốc của Bộ/Tổng cục tích hợp sẵn
     val isActive: Boolean = true, // Bật/tắt sử dụng làm căn cứ đối chiếu khi AI sinh giáo án
+    val fileName: String = "", // Tên file đính kèm gốc (nếu có, VD: "Giao_trinh_Tien_CNC.docx")
+    val filePath: String = "", // Đường dẫn lưu trữ tệp nội bộ
+    val fileSizeBytes: Long = 0L, // Dung lượng tệp
+    val fileExtension: String = "", // Phần mở rộng: "docx", "pdf", "txt"...
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 ) {

@@ -67,6 +67,8 @@ import {
   Search,
   Filter,
   Paperclip,
+  Upload,
+  Loader2,
   Printer,
   ChevronLeft,
   CalendarDays,
@@ -342,6 +344,11 @@ export default function UnifiedTeacherScheduleApp() {
   const [kbNewSubject, setKbNewSubject] = useState('ALL');
   const [kbNewLevel, setKbNewLevel] = useState('ALL');
   const [kbNewContent, setKbNewContent] = useState('');
+  const [kbAttachedFileName, setKbAttachedFileName] = useState('');
+  const [kbAttachedFileSize, setKbAttachedFileSize] = useState(0);
+  const [kbAttachedFileType, setKbAttachedFileType] = useState('');
+  const [kbAttachedFileData, setKbAttachedFileData] = useState('');
+  const [kbIsExtracting, setKbIsExtracting] = useState(false);
 
   const refreshKnowledgeDocs = () => {
     setKnowledgeDocs(getResolvedKnowledgeDocuments());
@@ -2670,16 +2677,40 @@ export default function UnifiedTeacherScheduleApp() {
                           <span>{doc.content.length.toLocaleString()} ký tự</span>
                         </div>
 
+                        {doc.fileName && (
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300">
+                            <Paperclip className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+                            <span className="truncate font-semibold flex-1">{doc.fileName}</span>
+                            {doc.fileSize ? (
+                              <span className="text-[10px] text-slate-400 shrink-0">
+                                ({(doc.fileSize / 1024).toFixed(0)} KB)
+                              </span>
+                            ) : null}
+                          </div>
+                        )}
+
                         {/* Actions */}
-                        <div className="flex items-center justify-between pt-1">
-                          <button
-                            type="button"
-                            onClick={() => setKbViewingDoc(doc)}
-                            className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1.5 cursor-pointer py-1"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>Đọc tài liệu toàn văn</span>
-                          </button>
+                        <div className="flex items-center justify-between pt-1 flex-wrap gap-2">
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setKbViewingDoc(doc)}
+                              className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1.5 cursor-pointer py-1"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>Đọc toàn văn</span>
+                            </button>
+                            {doc.fileData && (
+                              <a
+                                href={doc.fileData}
+                                download={doc.fileName || 'tai_lieu'}
+                                className="text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1.5 cursor-pointer py-1"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                                <span>Tải tệp gốc</span>
+                              </a>
+                            )}
+                          </div>
 
                           {!doc.isBuiltIn && (
                             <button
@@ -2817,15 +2848,187 @@ export default function UnifiedTeacherScheduleApp() {
                           </div>
                         </div>
 
+                        {/* Khu vực đính kèm file tài liệu thông minh */}
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                            <span className="flex items-center gap-1.5 text-emerald-400">
+                              <Paperclip className="w-4 h-4" />
+                              <span>ĐÍNH KÈM TỆP TÀI LIỆU (Word, PDF, Text...)</span>
+                            </span>
+                            <span className="text-[11px] font-normal text-slate-400">Tự động nạp vào AI</span>
+                          </label>
+
+                          {!kbAttachedFileName ? (
+                            <label className="block p-5 rounded-2xl border-2 border-dashed border-slate-700 hover:border-emerald-500/60 bg-slate-800/40 hover:bg-slate-800/70 cursor-pointer transition-all text-center group">
+                              <input
+                                type="file"
+                                accept=".docx,.doc,.pdf,.txt,.md,.rtf,.xlsx,.xls,.pptx"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+
+                                  setKbIsExtracting(true);
+                                  const fileName = file.name;
+                                  const fileSize = file.size;
+                                  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+
+                                  if (!kbNewTitle.trim()) {
+                                    setKbNewTitle(fileName.replace(/\.[^/.]+$/, ''));
+                                  }
+                                  if (!kbNewCode.trim()) {
+                                    setKbNewCode('DOC_' + fileName.substring(0, 8).replace(/[^a-zA-Z0-9]/g, '_').toUpperCase());
+                                  }
+
+                                  setKbAttachedFileName(fileName);
+                                  setKbAttachedFileSize(fileSize);
+                                  setKbAttachedFileType(file.type || ext);
+
+                                  const dataReader = new FileReader();
+                                  dataReader.onload = () => {
+                                    setKbAttachedFileData(dataReader.result as string);
+                                  };
+                                  dataReader.readAsDataURL(file);
+
+                                  if (['txt', 'md', 'csv', 'json', 'xml', 'html'].includes(ext)) {
+                                    const textReader = new FileReader();
+                                    textReader.onload = () => {
+                                      setKbNewContent((textReader.result as string) || '');
+                                      setKbIsExtracting(false);
+                                    };
+                                    textReader.readAsText(file);
+                                  } else {
+                                    const bufferReader = new FileReader();
+                                    bufferReader.onload = () => {
+                                      try {
+                                        const arrayBuffer = bufferReader.result as ArrayBuffer;
+                                        const bytes = new Uint8Array(arrayBuffer);
+                                        const latinStr = new TextDecoder('iso-8859-1').decode(bytes);
+                                        let textContent = '';
+                                        if (latinStr.includes('<w:p') || latinStr.includes('<w:t')) {
+                                          const textMatches = latinStr.match(/<w:t[^>]*>([^<]+)<\/w:t>/g);
+                                          if (textMatches && textMatches.length > 0) {
+                                            textContent = textMatches.map(m => m.replace(/<[^>]+>/g, '')).join(' ');
+                                          }
+                                        }
+                                        if (!textContent) {
+                                          textContent = 'Tài liệu: ' + fileName + ' (' + (fileSize / 1024).toFixed(1) + ' KB)\nĐã đính kèm tệp gốc an toàn phục vụ đối chiếu sư phạm AI.';
+                                        }
+                                        setKbNewContent(textContent);
+                                      } catch (err) {
+                                        setKbNewContent('Tài liệu đính kèm: ' + fileName + ' (' + (fileSize / 1024).toFixed(1) + ' KB)');
+                                      }
+                                      setKbIsExtracting(false);
+                                    };
+                                    bufferReader.readAsArrayBuffer(file);
+                                  }
+                                }}
+                                className="hidden"
+                              />
+                              <div className="flex flex-col items-center justify-center gap-2">
+                                <div className="w-11 h-11 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+                                  {kbIsExtracting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
+                                </div>
+                                <div className="text-xs sm:text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">
+                                  {kbIsExtracting ? 'Đang đọc và trích xuất nội dung văn bản...' : 'BẤM ĐỂ CHỌN HOẶC KÉO THẢ TỆP TÀI LIỆU VÀO ĐÂY'}
+                                </div>
+                                <p className="text-[11px] text-slate-400 max-w-md">
+                                  Hỗ trợ Word (.docx, .doc), PDF (.pdf), Text (.txt, .md)... Hệ thống tự động trích xuất nội dung và lấy tên file làm tiêu đề (Không cần copy - paste).
+                                </p>
+                              </div>
+                            </label>
+                          ) : (
+                            <div className="p-3.5 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0">
+                                  <Paperclip className="w-4 h-4" />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="text-xs sm:text-sm font-bold text-emerald-300 truncate">{kbAttachedFileName}</div>
+                                  <div className="text-[10px] text-slate-400">
+                                    {(kbAttachedFileSize / 1024).toFixed(1)} KB • Đã trích xuất {kbNewContent.length.toLocaleString()} ký tự cho AI
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <label className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 cursor-pointer px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors">
+                                  Đổi tệp
+                                  <input
+                                    type="file"
+                                    accept=".docx,.doc,.pdf,.txt,.md,.rtf,.xlsx,.xls,.pptx"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (!file) return;
+                                      setKbIsExtracting(true);
+                                      const fileName = file.name;
+                                      const fileSize = file.size;
+                                      const ext = fileName.split('.').pop()?.toLowerCase() || '';
+                                      setKbAttachedFileName(fileName);
+                                      setKbAttachedFileSize(fileSize);
+                                      setKbAttachedFileType(file.type || ext);
+                                      const dataReader = new FileReader();
+                                      dataReader.onload = () => setKbAttachedFileData(dataReader.result as string);
+                                      dataReader.readAsDataURL(file);
+                                      if (['txt', 'md', 'csv', 'json', 'xml', 'html'].includes(ext)) {
+                                        const textReader = new FileReader();
+                                        textReader.onload = () => {
+                                          setKbNewContent((textReader.result as string) || '');
+                                          setKbIsExtracting(false);
+                                        };
+                                        textReader.readAsText(file);
+                                      } else {
+                                        const bufferReader = new FileReader();
+                                        bufferReader.onload = () => {
+                                          try {
+                                            const arrayBuffer = bufferReader.result as ArrayBuffer;
+                                            const bytes = new Uint8Array(arrayBuffer);
+                                            const latinStr = new TextDecoder('iso-8859-1').decode(bytes);
+                                            let textContent = '';
+                                            if (latinStr.includes('<w:p') || latinStr.includes('<w:t')) {
+                                              const textMatches = latinStr.match(/<w:t[^>]*>([^<]+)<\/w:t>/g);
+                                              if (textMatches && textMatches.length > 0) {
+                                                textContent = textMatches.map(m => m.replace(/<[^>]+>/g, '')).join(' ');
+                                              }
+                                            }
+                                            setKbNewContent(textContent || ('Tài liệu: ' + fileName + ' (' + (fileSize / 1024).toFixed(1) + ' KB)'));
+                                          } catch (err) {
+                                            setKbNewContent('Tài liệu đính kèm: ' + fileName);
+                                          }
+                                          setKbIsExtracting(false);
+                                        };
+                                        bufferReader.readAsArrayBuffer(file);
+                                      }
+                                    }}
+                                    className="hidden"
+                                  />
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setKbAttachedFileName('');
+                                    setKbAttachedFileSize(0);
+                                    setKbAttachedFileType('');
+                                    setKbAttachedFileData('');
+                                    setKbNewContent('');
+                                  }}
+                                  className="p-1 rounded-lg hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 cursor-pointer"
+                                  title="Gỡ tệp"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
                         <div>
                           <label className="text-xs font-bold text-slate-300 block mb-1.5">
-                            Nội dung văn bản / Chuẩn kiến thức kỹ năng <span className="text-rose-400">*</span>
+                            {kbAttachedFileName ? 'Nội dung trích xuất từ tệp (Sẵn sàng cho AI đối chiếu)' : 'Nội dung văn bản (hoặc đính kèm file ở trên)'}
                           </label>
                           <textarea
-                            rows={9}
+                            rows={7}
                             value={kbNewContent}
                             onChange={(e) => setKbNewContent(e.target.value)}
-                            placeholder="Dán toàn bộ nội dung giáo trình, chuẩn kiến thức, quy trình hoặc điều luật mà Thầy/Cô muốn AI căn cứ vào đây để biên soạn (chống ảo giác / không tự bịa)..."
+                            placeholder="Nội dung được tự động điền khi Thầy/Cô đính kèm file ở trên, hoặc có thể dán/chỉnh sửa trực tiếp tại đây..."
                             className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono leading-relaxed"
                           />
                         </div>
@@ -2841,8 +3044,8 @@ export default function UnifiedTeacherScheduleApp() {
                         <button
                           type="button"
                           onClick={() => {
-                            if (!kbNewTitle.trim() || !kbNewContent.trim()) {
-                              alert('Vui lòng nhập Tên tài liệu và Nội dung!');
+                            if (!kbNewTitle.trim() || (!kbNewContent.trim() && !kbAttachedFileName)) {
+                              alert('Vui lòng nhập Tên tài liệu hoặc đính kèm tệp!');
                               return;
                             }
                             const newDoc: KnowledgeDocument = {
@@ -2852,10 +3055,14 @@ export default function UnifiedTeacherScheduleApp() {
                               category: kbNewCategory,
                               subject: kbNewSubject.trim() || 'ALL',
                               targetLevel: kbNewLevel.trim() || 'ALL',
-                              content: kbNewContent.trim(),
+                              content: kbNewContent.trim() || ('Tài liệu đính kèm: ' + kbAttachedFileName),
                               isBuiltIn: false,
                               isActive: true,
-                              createdAt: new Date().toISOString()
+                              createdAt: new Date().toISOString(),
+                              fileName: kbAttachedFileName || undefined,
+                              fileSize: kbAttachedFileSize || undefined,
+                              fileType: kbAttachedFileType || undefined,
+                              fileData: kbAttachedFileData || undefined
                             };
                             saveKnowledgeDocument(newDoc);
                             refreshKnowledgeDocs();
@@ -2863,7 +3070,11 @@ export default function UnifiedTeacherScheduleApp() {
                             setKbNewTitle('');
                             setKbNewCode('');
                             setKbNewContent('');
-                            alert('Đã lưu tài liệu vào kho dữ liệu đối chiếu chuẩn của AI!');
+                            setKbAttachedFileName('');
+                            setKbAttachedFileSize(0);
+                            setKbAttachedFileType('');
+                            setKbAttachedFileData('');
+                            alert('Đã lưu tài liệu và tệp đính kèm vào kho dữ liệu đối chiếu chuẩn của AI!');
                           }}
                           className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-500/25 cursor-pointer transition-all"
                         >

@@ -23,8 +23,15 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.smartteacher.schedule.core.ai.DefaultKnowledgeBase
 import com.smartteacher.schedule.core.database.dao.KnowledgeDocumentDao
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.text.style.TextOverflow
+import com.smartteacher.schedule.core.util.KnowledgeFileHelper
 import com.smartteacher.schedule.core.database.entity.KnowledgeDocumentEntity
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Màn hình Quản Lý Kho Dữ Liệu & Tư Liệu Sư Phạm Chuẩn:
@@ -352,6 +359,7 @@ fun KnowledgeDocumentCard(
     onViewContent: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val context = LocalContext.current
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
@@ -449,6 +457,51 @@ fun KnowledgeDocumentCard(
                 }
             }
 
+            if (doc.fileName.isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            KnowledgeFileHelper.openAttachedFile(context, doc.filePath)
+                        }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = when (doc.fileExtension.lowercase()) {
+                                "docx", "doc" -> Icons.Default.Description
+                                "pdf" -> Icons.Default.PictureAsPdf
+                                else -> Icons.Default.AttachFile
+                            },
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "${doc.fileName} (${KnowledgeFileHelper.formatFileSize(doc.fileSizeBytes)})",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Icon(
+                            imageVector = Icons.Default.OpenInNew,
+                            contentDescription = "Mở tệp gốc",
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(10.dp))
 
             // Action Buttons
@@ -489,6 +542,9 @@ fun AddKnowledgeDocumentDialog(
     onDismiss: () -> Unit,
     onSave: (KnowledgeDocumentEntity) -> Unit
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
     var title by remember { mutableStateOf("") }
     var code by remember { mutableStateOf("") }
     var category by remember { mutableStateOf<String>(KnowledgeDocumentEntity.CAT_GIAO_TRINH) }
@@ -496,12 +552,50 @@ fun AddKnowledgeDocumentDialog(
     var targetLevel by remember { mutableStateOf("ALL") }
     var content by remember { mutableStateOf("") }
 
+    // Thông tin file đính kèm
+    var isExtracting by remember { mutableStateOf(false) }
+    var attachedFileName by remember { mutableStateOf("") }
+    var attachedFilePath by remember { mutableStateOf("") }
+    var attachedFileSize by remember { mutableStateOf(0L) }
+    var attachedFileExtension by remember { mutableStateOf("") }
+
+    // Trình chọn tệp hệ thống (Word, PDF, Text...)
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            isExtracting = true
+            coroutineScope.launch(Dispatchers.IO) {
+                val fileInfo = KnowledgeFileHelper.copyAndExtractKnowledgeFile(context, uri)
+                withContext(Dispatchers.Main) {
+                    isExtracting = false
+                    if (fileInfo != null) {
+                        attachedFileName = fileInfo.fileName
+                        attachedFilePath = fileInfo.localFilePath
+                        attachedFileSize = fileInfo.fileSizeBytes
+                        attachedFileExtension = fileInfo.fileExtension
+                        content = fileInfo.extractedText
+                        if (title.isBlank()) {
+                            title = fileInfo.fileName.substringBeforeLast(".")
+                        }
+                        if (code.isBlank()) {
+                            code = "DOC_" + fileInfo.fileName.take(8).replace("[^a-zA-Z0-9]".toRegex(), "_").uppercase()
+                        }
+                        Toast.makeText(context, "Đã đính kèm và trích xuất tài liệu thành công!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "Không thể đọc tệp tài liệu này!", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+    }
+
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.9f)
+                .fillMaxHeight(0.92f)
         ) {
             Column(
                 modifier = Modifier
@@ -513,11 +607,20 @@ fun AddKnowledgeDocumentDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        "➕ Thêm Tư Liệu Đối Chiếu AI",
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleMedium
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.AttachFile,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Thêm Tư Liệu Đối Chiếu AI",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
                     IconButton(onClick = onDismiss) {
                         Icon(Icons.Default.Close, contentDescription = null)
                     }
@@ -529,8 +632,143 @@ fun AddKnowledgeDocumentDialog(
                     modifier = Modifier
                         .weight(1f)
                         .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    // Khu vực đính kèm file tài liệu
+                    if (attachedFileName.isBlank()) {
+                        Card(
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(enabled = !isExtracting) {
+                                    filePickerLauncher.launch(
+                                        arrayOf(
+                                            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                            "application/msword",
+                                            "application/pdf",
+                                            "text/plain",
+                                            "text/markdown",
+                                            "text/*",
+                                            "*/*"
+                                        )
+                                    )
+                                }
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                if (isExtracting) {
+                                    CircularProgressIndicator(modifier = Modifier.size(28.dp), strokeWidth = 2.5.dp)
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Text(
+                                        "Đang đọc và trích xuất nội dung văn bản...",
+                                        fontWeight = FontWeight.SemiBold,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                } else {
+                                    Icon(
+                                        Icons.Default.CloudUpload,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(36.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        "BẤM ĐỂ ĐÍNH KÈM TỆP TÀI LIỆU",
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        "Hỗ trợ Word (.docx, .doc), PDF (.pdf), Text (.txt, .md)...",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        "Hệ thống tự động trích xuất nội dung — Không cần dán chữ thủ công",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color(0xFF059669),
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        // Thẻ hiển thị file đã đính kèm thành công
+                        Card(
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFECFDF5)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = when (attachedFileExtension) {
+                                        "docx", "doc" -> Icons.Default.Description
+                                        "pdf" -> Icons.Default.PictureAsPdf
+                                        else -> Icons.Default.InsertDriveFile
+                                    },
+                                    contentDescription = null,
+                                    tint = Color(0xFF059669),
+                                    modifier = Modifier.size(32.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = attachedFileName,
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Color(0xFF065F46),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        text = "Kích thước: ${KnowledgeFileHelper.formatFileSize(attachedFileSize)} • Đã nạp ${content.length} ký tự",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color(0xFF047857)
+                                    )
+                                }
+                                TextButton(
+                                    onClick = {
+                                        filePickerLauncher.launch(arrayOf("*/*"))
+                                    }
+                                ) {
+                                    Text("Đổi file", fontSize = 12.sp)
+                                }
+                                IconButton(
+                                    onClick = {
+                                        attachedFileName = ""
+                                        attachedFilePath = ""
+                                        attachedFileSize = 0L
+                                        attachedFileExtension = ""
+                                        content = ""
+                                    },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = "Xóa tệp",
+                                        tint = Color(0xFFDC2626),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     OutlinedTextField(
                         value = title,
                         onValueChange = { title = it },
@@ -557,7 +795,7 @@ fun AddKnowledgeDocumentDialog(
                             value = subject,
                             onValueChange = { subject = it },
                             label = { Text("Môn học áp dụng") },
-                            placeholder = { Text("ALL hoặc Toán, Lý...") },
+                            placeholder = { Text("ALL hoặc Toán, Tiện...") },
                             modifier = Modifier.weight(1f),
                             singleLine = true
                         )
@@ -571,7 +809,7 @@ fun AddKnowledgeDocumentDialog(
                             value = targetLevel,
                             onValueChange = { targetLevel = it },
                             label = { Text("Cấp học / Trình độ") },
-                            placeholder = { Text("ALL, THPT, Trung cấp...") },
+                            placeholder = { Text("ALL, THPT, Nghề...") },
                             modifier = Modifier.weight(1f),
                             singleLine = true
                         )
@@ -589,12 +827,12 @@ fun AddKnowledgeDocumentDialog(
                     OutlinedTextField(
                         value = content,
                         onValueChange = { content = it },
-                        label = { Text("Nội dung văn bản / Chuẩn kiến thức kỹ năng *") },
-                        placeholder = { Text("Dán toàn bộ nội dung giáo trình, chuẩn kiến thức, quy trình hoặc điều luật mà Thầy/Cô muốn AI căn cứ vào đây để sinh giáo án...") },
+                        label = { Text(if (attachedFileName.isNotBlank()) "Nội dung trích xuất từ tệp (Sẵn sàng cho AI)" else "Nội dung văn bản (hoặc đính kèm file ở trên)") },
+                        placeholder = { Text("Nội dung được tự động điền khi Thầy/Cô đính kèm file ở trên, hoặc có thể dán/chỉnh sửa trực tiếp tại đây...") },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(200.dp),
-                        maxLines = 20
+                            .height(180.dp),
+                        maxLines = 15
                     )
                 }
 
@@ -611,7 +849,7 @@ fun AddKnowledgeDocumentDialog(
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
                         onClick = {
-                            if (title.isBlank() || content.isBlank()) return@Button
+                            if (title.isBlank() || (content.isBlank() && attachedFilePath.isBlank())) return@Button
                             val generatedCode = code.ifBlank { "DOC_${System.currentTimeMillis() % 10000}" }
                             val newDoc = KnowledgeDocumentEntity(
                                 code = generatedCode,
@@ -619,14 +857,20 @@ fun AddKnowledgeDocumentDialog(
                                 category = category.trim(),
                                 subject = subject.trim(),
                                 targetLevel = targetLevel.trim(),
-                                content = content.trim(),
+                                content = content.trim().ifBlank { "Tài liệu đính kèm: $attachedFileName" },
                                 isBuiltIn = false,
-                                isActive = true
+                                isActive = true,
+                                fileName = attachedFileName,
+                                filePath = attachedFilePath,
+                                fileSizeBytes = attachedFileSize,
+                                fileExtension = attachedFileExtension
                             )
                             onSave(newDoc)
                         },
-                        enabled = title.isNotBlank() && content.isNotBlank()
+                        enabled = title.isNotBlank() && (content.isNotBlank() || attachedFilePath.isNotBlank())
                     ) {
+                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text("Lưu Vào Kho Tư Liệu")
                     }
                 }

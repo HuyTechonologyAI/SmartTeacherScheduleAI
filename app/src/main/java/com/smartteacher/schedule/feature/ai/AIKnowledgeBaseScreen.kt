@@ -58,6 +58,8 @@ fun AIKnowledgeBaseScreen(
             val matchFilter = when (selectedFilter) {
                 "BUILT_IN" -> doc.isBuiltIn
                 "CUSTOM" -> !doc.isBuiltIn
+                "GIAO_TRINH" -> doc.category == KnowledgeDocumentEntity.CAT_GIAO_TRINH
+                "DE_CUONG" -> doc.category == KnowledgeDocumentEntity.CAT_DE_CUONG
                 "PHAP_QUY" -> doc.category == KnowledgeDocumentEntity.CAT_PHAP_QUY
                 "ATLD" -> doc.category == KnowledgeDocumentEntity.CAT_QUY_CHUAN_XUONG
                 else -> true
@@ -177,15 +179,19 @@ fun AIKnowledgeBaseScreen(
         ScrollableTabRow(
             selectedTabIndex = when (selectedFilter) {
                 "ALL" -> 0
-                "PHAP_QUY" -> 1
-                "ATLD" -> 2
-                "CUSTOM" -> 3
+                "GIAO_TRINH" -> 1
+                "DE_CUONG" -> 2
+                "PHAP_QUY" -> 3
+                "ATLD" -> 4
+                "CUSTOM" -> 5
                 else -> 0
             },
             edgePadding = 4.dp,
             divider = {}
         ) {
             Tab(selected = selectedFilter == "ALL", onClick = { selectedFilter = "ALL" }, text = { Text("Tất cả (${allDocuments.size})") })
+            Tab(selected = selectedFilter == "GIAO_TRINH", onClick = { selectedFilter = "GIAO_TRINH" }, text = { Text("Giáo trình (${allDocuments.count { it.category == KnowledgeDocumentEntity.CAT_GIAO_TRINH }})") })
+            Tab(selected = selectedFilter == "DE_CUONG", onClick = { selectedFilter = "DE_CUONG" }, text = { Text("Đề cương (${allDocuments.count { it.category == KnowledgeDocumentEntity.CAT_DE_CUONG }})") })
             Tab(selected = selectedFilter == "PHAP_QUY", onClick = { selectedFilter = "PHAP_QUY" }, text = { Text("Pháp quy BGDĐT & GDNN") })
             Tab(selected = selectedFilter == "ATLD", onClick = { selectedFilter = "ATLD" }, text = { Text("ATLĐ & 5S") })
             Tab(selected = selectedFilter == "CUSTOM", onClick = { selectedFilter = "CUSTOM" }, text = { Text("Tài liệu tự nạp (${allDocuments.count { !it.isBuiltIn }})") })
@@ -344,8 +350,10 @@ fun AIKnowledgeBaseScreen(
             onSave = { newDoc ->
                 coroutineScope.launch {
                     knowledgeDao.insertDocument(newDoc)
+                    selectedFilter = "ALL"
+                    searchQuery = ""
                     showAddDialog = false
-                    Toast.makeText(context, "Đã lưu tài liệu vào kho tư liệu chuẩn!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Đã lưu tài liệu '${newDoc.title}' vào kho tư liệu chuẩn!", Toast.LENGTH_SHORT).show()
                 }
             }
         )
@@ -850,7 +858,7 @@ fun AddKnowledgeDocumentDialog(
                     Button(
                         onClick = {
                             if (title.isBlank() || (content.isBlank() && attachedFilePath.isBlank())) return@Button
-                            val generatedCode = code.ifBlank { "DOC_${System.currentTimeMillis() % 10000}" }
+                            val generatedCode = if (code.isNotBlank()) code.trim() else "DOC_${System.currentTimeMillis()}"
                             val newDoc = KnowledgeDocumentEntity(
                                 code = generatedCode,
                                 title = title.trim(),

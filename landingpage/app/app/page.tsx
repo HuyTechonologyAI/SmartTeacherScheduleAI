@@ -335,7 +335,7 @@ export default function UnifiedTeacherScheduleApp() {
   const [aiSubTab, setAiSubTab] = useState<'planner' | 'exam' | 'chat' | 'knowledge'>('planner');
   const [knowledgeDocs, setKnowledgeDocs] = useState<KnowledgeDocument[]>([]);
   const [kbSearch, setKbSearch] = useState('');
-  const [kbFilter, setKbFilter] = useState<'ALL' | 'PHAP_QUY' | 'ATLD_5S' | 'CUSTOM'>('ALL');
+  const [kbFilter, setKbFilter] = useState<'ALL' | 'GIAO_TRINH' | 'DE_CUONG' | 'PHAP_QUY' | 'ATLD_5S' | 'CUSTOM'>('ALL');
   const [kbViewingDoc, setKbViewingDoc] = useState<KnowledgeDocument | null>(null);
   const [kbShowAddModal, setKbShowAddModal] = useState(false);
   const [kbNewTitle, setKbNewTitle] = useState('');
@@ -2561,9 +2561,11 @@ export default function UnifiedTeacherScheduleApp() {
                 {/* Filters & Search */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-800/60 border border-slate-700/80 rounded-2xl p-3.5 shadow-md">
                   <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 text-xs">
-                    {(['ALL', 'PHAP_QUY', 'ATLD_5S', 'CUSTOM'] as const).map((cat) => {
+                    {(['ALL', 'GIAO_TRINH', 'DE_CUONG', 'PHAP_QUY', 'ATLD_5S', 'CUSTOM'] as const).map((cat) => {
                       const labels = {
                         ALL: 'Tất cả (' + knowledgeDocs.length + ')',
+                        GIAO_TRINH: 'Giáo trình (' + knowledgeDocs.filter(d => d.category === 'GIAO_TRINH').length + ')',
+                        DE_CUONG: 'Đề cương (' + knowledgeDocs.filter(d => d.category === 'DE_CUONG').length + ')',
                         PHAP_QUY: 'Pháp quy BGDĐT & GDNN',
                         ATLD_5S: 'ATLĐ & 5S Xưởng',
                         CUSTOM: 'Tài liệu Thầy/Cô nạp (' + knowledgeDocs.filter(d => !d.isBuiltIn).length + ')'
@@ -2602,6 +2604,8 @@ export default function UnifiedTeacherScheduleApp() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {knowledgeDocs
                     .filter((doc) => {
+                      if (kbFilter === 'GIAO_TRINH' && doc.category !== 'GIAO_TRINH') return false;
+                      if (kbFilter === 'DE_CUONG' && doc.category !== 'DE_CUONG') return false;
                       if (kbFilter === 'PHAP_QUY' && doc.category !== 'PHAP_QUY') return false;
                       if (kbFilter === 'ATLD_5S' && doc.category !== 'ATLD_5S') return false;
                       if (kbFilter === 'CUSTOM' && doc.isBuiltIn) return false;
@@ -3064,17 +3068,23 @@ export default function UnifiedTeacherScheduleApp() {
                               fileType: kbAttachedFileType || undefined,
                               fileData: kbAttachedFileData || undefined
                             };
-                            saveKnowledgeDocument(newDoc);
-                            refreshKnowledgeDocs();
-                            setKbShowAddModal(false);
-                            setKbNewTitle('');
-                            setKbNewCode('');
-                            setKbNewContent('');
-                            setKbAttachedFileName('');
-                            setKbAttachedFileSize(0);
-                            setKbAttachedFileType('');
-                            setKbAttachedFileData('');
-                            alert('Đã lưu tài liệu và tệp đính kèm vào kho dữ liệu đối chiếu chuẩn của AI!');
+                            const savedOk = saveKnowledgeDocument(newDoc);
+                            if (savedOk) {
+                              refreshKnowledgeDocs();
+                              setKbFilter('ALL'); // Reset filter to ALL so document is immediately displayed!
+                              setKbSearch('');    // Clear any search term
+                              setKbShowAddModal(false);
+                              setKbNewTitle('');
+                              setKbNewCode('');
+                              setKbNewContent('');
+                              setKbAttachedFileName('');
+                              setKbAttachedFileSize(0);
+                              setKbAttachedFileType('');
+                              setKbAttachedFileData('');
+                              alert('Đã lưu thành công tài liệu vào kho tư liệu đối chiếu chuẩn của AI!');
+                            } else {
+                              alert('Lỗi: Bộ nhớ trình duyệt không thể lưu tài liệu! Vui lòng thử lại.');
+                            }
                           }}
                           className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-500/25 cursor-pointer transition-all"
                         >

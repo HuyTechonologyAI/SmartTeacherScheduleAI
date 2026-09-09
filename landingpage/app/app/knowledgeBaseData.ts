@@ -295,20 +295,42 @@ export function getAllKnowledgeDocuments(): KnowledgeDocument[] {
   }
 }
 
-export function saveKnowledgeDocument(doc: KnowledgeDocument): void {
-  if (typeof window === 'undefined') return;
+export function saveKnowledgeDocument(doc: KnowledgeDocument): boolean {
+  if (typeof window === 'undefined') return false;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const customDocs: KnowledgeDocument[] = raw ? JSON.parse(raw) : [];
     const index = customDocs.findIndex(d => d.id === doc.id);
-    if (index >= 0) {
-      customDocs[index] = doc;
-    } else {
-      customDocs.push(doc);
+
+    // Deep copy doc
+    const docToSave: KnowledgeDocument = { ...doc };
+
+    // Strip large fileData (>50KB) to prevent localStorage QuotaExceededError
+    if (docToSave.fileData && docToSave.fileData.length > 50000) {
+      delete docToSave.fileData;
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(customDocs));
+
+    if (index >= 0) {
+      customDocs[index] = docToSave;
+    } else {
+      customDocs.unshift(docToSave); // Add to top so new doc appears first!
+    }
+
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(customDocs));
+      return true;
+    } catch (quotaErr) {
+      console.warn('LocalStorage quota exceeded! Cleaning fileData from all custom docs and retrying...', quotaErr);
+      const cleanDocs = customDocs.map(d => {
+        const { fileData, ...rest } = d;
+        return rest;
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanDocs));
+      return true;
+    }
   } catch (e) {
-    console.error('Failed to save knowledge document', e);
+    console.error('Critical error saving knowledge document to localStorage', e);
+    return false;
   }
 }
 
@@ -373,7 +395,8 @@ export function getResolvedKnowledgeDocuments(): KnowledgeDocument[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const customDocs: KnowledgeDocument[] = raw ? JSON.parse(raw) : [];
-    return [...builtins, ...customDocs];
+    // Place customDocs first so user's uploaded syllabus/documents are displayed at the very top!
+    return [...customDocs, ...builtins];
   } catch (e) {
     return builtins;
   }

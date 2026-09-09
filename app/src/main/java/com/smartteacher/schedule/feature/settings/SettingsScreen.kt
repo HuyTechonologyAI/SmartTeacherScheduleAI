@@ -49,6 +49,7 @@ fun SettingsScreen(
     var showTelegramDialog by remember { mutableStateOf(false) }
     var showGeminiDialog by remember { mutableStateOf(false) }
     var showZaloDialog by remember { mutableStateOf(false) }
+    var showStudentManagementDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var lockScreenGlanceEnabled by remember { mutableStateOf(LockScreenGlanceManager.isLockScreenGlanceEnabled(context)) }
@@ -234,6 +235,13 @@ fun SettingsScreen(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column {
+                    SettingsItem(
+                        title = "Sổ Lớp & Quản Lý Học Sinh",
+                        subtitle = "Điểm danh 1-chạm, điểm nề nếp Kudos, nhập file Excel/Word danh sách lớp",
+                        icon = Icons.Default.Groups,
+                        onClick = { showStudentManagementDialog = true }
+                    )
+                    HorizontalDivider()
                     SettingsItem(
                         title = "Xuất Sổ Báo Giảng Tuần (PDF / Excel)",
                         subtitle = "Khổ A4 ngang chuẩn Bộ GD&ĐT, đầy đủ thứ, tiết, lớp, môn, tên bài và chữ ký",
@@ -657,6 +665,17 @@ fun SettingsScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+
+    if (showStudentManagementDialog) {
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { showStudentManagementDialog = false },
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            com.smartteacher.schedule.feature.students.StudentManagementScreen(
+                onNavigateBack = { showStudentManagementDialog = false }
+            )
         }
     }
 

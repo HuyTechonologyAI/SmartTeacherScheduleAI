@@ -160,7 +160,11 @@ fun TodayScreen(
     if (attendanceTargetEvent != null) {
         com.smartteacher.schedule.feature.students.QuickAttendanceDialog(
             event = attendanceTargetEvent!!,
-            onDismiss = { attendanceTargetEvent = null }
+            onDismiss = { attendanceTargetEvent = null },
+            onOpenStudentManagement = {
+                attendanceTargetEvent = null
+                showStudentManagementDialog = true
+            }
         )
     }
 
@@ -319,7 +323,8 @@ fun TodayScreen(
                     nextEvent = nextEvent,
                     liveTime = liveTime,
                     attachmentsCount = nextAttachmentsCount,
-                    onOpenDocuments = { if (nextEvent != null) viewingDocumentsEvent = nextEvent }
+                    onOpenDocuments = { if (nextEvent != null) viewingDocumentsEvent = nextEvent },
+                    onAttendance = { if (nextEvent != null) attendanceTargetEvent = nextEvent }
                 )
             }
 
@@ -575,6 +580,77 @@ fun TodayScreen(
                 }
             }
 
+            // 3.1 Student Management & 1-Tap Attendance Entry Card
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showStudentManagementDialog = true },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.25f))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF10B981).copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Groups,
+                                contentDescription = null,
+                                tint = Color(0xFF059669),
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "Sổ Lớp & Quản Lý Học Sinh",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color(0xFF10B981).copy(alpha = 0.15f)
+                                ) {
+                                    Text(
+                                        text = "Mới",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = Color(0xFF059669),
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Điểm danh 1-chạm • Điểm nề nếp Kudos • Nhập file Excel/Word danh sách lớp",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+
             // 4. Section: Today's Timeline
             item {
                 Text(
@@ -661,7 +737,8 @@ fun NextClassHeroBanner(
     nextEvent: CalendarEventEntity?,
     liveTime: LocalTime = LocalTime.now(),
     attachmentsCount: Int = 0,
-    onOpenDocuments: () -> Unit = {}
+    onOpenDocuments: () -> Unit = {},
+    onAttendance: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -754,38 +831,65 @@ fun NextClassHeroBanner(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Huy hiệu tài liệu giáo án đính kèm
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = if (attachmentsCount > 0) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f) else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.08f),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = onOpenDocuments)
+                // Action buttons: Điểm danh 1-chạm & Đính kèm/Đọc giáo án
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFF10B981).copy(alpha = 0.2f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable(onClick = onAttendance)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.AttachFile,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = if (attachmentsCount > 0) "📎 $attachmentsCount tài liệu bài giảng (Chạm để mở đọc)" else "+ Đính kèm giáo án / slide bài giảng",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-                        Icon(
-                            imageVector = Icons.Default.ChevronRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
-                            modifier = Modifier.size(16.dp)
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Checklist,
+                                contentDescription = null,
+                                tint = Color(0xFF047857),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Điểm danh",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF047857)
+                            )
+                        }
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (attachmentsCount > 0) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f) else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.08f),
+                        modifier = Modifier
+                            .weight(1.3f)
+                            .clickable(onClick = onOpenDocuments)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AttachFile,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (attachmentsCount > 0) "📎 $attachmentsCount tài liệu" else "+ Đính kèm tài liệu",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 }
             } else {

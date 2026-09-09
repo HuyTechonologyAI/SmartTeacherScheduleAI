@@ -438,11 +438,12 @@ function mergeSchedules(existing: SchedulePayload[], incoming: SchedulePayload[]
 }
 
 
-export function getCanonicalKnowledgeDocKey(doc: { id?: string; code?: string; title?: string; fileName?: string }): string {
+export function getCanonicalKnowledgeDocKey(doc: { id?: string; code?: string; title?: string; fileName?: string; subject?: string }): string {
   const code = (doc.code || '').toLowerCase().trim();
   const id = (doc.id || '').toLowerCase().trim();
   const title = (doc.title || '').toLowerCase().trim();
   const fileName = (doc.fileName || '').toLowerCase().trim();
+  const subject = (doc.subject || '').toLowerCase().trim();
 
   // 1. Blacklist dummy test docs (like Giao_trinh_CN10.docx)
   if (fileName.includes('giao_trinh_cn10') || code.includes('gt-cn10') || id.includes('custom_7') || title.includes('công nghệ 10 (chuẩn mô đun')) {
@@ -462,9 +463,15 @@ export function getCanonicalKnowledgeDocKey(doc: { id?: string; code?: string; t
     return 'file_' + fileName.replace(/\s+/g, '_');
   }
 
-  // 4. Custom text/doc: Key by normalized title
+  // 4. Custom code if specific (not generic DOC_ timestamp)
+  if (code && !code.startsWith('doc_') && code !== 'all') {
+    return 'code_' + code.replace(/[^a-z0-9_-]/g, '_');
+  }
+
+  // 5. Custom text/doc: Key by normalized title + subject
   const cleanTitle = title.replace(/[^a-z0-9à-ỹ]/gi, '_').replace(/_+/g, '_');
-  return `custom_${cleanTitle}`;
+  const cleanSubj = subject.replace(/[^a-z0-9à-ỹ]/gi, '_').replace(/_+/g, '_');
+  return `custom_${cleanTitle}_${cleanSubj || 'all'}`;
 }
 
 function mergeKnowledgeDocs(
@@ -516,8 +523,14 @@ function mergeKnowledgeDocs(
       const prevTs = Number(prev.updatedAt) || 0;
       const incTs = Number(inc.updatedAt) || 0;
 
+      const incContent = (inc.content || '').trim();
+      const prevContent = (prev.content || '').trim();
+      const safeContent = (incContent.length >= prevContent.length || prevContent.length === 0)
+        ? (incContent || prevContent)
+        : prevContent;
+
       if (incHasFile && !prevHasFile) {
-        map.set(key, inc);
+        map.set(key, { ...inc, content: safeContent });
       } else if (!incHasFile && prevHasFile) {
         if (incTs >= prevTs) {
           map.set(key, {
@@ -525,11 +538,25 @@ function mergeKnowledgeDocs(
             fileName: prev.fileName,
             fileSize: prev.fileSize,
             fileType: prev.fileType,
-            content: (inc.content && inc.content.length > 500) ? inc.content : (prev.content || inc.content)
+            content: safeContent
           });
         }
       } else if (incTs >= prevTs) {
-        map.set(key, inc);
+        map.set(key, {
+          ...inc,
+          fileName: inc.fileName || prev.fileName,
+          fileSize: inc.fileSize || prev.fileSize,
+          fileType: inc.fileType || prev.fileType,
+          content: safeContent
+        });
+      } else {
+        map.set(key, {
+          ...prev,
+          content: safeContent,
+          fileName: prev.fileName || inc.fileName,
+          fileSize: prev.fileSize || inc.fileSize,
+          fileType: prev.fileType || inc.fileType
+        });
       }
     }
   }

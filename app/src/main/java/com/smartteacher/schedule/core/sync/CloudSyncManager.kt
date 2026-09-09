@@ -390,13 +390,14 @@ object CloudSyncManager {
 
             val docsArray = jsonObject.getAsJsonArray("knowledgeDocs")
 
+            var changedCount = (classroomsArray?.size() ?: 0) + (studentsArray?.size() ?: 0) + (attendanceArray?.size() ?: 0)
+
             if ((schedulesArray == null || schedulesArray.size() == 0) &&
                 (eventsArray == null || eventsArray.size() == 0) &&
-                (docsArray == null || docsArray.size() == 0)) {
+                (docsArray == null || docsArray.size() == 0) &&
+                changedCount == 0) {
                 return@withContext Result.success(0)
             }
-
-            var changedCount = 0
 
             // 1. Cập nhật các mẫu định kỳ (teaching_schedules)
             if (schedulesArray != null && schedulesArray.size() > 0) {
@@ -684,19 +685,26 @@ object CloudSyncManager {
                     val existing = currentDocs.find {
                         !it.isBuiltIn && (
                             (fileName.isNotBlank() && it.fileName.equals(fileName, ignoreCase = true)) ||
-                            it.code.equals(rawCode, ignoreCase = true) ||
-                            (it.title.equals(title, ignoreCase = true) && it.subject.equals(subject, ignoreCase = true))
+                            (rawCode.isNotBlank() && !rawCode.startsWith("DOC_") && it.code.equals(rawCode, ignoreCase = true)) ||
+                            (title.isNotBlank() && it.title.equals(title, ignoreCase = true) && subject.isNotBlank() && it.subject.equals(subject, ignoreCase = true))
                         )
                     }
 
                     if (existing != null) {
+                        // Protect rich content: never overwrite with shorter/empty text
+                        val preservedContent = if (content.isNotBlank() && (content.length >= existing.content.length || existing.content.isBlank())) {
+                            content
+                        } else {
+                            existing.content
+                        }
+
                         val isDiff = existing.title != title ||
                                      existing.category != category ||
                                      existing.subject != subject ||
                                      existing.targetLevel != targetLevel ||
-                                     existing.content != content ||
+                                     existing.content != preservedContent ||
                                      existing.isActive != isActive ||
-                                     existing.fileName != fileName
+                                     (fileName.isNotBlank() && existing.fileName != fileName)
 
                         if (isDiff && itemUpdatedAt >= existing.updatedAt) {
                             val updated = existing.copy(
@@ -704,7 +712,7 @@ object CloudSyncManager {
                                 category = category,
                                 subject = subject,
                                 targetLevel = targetLevel,
-                                content = content,
+                                content = preservedContent,
                                 isActive = isActive,
                                 fileName = if (fileName.isNotBlank()) fileName else existing.fileName,
                                 fileSizeBytes = if (fileSize > 0) fileSize else existing.fileSizeBytes,

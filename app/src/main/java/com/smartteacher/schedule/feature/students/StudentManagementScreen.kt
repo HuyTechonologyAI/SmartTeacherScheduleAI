@@ -45,7 +45,20 @@ fun StudentManagementScreen(
     var selectedClass by remember { mutableStateOf<ClassroomEntity?>(null) }
 
     LaunchedEffect(classrooms) {
-        if (selectedClass == null && classrooms.isNotEmpty()) {
+        if (classrooms.isEmpty()) {
+            coroutineScope.launch(Dispatchers.IO) {
+                val defaultCls = ClassroomEntity(
+                    id = "cls_cg24tc34",
+                    name = "CG24TC34",
+                    grade = "Khóa 24",
+                    totalStudents = 0,
+                    academicYear = "2024-2027",
+                    notes = "Lớp thực hành kỹ thuật",
+                    updatedAt = System.currentTimeMillis()
+                )
+                db.classroomDao().insertClassroom(defaultCls)
+            }
+        } else if (selectedClass == null) {
             selectedClass = classrooms.first()
         }
     }

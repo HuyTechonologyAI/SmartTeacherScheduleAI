@@ -38,7 +38,8 @@ import kotlinx.coroutines.withContext
 @Composable
 fun QuickAttendanceDialog(
     event: CalendarEventEntity,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onOpenStudentManagement: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -51,7 +52,20 @@ fun QuickAttendanceDialog(
     // Load students and existing attendance records
     LaunchedEffect(event.className, event.date) {
         withContext(Dispatchers.IO) {
-            val loadedStudents = db.studentDao().getStudentsByClass(event.className)
+            var loadedStudents = db.studentDao().getStudentsByClass(event.className)
+            if (loadedStudents.isEmpty()) {
+                val cleanName = event.className.replace("Lớp", "", ignoreCase = true).replace("Lop", "", ignoreCase = true).trim()
+                if (cleanName.isNotBlank()) {
+                    loadedStudents = db.studentDao().getStudentsByClass(cleanName)
+                }
+            }
+            if (loadedStudents.isEmpty()) {
+                val allStudents = db.studentDao().getAllStudents()
+                loadedStudents = allStudents.filter {
+                    it.className.contains(event.className, ignoreCase = true) ||
+                    event.className.contains(it.className, ignoreCase = true)
+                }
+            }
             val existing = db.attendanceDao().getAttendanceForSession(
                 date = event.date,
                 className = event.className,
@@ -173,11 +187,87 @@ fun QuickAttendanceDialog(
                     }
                 } else if (students.isEmpty()) {
                     Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "Lớp ${event.className} chưa có danh sách học sinh.\nVui lòng nhập danh sách trong mục 'Quản lý Học sinh'.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Text(
+                                text = "Lớp ${event.className} chưa có danh sách học sinh.",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Thầy/Cô có thể mở Sổ quản lý để nhập file Excel/Word hoặc tạo nhanh danh sách mẫu:",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Button(
+                                    onClick = {
+                                        onDismiss()
+                                        onOpenStudentManagement()
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                ) {
+                                    Icon(Icons.Default.GroupAdd, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Quản lý học sinh")
+                                }
+                                OutlinedButton(
+                                    onClick = {
+                                        coroutineScope.launch(Dispatchers.IO) {
+                                            val sampleNames = listOf(
+                                                "Nguyễn Văn An", "Trần Thị Bích", "Lê Hoàng Cường", "Phạm Thị Dung",
+                                                "Hoàng Văn Em", "Đỗ Thị Gấm", "Vũ Hải Đăng", "Bùi Thu Hà",
+                                                "Đặng Quốc Huy", "Ngô Mai Khôi", "Dương Minh Long", "Lý Thị Mai",
+                                                "Mai Trọng Nam", "Hồ Bích Ngọc", "Phan Thanh Phong"
+                                            )
+                                            val created = sampleNames.mapIndexed { idx, name ->
+                                                StudentEntity(
+                                                    id = "std_${System.currentTimeMillis()}_$idx",
+                                                    classId = event.className,
+                                                    className = event.className,
+                                                    studentCode = "${event.className}_${String.format("%02d", idx + 1)}",
+                                                    fullName = name,
+                                                    gender = if (name.contains("Thị") || name.contains("Bích") || name.contains("Mai") || name.contains("Ngọc")) "Nữ" else "Nam",
+                                                    parentPhone = "09000000${String.format("%02d", idx + 1)}",
+                                                    parentName = "Phụ huynh $name",
+                                                    kudosPoints = 10,
+                                                    notes = ""
+                                                )
+                                            }
+                                            db.studentDao().insertStudents(created)
+                                            val map = mutableMapOf<String, AttendanceRecordEntity>()
+                                            created.forEach { st ->
+                                                map[st.id] = AttendanceRecordEntity(
+                                                    id = "att_${System.currentTimeMillis()}_${st.id}",
+                                                    date = event.date,
+                                                    eventId = event.id.toString(),
+                                                    scheduleId = event.teachingScheduleId?.toString() ?: "",
+                                                    studentId = st.id,
+                                                    className = event.className,
+                                                    status = "PRESENT",
+                                                    kudosDelta = 0,
+                                                    note = ""
+                                                )
+                                            }
+                                            withContext(Dispatchers.Main) {
+                                                students = created
+                                                attendanceMap = map
+                                                Toast.makeText(context, "Đã tạo 15 học sinh mẫu cho lớp ${event.className}!", Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+                                    }
+                                ) {
+                                    Icon(Icons.Default.Bolt, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Tạo mẫu nhanh")
+                                }
+                            }
+                        }
                     }
                 } else {
                     LazyColumn(

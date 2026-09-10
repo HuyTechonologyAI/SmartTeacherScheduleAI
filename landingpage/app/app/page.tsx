@@ -696,6 +696,12 @@ export default function UnifiedTeacherScheduleApp() {
   const [plannerMatchedDocResult, setPlannerMatchedDocResult] = useState<MatchedDocResult | null>(null);
   const [plannerSelectedDocId, setPlannerSelectedDocId] = useState<string>('AUTO');
   const [plannerFullPackage, setPlannerFullPackage] = useState<FullLessonPackage | null>(null);
+  // Viewing state for the 6-in-1 Unified Lesson Package Modal
+  const [viewingLessonPackage, setViewingLessonPackage] = useState<FullLessonPackage | null>(null);
+  const [viewingLessonEvent, setViewingLessonEvent] = useState<CalendarEventItem | null>(null);
+  const [lessonPackageActiveTab, setLessonPackageActiveTab] = useState<'plan' | 'slides' | 'game' | 'video' | 'mindmap' | 'audit' | 'all'>('plan');
+  const [lessonPackageFullScreen, setLessonPackageFullScreen] = useState(false);
+  const [lessonPackageCopied, setLessonPackageCopied] = useState(false);
   const [plannerActiveResultTab, setPlannerActiveResultTab] = useState<'plan' | 'slides' | 'game' | 'video' | 'mindmap' | 'audit'>('plan');
   const [plannerStepProgress, setPlannerStepProgress] = useState('');
 
@@ -1663,7 +1669,7 @@ export default function UnifiedTeacherScheduleApp() {
     setAttachFileUrl('');
   };
 
-  // Open / Preview Event Attachment
+  // Open / Preview Event Attachment - Unified 6-in-1 Teaching Kit Viewer
   const handleOpenEventAttachment = (ev: CalendarEventItem) => {
     if (!ev.attachmentName) return;
     const url = (ev.attachmentUrl || '').trim();
@@ -1672,18 +1678,68 @@ export default function UnifiedTeacherScheduleApp() {
       return;
     }
 
-    // 1. Lấy nội dung thực tế của giáo án / tài liệu đã lưu
-    let realContent = ev.attachmentContent || '';
+    // 1. Kiểm tra xem sự kiện đã có gói học liệu FullLessonPackage lưu sẵn chưa
+    let pkg: FullLessonPackage | null = null;
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem(`smart_teacher_ai_pack_${ev.id}`) ||
+                       localStorage.getItem(`smart_teacher_ai_pack_${ev.attachmentName}`);
+        if (stored) {
+          pkg = JSON.parse(stored);
+        }
+      } catch (_) {}
+    }
 
-    // 2. Tìm trong localStorage theo ID ca dạy hoặc tên tệp đính kèm
+    // Nếu attachmentName là file giáo án AI (CV 5512, CV 2634, GiaoAn_, HoSo_, attached://) hoặc người dùng muốn mở bộ học liệu ca dạy
+    const isAiLessonDoc = ev.attachmentName.includes('5512') ||
+                          ev.attachmentName.includes('2634') ||
+                          ev.attachmentName.startsWith('GiaoAn_') ||
+                          ev.attachmentName.startsWith('HoSo_') ||
+                          ev.attachmentUrl?.startsWith('attached://') ||
+                          (!ev.attachmentName.toLowerCase().endsWith('.pdf') && !ev.attachmentName.toLowerCase().endsWith('.xlsx'));
+
+    if (isAiLessonDoc) {
+      if (!pkg) {
+        // Làm sạch tên bài học, xử lý các ký tự replacement (e.g. "Công ngh\uFFFD\uFFFD\uFFFD" -> "Công nghệ")
+        const rawTitle = ev.notes || ev.title || 'Bài 1. Thiết kế và Công nghệ';
+        const cleanTitle = rawTitle
+          .replace(/[\uFFFD\?]+/g, 'ệ')
+          .replace(/^[^\w\s\u00C0-\u1EF9]+/, '')
+          .trim();
+
+        const is2634 = ev.attachmentName.includes('2634') || ev.sessionType === 'Thực hành';
+        pkg = generateComprehensiveLessonPlanPackage({
+          lessonTitle: cleanTitle,
+          subject: ev.subject || 'Công nghệ',
+          className: ev.className || '10A1',
+          sessionInfo: `${ev.date} (${ev.startTime || 'Ca dạy'} - ${ev.endTime || ''})`,
+          standard: is2634 ? 2634 : 5512,
+          durationMinutes: is2634 ? 3 : 45,
+          customRequirements: ev.notes || undefined
+        });
+
+        // Lưu lại để các lần sau mở siêu tốc
+        try {
+          localStorage.setItem(`smart_teacher_ai_pack_${ev.id}`, JSON.stringify(pkg));
+          localStorage.setItem(`smart_teacher_ai_pack_${ev.attachmentName}`, JSON.stringify(pkg));
+        } catch (_) {}
+      }
+
+      setViewingLessonPackage(pkg);
+      setViewingLessonEvent(ev);
+      setLessonPackageActiveTab('plan');
+      setLessonPackageFullScreen(false);
+      return;
+    }
+
+    // Nếu là tệp thông thường (PDF, DOCX tải lên thủ công), mở qua Document Viewer chung:
+    let realContent = ev.attachmentContent || '';
     if (!realContent && typeof window !== 'undefined') {
       try {
         realContent = localStorage.getItem(`smart_teacher_ai_plan_${ev.id}`) ||
                       localStorage.getItem(`smart_teacher_ai_plan_${ev.attachmentName}`) || '';
       } catch (_) {}
     }
-
-    // 3. Tìm trong kho tài liệu số hoá KnowledgeDocs
     if (!realContent) {
       const matchDoc = knowledgeDocs.find(d => 
         d.fileName === ev.attachmentName || 
@@ -1695,52 +1751,13 @@ export default function UnifiedTeacherScheduleApp() {
         realContent = matchDoc.content;
       }
     }
-
-    // 4. Nếu là file giáo án AI (CV 5512 / CV 2634) mà chưa có nội dung tĩnh, tự động phục dựng/sinh đầy đủ nội dung chuẩn Bộ GD&ĐT
-    if (!realContent && (ev.attachmentName.includes('5512') || ev.attachmentName.includes('2634') || ev.attachmentName.startsWith('GiaoAn_'))) {
-      // Làm sạch tên bài học, xử lý các ký tự diamond/replacement (e.g. "Công ngh\uFFFD\uFFFD\uFFFD" -> "Công nghệ")
-      const rawTitle = ev.notes || ev.title || 'Bài 1. Thiết kế và Công nghệ';
-      const cleanTitle = rawTitle
-        .replace(/[\uFFFD\?]+/g, 'ệ')
-        .replace(/^[^\w\s\u00C0-\u1EF9]+/, '')
-        .trim();
-
-      const is2634 = ev.attachmentName.includes('2634') || ev.sessionType === 'Thực hành';
-      if (is2634) {
-        const plan2634 = generateLessonPlan2634(
-          cleanTitle,
-          ev.subject || 'Công nghệ - Kỹ thuật',
-          ev.className || '10A1',
-          180
-        );
-        realContent = lessonPlan2634ToHtml(plan2634);
-      } else {
-        const plan5512 = generateLessonPlan5512(
-          cleanTitle,
-          ev.subject || 'Công nghệ',
-          ev.className || 'Khối 10',
-          45,
-          `Dạy học theo định hướng phát triển phẩm chất và năng lực học sinh, bám sát SGK Công nghệ 10 mới.`
-        );
-        realContent = lessonPlan5512ToHtml(plan5512);
-      }
-
-      // Lưu lại vào localStorage và cập nhật vào sự kiện để các lần sau mở siêu tốc
-      try {
-        localStorage.setItem(`smart_teacher_ai_plan_${ev.id}`, realContent);
-        localStorage.setItem(`smart_teacher_ai_plan_${ev.attachmentName}`, realContent);
-      } catch (_) {}
-    }
-
-    // Fallback nếu không có nội dung
     if (!realContent) {
       realContent = `KẾ HOẠCH BÀI DẠY & HỌC LIỆU\n\n• Tên bài giảng: ${ev.title}\n• Môn học: ${ev.subject}\n• Lớp giảng dạy: ${ev.className}\n• Thời gian: ${ev.date} (${ev.startTime || 'Ca dạy'} - ${ev.endTime || ''})\n• Phòng học: ${ev.room}\n• Tệp đính kèm: ${ev.attachmentName}\n\n${ev.notes ? `Ghi chú chuyên môn:\n${ev.notes}\n\n` : ''}Tài liệu này đã được lưu trữ và liên kết với lịch dạy của Thầy/Cô.`;
     }
 
-    // Open in rich document preview modal (đã được đưa ra ngoài root nên sẽ hiển thị ở MỌI tab!)
     setKbViewingDoc({
       id: `event-att-${ev.id}`,
-      title: `Giáo án: ${ev.notes ? ev.notes.replace(/[\uFFFD\?]+/g, 'ệ') : ev.title} - Lớp ${ev.className}`,
+      title: `Tài liệu: ${ev.notes ? ev.notes.replace(/[\uFFFD\?]+/g, 'ệ') : ev.title} - Lớp ${ev.className}`,
       code: `GA-${ev.className || '5512'}`,
       category: 'GIAO_TRINH',
       subject: ev.subject,
@@ -3506,6 +3523,22 @@ export default function UnifiedTeacherScheduleApp() {
                           <button
                             type="button"
                             onClick={() => {
+                              setViewingLessonPackage(plannerFullPackage);
+                              setViewingLessonEvent(null);
+                              setLessonPackageActiveTab('plan');
+                              setLessonPackageFullScreen(false);
+                            }}
+                            className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-purple-600/25 transition-all cursor-pointer"
+                            title="Mở giao diện giảng dạy 6-in-1 đầy đủ các tab tài liệu"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Mở Trình Giảng Dạy 6-in-1</span>
+                          </button>
+                        )}
+                        {plannerFullPackage && (
+                          <button
+                            type="button"
+                            onClick={() => {
                               const html = fullPackageToDocHtml(plannerFullPackage);
                               const fName = `HoSo_BaiGiang_${plannerFullPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
                               downloadWordDoc(fName, html);
@@ -3573,6 +3606,10 @@ export default function UnifiedTeacherScheduleApp() {
                               localStorage.setItem('smart_teacher_events', JSON.stringify(updated));
 
                               try {
+                                if (plannerFullPackage) {
+                                  localStorage.setItem(`smart_teacher_ai_pack_${plannerSelectedEventId}`, JSON.stringify(plannerFullPackage));
+                                  localStorage.setItem(`smart_teacher_ai_pack_${docName}`, JSON.stringify(plannerFullPackage));
+                                }
                                 if (contentToSave) {
                                   localStorage.setItem(`smart_teacher_ai_plan_${plannerSelectedEventId}`, contentToSave);
                                   localStorage.setItem(`smart_teacher_ai_plan_${docName}`, contentToSave);
@@ -6763,6 +6800,671 @@ export default function UnifiedTeacherScheduleApp() {
 
                 
 
+
+
+      {/* MODAL TRÌNH GIẢNG DẠY & HỌC LIỆU 6-IN-1 (GIÁO ÁN, SLIDE, MINI GAME, MINDMAP, VIDEO, RUBRIC) */}
+      {viewingLessonPackage && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 animate-fade-in">
+          <div className={`bg-slate-900 border border-slate-700/90 rounded-2xl flex flex-col shadow-2xl transition-all overflow-hidden ${
+            lessonPackageFullScreen ? 'fixed inset-2 z-50 max-w-none max-h-none h-[calc(100vh-16px)]' : 'max-w-5xl w-full max-h-[92vh]'
+          }`}>
+            {/* Header */}
+            <div className="p-4 sm:p-5 border-b border-slate-800 bg-slate-900/95 flex items-start justify-between gap-3 shrink-0">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                  <span className="text-xs text-purple-300 font-bold px-2.5 py-0.5 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                    HỒ SƠ BÀI GIẢNG 6-IN-1
+                  </span>
+                  <span className="text-xs text-sky-300 font-mono font-bold px-2 py-0.5 rounded bg-sky-500/10 border border-sky-500/20">
+                    {viewingLessonPackage.standard === 5512 ? 'Chuẩn CV 5512/BGDĐT' : 'Chuẩn CV 2634/GDNN'}
+                  </span>
+                  <span className="text-xs text-slate-300">
+                    Môn: <strong className="text-white">{viewingLessonPackage.subject}</strong> • Lớp: <strong className="text-white">{viewingLessonPackage.className}</strong>
+                  </span>
+                  {viewingLessonEvent && (
+                    <span className="text-xs text-slate-400">
+                      • {viewingLessonEvent.date} ({viewingLessonEvent.startTime || 'Ca dạy'} - {viewingLessonEvent.endTime || ''})
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-base sm:text-xl font-bold text-white leading-snug truncate">
+                  BÀI DẠY: {viewingLessonPackage.lessonTitle.toUpperCase()}
+                </h3>
+              </div>
+
+              {/* Action Toolbar Header */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                {/* Print */}
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 cursor-pointer text-xs flex items-center gap-1"
+                  title="In tài liệu / Xuất PDF"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span className="hidden md:inline">In / PDF</span>
+                </button>
+
+                {/* Fullscreen Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setLessonPackageFullScreen(f => !f)}
+                  className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 cursor-pointer"
+                  title={lessonPackageFullScreen ? 'Thu nhỏ cửa sổ' : 'Phóng to toàn màn hình'}
+                >
+                  {lessonPackageFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                </button>
+
+                {/* Close */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewingLessonPackage(null);
+                    setViewingLessonEvent(null);
+                    setLessonPackageFullScreen(false);
+                  }}
+                  className="p-2 rounded-xl bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-400 cursor-pointer ml-1"
+                  title="Đóng cửa sổ"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* TAB NAVIGATION BAR (7 HẠNG MỤC SƯ PHẠM ĐỒNG BỘ) */}
+            <div className="flex items-center gap-1 px-3 sm:px-5 pt-2.5 border-b border-slate-800 bg-slate-950/60 overflow-x-auto shrink-0 scrollbar-thin">
+              <button
+                type="button"
+                onClick={() => setLessonPackageActiveTab('plan')}
+                className={`px-3.5 py-2.5 rounded-t-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
+                  lessonPackageActiveTab === 'plan'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                    : 'bg-slate-900/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+                <span>1. Giáo Án Chuẩn</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setLessonPackageActiveTab('slides')}
+                className={`px-3.5 py-2.5 rounded-t-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
+                  lessonPackageActiveTab === 'slides'
+                    ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/30'
+                    : 'bg-slate-900/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <Monitor className="w-4 h-4" />
+                <span>2. Slide Thuyết Trình ({viewingLessonPackage.slides.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setLessonPackageActiveTab('game')}
+                className={`px-3.5 py-2.5 rounded-t-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
+                  lessonPackageActiveTab === 'game'
+                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
+                    : 'bg-slate-900/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <Gamepad2 className="w-4 h-4" />
+                <span>3. Mini Game ({viewingLessonPackage.miniGame.length} Câu)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setLessonPackageActiveTab('mindmap')}
+                className={`px-3.5 py-2.5 rounded-t-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
+                  lessonPackageActiveTab === 'mindmap'
+                    ? 'bg-teal-600 text-white shadow-lg shadow-teal-600/30'
+                    : 'bg-slate-900/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <Network className="w-4 h-4" />
+                <span>4. Sơ Đồ Tư Duy</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setLessonPackageActiveTab('video')}
+                className={`px-3.5 py-2.5 rounded-t-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
+                  lessonPackageActiveTab === 'video'
+                    ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
+                    : 'bg-slate-900/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <Video className="w-4 h-4" />
+                <span>5. Video Học Liệu ({viewingLessonPackage.videoScript.length} Cảnh)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setLessonPackageActiveTab('audit')}
+                className={`px-3.5 py-2.5 rounded-t-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
+                  lessonPackageActiveTab === 'audit'
+                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30'
+                    : 'bg-slate-900/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <Award className="w-4 h-4" />
+                <span>6. Bảng Điểm Rubric ({viewingLessonPackage.auditScore.totalScore}đ)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setLessonPackageActiveTab('all')}
+                className={`px-3.5 py-2.5 rounded-t-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
+                  lessonPackageActiveTab === 'all'
+                    ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-600/30'
+                    : 'bg-slate-900/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <BookOpen className="w-4 h-4" />
+                <span>Toàn Bộ Hồ Sơ (All-in-One)</span>
+              </button>
+            </div>
+
+            {/* TAB CONTENTS (Scrollable area) */}
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1 bg-slate-950/50 space-y-5">
+              
+              {/* ===== TAB 1: KẾ HOẠCH BÀI DẠY (GIÁO ÁN CHUẨN CV 5512 / CV 2634) ===== */}
+              {lessonPackageActiveTab === 'plan' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                        📄 Văn bản Giáo án Sư phạm chính thức
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const html = viewingLessonPackage.standard === 5512 && viewingLessonPackage.plan5512
+                            ? lessonPlan5512ToHtml(viewingLessonPackage.plan5512)
+                            : viewingLessonPackage.plan2634
+                            ? lessonPlan2634ToHtml(viewingLessonPackage.plan2634)
+                            : '';
+                          downloadWordDoc(`GiaoAn_${viewingLessonPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`, html);
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 shadow transition-all cursor-pointer"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>Tải Giáo Án (.doc)</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-white text-slate-900 p-6 sm:p-10 rounded-2xl shadow-xl font-sans overflow-x-auto selection:bg-blue-100">
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: viewingLessonPackage.standard === 5512 && viewingLessonPackage.plan5512
+                          ? lessonPlan5512ToHtml(viewingLessonPackage.plan5512)
+                          : viewingLessonPackage.plan2634
+                          ? lessonPlan2634ToHtml(viewingLessonPackage.plan2634)
+                          : '<p>Không có nội dung giáo án khả dụng.</p>'
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* ===== TAB 2: SLIDE THUYẾT TRÌNH POWERPOINT ===== */}
+              {lessonPackageActiveTab === 'slides' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-800">
+                    <p className="text-xs sm:text-sm text-sky-300 font-medium">
+                      🖥️ Kịch bản bài giảng gồm <strong>{viewingLessonPackage.slides.length} slide trình chiếu</strong> PowerPoint chuẩn trực quan.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const html = slidesToHtml(viewingLessonPackage.slides, viewingLessonPackage.lessonTitle, viewingLessonPackage.subject);
+                        downloadWordDoc(`Slide_${viewingLessonPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`, html);
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold flex items-center gap-1.5 shadow transition-all cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Tải Kịch Bản Slide (.doc)</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {viewingLessonPackage.slides.map((s) => (
+                      <div
+                        key={s.slideNumber}
+                        className="bg-slate-900 border-2 border-sky-500/40 rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-xl hover:border-sky-400 transition-all space-y-3"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between pb-2 border-b border-slate-800 mb-2.5">
+                            <span className="text-xs font-bold text-sky-400 uppercase tracking-wider px-2 py-0.5 rounded bg-sky-500/10 border border-sky-500/20">
+                              SLIDE {s.slideNumber}
+                            </span>
+                            <span className="text-[11px] text-slate-400 italic">Môn {viewingLessonPackage.subject}</span>
+                          </div>
+                          <h4 className="text-sm sm:text-base font-bold text-white mb-2 leading-snug">
+                            {s.title}
+                          </h4>
+                          <p className="text-xs font-semibold text-slate-300 mb-1.5">📌 Nội dung chiếu màn hình:</p>
+                          <ul className="list-disc list-inside space-y-1 text-xs text-slate-200 pl-1">
+                            {s.bulletPoints.map((b, idx) => (
+                              <li key={idx} className="leading-relaxed">{b}</li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                          <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300">
+                            <strong className="block text-emerald-400 font-semibold mb-0.5">🗣️ Lời giảng của Giáo viên (Speaker Notes):</strong>
+                            <p className="italic leading-relaxed">{s.speakerNotes}</p>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
+                            <strong className="block text-amber-400 font-semibold mb-0.5">🖼️ Gợi ý Đồ họa / Video:</strong>
+                            <p className="leading-relaxed">{s.visualSuggestion}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ===== TAB 3: MINI GAME TƯƠNG TÁC (KAHOOT / QUIZIZZ / BLOOKET) ===== */}
+              {lessonPackageActiveTab === 'game' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-800">
+                    <p className="text-xs sm:text-sm text-purple-300 font-medium">
+                      🎮 Bộ <strong>{viewingLessonPackage.miniGame.length} câu hỏi tương tác</strong> sẵn sàng nạp trực tiếp vào Kahoot, Quizizz, Blooket.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const txt = miniGameToTxt(viewingLessonPackage.miniGame, viewingLessonPackage.lessonTitle);
+                          navigator.clipboard.writeText(txt);
+                          setLessonPackageCopied(true);
+                          setTimeout(() => setLessonPackageCopied(false), 2000);
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-700"
+                      >
+                        {lessonPackageCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{lessonPackageCopied ? 'Đã sao chép' : 'Chép câu hỏi'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const txt = miniGameToTxt(viewingLessonPackage.miniGame, viewingLessonPackage.lessonTitle);
+                          const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `MiniGame_${viewingLessonPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.txt`;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 shadow transition-all cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Tải File Câu Hỏi (.txt)</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3.5">
+                    {viewingLessonPackage.miniGame.map((q) => (
+                      <div
+                        key={q.id}
+                        className="bg-slate-900/90 border border-slate-700/70 rounded-2xl p-4 sm:p-5 space-y-3 shadow-lg"
+                      >
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <span className="text-xs font-bold text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-lg border border-purple-500/20">
+                            CÂU {q.id} • {q.bloomLevel.toUpperCase()}
+                          </span>
+                          <span className="text-xs text-slate-400 font-mono">
+                            ⏱️ {q.timeLimitSeconds} giây • 🏆 {q.points} điểm
+                          </span>
+                        </div>
+                        <p className="text-sm font-semibold text-white leading-relaxed">{q.question}</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                          {q.options.map((opt, i) => {
+                            const optLetter = opt.trim().charAt(0);
+                            const isCorrect = optLetter === q.correctAnswer;
+                            return (
+                              <div
+                                key={i}
+                                className={`p-3 rounded-xl border flex items-center justify-between transition-all ${
+                                  isCorrect
+                                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-200 font-semibold'
+                                    : 'bg-slate-800/60 border-slate-700/50 text-slate-300'
+                                }`}
+                              >
+                                <span>{opt}</span>
+                                {isCorrect && (
+                                  <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full shrink-0 ml-1">
+                                    ✓ Đáp án đúng
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="text-xs text-slate-300 bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                          <strong className="text-purple-300">💡 Giải thích sư phạm:</strong> {q.explanation}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ===== TAB 4: SƠ ĐỒ TƯ DUY (MINDMAP) ===== */}
+              {lessonPackageActiveTab === 'mindmap' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-800">
+                    <p className="text-xs sm:text-sm text-teal-300 font-medium">
+                      🧠 Sơ đồ tư duy trực quan <strong>4 nhánh bài học</strong> &amp; Cấu trúc phân cấp chuẩn.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(viewingLessonPackage.mindmap.mermaidCode);
+                          setLessonPackageCopied(true);
+                          setTimeout(() => setLessonPackageCopied(false), 2000);
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow transition-all cursor-pointer"
+                      >
+                        {lessonPackageCopied ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{lessonPackageCopied ? 'Đã sao chép' : 'Chép mã Mermaid'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 4 Nhánh chính trực quan */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {viewingLessonPackage.mindmap.branches.map((b, idx) => {
+                      const colors = [
+                        'border-blue-500/40 bg-blue-500/5 text-blue-300',
+                        'border-purple-500/40 bg-purple-500/5 text-purple-300',
+                        'border-amber-500/40 bg-amber-500/5 text-amber-300',
+                        'border-emerald-500/40 bg-emerald-500/5 text-emerald-300'
+                      ];
+                      const c = colors[idx % colors.length];
+                      return (
+                        <div key={idx} className={`p-4 sm:p-5 rounded-2xl border-2 ${c} space-y-2.5 shadow-lg`}>
+                          <h4 className="font-bold text-sm sm:text-base text-white flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-xs font-mono font-bold">
+                              {idx + 1}
+                            </span>
+                            {b.title}
+                          </h4>
+                          <ul className="space-y-1.5 text-xs text-slate-200 pl-2">
+                            {b.subItems.map((sub, sIdx) => (
+                              <li key={sIdx} className="flex items-center gap-2">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                                <span>{sub}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Khung Mermaid Code */}
+                  <div className="bg-slate-900 border border-slate-700/80 rounded-2xl p-4 space-y-2">
+                    <div className="flex items-center justify-between text-xs text-slate-400">
+                      <span className="font-semibold text-slate-300">📊 Mã nguồn Mermaid.js (Hỗ trợ nhúng vào Notion, Canva, Obsidian):</span>
+                    </div>
+                    <pre className="p-3.5 rounded-xl bg-slate-950 font-mono text-xs text-teal-300 overflow-x-auto whitespace-pre leading-relaxed border border-slate-800">
+                      {viewingLessonPackage.mindmap.mermaidCode}
+                    </pre>
+                  </div>
+                </div>
+              )}
+
+              {/* ===== TAB 5: VIDEO HỌC LIỆU (MICROLEARNING STORYBOARD) ===== */}
+              {lessonPackageActiveTab === 'video' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-800">
+                    <p className="text-xs sm:text-sm text-amber-300 font-medium">
+                      🎬 Kịch bản Video vi mô (Microlearning) gồm <strong>{viewingLessonPackage.videoScript.length} phân cảnh</strong> chi tiết (3-5 phút).
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const html = videoScriptToHtml(viewingLessonPackage.videoScript, viewingLessonPackage.lessonTitle, viewingLessonPackage.subject);
+                        downloadWordDoc(`KichBan_Video_${viewingLessonPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`, html);
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold flex items-center gap-1.5 shadow transition-all cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Tải Kịch Bản Video (.doc)</span>
+                    </button>
+                  </div>
+
+                  <div className="space-y-3.5">
+                    {viewingLessonPackage.videoScript.map((sc) => (
+                      <div
+                        key={sc.sceneNumber}
+                        className="bg-slate-900 border border-slate-700/80 rounded-2xl p-4 sm:p-5 space-y-3 shadow-lg"
+                      >
+                        <div className="flex items-center justify-between flex-wrap gap-2 border-b border-slate-800 pb-2">
+                          <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
+                            CẢNH {sc.sceneNumber}: {sc.title}
+                          </span>
+                          <span className="text-xs font-mono text-slate-400">⏱️ Thời lượng: {sc.duration}</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                          <div className="space-y-1.5 bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <strong className="text-slate-300 block">🖼️ Mô tả Hình ảnh &amp; Hiệu ứng (Visual):</strong>
+                            <p className="text-slate-200 leading-relaxed">{sc.visualDescription}</p>
+                            <div className="mt-2 p-2 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-300 text-[11px]">
+                              <strong>Prompt AI Video / Ảnh:</strong> <em>{sc.aiPromptSuggestion}</em>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2 bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 flex flex-col justify-between">
+                            <div>
+                              <strong className="text-amber-400 block mb-1">🎙️ Lời bình thuyết minh (Voiceover):</strong>
+                              <p className="italic text-slate-100 leading-relaxed">&quot;{sc.voiceover}&quot;</p>
+                            </div>
+                            <div className="pt-2 border-t border-slate-800 text-[11px] text-amber-300 font-semibold">
+                              📺 Chữ trên màn hình: {sc.onScreenText}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ===== TAB 6: CHẤM ĐIỂM SƯ PHẠM NĂNG LỰC SỐ (RUBRIC EVALUATION) ===== */}
+              {lessonPackageActiveTab === 'audit' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-800">
+                    <p className="text-xs sm:text-sm text-emerald-300 font-medium">
+                      📊 Bảng đánh giá Sư phạm theo <strong>Quyết định 2422/QĐ-BGDĐT</strong> &amp; <strong>Công văn 3456/BGDĐT</strong>.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const html = fullPackageToDocHtml(viewingLessonPackage);
+                        downloadWordDoc(`HoSo_DanhGia_${viewingLessonPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`, html);
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow transition-all cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Tải Bảng Đánh Giá (.doc)</span>
+                    </button>
+                  </div>
+
+                  {/* Tổng điểm Hero Card */}
+                  <div className="bg-gradient-to-r from-emerald-600/20 via-teal-600/15 to-emerald-600/10 border-2 border-emerald-500/40 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black text-2xl border border-emerald-500/30">
+                        {viewingLessonPackage.auditScore.totalScore}
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+                          ĐÁNH GIÁ: XẾP LOẠI {viewingLessonPackage.auditScore.rating.toUpperCase()}
+                        </span>
+                        <h3 className="text-lg font-bold text-white">
+                          {viewingLessonPackage.auditScore.totalScore}/100 ĐIỂM ĐẠT CHUẨN
+                        </h3>
+                        <p className="text-xs text-slate-300 mt-0.5">
+                          Mức độ Năng lực số: <strong className="text-emerald-300">{viewingLessonPackage.auditScore.digitalCompetencyReview.levelAchieved}</strong>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bảng chi tiết 4 tiêu chí */}
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Chi tiết 4 tiêu chuẩn sư phạm &amp; Năng lực số:</h4>
+                    {viewingLessonPackage.auditScore.criteria.map((c, i) => (
+                      <div
+                        key={i}
+                        className="bg-slate-900 border border-slate-700/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow"
+                      >
+                        <div className="space-y-1 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-white">{c.name}</span>
+                            <span className="text-[10px] text-slate-400 font-mono">({c.standardRef})</span>
+                          </div>
+                          <p className="text-xs text-slate-300 leading-relaxed">{c.feedback}</p>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                          <span className="text-sm font-bold text-emerald-400">
+                            {c.actualScore}/{c.maxScore} điểm
+                          </span>
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            {c.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* 2 cột: Điểm mạnh & Khuyến nghị */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-2xl bg-slate-900 border border-emerald-500/30 space-y-2">
+                      <h4 className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4" />
+                        Điểm Mạnh Nổi Bật:
+                      </h4>
+                      <ul className="space-y-1 text-xs text-slate-200">
+                        {viewingLessonPackage.auditScore.strengths.map((st, i) => (
+                          <li key={i} className="flex items-start gap-1.5">
+                            <span className="text-emerald-400 font-bold">•</span>
+                            <span>{st}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-slate-900 border border-amber-500/30 space-y-2">
+                      <h4 className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4" />
+                        Khuyến Nghị Sư Phạm:
+                      </h4>
+                      <ul className="space-y-1 text-xs text-slate-200">
+                        {viewingLessonPackage.auditScore.suggestions.map((sg, i) => (
+                          <li key={i} className="flex items-start gap-1.5">
+                            <span className="text-amber-400 font-bold">•</span>
+                            <span>{sg}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ===== TAB 7: TOÀN BỘ HỒ SƠ (ALL-IN-ONE) ===== */}
+              {lessonPackageActiveTab === 'all' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-800">
+                    <p className="text-xs sm:text-sm text-indigo-300 font-medium">
+                      📑 Toàn bộ 6 hạng mục bài giảng được kết xuất liên tục trên 1 trang để giảng dạy &amp; in ấn trọn gói.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const html = fullPackageToDocHtml(viewingLessonPackage);
+                        const fName = `HoSo_BaiGiang_${viewingLessonPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
+                        downloadWordDoc(fName, html);
+                      }}
+                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>Tải Trọn Bộ Hồ Sơ (.doc)</span>
+                    </button>
+                  </div>
+
+                  <div className="bg-white text-slate-900 p-6 sm:p-10 rounded-2xl shadow-xl font-sans overflow-x-auto selection:bg-blue-100">
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: fullPackageToDocHtml(viewingLessonPackage)
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* FOOTER TOOLBAR */}
+            <div className="p-3.5 sm:p-4 border-t border-slate-800 bg-slate-900 flex items-center justify-between flex-wrap gap-3 shrink-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const html = fullPackageToDocHtml(viewingLessonPackage);
+                    const fName = `HoSo_BaiGiang_${viewingLessonPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
+                    downloadWordDoc(fName, html);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-emerald-600/25 transition-all cursor-pointer"
+                  title="Tải toàn bộ hồ sơ gồm cả 6 hạng mục vào 1 file Word duy nhất"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Tải Trọn Bộ Hồ Sơ 6-in-1 (.doc)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 cursor-pointer transition-colors"
+                  title="In tài liệu hoặc lưu dạng PDF"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span className="hidden sm:inline">In ấn / Lưu PDF</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewingLessonPackage(null);
+                    setViewingLessonEvent(null);
+                    setLessonPackageFullScreen(false);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold cursor-pointer"
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Cloud Sync Security & Pairing Modal */}
       <SyncSecurityModal

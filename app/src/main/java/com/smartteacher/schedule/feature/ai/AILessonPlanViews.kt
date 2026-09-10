@@ -21,6 +21,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextOverflow
 import com.smartteacher.schedule.core.ai.*
 import com.smartteacher.schedule.core.database.dao.KnowledgeDocumentDao
 import com.smartteacher.schedule.core.database.entity.KnowledgeDocumentEntity
@@ -65,6 +66,11 @@ fun AILessonPlannerView(
     var result5512 by remember { mutableStateOf<LessonPlan5512Result?>(null) }
     var result2634 by remember { mutableStateOf<LessonPlan2634Result?>(null) }
     var currentAttachment by remember { mutableStateOf<LessonAttachmentEntity?>(null) }
+
+    val activeDocsFlow = knowledgeDao?.getAllActiveDocumentsFlow()?.collectAsState(initial = emptyList())
+    val allActiveDocs = activeDocsFlow?.value ?: emptyList()
+    var selectedDocId by remember { mutableStateOf(-1L) }
+    var showDocSelectDialog by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = Modifier
@@ -287,6 +293,73 @@ fun AILessonPlannerView(
             }
         }
 
+        // Lựa chọn tài liệu đối chiếu cho AI
+        item {
+            val selectedDoc = allActiveDocs.find { it.id == selectedDocId }
+            val docLabel = when {
+                selectedDocId == -2L -> "🚫 Không dùng giáo trình (Chỉ theo khung chuẩn)"
+                selectedDoc != null -> "📚 ${selectedDoc.title} (${selectedDoc.code})"
+                else -> "🤖 [Tự động] Nhận diện thông minh theo Môn & Khối lớp"
+            }
+            val docSubtitle = when {
+                selectedDocId == -2L -> "AI sẽ sinh bài hoàn toàn từ logic chuẩn, không đối chiếu sách giáo trình nào"
+                selectedDoc != null -> "Đang ép buộc AI bám sát chính xác giáo trình này (${selectedDoc.subject}, ${selectedDoc.targetLevel})"
+                else -> "AI tự tìm kiếm và lọc tài liệu phù hợp nhất trong Kho Tri Thức (${allActiveDocs.size} tài liệu khả dụng)"
+            }
+
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = if (selectedDocId > 0L) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                ),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showDocSelectDialog = true }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        if (selectedDocId > 0L) Icons.Default.MenuBook else Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = if (selectedDocId > 0L) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Tài liệu căn cứ đối chiếu:",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = docLabel,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (selectedDocId > 0L) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = docSubtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(onClick = { showDocSelectDialog = true }) {
+                        Text("Thay đổi")
+                    }
+                }
+            }
+        }
+
         // Nút bấm Sinh Giáo Án AI
         item {
             Button(
@@ -304,16 +377,25 @@ fun AILessonPlannerView(
                         if (selectedStandard == 0) {
                             val periods = durationText.toIntOrNull() ?: 1
                             val activeDocs = knowledgeDao?.getAllActiveDocuments() ?: emptyList()
-                            val targetGrade = extractGradeNum(className)
-                            val relevantDocs = activeDocs.filter { doc ->
-                                isDocGradeCompatible(doc, targetGrade) && (
-                                    doc.category == KnowledgeDocumentEntity.CAT_PHAP_QUY ||
-                                    doc.subject == "ALL" ||
-                                    doc.subject.contains(subject.trim(), ignoreCase = true)
-                                )
-                            }
-                            val refContext = relevantDocs.joinToString("\n\n---\n") { doc ->
-                                "【${doc.title} (${doc.code})】\n${doc.content}"
+                            val refContext = when {
+                                selectedDocId == -2L -> ""
+                                selectedDocId > 0L -> {
+                                    val explicitDoc = activeDocs.find { it.id == selectedDocId }
+                                    if (explicitDoc != null) "【${explicitDoc.title} (${explicitDoc.code})】\n${explicitDoc.content}" else ""
+                                }
+                                else -> {
+                                    val targetGrade = extractGradeNum(className)
+                                    val relevantDocs = activeDocs.filter { doc ->
+                                        isDocGradeCompatible(doc, targetGrade) && (
+                                            doc.category == KnowledgeDocumentEntity.CAT_PHAP_QUY ||
+                                            doc.subject == "ALL" ||
+                                            doc.subject.contains(subject.trim(), ignoreCase = true)
+                                        )
+                                    }
+                                    relevantDocs.joinToString("\n\n---\n") { doc ->
+                                        "【${doc.title} (${doc.code})】\n${doc.content}"
+                                    }
+                                }
                             }
 
                             val res = aiService.generateLessonPlan5512(
@@ -346,18 +428,27 @@ fun AILessonPlannerView(
                         } else {
                             val hours = durationText.toFloatOrNull() ?: 4.0f
                             val activeDocs = knowledgeDao?.getAllActiveDocuments() ?: emptyList()
-                            val targetGrade = extractGradeNum(className)
-                            val relevantDocs = activeDocs.filter { doc ->
-                                isDocGradeCompatible(doc, targetGrade) && (
-                                    doc.category == KnowledgeDocumentEntity.CAT_PHAP_QUY ||
-                                    doc.category == KnowledgeDocumentEntity.CAT_QUY_CHUAN_XUONG ||
-                                    doc.category == KnowledgeDocumentEntity.CAT_GIAO_TRINH ||
-                                    doc.subject == "ALL" ||
-                                    doc.subject.contains(subject.trim(), ignoreCase = true)
-                                )
-                            }
-                            val refContext = relevantDocs.joinToString("\n\n---\n") { doc ->
-                                "【${doc.title} (${doc.code})】\n${doc.content}"
+                            val refContext = when {
+                                selectedDocId == -2L -> ""
+                                selectedDocId > 0L -> {
+                                    val explicitDoc = activeDocs.find { it.id == selectedDocId }
+                                    if (explicitDoc != null) "【${explicitDoc.title} (${explicitDoc.code})】\n${explicitDoc.content}" else ""
+                                }
+                                else -> {
+                                    val targetGrade = extractGradeNum(className)
+                                    val relevantDocs = activeDocs.filter { doc ->
+                                        isDocGradeCompatible(doc, targetGrade) && (
+                                            doc.category == KnowledgeDocumentEntity.CAT_PHAP_QUY ||
+                                            doc.category == KnowledgeDocumentEntity.CAT_QUY_CHUAN_XUONG ||
+                                            doc.category == KnowledgeDocumentEntity.CAT_GIAO_TRINH ||
+                                            doc.subject == "ALL" ||
+                                            doc.subject.contains(subject.trim(), ignoreCase = true)
+                                        )
+                                    }
+                                    relevantDocs.joinToString("\n\n---\n") { doc ->
+                                        "【${doc.title} (${doc.code})】\n${doc.content}"
+                                    }
+                                }
                             }
 
                             val res = aiService.generateLessonPlan2634(
@@ -606,6 +697,128 @@ fun AILessonPlannerView(
                 }
             }
         }
+    }
+
+    if (showDocSelectDialog) {
+        AlertDialog(
+            onDismissRequest = { showDocSelectDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.MenuBook, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Chọn tài liệu làm căn cứ cho AI", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 420.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selectedDocId = -1L
+                                    showDocSelectDialog = false
+                                }
+                                .padding(vertical = 8.dp, horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = (selectedDocId == -1L),
+                                onClick = {
+                                    selectedDocId = -1L
+                                    showDocSelectDialog = false
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text("🤖 [Tự động] Nhận diện theo Môn & Lớp", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                                Text("Hệ thống tự đối chiếu và dùng tài liệu phù hợp", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                            }
+                        }
+                        Divider(modifier = Modifier.padding(vertical = 4.dp))
+                    }
+
+                    if (allActiveDocs.isEmpty()) {
+                        item {
+                            Text(
+                                "Chưa có tài liệu nào trong Kho Tri Thức. Bạn có thể thêm tài liệu ở tab Kho Tri Thức.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.padding(8.dp)
+                            )
+                        }
+                    } else {
+                        items(allActiveDocs.size) { idx ->
+                            val doc = allActiveDocs[idx]
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        selectedDocId = doc.id
+                                        showDocSelectDialog = false
+                                    }
+                                    .padding(vertical = 6.dp, horizontal = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = (selectedDocId == doc.id),
+                                    onClick = {
+                                        selectedDocId = doc.id
+                                        showDocSelectDialog = false
+                                    }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(doc.title, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(
+                                        "${doc.code} • ${doc.subject} • ${doc.targetLevel}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.outline
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    item {
+                        Divider(modifier = Modifier.padding(vertical = 4.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selectedDocId = -2L
+                                    showDocSelectDialog = false
+                                }
+                                .padding(vertical = 8.dp, horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = (selectedDocId == -2L),
+                                onClick = {
+                                    selectedDocId = -2L
+                                    showDocSelectDialog = false
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text("🚫 Không dùng giáo trình đối chiếu", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                                Text("Chỉ sinh giáo án thuần túy theo cấu trúc chuẩn công văn", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showDocSelectDialog = false }) {
+                    Text("Đóng")
+                }
+            }
+        )
     }
 }
 

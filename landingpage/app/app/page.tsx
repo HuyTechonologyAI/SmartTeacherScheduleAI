@@ -661,6 +661,7 @@ export default function UnifiedTeacherScheduleApp() {
   // New Multi-Modal Planner & Digital Competency States
   const [plannerClassFilter, setPlannerClassFilter] = useState('ALL');
   const [plannerMatchedDocResult, setPlannerMatchedDocResult] = useState<MatchedDocResult | null>(null);
+  const [plannerSelectedDocId, setPlannerSelectedDocId] = useState<string>('AUTO');
   const [plannerFullPackage, setPlannerFullPackage] = useState<FullLessonPackage | null>(null);
   const [plannerActiveResultTab, setPlannerActiveResultTab] = useState<'plan' | 'slides' | 'game' | 'video' | 'mindmap' | 'audit'>('plan');
   const [plannerStepProgress, setPlannerStepProgress] = useState('');
@@ -689,9 +690,11 @@ export default function UnifiedTeacherScheduleApp() {
     setPlannerLessonTitle(inferredLesson);
     setPlannerModuleTitle(inferredLesson);
 
-    // Khớp nối tài liệu từ Kho tư liệu chuẩn
-    const matched = findMatchingKnowledgeDocument(ev.subject, ev.className, inferredLesson);
-    setPlannerMatchedDocResult(matched);
+    // Khớp nối tài liệu từ Kho tư liệu chuẩn nếu đang ở chế độ AUTO
+    if (plannerSelectedDocId === 'AUTO') {
+      const matched = findMatchingKnowledgeDocument(ev.subject, ev.className, inferredLesson);
+      setPlannerMatchedDocResult(matched);
+    }
   };
 
   // Hàm sinh kế hoạch bài giảng trọn gói đa phương tiện 5 bước
@@ -720,7 +723,22 @@ export default function UnifiedTeacherScheduleApp() {
               ? `${selectedEv.date} • Ca: ${selectedEv.startTime}-${selectedEv.endTime} (Phòng: ${selectedEv.room || 'Lớp học'})`
               : 'Theo phân phối chương trình';
 
-            const freshMatched = findMatchingKnowledgeDocument(plannerSubject, plannerClass, title);
+            // Xác định tài liệu đối chiếu theo chỉ định thủ công hoặc tự động
+            let freshMatched: MatchedDocResult | null = null;
+            if (plannerSelectedDocId === 'AUTO') {
+              freshMatched = findMatchingKnowledgeDocument(plannerSubject, plannerClass, title);
+            } else if (plannerSelectedDocId === 'NONE') {
+              freshMatched = null;
+            } else {
+              const explicitDoc = knowledgeDocs.find(d => d.id === plannerSelectedDocId);
+              if (explicitDoc) {
+                freshMatched = {
+                  doc: explicitDoc,
+                  relevantSnippet: explicitDoc.content.slice(0, 1400),
+                  confidence: 100
+                };
+              }
+            }
             setPlannerMatchedDocResult(freshMatched);
 
             const pkg = generateComprehensiveLessonPlanPackage({
@@ -3155,6 +3173,96 @@ export default function UnifiedTeacherScheduleApp() {
                         placeholder={plannerStandard === 5512 ? 'Tivi tương tác, video mô phỏng, phần mềm Kahoot, phiếu học tập số...' : 'Máy tiện vạn năng T616, kính bảo hộ, quy trình 5S xưởng...'}
                         className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-blue-500"
                       />
+                    </div>
+
+                    {/* Mục lựa chọn tài liệu đối chiếu đưa vào AI */}
+                    <div className="bg-slate-900/90 border border-blue-500/30 rounded-xl p-3.5 space-y-2.5 shadow-inner">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <BookOpen className="w-4 h-4 text-blue-400" />
+                          <span className="text-xs font-bold text-white">
+                            Tài liệu đối chiếu AI (Kho tư liệu chuẩn):
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-blue-300/80">
+                          Chủ động chọn tài liệu để tránh nhầm giáo trình
+                        </span>
+                      </div>
+
+                      <select
+                        value={plannerSelectedDocId}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setPlannerSelectedDocId(val);
+                          if (val === 'AUTO') {
+                            const matched = findMatchingKnowledgeDocument(plannerSubject, plannerClass, plannerLessonTitle);
+                            setPlannerMatchedDocResult(matched);
+                          } else if (val === 'NONE') {
+                            setPlannerMatchedDocResult(null);
+                          } else {
+                            const found = knowledgeDocs.find(d => d.id === val);
+                            if (found) {
+                              setPlannerMatchedDocResult({
+                                doc: found,
+                                relevantSnippet: found.content.slice(0, 1400),
+                                confidence: 100
+                              });
+                            }
+                          }
+                        }}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+                      >
+                        <option value="AUTO">🤖 [Tự động] Nhận diện & so khớp thông minh theo Môn & Khối lớp</option>
+
+                        <optgroup label="Sách giáo viên & Giáo trình theo khối lớp">
+                          {knowledgeDocs
+                            .filter(d => d.isActive && (d.category === 'GIAO_TRINH' || d.category === 'DE_CUONG' || !d.isBuiltIn))
+                            .map(doc => (
+                              <option key={doc.id} value={doc.id}>
+                                📘 {doc.title} ({doc.targetLevel || 'Toàn trường'} • Môn: {doc.subject})
+                              </option>
+                            ))}
+                        </optgroup>
+
+                        <optgroup label="Văn bản quy chuẩn pháp quy & An toàn chung">
+                          {knowledgeDocs
+                            .filter(d => d.isActive && (d.category === 'PHAP_QUY' || d.category === 'ATLD_5S'))
+                            .map(doc => (
+                              <option key={doc.id} value={doc.id}>
+                                📜 [{doc.code}] {doc.title}
+                              </option>
+                            ))}
+                        </optgroup>
+
+                        <option value="NONE">🚫 Không dùng giáo trình (Chỉ căn cứ khung chuẩn CV 5512 thuần túy)</option>
+                      </select>
+
+                      {/* Huy hiệu hiển thị trạng thái đối chiếu thực tế */}
+                      <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-800">
+                        {plannerMatchedDocResult?.doc ? (
+                          <div className="flex items-center gap-1.5 text-emerald-400 font-medium">
+                            <span>✅ Căn cứ AI sử dụng:</span>
+                            <span className="font-semibold text-emerald-300 truncate max-w-[340px]" title={plannerMatchedDocResult.doc.title}>
+                              {plannerMatchedDocResult.doc.title}
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              ({plannerSelectedDocId === 'AUTO' ? `Khớp tự động ${plannerMatchedDocResult.confidence}%` : 'Chỉ định thủ công 100%'})
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="text-slate-400 flex items-center gap-1">
+                            <span>ℹ️ Căn cứ mặc định:</span>
+                            <span className="text-slate-300">Khung Kế hoạch bài dạy CV 5512/BGDĐT-GDTrH</span>
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setAiSubTab('knowledge')}
+                          className="text-blue-400 hover:text-blue-300 text-[11px] underline ml-2 whitespace-nowrap cursor-pointer"
+                        >
+                          Quản lý Kho tư liệu →
+                        </button>
+                      </div>
                     </div>
                   </div>
 

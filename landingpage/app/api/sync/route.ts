@@ -36,6 +36,9 @@ export interface CalendarEventPayload {
   notes?: string;
   colorHex?: string;
   dayOfWeek?: number;
+  attachmentName?: string;
+  attachmentUrl?: string;
+  attachmentContent?: string;
   updatedAt?: number;
 }
 

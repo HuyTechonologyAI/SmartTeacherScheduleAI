@@ -154,6 +154,7 @@ export interface CalendarEventItem {
   colorHex?: string;
   attachmentName?: string;
   attachmentUrl?: string;
+  attachmentContent?: string;
   updatedAt?: number;
 }
 
@@ -1670,17 +1671,83 @@ export default function UnifiedTeacherScheduleApp() {
       window.open(url, '_blank');
       return;
     }
-    // Open in rich document preview modal
+
+    // 1. Lấy nội dung thực tế của giáo án / tài liệu đã lưu
+    let realContent = ev.attachmentContent || '';
+
+    // 2. Tìm trong localStorage theo ID ca dạy hoặc tên tệp đính kèm
+    if (!realContent && typeof window !== 'undefined') {
+      try {
+        realContent = localStorage.getItem(`smart_teacher_ai_plan_${ev.id}`) ||
+                      localStorage.getItem(`smart_teacher_ai_plan_${ev.attachmentName}`) || '';
+      } catch (_) {}
+    }
+
+    // 3. Tìm trong kho tài liệu số hoá KnowledgeDocs
+    if (!realContent) {
+      const matchDoc = knowledgeDocs.find(d => 
+        d.fileName === ev.attachmentName || 
+        d.id === `event-att-${ev.id}` || 
+        d.id === `kb_giaoan_${ev.id}` ||
+        (ev.attachmentName && d.title && d.title.toLowerCase().includes(ev.attachmentName.toLowerCase().replace('.doc', '').replace('giaoan_5512_', '').replace(/_/g, ' ')))
+      );
+      if (matchDoc && matchDoc.content) {
+        realContent = matchDoc.content;
+      }
+    }
+
+    // 4. Nếu là file giáo án AI (CV 5512 / CV 2634) mà chưa có nội dung tĩnh, tự động phục dựng/sinh đầy đủ nội dung chuẩn Bộ GD&ĐT
+    if (!realContent && (ev.attachmentName.includes('5512') || ev.attachmentName.includes('2634') || ev.attachmentName.startsWith('GiaoAn_'))) {
+      // Làm sạch tên bài học, xử lý các ký tự diamond/replacement (e.g. "Công ngh\uFFFD\uFFFD\uFFFD" -> "Công nghệ")
+      const rawTitle = ev.notes || ev.title || 'Bài 1. Thiết kế và Công nghệ';
+      const cleanTitle = rawTitle
+        .replace(/[\uFFFD\?]+/g, 'ệ')
+        .replace(/^[^\w\s\u00C0-\u1EF9]+/, '')
+        .trim();
+
+      const is2634 = ev.attachmentName.includes('2634') || ev.sessionType === 'Thực hành';
+      if (is2634) {
+        const plan2634 = generateLessonPlan2634(
+          cleanTitle,
+          ev.subject || 'Công nghệ - Kỹ thuật',
+          ev.className || '10A1',
+          180
+        );
+        realContent = lessonPlan2634ToHtml(plan2634);
+      } else {
+        const plan5512 = generateLessonPlan5512(
+          cleanTitle,
+          ev.subject || 'Công nghệ',
+          ev.className || 'Khối 10',
+          45,
+          `Dạy học theo định hướng phát triển phẩm chất và năng lực học sinh, bám sát SGK Công nghệ 10 mới.`
+        );
+        realContent = lessonPlan5512ToHtml(plan5512);
+      }
+
+      // Lưu lại vào localStorage và cập nhật vào sự kiện để các lần sau mở siêu tốc
+      try {
+        localStorage.setItem(`smart_teacher_ai_plan_${ev.id}`, realContent);
+        localStorage.setItem(`smart_teacher_ai_plan_${ev.attachmentName}`, realContent);
+      } catch (_) {}
+    }
+
+    // Fallback nếu không có nội dung
+    if (!realContent) {
+      realContent = `KẾ HOẠCH BÀI DẠY & HỌC LIỆU\n\n• Tên bài giảng: ${ev.title}\n• Môn học: ${ev.subject}\n• Lớp giảng dạy: ${ev.className}\n• Thời gian: ${ev.date} (${ev.startTime || 'Ca dạy'} - ${ev.endTime || ''})\n• Phòng học: ${ev.room}\n• Tệp đính kèm: ${ev.attachmentName}\n\n${ev.notes ? `Ghi chú chuyên môn:\n${ev.notes}\n\n` : ''}Tài liệu này đã được lưu trữ và liên kết với lịch dạy của Thầy/Cô.`;
+    }
+
+    // Open in rich document preview modal (đã được đưa ra ngoài root nên sẽ hiển thị ở MỌI tab!)
     setKbViewingDoc({
       id: `event-att-${ev.id}`,
-      title: `Tài liệu tiết dạy: ${ev.title} - ${ev.className}`,
-      code: `LỊCH-${ev.startTime || 'CA'}`,
+      title: `Giáo án: ${ev.notes ? ev.notes.replace(/[\uFFFD\?]+/g, 'ệ') : ev.title} - Lớp ${ev.className}`,
+      code: `GA-${ev.className || '5512'}`,
       category: 'GIAO_TRINH',
       subject: ev.subject,
       targetLevel: ev.className,
-      content: `KẾ HOẠCH TIẾT DẠY & HỌC LIỆU\n\n• Tên bài giảng: ${ev.title}\n• Môn học: ${ev.subject}\n• Lớp giảng dạy: ${ev.className}\n• Thời gian: ${ev.date} (${ev.startTime || 'Ca dạy'} - ${ev.endTime || ''})\n• Phòng học: ${ev.room}\n• Tệp đính kèm: ${ev.attachmentName}\n\n${ev.notes ? `Ghi chú chuyên môn:\n${ev.notes}\n\n` : ''}Tài liệu này đã được lưu trữ và liên kết với lịch dạy của Thầy/Cô.`,
+      content: realContent,
       fileName: ev.attachmentName,
-      fileType: ev.attachmentName.split('.').pop()?.toLowerCase() || '',
+      fileType: ev.attachmentName.split('.').pop()?.toLowerCase() || 'doc',
       isActive: true,
       isBuiltIn: false,
       createdAt: new Date().toISOString(),
@@ -3481,12 +3548,21 @@ export default function UnifiedTeacherScheduleApp() {
                                 ? `GiaoAn_5512_${plannerResult5512.lessonTitle.slice(0, 25)}.doc`
                                 : `GiaoAn_2634_${plannerResult2634?.moduleTitle.slice(0, 25)}.doc`;
 
+                              const contentToSave = plannerFullPackage
+                                ? fullPackageToDocHtml(plannerFullPackage)
+                                : plannerResult5512
+                                ? lessonPlan5512ToHtml(plannerResult5512)
+                                : plannerResult2634
+                                ? lessonPlan2634ToHtml(plannerResult2634)
+                                : '';
+
                               const updated = events.map(ev => {
                                 if (ev.id === plannerSelectedEventId) {
                                   return {
                                     ...ev,
                                     attachmentName: docName,
                                     attachmentUrl: 'attached://lesson_plan_doc',
+                                    attachmentContent: contentToSave,
                                     updatedAt: Date.now()
                                   };
                                 }
@@ -3495,6 +3571,38 @@ export default function UnifiedTeacherScheduleApp() {
 
                               setEvents(updated);
                               localStorage.setItem('smart_teacher_events', JSON.stringify(updated));
+
+                              try {
+                                if (contentToSave) {
+                                  localStorage.setItem(`smart_teacher_ai_plan_${plannerSelectedEventId}`, contentToSave);
+                                  localStorage.setItem(`smart_teacher_ai_plan_${docName}`, contentToSave);
+                                }
+                              } catch (_) {}
+
+                              // Đồng bộ vào kho tài liệu số hóa
+                              if (contentToSave) {
+                                const targetEv = events.find(e => e.id === plannerSelectedEventId);
+                                const newKbDoc: KnowledgeDocument = {
+                                  id: `kb_giaoan_${plannerSelectedEventId}`,
+                                  code: `GA-${targetEv?.className || '5512'}`,
+                                  title: `Kế hoạch bài dạy: ${plannerResult5512?.lessonTitle || plannerResult2634?.moduleTitle || targetEv?.title || docName}`,
+                                  category: 'GIAO_TRINH',
+                                  subject: targetEv?.subject || plannerResult5512?.subject || 'Chung',
+                                  targetLevel: targetEv?.className || plannerResult5512?.grade || 'Phổ thông',
+                                  content: contentToSave,
+                                  fileName: docName,
+                                  fileSize: contentToSave.length,
+                                  fileType: 'doc',
+                                  isBuiltIn: false,
+                                  isActive: true,
+                                  createdAt: new Date().toISOString(),
+                                  updatedAt: Date.now()
+                                };
+                                const updatedDocs = [newKbDoc, ...knowledgeDocs.filter(d => d.id !== newKbDoc.id)];
+                                setKnowledgeDocs(updatedDocs);
+                                localStorage.setItem('smart_teacher_knowledge_docs_v2', JSON.stringify(updatedDocs));
+                              }
+
                               if (syncCode) pushToCloud(updated, schedules, syncCode);
                               alert(`Đã đính kèm '${docName}' trực tiếp vào ca dạy và tự động đồng bộ đám mây 2 chiều!`);
                             }}
@@ -4675,335 +4783,7 @@ export default function UnifiedTeacherScheduleApp() {
                     ))}
                 </div>
 
-                {/* Modal Xem Toàn Văn (Preview & Export Toolbar) */}
-                {kbViewingDoc && (
-                  <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-                    <div className={`bg-slate-900 border border-slate-700 rounded-2xl flex flex-col shadow-2xl transition-all ${kbPreviewFullScreen ? 'fixed inset-2 z-50 max-w-none max-h-none h-[calc(100vh-16px)]' : 'max-w-4xl w-full max-h-[90vh]'}`}>
-                      {/* Header */}
-                      <div className="p-4 sm:p-5 border-b border-slate-800 flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                            <span className="text-xs text-emerald-400 font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
-                              {kbViewingDoc.code}
-                            </span>
-                            <span className="text-xs text-slate-400">
-                              Môn: <strong className="text-slate-200">{kbViewingDoc.subject}</strong> • Cấp: <strong className="text-slate-200">{kbViewingDoc.targetLevel}</strong>
-                            </span>
-                            <span className="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">
-                              {kbViewingDoc.category === 'GIAO_TRINH' ? '📘 Giáo trình nghề' :
-                               kbViewingDoc.category === 'DE_CUONG' ? '📋 Đề cương môn học' :
-                               kbViewingDoc.category === 'PHAP_QUY' ? '🏛️ Văn bản pháp quy' :
-                               kbViewingDoc.category === 'ATLD_5S' ? '🛡️ Tiêu chuẩn ATLĐ & 5S' : '📄 Tư liệu'}
-                            </span>
-                          </div>
-                          <h3 className="text-base sm:text-lg font-bold text-white leading-snug">
-                            {kbViewingDoc.title}
-                          </h3>
-                          {kbViewingDoc.fileName && (
-                            <div className="flex items-center gap-2 mt-2 text-xs text-emerald-300 bg-emerald-500/10 px-2.5 py-1 rounded-lg w-fit border border-emerald-500/20">
-                              <Paperclip className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                              <span className="font-semibold">{kbViewingDoc.fileName}</span>
-                              {kbViewingDoc.fileSize ? (
-                                <span className="text-slate-400 text-[11px]">
-                                  ({(kbViewingDoc.fileSize / 1024).toFixed(0)} KB)
-                                </span>
-                              ) : null}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Actions: Zoom, Copy, Print, Fullscreen, Close */}
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {/* Zoom Controls */}
-                          <div className="hidden sm:flex items-center bg-slate-800/80 rounded-xl p-0.5 border border-slate-700/60">
-                            <button
-                              type="button"
-                              onClick={() => setKbPreviewZoom(z => Math.max(70, z - 15))}
-                              className="p-1 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white cursor-pointer"
-                              title="Thu nhỏ (-)"
-                            >
-                              <ZoomOut className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setKbPreviewZoom(100)}
-                              className="text-[11px] text-slate-300 font-mono px-1.5 hover:text-white cursor-pointer"
-                              title="Tỷ lệ 100%"
-                            >
-                              {kbPreviewZoom}%
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setKbPreviewZoom(z => Math.min(180, z + 15))}
-                              className="p-1 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white cursor-pointer"
-                              title="Phóng to (+)"
-                            >
-                              <ZoomIn className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-
-                          {/* Copy Text */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              navigator.clipboard.writeText(kbViewingDoc.content);
-                              setKbCopied(true);
-                              setTimeout(() => setKbCopied(false), 2000);
-                            }}
-                            className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 hover:text-white cursor-pointer flex items-center gap-1 text-xs"
-                            title="Sao chép toàn bộ văn bản"
-                          >
-                            {kbCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                            <span className="hidden md:inline text-[11px] font-medium">{kbCopied ? 'Đã chép' : 'Chép'}</span>
-                          </button>
-
-                          {/* Print */}
-                          <button
-                            type="button"
-                            onClick={() => window.print()}
-                            className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 hover:text-white cursor-pointer"
-                            title="In / Xuất PDF"
-                          >
-                            <Printer className="w-3.5 h-3.5" />
-                          </button>
-
-                          {/* Fullscreen Toggle */}
-                          <button
-                            type="button"
-                            onClick={() => setKbPreviewFullScreen(f => !f)}
-                            className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 hover:text-white cursor-pointer"
-                            title={kbPreviewFullScreen ? "Thu nhỏ cửa sổ" : "Phóng to toàn màn hình"}
-                          >
-                            {kbPreviewFullScreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-                          </button>
-
-                          {/* Close */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setKbViewingDoc(null);
-                              setKbPreviewFullScreen(false);
-                              setKbPreviewSearchTerm('');
-                            }}
-                            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer ml-0.5"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Content Preview: Hỗ trợ xem trực quan PDF hoặc xem toàn văn nội dung trích xuất */}
-                      {kbPreviewIsLoading ? (
-                        <div className="flex-1 flex flex-col items-center justify-center p-12 bg-slate-950/70 min-h-[450px]">
-                          <div className="w-10 h-10 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4" />
-                          <div className="text-sm font-semibold text-emerald-400">
-                            {kbPreviewStatusText || 'Đang xử lý tài liệu...'}
-                          </div>
-                          <div className="text-xs text-slate-400 mt-1">
-                            Hệ thống đang giải mã và trích xuất từng trang
-                          </div>
-                        </div>
-                      ) : kbViewingDoc.fileName?.toLowerCase().endsWith('.pdf') && kbPreviewPdfUrl && kbPreviewMode !== 'TEXT' ? (
-                        <div className="flex-1 flex flex-col p-4 bg-slate-950/70 overflow-hidden min-h-[550px]">
-                          <div className="flex items-center justify-between pb-2.5 mb-2 border-b border-slate-800 text-xs text-slate-300">
-                            <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
-                              <FileText className="w-4 h-4" />
-                              <span>Bản xem trước PDF trực quan nguyên bản gốc</span>
-                            </span>
-                            <div className="flex items-center gap-3">
-                              {kbPreviewPdfUrl && (
-                                <button
-                                  type="button"
-                                  onClick={() => window.open(kbPreviewPdfUrl, '_blank')}
-                                  className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-medium cursor-pointer"
-                                  title="Mở PDF trong tab mới của trình duyệt"
-                                >
-                                  <ExternalLink className="w-3.5 h-3.5" />
-                                  <span>Mở tab riêng</span>
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => setKbPreviewMode('TEXT')}
-                                className="text-xs text-blue-400 hover:text-blue-300 underline cursor-pointer font-medium"
-                              >
-                                Chuyển sang xem toàn văn trích xuất AI
-                              </button>
-                            </div>
-                          </div>
-                          <iframe
-                            src={kbPreviewPdfUrl}
-                            className="w-full flex-1 rounded-xl border border-slate-700 bg-white"
-                            style={{ minHeight: '520px' }}
-                            title={kbViewingDoc.title}
-                          />
-                        </div>
-                      ) : (
-                        <div className="p-5 overflow-y-auto flex-1 text-xs sm:text-sm text-slate-200 whitespace-pre-wrap leading-relaxed font-sans bg-slate-950/40">
-                          {/* Search inside doc bar */}
-                          <div className="mb-3 flex items-center gap-2 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800 shadow-inner">
-                            <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <input
-                              type="text"
-                              value={kbPreviewSearchTerm}
-                              onChange={(e) => setKbPreviewSearchTerm(e.target.value)}
-                              placeholder="Tìm kiếm từ khoá trong văn bản (ví dụ: 'Điều 1', 'Mục tiêu', 'Thời lượng')..."
-                              className="bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none flex-1 font-sans"
-                            />
-                            {kbPreviewSearchTerm && (
-                              <button
-                                type="button"
-                                onClick={() => setKbPreviewSearchTerm('')}
-                                className="text-slate-400 hover:text-white text-xs cursor-pointer"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-
-                          {/* Card nhắc nạp tệp nếu tài liệu cũ chưa có tệp đệm trong IndexedDB */}
-                          {!kbPreviewPdfUrl && kbViewingDoc.fileName?.toLowerCase().endsWith('.pdf') && (
-                            <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/5 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
-                                  <Upload className="w-5 h-5" />
-                                </div>
-                                <div>
-                                  <div className="text-xs font-bold text-amber-300">
-                                    Kích hoạt xem trực quan & Trích xuất toàn văn cho tài liệu này
-                                  </div>
-                                  <div className="text-[11px] text-slate-300">
-                                    Tài liệu này được lưu từ phiên bản trước. Thầy/Cô hãy chọn tệp <strong>{kbViewingDoc.fileName}</strong> một lần để nạp bộ nhớ đệm và hiển thị PDF trực quan!
-                                  </div>
-                                </div>
-                              </div>
-                              <label className="shrink-0 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md transition-all">
-                                <Paperclip className="w-3.5 h-3.5" />
-                                <span>Chọn tệp để xem ngay</span>
-                                <input
-                                  type="file"
-                                  className="hidden"
-                                  accept=".pdf,.docx,.doc,.txt"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) handleAttachFileToCurrentDoc(file, kbViewingDoc);
-                                  }}
-                                />
-                              </label>
-                            </div>
-                          )}
-
-                          {kbViewingDoc.fileName?.toLowerCase().endsWith('.pdf') && (
-                            <div className="mb-3 p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-between">
-                              <span className="text-xs text-blue-300 font-medium">Đang hiển thị toàn văn nội dung văn bản trích xuất cho AI</span>
-                              {kbPreviewPdfUrl && (
-                                <button
-                                  type="button"
-                                  onClick={() => setKbPreviewMode('AUTO')}
-                                  className="text-xs text-emerald-400 hover:text-emerald-300 underline cursor-pointer font-semibold"
-                                >
-                                  Chuyển sang xem PDF trực quan
-                                </button>
-                              )}
-                            </div>
-                          )}
-
-                          <div style={{ fontSize: `${kbPreviewZoom}%` }} className="leading-relaxed selection:bg-emerald-500/30">
-                            {kbPreviewSearchTerm.trim() ? (
-                              <div>
-                                <div className="mb-2.5 text-xs text-emerald-400 font-semibold border-b border-slate-800 pb-1.5 flex items-center justify-between">
-                                  <span>Đoạn trích chứa từ khoá: &quot;{kbPreviewSearchTerm}&quot;</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => setKbPreviewSearchTerm('')}
-                                    className="text-[11px] text-slate-400 hover:text-white underline cursor-pointer"
-                                  >
-                                    Xem toàn bộ văn bản
-                                  </button>
-                                </div>
-                                {kbViewingDoc.content
-                                  .split('\n')
-                                  .filter(line => line.toLowerCase().includes(kbPreviewSearchTerm.toLowerCase()))
-                                  .map((matchingLine, idx) => (
-                                    <div key={idx} className="p-2 mb-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-slate-100">
-                                      {matchingLine}
-                                    </div>
-                                  ))}
-                                {kbViewingDoc.content.toLowerCase().indexOf(kbPreviewSearchTerm.toLowerCase()) === -1 && (
-                                  <div className="text-xs text-slate-400 italic">Không tìm thấy đoạn văn nào chứa từ khóa này.</div>
-                                )}
-                              </div>
-                            ) : (
-                              kbViewingDoc.content
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Footer Toolbar: Download Original File (Tải đúng định dạng), Export Word, Export Text, Edit, Close */}
-                      <div className="p-3.5 border-t border-slate-800 flex items-center justify-between flex-wrap gap-2.5 bg-slate-900/90">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {kbViewingDoc.fileName ? (
-                            <button
-                              type="button"
-                              onClick={() => downloadOriginalUploadedFile(kbViewingDoc)}
-                              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-600/25 transition-all"
-                              title={`Tải về đúng file gốc ${kbViewingDoc.fileName} đã tải lên`}
-                            >
-                              <Download className="w-4 h-4" />
-                              <span>Tải về file gốc .{kbViewingDoc.fileName.split('.').pop()?.toUpperCase()}</span>
-                            </button>
-                          ) : null}
-
-                          <button
-                            type="button"
-                            onClick={() => exportKnowledgeDocToWord(kbViewingDoc)}
-                            className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-blue-600/20 transition-all"
-                            title="Xuất file Microsoft Word (.doc) có quốc hiệu, trích yếu sư phạm"
-                          >
-                            <FileText className="w-4 h-4" />
-                            <span>Xuất bản Word (.doc)</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => exportKnowledgeDocToTxt(kbViewingDoc)}
-                            className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
-                            title="Tải bản văn bản thô (.txt)"
-                          >
-                            <FileText className="w-4 h-4" />
-                            <span>Xuất Text (.txt)</span>
-                          </button>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              openKbEditModal(kbViewingDoc);
-                            }}
-                            className="px-3 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
-                            title="Cập nhật nội dung hoặc đính kèm tệp mới"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                            <span>Chỉnh sửa / Cập nhật</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => setKbViewingDoc(null)}
-                            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold cursor-pointer"
-                          >
-                            Đóng
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                
-                {/* Modal Chỉnh Sửa / Bổ Sung Tài Liệu */}
+                                {/* Modal Chỉnh Sửa / Bổ Sung Tài Liệu */}
                 {kbEditingDoc && (
                   <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
                     <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-2xl">
@@ -6637,6 +6417,353 @@ export default function UnifiedTeacherScheduleApp() {
       )}
 
     
+      {/* Modal Xem Toàn Văn (Preview & Export Toolbar) */}
+                {kbViewingDoc && (
+                  <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+                    <div className={`bg-slate-900 border border-slate-700 rounded-2xl flex flex-col shadow-2xl transition-all ${kbPreviewFullScreen ? 'fixed inset-2 z-50 max-w-none max-h-none h-[calc(100vh-16px)]' : 'max-w-4xl w-full max-h-[90vh]'}`}>
+                      {/* Header */}
+                      <div className="p-4 sm:p-5 border-b border-slate-800 flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                            <span className="text-xs text-emerald-400 font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                              {kbViewingDoc.code}
+                            </span>
+                            <span className="text-xs text-slate-400">
+                              Môn: <strong className="text-slate-200">{kbViewingDoc.subject}</strong> • Cấp: <strong className="text-slate-200">{kbViewingDoc.targetLevel}</strong>
+                            </span>
+                            <span className="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">
+                              {kbViewingDoc.category === 'GIAO_TRINH' ? '📘 Giáo trình nghề' :
+                               kbViewingDoc.category === 'DE_CUONG' ? '📋 Đề cương môn học' :
+                               kbViewingDoc.category === 'PHAP_QUY' ? '🏛️ Văn bản pháp quy' :
+                               kbViewingDoc.category === 'ATLD_5S' ? '🛡️ Tiêu chuẩn ATLĐ & 5S' : '📄 Tư liệu'}
+                            </span>
+                          </div>
+                          <h3 className="text-base sm:text-lg font-bold text-white leading-snug">
+                            {kbViewingDoc.title}
+                          </h3>
+                          {kbViewingDoc.fileName && (
+                            <div className="flex items-center gap-2 mt-2 text-xs text-emerald-300 bg-emerald-500/10 px-2.5 py-1 rounded-lg w-fit border border-emerald-500/20">
+                              <Paperclip className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                              <span className="font-semibold">{kbViewingDoc.fileName}</span>
+                              {kbViewingDoc.fileSize ? (
+                                <span className="text-slate-400 text-[11px]">
+                                  ({(kbViewingDoc.fileSize / 1024).toFixed(0)} KB)
+                                </span>
+                              ) : null}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Actions: Zoom, Copy, Print, Fullscreen, Close */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {/* Zoom Controls */}
+                          <div className="hidden sm:flex items-center bg-slate-800/80 rounded-xl p-0.5 border border-slate-700/60">
+                            <button
+                              type="button"
+                              onClick={() => setKbPreviewZoom(z => Math.max(70, z - 15))}
+                              className="p-1 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white cursor-pointer"
+                              title="Thu nhỏ (-)"
+                            >
+                              <ZoomOut className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setKbPreviewZoom(100)}
+                              className="text-[11px] text-slate-300 font-mono px-1.5 hover:text-white cursor-pointer"
+                              title="Tỷ lệ 100%"
+                            >
+                              {kbPreviewZoom}%
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setKbPreviewZoom(z => Math.min(180, z + 15))}
+                              className="p-1 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white cursor-pointer"
+                              title="Phóng to (+)"
+                            >
+                              <ZoomIn className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          {/* Copy Text */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(kbViewingDoc.content);
+                              setKbCopied(true);
+                              setTimeout(() => setKbCopied(false), 2000);
+                            }}
+                            className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 hover:text-white cursor-pointer flex items-center gap-1 text-xs"
+                            title="Sao chép toàn bộ văn bản"
+                          >
+                            {kbCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span className="hidden md:inline text-[11px] font-medium">{kbCopied ? 'Đã chép' : 'Chép'}</span>
+                          </button>
+
+                          {/* Print */}
+                          <button
+                            type="button"
+                            onClick={() => window.print()}
+                            className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 hover:text-white cursor-pointer"
+                            title="In / Xuất PDF"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Fullscreen Toggle */}
+                          <button
+                            type="button"
+                            onClick={() => setKbPreviewFullScreen(f => !f)}
+                            className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 hover:text-white cursor-pointer"
+                            title={kbPreviewFullScreen ? "Thu nhỏ cửa sổ" : "Phóng to toàn màn hình"}
+                          >
+                            {kbPreviewFullScreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                          </button>
+
+                          {/* Close */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setKbViewingDoc(null);
+                              setKbPreviewFullScreen(false);
+                              setKbPreviewSearchTerm('');
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer ml-0.5"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Content Preview: Hỗ trợ xem trực quan PDF hoặc xem toàn văn nội dung trích xuất */}
+                      {kbPreviewIsLoading ? (
+                        <div className="flex-1 flex flex-col items-center justify-center p-12 bg-slate-950/70 min-h-[450px]">
+                          <div className="w-10 h-10 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4" />
+                          <div className="text-sm font-semibold text-emerald-400">
+                            {kbPreviewStatusText || 'Đang xử lý tài liệu...'}
+                          </div>
+                          <div className="text-xs text-slate-400 mt-1">
+                            Hệ thống đang giải mã và trích xuất từng trang
+                          </div>
+                        </div>
+                      ) : kbViewingDoc.fileName?.toLowerCase().endsWith('.pdf') && kbPreviewPdfUrl && kbPreviewMode !== 'TEXT' ? (
+                        <div className="flex-1 flex flex-col p-4 bg-slate-950/70 overflow-hidden min-h-[550px]">
+                          <div className="flex items-center justify-between pb-2.5 mb-2 border-b border-slate-800 text-xs text-slate-300">
+                            <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+                              <FileText className="w-4 h-4" />
+                              <span>Bản xem trước PDF trực quan nguyên bản gốc</span>
+                            </span>
+                            <div className="flex items-center gap-3">
+                              {kbPreviewPdfUrl && (
+                                <button
+                                  type="button"
+                                  onClick={() => window.open(kbPreviewPdfUrl, '_blank')}
+                                  className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-medium cursor-pointer"
+                                  title="Mở PDF trong tab mới của trình duyệt"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                  <span>Mở tab riêng</span>
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setKbPreviewMode('TEXT')}
+                                className="text-xs text-blue-400 hover:text-blue-300 underline cursor-pointer font-medium"
+                              >
+                                Chuyển sang xem toàn văn trích xuất AI
+                              </button>
+                            </div>
+                          </div>
+                          <iframe
+                            src={kbPreviewPdfUrl}
+                            className="w-full flex-1 rounded-xl border border-slate-700 bg-white"
+                            style={{ minHeight: '520px' }}
+                            title={kbViewingDoc.title}
+                          />
+                        </div>
+                      ) : (
+                        <div className="p-5 overflow-y-auto flex-1 text-xs sm:text-sm text-slate-200 whitespace-pre-wrap leading-relaxed font-sans bg-slate-950/40">
+                          {/* Search inside doc bar */}
+                          <div className="mb-3 flex items-center gap-2 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800 shadow-inner">
+                            <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <input
+                              type="text"
+                              value={kbPreviewSearchTerm}
+                              onChange={(e) => setKbPreviewSearchTerm(e.target.value)}
+                              placeholder="Tìm kiếm từ khoá trong văn bản (ví dụ: 'Điều 1', 'Mục tiêu', 'Thời lượng')..."
+                              className="bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none flex-1 font-sans"
+                            />
+                            {kbPreviewSearchTerm && (
+                              <button
+                                type="button"
+                                onClick={() => setKbPreviewSearchTerm('')}
+                                className="text-slate-400 hover:text-white text-xs cursor-pointer"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Card nhắc nạp tệp nếu tài liệu cũ chưa có tệp đệm trong IndexedDB */}
+                          {!kbPreviewPdfUrl && kbViewingDoc.fileName?.toLowerCase().endsWith('.pdf') && (
+                            <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/5 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                                  <Upload className="w-5 h-5" />
+                                </div>
+                                <div>
+                                  <div className="text-xs font-bold text-amber-300">
+                                    Kích hoạt xem trực quan & Trích xuất toàn văn cho tài liệu này
+                                  </div>
+                                  <div className="text-[11px] text-slate-300">
+                                    Tài liệu này được lưu từ phiên bản trước. Thầy/Cô hãy chọn tệp <strong>{kbViewingDoc.fileName}</strong> một lần để nạp bộ nhớ đệm và hiển thị PDF trực quan!
+                                  </div>
+                                </div>
+                              </div>
+                              <label className="shrink-0 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md transition-all">
+                                <Paperclip className="w-3.5 h-3.5" />
+                                <span>Chọn tệp để xem ngay</span>
+                                <input
+                                  type="file"
+                                  className="hidden"
+                                  accept=".pdf,.docx,.doc,.txt"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleAttachFileToCurrentDoc(file, kbViewingDoc);
+                                  }}
+                                />
+                              </label>
+                            </div>
+                          )}
+
+                          {kbViewingDoc.fileName?.toLowerCase().endsWith('.pdf') && (
+                            <div className="mb-3 p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-between">
+                              <span className="text-xs text-blue-300 font-medium">Đang hiển thị toàn văn nội dung văn bản trích xuất cho AI</span>
+                              {kbPreviewPdfUrl && (
+                                <button
+                                  type="button"
+                                  onClick={() => setKbPreviewMode('AUTO')}
+                                  className="text-xs text-emerald-400 hover:text-emerald-300 underline cursor-pointer font-semibold"
+                                >
+                                  Chuyển sang xem PDF trực quan
+                                </button>
+                              )}
+                            </div>
+                          )}
+
+                          <div style={{ fontSize: `${kbPreviewZoom}%` }} className="leading-relaxed selection:bg-emerald-500/30">
+                            {kbPreviewSearchTerm.trim() ? (
+                              <div>
+                                <div className="mb-2.5 text-xs text-emerald-400 font-semibold border-b border-slate-800 pb-1.5 flex items-center justify-between">
+                                  <span>Đoạn trích chứa từ khoá: &quot;{kbPreviewSearchTerm}&quot;</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setKbPreviewSearchTerm('')}
+                                    className="text-[11px] text-slate-400 hover:text-white underline cursor-pointer"
+                                  >
+                                    Xem toàn bộ văn bản
+                                  </button>
+                                </div>
+                                {kbViewingDoc.content
+                                  .split('\n')
+                                  .filter(line => line.toLowerCase().includes(kbPreviewSearchTerm.toLowerCase()))
+                                  .map((matchingLine, idx) => (
+                                    <div key={idx} className="p-2 mb-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-slate-100">
+                                      {matchingLine}
+                                    </div>
+                                  ))}
+                                {kbViewingDoc.content.toLowerCase().indexOf(kbPreviewSearchTerm.toLowerCase()) === -1 && (
+                                  <div className="text-xs text-slate-400 italic">Không tìm thấy đoạn văn nào chứa từ khóa này.</div>
+                                )}
+                              </div>
+                            ) : kbViewingDoc.content && (kbViewingDoc.content.includes('<table') || kbViewingDoc.content.includes('<html') || kbViewingDoc.content.includes('<div') || kbViewingDoc.content.includes('<!DOCTYPE')) ? (
+                              <div
+                                className="bg-white text-slate-900 p-6 rounded-xl overflow-x-auto shadow-inner font-sans selection:bg-blue-100"
+                                dangerouslySetInnerHTML={{ __html: kbViewingDoc.content }}
+                              />
+                            ) : (
+                              kbViewingDoc.content
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Footer Toolbar: Download Original File (Tải đúng định dạng), Export Word, Export Text, Edit, Close */}
+                      <div className="p-3.5 border-t border-slate-800 flex items-center justify-between flex-wrap gap-2.5 bg-slate-900/90">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {kbViewingDoc.fileName ? (
+                            <button
+                              type="button"
+                              onClick={() => downloadOriginalUploadedFile(kbViewingDoc)}
+                              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-600/25 transition-all"
+                              title={`Tải về đúng file gốc ${kbViewingDoc.fileName} đã tải lên`}
+                            >
+                              <Download className="w-4 h-4" />
+                              <span>Tải về file gốc .{kbViewingDoc.fileName.split('.').pop()?.toUpperCase()}</span>
+                            </button>
+                          ) : null}
+
+                                                    <button
+                            type="button"
+                            onClick={() => {
+                              downloadWordDoc(kbViewingDoc.fileName || `${kbViewingDoc.title}.doc`, kbViewingDoc.content);
+                            }}
+                            className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-blue-600/25 transition-all"
+                            title="Tải giáo án chuẩn Microsoft Word (.doc)"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>Tải Word (.doc)</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => exportKnowledgeDocToWord(kbViewingDoc)}
+                            className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-blue-600/20 transition-all"
+                            title="Xuất file Microsoft Word (.doc) có quốc hiệu, trích yếu sư phạm"
+                          >
+                            <FileText className="w-4 h-4" />
+                            <span>Xuất bản Word (.doc)</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => exportKnowledgeDocToTxt(kbViewingDoc)}
+                            className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+                            title="Tải bản văn bản thô (.txt)"
+                          >
+                            <FileText className="w-4 h-4" />
+                            <span>Xuất Text (.txt)</span>
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              openKbEditModal(kbViewingDoc);
+                            }}
+                            className="px-3 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+                            title="Cập nhật nội dung hoặc đính kèm tệp mới"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                            <span>Chỉnh sửa / Cập nhật</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setKbViewingDoc(null)}
+                            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold cursor-pointer"
+                          >
+                            Đóng
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                
+
+
       {/* Cloud Sync Security & Pairing Modal */}
       <SyncSecurityModal
         isOpen={showSyncModal}

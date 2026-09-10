@@ -278,70 +278,6 @@ II. NGUYÊN TẮC BIÊN SOẠN BỘ ĐỀ KIỂM TRA CHUẨN SƯ PHẠM:
     isBuiltIn: true,
     isActive: true,
     createdAt: '2026-09-01T00:00:00Z'
-  },
-  {
-    id: 'builtin-sgv-cn10',
-    code: 'SGV-CN10-GDPT',
-    title: 'SGV - Công nghệ 10 - Công nghệ và Đời sống (Thiết kế và Công nghệ - GDPT 2018)',
-    category: 'GIAO_TRINH',
-    subject: 'Công nghệ',
-    targetLevel: 'Lớp 10',
-    content: `SÁCH GIÁO VIÊN CÔNG NGHỆ 10 - THIẾT KẾ VÀ CÔNG NGHỆ (CHƯƠNG TRÌNH GDPT 2018)
-BỘ GIÁO DỤC VÀ ĐÀO TẠO
-
-CHƯƠNG I: KHÁI QUÁT VỀ CÔNG NGHỆ
-BÀI 1: CÔNG NGHỆ VÀ ĐỜI SỐNG (Thời lượng: 2 tiết)
-
-I. MỤC TIÊU BÀI HỌC (THEO CHUẨN CÔNG VĂN 5512):
-1. Kiến thức:
-- Nêu được khái niệm khoa học, kỹ thuật, công nghệ và phân tích được mối quan hệ biện chứng giữa chúng.
-- Trình bày và làm rõ vai trò, tác động đa diện của công nghệ đối với đời sống con người, sự phát triển kinh tế, xã hội và bảo vệ môi trường.
-- Nhận biết và kể tên được một số lĩnh vực công nghệ phổ biến trong đời sống và sản xuất hiện đại (công nghệ cơ khí, điện - điện tử, công nghệ thông tin và truyền thông, tự động hóa, công nghệ sinh học, công nghệ vật liệu mới).
-
-2. Năng lực:
-- Năng lực nhận thức công nghệ: Phân biệt chính xác khoa học, kỹ thuật và công nghệ thông qua các ví dụ trực quan trong thực tiễn đời sống.
-- Năng lực giao tiếp công nghệ: Sử dụng đúng thuật ngữ công nghệ khi thảo luận nhóm, đặt câu hỏi và trình bày báo cáo trước tập thể lớp.
-- Năng lực sử dụng công nghệ: Nhận thức mặt tích cực và tác động tiêu cực tiềm ẩn của công nghệ; có thói quen lựa chọn, sử dụng sản phẩm công nghệ an toàn, tiết kiệm điện năng.
-- Năng lực số: Vận dụng công cụ tìm kiếm trên mạng để tra cứu tư liệu, hình ảnh về các thành tựu công nghệ tiêu biểu làm thay đổi thế giới.
-
-3. Phẩm chất:
-- Chăm chỉ: Tích cực nghiên cứu SGK, chủ động chuẩn bị bài và tìm tòi khám phá tri thức mới.
-- Trách nhiệm: Có ý thức sử dụng công nghệ an toàn, tiết kiệm và thân thiện với môi trường sinh thái; không phụ thuộc thụ động vào các thiết bị số.
-- Nhân ái: Lắng nghe, tôn trọng và hỗ trợ bạn bè trong các hoạt động học tập hợp tác nhóm.
-
-II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU SỐ:
-- Giáo viên: Kế hoạch bài dạy, slide trình chiếu đa phương tiện (PowerPoint/Canva), video ngắn giới thiệu về các cuộc cách mạng công nghiệp, hình ảnh so sánh cuộc sống xưa và nay; phiếu học tập số 1 (Phân biệt Khoa học - Kỹ thuật - Công nghệ) và phiếu số 2 (Tác động của công nghệ).
-- Học sinh: SGK Công nghệ 10 (Kết nối tri thức / Cánh diều), vở ghi, dụng cụ học tập, thiết bị thông minh tra cứu khi được giáo viên cho phép.
-
-III. TIẾN TRÌNH DẠY HỌC (4 HOẠT ĐỘNG SƯ PHẠM CHUẨN CV 5512):
-1. Hoạt động 1: Mở đầu / Khởi động (Xác định vấn đề)
-- Mục tiêu: Tạo tình huống nhận thức khơi gợi hứng thú tìm hiểu vai trò của công nghệ trong cuộc sống.
-- Nội dung: Giáo viên chiếu hình ảnh so sánh cuộc sống thời nguyên thủy với cuộc sống hiện đại thời 4.0; đặt câu hỏi: "Yếu tố nào đóng vai trò then chốt tạo nên bước nhảy vọt đó?".
-- Sản phẩm: Ý kiến phát biểu hào hứng của học sinh về sự xuất hiện của các công cụ, máy móc và công nghệ số.
-- Tổ chức thực hiện: GV chuyển giao nhiệm vụ -> HS suy nghĩ cá nhân trong 1 phút -> Đại diện phát biểu -> GV tổng hợp và dẫn dắt vào bài mới Bài 1.
-
-2. Hoạt động 2: Hình thành kiến thức mới (Khám phá và giải quyết nhiệm vụ)
-- Nhiệm vụ 2.1: Phân biệt khoa học, kỹ thuật, công nghệ và mối quan hệ giữa chúng.
-  + Khoa học: Hệ thống tri thức về bản chất và quy luật vận động của tự nhiên, xã hội và tư duy.
-  + Kỹ thuật: Ứng dụng tri thức khoa học để thiết kế, chế tạo công trình, máy móc phục vụ đời sống.
-  + Công nghệ: Giải pháp, quy trình và thiết bị kỹ thuật nhằm biến đổi nguyên liệu/thông tin thành sản phẩm hữu ích.
-  + Mối quan hệ: Khoa học là nền móng cho kỹ thuật và công nghệ; công nghệ tạo ra công cụ hiện đại giúp khoa học phát hiện quy luật mới.
-- Nhiệm vụ 2.2: Vai trò và tác động của công nghệ đối với đời sống, kinh tế và môi trường.
-  + Tác động tích cực: Tăng năng suất lao động, nâng cao chất lượng cuộc sống, mở rộng kết nối tri thức toàn cầu.
-  + Tác động tiêu cực cần phòng tránh: Cạn kiệt tài nguyên, ô nhiễm môi trường, nguy cơ lệ thuộc thế giới ảo và mất an toàn thông tin cá nhân.
-
-3. Hoạt động 3: Luyện tập
-- Mục tiêu: Khắc sâu kiến thức đã học, rèn luyện tư duy phân loại và liên hệ thực tế.
-- Nội dung: Học sinh hoàn thành bài tập phân loại các thành tựu (kính viễn vọng, định luật vạn vật hấp dẫn, điện thoại thông minh, quy trình sản xuất vắc-xin) thuộc phạm trù Khoa học, Kỹ thuật hay Công nghệ.
-- Sản phẩm: Phiếu học tập cá nhân đã hoàn thành lời giải chính xác.
-
-4. Hoạt động 4: Vận dụng
-- Mục tiêu: Giúp học sinh liên hệ tri thức công nghệ vào sinh hoạt gia đình và định hướng sử dụng công nghệ có trách nhiệm.
-- Nội dung: Nhiệm vụ về nhà: "Hãy khảo sát các thiết bị công nghệ tiêu thụ điện trong gia đình em và đề xuất 3 giải pháp công nghệ giúp tiết kiệm năng lượng và giảm thiểu rác thải điện tử".
-- Sản phẩm: Báo cáo khảo sát ngắn (1 trang A4) nộp vào tiết học tiếp theo.`,
-    isBuiltIn: true,
-    isActive: true,
-    createdAt: '2026-09-01T00:00:00Z'
   }
 ];
 
@@ -355,7 +291,16 @@ export function isDocBlacklisted(doc: { id?: string; code?: string; title?: stri
   const code = (doc.code || '').toLowerCase();
   const id = (doc.id || '').toLowerCase();
   const title = (doc.title || '').toLowerCase();
-  if (fn.includes('giao_trinh_cn10') || code.includes('gt-cn10') || id.includes('custom_7') || title.includes('công nghệ 10 (chuẩn mô đun')) {
+  if (
+    fn.includes('giao_trinh_cn10') ||
+    code.includes('gt-cn10') ||
+    code.includes('sgv-cn10-gdpt') ||
+    code.includes('sgv_cn10_gdpt') ||
+    id.includes('custom_7') ||
+    id.includes('builtin-sgv-cn10') ||
+    title.includes('công nghệ 10 (chuẩn mô đun') ||
+    title.includes('sgv - công nghệ 10 - công nghệ và đời sống')
+  ) {
     return true;
   }
   return false;
@@ -372,7 +317,6 @@ export function getCanonicalBuiltinId(doc: { id?: string; code?: string; title?:
   if (id === 'builtin-cv-2634' || code.includes('2634') || title.includes('2634')) return 'builtin-cv-2634';
   if (id === 'builtin-tt-22' || code.includes('tt_22') || code.includes('tt 22') || id.includes('tt-22') || title.includes('thông tư 22')) return 'builtin-tt-22';
   if (id === 'builtin-atld-5s' || code.includes('5s') || code.includes('atld') || title.includes('5s') || title.includes('an toàn lao động')) return 'builtin-atld-5s';
-  if (id === 'builtin-sgv-cn10' || code.includes('sgv-cn10') || title.includes('công nghệ 10 - công nghệ và đời sống')) return 'builtin-sgv-cn10';
   return null;
 }
 
@@ -384,9 +328,12 @@ export function getDeletedKnowledgeDocKeys(): string[] {
     if (!keys.includes('custom_7')) keys.push('custom_7');
     if (!keys.includes('gt-cn10')) keys.push('gt-cn10');
     if (!keys.includes('giao_trinh_cn10.docx')) keys.push('giao_trinh_cn10.docx');
+    if (!keys.includes('builtin-sgv-cn10')) keys.push('builtin-sgv-cn10');
+    if (!keys.includes('sgv-cn10-gdpt')) keys.push('sgv-cn10-gdpt');
+    if (!keys.includes('sgv_cn10_gdpt')) keys.push('sgv_cn10_gdpt');
     return keys;
   } catch (e) {
-    return ['custom_7', 'gt-cn10', 'giao_trinh_cn10.docx'];
+    return ['custom_7', 'gt-cn10', 'giao_trinh_cn10.docx', 'builtin-sgv-cn10', 'sgv-cn10-gdpt', 'sgv_cn10_gdpt'];
   }
 }
 

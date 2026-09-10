@@ -54,6 +54,23 @@ fun AIKnowledgeBaseScreen(
     var documentToDelete by remember { mutableStateOf<KnowledgeDocumentEntity?>(null) }
     var documentToEdit by remember { mutableStateOf<KnowledgeDocumentEntity?>(null) }
 
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            val docs = knowledgeDao.getAllDocumentsList()
+            val blacklisted = docs.filter {
+                it.code.contains("sgv_cn10_gdpt", ignoreCase = true) ||
+                it.code.contains("sgv-cn10-gdpt", ignoreCase = true) ||
+                it.code.contains("gt-cn10", ignoreCase = true) ||
+                it.fileName.contains("giao_trinh_cn10", ignoreCase = true) ||
+                it.title.contains("sgv - công nghệ 10 - công nghệ và đời sống", ignoreCase = true) ||
+                it.title.contains("công nghệ 10 (chuẩn mô đun", ignoreCase = true)
+            }
+            for (b in blacklisted) {
+                knowledgeDao.deleteDocument(b)
+            }
+        }
+    }
+
     val filteredList = remember(allDocuments, selectedFilter, searchQuery) {
         allDocuments.filter { doc ->
             val matchFilter = when (selectedFilter) {

@@ -292,62 +292,6 @@ object DefaultKnowledgeBase {
                 isActive = true,
                 createdAt = now,
                 updatedAt = now
-            ),
-
-            KnowledgeDocumentEntity(
-                code = "SGV_CN10_GDPT",
-                title = "SGV - Công nghệ 10 - Công nghệ và Đời sống (GDPT 2018)",
-                category = KnowledgeDocumentEntity.CAT_GIAO_TRINH,
-                subject = "Công nghệ",
-                targetLevel = "Lớp 10",
-                summary = "Sách giáo viên Công nghệ 10 - Chương I Khái quát về công nghệ: Bài 1 Công nghệ và đời sống (Khái niệm KH-KT-CN, vai trò và tác động của công nghệ).",
-                content = """
-                    SÁCH GIÁO VIÊN CÔNG NGHỆ 10 - THIẾT KẾ VÀ CÔNG NGHỆ (CHƯƠNG TRÌNH GDPT 2018)
-                    BỘ GIÁO DỤC VÀ ĐÀO TẠO
-                    
-                    CHƯƠNG I: KHÁI QUÁT VỀ CÔNG NGHỆ
-                    BÀI 1: CÔNG NGHỆ VÀ ĐỜI SỐNG (Thời lượng: 2 tiết)
-                    
-                    I. MỤC TIÊU BÀI HỌC (CHUẨN CV 5512):
-                    1. Kiến thức:
-                    - Nêu được khái niệm khoa học, kỹ thuật, công nghệ và phân tích được mối quan hệ biện chứng giữa chúng.
-                    - Trình bày và làm rõ vai trò, tác động đa diện của công nghệ đối với đời sống con người, sự phát triển kinh tế, xã hội và bảo vệ môi trường.
-                    - Nhận biết và kể tên được một số lĩnh vực công nghệ phổ biến trong đời sống và sản xuất hiện đại (công nghệ cơ khí, điện - điện tử, công nghệ thông tin và truyền thông, tự động hóa, công nghệ sinh học).
-                    
-                    2. Năng lực:
-                    - Năng lực nhận thức công nghệ: Phân biệt chính xác khoa học, kỹ thuật và công nghệ thông qua các ví dụ trực quan trong thực tiễn đời sống.
-                    - Năng lực giao tiếp công nghệ: Sử dụng đúng thuật ngữ công nghệ khi thảo luận nhóm và trình bày báo cáo.
-                    - Năng lực sử dụng công nghệ: Nhận thức mặt tích cực và tác động tiêu cực tiềm ẩn của công nghệ; có thói quen lựa chọn sản phẩm an toàn, tiết kiệm điện năng.
-                    - Năng lực số: Vận dụng công cụ tìm kiếm trên mạng để tra cứu tư liệu, hình ảnh về các thành tựu công nghệ tiêu biểu làm thay đổi thế giới.
-                    
-                    3. Phẩm chất:
-                    - Chăm chỉ: Tích cực nghiên cứu SGK, chủ động chuẩn bị bài và tìm tòi khám phá tri thức mới.
-                    - Trách nhiệm: Có ý thức sử dụng công nghệ an toàn, tiết kiệm và thân thiện với môi trường.
-                    
-                    II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU SỐ:
-                    - Giáo viên: Kế hoạch bài dạy, slide trình chiếu đa phương tiện (PowerPoint), video ngắn giới thiệu về các cuộc cách mạng công nghiệp; phiếu học tập số 1 và số 2.
-                    - Học sinh: SGK Công nghệ 10, vở ghi, dụng cụ học tập.
-                    
-                    III. TIẾN TRÌNH DẠY HỌC (4 HOẠT ĐỘNG CHUẨN CV 5512):
-                    1. Hoạt động 1: Mở đầu / Khởi động (Xác định vấn đề)
-                    - Mục tiêu: Tạo tình huống nhận thức khơi gợi hứng thú tìm hiểu vai trò của công nghệ trong cuộc sống.
-                    - Nội dung: Chiếu hình ảnh so sánh cuộc sống xưa và nay; đặt câu hỏi gợi mở về vai trò của máy móc và công nghệ.
-                    
-                    2. Hoạt động 2: Hình thành kiến thức mới
-                    - Khái niệm: Khoa học là hệ thống tri thức về tự nhiên, xã hội; Kỹ thuật là ứng dụng tri thức khoa học để thiết kế công trình, máy móc; Công nghệ là giải pháp, quy trình và thiết bị kỹ thuật để tạo ra sản phẩm.
-                    - Mối quan hệ: Khoa học là nền tảng cho kỹ thuật và công nghệ; công nghệ tạo ra công cụ hỗ trợ khoa học.
-                    - Vai trò: Tăng năng suất lao động, nâng cao chất lượng cuộc sống, thúc đẩy kinh tế.
-                    
-                    3. Hoạt động 3: Luyện tập
-                    - Bài tập phân biệt các hiện tượng thuộc Khoa học, Kỹ thuật hay Công nghệ.
-                    
-                    4. Hoạt động 4: Vận dụng
-                    - Khảo sát các thiết bị công nghệ tiêu thụ điện trong gia đình và đề xuất giải pháp sử dụng tiết kiệm năng lượng.
-                """.trimIndent(),
-                isBuiltIn = true,
-                isActive = true,
-                createdAt = now,
-                updatedAt = now
             )
         )
     }

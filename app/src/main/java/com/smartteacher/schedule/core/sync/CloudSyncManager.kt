@@ -570,11 +570,14 @@ object CloudSyncManager {
             // 3. Cập nhật tài liệu giáo trình, đề cương và văn bản chuẩn (knowledge_documents)
             var currentDocs = db.knowledgeDocumentDao().getAllDocumentsList()
 
-            // A. Purge any blacklisted documents (e.g. Giao_trinh_CN10.docx)
+            // A. Purge any blacklisted documents (e.g. Giao_trinh_CN10.docx, SGV_CN10_GDPT)
             val blacklistedDocs = currentDocs.filter {
                 it.fileName.contains("giao_trinh_cn10", ignoreCase = true) ||
                 it.code.contains("gt-cn10", ignoreCase = true) ||
-                it.title.contains("công nghệ 10 (chuẩn mô đun", ignoreCase = true)
+                it.code.contains("sgv_cn10_gdpt", ignoreCase = true) ||
+                it.code.contains("sgv-cn10-gdpt", ignoreCase = true) ||
+                it.title.contains("công nghệ 10 (chuẩn mô đun", ignoreCase = true) ||
+                it.title.contains("sgv - công nghệ 10 - công nghệ và đời sống", ignoreCase = true)
             }
             for (b in blacklistedDocs) {
                 db.knowledgeDocumentDao().deleteDocument(b)

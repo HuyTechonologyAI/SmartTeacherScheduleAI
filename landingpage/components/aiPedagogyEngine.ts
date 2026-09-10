@@ -150,46 +150,243 @@ export function answerKnowledgeBaseQuery(
 }
 
 // ----------------------------------------------------------------------------
-// 2. TẠO ĐỀ THI & MA TRẬN CHUẨN THÔNG TƯ 22/2021/TT-BGDĐT
+// HỆ THỐNG PHÂN LOẠI MÔN HỌC & CHỦ ĐỀ SƯ PHẠM ĐỘNG (SUBJECT INTEL DETECTOR)
+// ----------------------------------------------------------------------------
+export interface DetectedSubjectInfo {
+  subject: string;
+  grade: string;
+  topic: string;
+  category: 'MATH' | 'LITERATURE' | 'ENGLISH' | 'NATURAL_SCIENCES' | 'SOCIAL_SCIENCES' | 'INFORMATICS' | 'TECHNOLOGY' | 'CIVIC' | 'GENERAL';
+}
+
+export function detectSubjectAndTopic(query: string, fallbackSubject: string = '', fallbackGrade: string = '10'): DetectedSubjectInfo {
+  const lower = (query + ' ' + fallbackSubject).toLowerCase();
+
+  const gradeMatch = lower.match(/\b(?:lớp|khối|grade)?\s*([1-9]|1[0-2])\b/);
+  const grade = gradeMatch ? gradeMatch[1] : (fallbackGrade || '10');
+
+  let cleanTopic = query
+    .replace(/(?:tạo|hãy tạo|soạn|lập|làm|viết|cho tôi|giúp tôi|hướng dẫn|đề thi|ma trận|slide|thuyết trình|mini game|game|trò chơi|sơ đồ tư duy|mindmap|hình ảnh|minh họa|vẽ|tra cứu)\b/gi, '')
+    .replace(/(?:môn|khối|lớp)?\s*(?:10|11|12|[1-9])\b/gi, '')
+    .trim();
+
+  if (lower.includes('toán') || lower.includes('đại số') || lower.includes('hình học') || lower.includes('giải tích') || lower.includes('xác suất') || lower.includes('thống kê') || lower.includes('hàm số') || lower.includes('vectơ') || lower.includes('phương trình')) {
+    cleanTopic = cleanTopic.replace(/toán(?: học)?/gi, '').trim() || 'Hàm số & Phương trình';
+    return { subject: 'Toán học', grade, topic: cleanTopic, category: 'MATH' };
+  }
+
+  if (lower.includes('văn') || lower.includes('ngữ văn') || lower.includes('tiếng việt') || lower.includes('thơ') || lower.includes('truyện') || lower.includes('nghị luận') || lower.includes('đọc hiểu') || lower.includes('tác phẩm')) {
+    cleanTopic = cleanTopic.replace(/ngữ văn|văn/gi, '').trim() || 'Đọc hiểu văn bản & Nghị luận';
+    return { subject: 'Ngữ văn', grade, topic: cleanTopic, category: 'LITERATURE' };
+  }
+
+  if (lower.includes('tiếng anh') || lower.includes('tieng anh') || lower.includes('english') || lower.includes('grammar') || lower.includes('vocabulary') || lower.includes('ngoại ngữ')) {
+    cleanTopic = cleanTopic.replace(/tiếng anh|tieng anh|english|ngoại ngữ/gi, '').trim() || 'English Grammar & Vocabulary';
+    return { subject: 'Tiếng Anh', grade, topic: cleanTopic, category: 'ENGLISH' };
+  }
+
+  if (lower.includes('vật lý') || lower.includes('vật lí') || lower.includes('physics') || lower.includes('động lực học') || lower.includes('điện từ') || lower.includes('quang học')) {
+    cleanTopic = cleanTopic.replace(/vật lý|vật lí/gi, '').trim() || 'Chuyển động & Lực tương tác';
+    return { subject: 'Vật lý', grade, topic: cleanTopic, category: 'NATURAL_SCIENCES' };
+  }
+
+  if (lower.includes('hóa học') || lower.includes('hoá học') || lower.includes('chemistry') || lower.includes('nguyên tử') || lower.includes('phản ứng') || lower.includes('axit') || lower.includes('bazơ')) {
+    cleanTopic = cleanTopic.replace(/hóa học|hoá học/gi, '').trim() || 'Cấu tạo chất & Phản ứng hóa học';
+    return { subject: 'Hóa học', grade, topic: cleanTopic, category: 'NATURAL_SCIENCES' };
+  }
+
+  if (lower.includes('sinh học') || lower.includes('biology') || lower.includes('tế bào') || lower.includes('di truyền') || lower.includes('quang hợp') || lower.includes('adn')) {
+    cleanTopic = cleanTopic.replace(/sinh học/gi, '').trim() || 'Sinh học tế bào & Di truyền học';
+    return { subject: 'Sinh học', grade, topic: cleanTopic, category: 'NATURAL_SCIENCES' };
+  }
+
+  if (lower.includes('khoa học tự nhiên') || lower.includes('khtn')) {
+    cleanTopic = cleanTopic.replace(/khoa học tự nhiên|khtn/gi, '').trim() || 'Khoa học tự nhiên ứng dụng';
+    return { subject: 'Khoa học tự nhiên', grade, topic: cleanTopic, category: 'NATURAL_SCIENCES' };
+  }
+
+  if (lower.includes('lịch sử') || lower.includes('history') || lower.includes('chiến tranh') || lower.includes('cách mạng') || lower.includes('kháng chiến')) {
+    cleanTopic = cleanTopic.replace(/lịch sử/gi, '').trim() || 'Lịch sử Việt Nam và Thế giới';
+    return { subject: 'Lịch sử', grade, topic: cleanTopic, category: 'SOCIAL_SCIENCES' };
+  }
+
+  if (lower.includes('địa lý') || lower.includes('địa lí') || lower.includes('geography') || lower.includes('khí hậu') || lower.includes('dân số') || lower.includes('kinh tế vùng')) {
+    cleanTopic = cleanTopic.replace(/địa lý|địa lí/gi, '').trim() || 'Địa lý tự nhiên và Kinh tế - Xã hội';
+    return { subject: 'Địa lý', grade, topic: cleanTopic, category: 'SOCIAL_SCIENCES' };
+  }
+
+  if (lower.includes('tin học') || lower.includes('lập trình') || lower.includes('python') || lower.includes('thuật toán') || lower.includes('cơ sở dữ liệu')) {
+    cleanTopic = cleanTopic.replace(/tin học/gi, '').trim() || 'Thuật toán & Lập trình ứng dụng';
+    return { subject: 'Tin học', grade, topic: cleanTopic, category: 'INFORMATICS' };
+  }
+
+  if (lower.includes('công dân') || lower.includes('gdcd') || lower.includes('kinh tế & pháp luật') || lower.includes('ktpl') || lower.includes('pháp luật')) {
+    cleanTopic = cleanTopic.replace(/giáo dục công dân|gdcd|ktpl/gi, '').trim() || 'Pháp luật và Trách nhiệm công dân';
+    return { subject: 'Giáo dục công dân', grade, topic: cleanTopic, category: 'CIVIC' };
+  }
+
+  if (lower.includes('công nghệ') || lower.includes('cơ khí') || lower.includes('tiện') || lower.includes('phay') || lower.includes('5s') || lower.includes('xưởng') || lower.includes('kỹ thuật')) {
+    cleanTopic = cleanTopic.replace(/công nghệ/gi, '').trim() || 'Thiết kế kỹ thuật & Công nghệ';
+    return { subject: 'Công nghệ', grade, topic: cleanTopic, category: 'TECHNOLOGY' };
+  }
+
+  const subj = fallbackSubject.trim() || 'Môn học phổ thông';
+  cleanTopic = cleanTopic || 'Kiến thức bài học trọng tâm';
+  return { subject: subj, grade, topic: cleanTopic, category: 'GENERAL' };
+}
+
+// ----------------------------------------------------------------------------
+// 2. TẠO ĐỀ THI & MA TRẬN CHUẨN THÔNG TƯ 22/2021/TT-BGDĐT (ĐA MÔN HỌC)
 // ----------------------------------------------------------------------------
 export function generateExamAndMatrixPackage(
   topicOrSubject: string = 'Công nghệ 10',
   grade: string = '10',
   questionCount: number = 10
 ): AiPedagogyResponse {
-  const cleanTopic = topicOrSubject.replace(/đề thi|ma trận|tạo|cho tôi/gi, '').trim() || 'Công nghệ Cơ khí & Thiết kế Kỹ thuật';
+  const info = detectSubjectAndTopic(topicOrSubject, '', grade);
+  const detectedSubj = info.subject;
+  const detectedGrade = info.grade;
+  const cleanTopic = info.topic;
+  const category = info.category;
 
-  // 4 mức độ: 40% Nhận biết, 30% Thông hiểu, 20% Vận dụng, 10% Vận dụng cao
   const nbCount = Math.max(1, Math.round(questionCount * 0.4));
   const thCount = Math.max(1, Math.round(questionCount * 0.3));
   const vdCount = Math.max(1, Math.round(questionCount * 0.2));
   const vdcCount = Math.max(1, questionCount - nbCount - thCount - vdCount);
 
+  let sampleQuestions = '';
+  if (category === 'MATH') {
+    sampleQuestions = `**PHẦN 1: TRẮC NGHIỆM KHÁCH QUAN (${(nbCount + thCount) * 0.5} điểm)**
+• **Câu 1 (NB)**: Cho hàm số y = f(x) xác định trên tập D. Điểm x0 ∈ D là điểm cực đại của hàm số khi nào?
+  *A. f(x0) ≥ f(x) với mọi x thuộc một lân cận của x0 (Đáp án đúng)*
+  *B. f'(x0) > 0*
+  *C. f(x0) = 0*
+  *D. f(x0) luôn là giá trị lớn nhất trên D*
+• **Câu 2 (TH)**: Tập xác định của biểu thức chứa ẩn ở mẫu hoặc dưới dấu căn liên quan đến ${cleanTopic} được xác định bởi điều kiện nào?
+  *A. Mẫu số khác 0 và biểu thức dưới căn bậc hai không âm (Đáp án đúng)*
+  *B. Mẫu số lớn hơn 0*
+  *C. Biểu thức luôn dương*
+  *D. Không cần điều kiện*
+
+**PHẦN 2: TỰ LUẬN & VẬN DỤNG (${10 - (nbCount + thCount) * 0.5} điểm)**
+• **Câu 3 (VD - 2.0 điểm)**: Giải phương trình / tính giá trị biểu thức và biện luận tham số trong bài toán: ${cleanTopic}.
+• **Câu 4 (VDC - 1.0 điểm)**: Một bài toán tối ưu hóa thực tiễn (tìm chi phí nhỏ nhất hoặc lợi nhuận lớn nhất) ứng dụng mô hình toán học vừa học.`;
+  } else if (category === 'LITERATURE') {
+    sampleQuestions = `**PHẦN 1: ĐỌC HIỂU VĂN BẢN (${(nbCount + thCount) * 0.5} điểm)**
+• **Câu 1 (NB)**: Xác định thể thơ / phương thức biểu đạt chính được sử dụng trong ngữ liệu về chủ đề ${cleanTopic}.
+  *A. Biểu cảm kết hợp tự sự (Đáp án đúng)*
+  *B. Thuyết minh đơn thuần*
+  *C. Hành chính công vụ*
+  *D. Miêu tả trực diện*
+• **Câu 2 (TH)**: Phân tích hiệu quả nghệ thuật của biện pháp tu từ trong việc thể hiện thông điệp tác phẩm.
+  *A. Làm nổi bật chiều sâu tư tưởng và gợi cảm xúc thẩm mỹ cho người đọc (Đáp án đúng)*
+  *B. Chỉ để tạo vần điệu cho câu thơ*
+  *C. Tăng số lượng từ ngữ*
+  *D. Giúp bài viết dài hơn*
+
+**PHẦN 2: NGHỊ LUẬN (${10 - (nbCount + thCount) * 0.5} điểm)**
+• **Câu 3 (VD - 2.0 điểm)**: Viết đoạn văn (khoảng 200 chữ) trình bày suy nghĩ của em về ý nghĩa bài học rút ra từ chủ đề: ${cleanTopic}.
+• **Câu 4 (VDC - 1.0 điểm)**: Từ nội dung văn bản, hãy liên hệ với lối sống và trách nhiệm của thế hệ trẻ hôm nay.`;
+  } else if (category === 'ENGLISH') {
+    sampleQuestions = `**SECTION 1: MULTIPLE CHOICE (${(nbCount + thCount) * 0.5} pts)**
+• **Question 1 (Recognition)**: Choose the word whose underlined part is pronounced differently regarding ${cleanTopic}:
+  *A. achieve (Correct)*   *B. chemical*   *C. mechanic*   *D. character*
+• **Question 2 (Comprehension)**: Choose the best answer to complete the sentence: "If students practice ${cleanTopic} regularly, they ______ significant progress."
+  *A. will make (Correct)*   *B. would make*   *C. made*   *D. had made*
+
+**SECTION 2: WRITING & APPLICATION (${10 - (nbCount + thCount) * 0.5} pts)**
+• **Question 3 (Application - 2.0 pts)**: Rewrite sentences using inversion or conditional clauses based on ${cleanTopic}.
+• **Question 4 (High Application - 1.0 pts)**: Write a short paragraph (120-150 words) giving opinions on the practical importance of ${cleanTopic} in modern society.`;
+  } else if (category === 'NATURAL_SCIENCES') {
+    sampleQuestions = `**PHẦN 1: TRẮC NGHIỆM KHÁCH QUAN (${(nbCount + thCount) * 0.5} điểm)**
+• **Câu 1 (NB)**: Phát biểu đúng về định luật / nguyên lý cơ bản của chủ đề ${cleanTopic} là:
+  *A. Bảo toàn năng lượng và phù hợp quy luật tự nhiên đã thực nghiệm (Đáp án đúng)*
+  *B. Năng lượng tự sinh ra và mất đi*
+  *C. Không phụ thuộc vào điều kiện môi trường*
+  *D. Luôn biến thiên không theo quy luật*
+• **Câu 2 (TH)**: Giải thích hiện tượng thực tế khi thay đổi điều kiện thí nghiệm trong ${cleanTopic}.
+  *A. Do sự tương tác trực tiếp của các yếu tố cấu thành làm thay đổi trạng thái cân bằng (Đáp án đúng)*
+  *B. Do ngẫu nhiên*
+  *C. Do tác dụng của trọng lực đơn thuần*
+  *D. Hiện tượng không đổi*
+
+**PHẦN 2: TỰ LUẬN & BÀI TẬP ĐỊNH LƯỢNG (${10 - (nbCount + thCount) * 0.5} điểm)**
+• **Câu 3 (VD - 2.0 điểm)**: Vận dụng công thức để tính toán thông số định lượng trong bài toán ${cleanTopic}.
+• **Câu 4 (VDC - 1.0 điểm)**: Thiết kế phương án thí nghiệm hoặc đề xuất giải pháp xử lý một vấn đề khoa học liên quan.`;
+  } else if (category === 'SOCIAL_SCIENCES') {
+    sampleQuestions = `**PHẦN 1: TRẮC NGHIỆM KHÁCH QUAN (${(nbCount + thCount) * 0.5} điểm)**
+• **Câu 1 (NB)**: Sự kiện / đặc điểm địa lý - lịch sử mang tính bước ngoặt của ${cleanTopic} diễn ra vào thời gian nào hoặc ở khu vực nào?
+  *A. Cột mốc lịch sử / vị trí địa lý chuẩn xác theo sách giáo khoa (Đáp án đúng)*
+  *B. Dữ liệu ngẫu nhiên*
+  *C. Thế kỷ 15*
+  *D. Không xác định được*
+• **Câu 2 (TH)**: Ý nghĩa lịch sử hoặc vai trò kinh tế then chốt của ${cleanTopic} đối với sự phát triển là gì?
+  *A. Mở ra bước ngoặt phát triển bền vững và khẳng định độc lập/thế mạnh vùng (Đáp án đúng)*
+  *B. Chỉ mang tính chất tạm thời*
+  *C. Không ảnh hưởng đến đời sống nhân dân*
+  *D. Làm gián đoạn giao thương*
+
+**PHẦN 2: TỰ LUẬN TỔNG HỢP (${10 - (nbCount + thCount) * 0.5} điểm)**
+• **Câu 3 (VD - 2.0 điểm)**: Phân tích nguyên nhân thắng lợi / tiềm năng phát triển của ${cleanTopic}.
+• **Câu 4 (VDC - 1.0 điểm)**: Bài học kinh nghiệm quý báu cho công cuộc xây dựng và phát triển đất nước hiện nay.`;
+  } else if (category === 'INFORMATICS') {
+    sampleQuestions = `**PHẦN 1: TRẮC NGHIỆM KHÁCH QUAN (${(nbCount + thCount) * 0.5} điểm)**
+• **Câu 1 (NB)**: Cú pháp chuẩn hoặc kiểu dữ liệu cơ bản trong lập trình liên quan đến ${cleanTopic} là:
+  *A. Khai báo đúng quy tắc chuẩn ngữ nghĩa ngôn ngữ lập trình (Đáp án đúng)*
+  *B. Cú pháp tuỳ biến không theo chuẩn*
+  *C. Dùng từ khoá bất kỳ*
+  *D. Không cần định kiểu dữ liệu*
+• **Câu 2 (TH)**: Độ phức tạp thuật toán hoặc chức năng chính của cấu trúc dữ liệu trong ${cleanTopic} là gì?
+  *A. Tối ưu hoá thời gian xử lý và tài nguyên bộ nhớ khi thực thi (Đáp án đúng)*
+  *B. Tăng dung lượng lưu trữ tối đa*
+  *C. Giảm tốc độ chạy chương trình*
+  *D. Làm phức tạp mã nguồn*
+
+**PHẦN 2: TỰ LUẬN & THỰC HÀNH MÃ NGUỒN (${10 - (nbCount + thCount) * 0.5} điểm)**
+• **Câu 3 (VD - 2.0 điểm)**: Viết đoạn chương trình xử lý thuật toán sắp xếp, tìm kiếm hoặc thao tác dữ liệu: ${cleanTopic}.
+• **Câu 4 (VDC - 1.0 điểm)**: Tối ưu thuật toán để chương trình chạy với thời gian tối ưu và xử lý ngoại lệ an toàn.`;
+  } else {
+    sampleQuestions = `**PHẦN 1: TRẮC NGHIỆM KHÁCH QUAN (${(nbCount + thCount) * 0.5} điểm)**
+• **Câu 1 (NB)**: Khái niệm cốt lõi hoặc nguyên tắc cơ bản của chủ đề ${cleanTopic} được xác định như thế nào?
+  *A. Tuân thủ tiêu chuẩn kỹ thuật và quy định hiện hành (Đáp án đúng)*
+  *B. Thực hiện tuỳ ý cá nhân*
+  *C. Bỏ qua các bước kiểm tra*
+  *D. Chỉ áp dụng trong phòng thí nghiệm*
+• **Câu 2 (TH)**: Tại sao cần thực hiện quy trình chuẩn hóa khi nghiên cứu hoặc thao tác ${cleanTopic}?
+  *A. Đảm bảo an toàn, nâng cao chất lượng và tối ưu hóa hiệu quả thực thi (Đáp án đúng)*
+  *B. Để đối phó kiểm tra*
+  *C. Không đem lại lợi ích thiết thực*
+  *D. Tăng chi phí vận hành*
+
+**PHẦN 2: TỰ LUẬN & VẬN DỤNG THỰC TẾ (${10 - (nbCount + thCount) * 0.5} điểm)**
+• **Câu 3 (VD - 2.0 điểm)**: Trình bày quy trình các bước xử lý một tình huống thực tiễn gắn với ${cleanTopic}.
+• **Câu 4 (VDC - 1.0 điểm)**: Đề xuất giải pháp đổi mới sáng tạo hoặc ứng dụng công nghệ số để nâng cao hiệu quả.`;
+  }
+
   const wordHtml = `
     <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-    <head><meta charset='utf-8'><title>Đề thi & Ma trận chuẩn TT 22 - ${cleanTopic}</title>
+    <head><meta charset='utf-8'><title>Đề thi & Ma trận chuẩn TT 22 - ${detectedSubj} ${detectedGrade} - ${cleanTopic}</title>
     <style>body{font-family:'Times New Roman',serif;font-size:12pt;line-height:1.4;} table{border-collapse:collapse;width:100%;} th,td{border:1px solid #000;padding:6px;font-size:10pt;} th{background:#f0f0f0;text-align:center;}</style>
     </head>
     <body>
       <h3 style="text-align:center;">MA TRẬN ĐỀ KIỂM TRA ĐÁNH GIÁ ĐỊNH KỲ</h3>
       <p style="text-align:center;"><i>(Theo Thông tư số 22/2021/TT-BGDĐT của Bộ Giáo dục và Đào tạo)</i></p>
-      <p><b>Môn:</b> ${cleanTopic} | <b>Khối lớp:</b> ${grade} | <b>Thời gian:</b> 45 phút</p>
+      <p><b>Môn học:</b> ${detectedSubj} | <b>Khối lớp:</b> ${detectedGrade} | <b>Chủ đề:</b> ${cleanTopic} | <b>Thời gian:</b> 45 phút</p>
       <table>
         <tr><th>TT</th><th>Mạch kiến thức / Chủ đề</th><th>Nhận biết (40%)</th><th>Thông hiểu (30%)</th><th>Vận dụng (20%)</th><th>Vận dụng cao (10%)</th><th>Tổng số câu</th><th>Điểm số</th></tr>
-        <tr><td>1</td><td>Chủ đề trọng tâm: ${cleanTopic}</td><td>${nbCount} câu TN</td><td>${thCount} câu TN</td><td>${vdCount} câu TL</td><td>${vdcCount} câu TL</td><td>${questionCount} câu</td><td>10.0 đ</td></tr>
+        <tr><td>1</td><td>${cleanTopic}</td><td>${nbCount} câu TN</td><td>${thCount} câu TN</td><td>${vdCount} câu TL</td><td>${vdcCount} câu TL</td><td>${questionCount} câu</td><td>10.0 đ</td></tr>
       </table>
-      <h3 style="text-align:center;margin-top:20pt;">ĐỀ THI KIỂM TRA CHẤT LƯỢNG MÔN ${cleanTopic.toUpperCase()}</h3>
-      <p><b>I. PHẦN TRẮC NGHIỆM KHÁCH QUAN (${(nbCount + thCount) * 0.5} điểm)</b></p>
-      <p><b>Câu 1 (Nhận biết):</b> Trong quy trình kỹ thuật ${cleanTopic}, yếu tố nào là quan trọng nhất?<br/>A. Dụng cụ đo kiểm<br/>B. Bản vẽ kỹ thuật<br/>C. Vật liệu phôi<br/>D. Năng lượng máy</p>
-      <p><b>II. PHẦN TỰ LUẬN (${10 - (nbCount + thCount) * 0.5} điểm)</b></p>
-      <p><b>Câu ${nbCount + thCount + 1} (Vận dụng):</b> Hãy phân tích quy trình xử lý an toàn khi vận hành máy trong thực tế sản xuất.</p>
+      <h3 style="text-align:center;margin-top:20pt;">ĐỀ KIỂM TRA ĐÁNH GIÁ MÔN ${detectedSubj.toUpperCase()} - LỚP ${detectedGrade}</h3>
+      <p><b>Chủ đề:</b> ${cleanTopic}</p>
+      <hr/>
+      ${sampleQuestions.replace(/\n/g, '<br/>')}
     </body>
     </html>
   `;
 
   return {
     mode: 'EXAM_MATRIX',
-    text: `📋 **BẢNG MA TRẬN & ĐỀ THI ĐÁNH GIÁ CHUẨN THÔNG TƯ 22/2021/TT-BGDĐT**\n\n📌 **Chủ đề**: ${cleanTopic} | **Khối**: Lớp ${grade} | **Thời gian**: 45 phút\n⚖️ **Tỉ lệ phân bổ 4 mức độ nhận thức**:\n• 🟢 **Nhận biết (40%)**: ${nbCount} câu (Tái hiện kiến thức cơ bản, định nghĩa, thông số)\n• 🔵 **Thông hiểu (30%)**: ${thCount} câu (Giải thích nguyên lý, so sánh, phân tích mối quan hệ)\n• 🟡 **Vận dụng (20%)**: ${vdCount} câu (Bài toán thực tế, chọn thông số công nghệ)\n• 🔴 **Vận dụng cao (10%)**: ${vdcCount} câu (Tối ưu hóa quy trình, xử lý sự cố phức tạp)\n\n═══════════════════════════════════════════════════════════\n📊 **BẢNG MA TRẬN ĐẶC TẢ ĐỀ THI**\n\n| Mạch kiến thức | Nhận biết (40%) | Thông hiểu (30%) | Vận dụng (20%) | Vận dụng cao (10%) | Tổng điểm |\n| :--- | :---: | :---: | :---: | :---: | :---: |\n| 1. Khái niệm & Nguyên lý cốt lõi | ${nbCount} câu | - | - | - | 4.0 đ |\n| 2. Quy trình kỹ thuật & Phân tích | - | ${thCount} câu | - | - | 3.0 đ |\n| 3. Xử lý tình huống thực tiễn | - | - | ${vdCount} câu | - | 2.0 đ |\n| 4. Sáng tạo & Tối ưu hóa hệ thống | - | - | - | ${vdcCount} câu | 1.0 đ |\n\n═══════════════════════════════════════════════════════════\n📝 **ĐỀ THI MINH HOẠ KÈM ĐÁP ÁN**\n\n**PHẦN 1: TRẮC NGHIỆM KHÁCH QUAN (${(nbCount + thCount) * 0.5} điểm)**\n• **Câu 1 (NB)**: Ký hiệu tiêu chuẩn trên bản vẽ kỹ thuật thể hiện điều gì?\n  *A. Kích thước và dung sai chi tiết (Đáp án đúng)*\n  *B. Màu sắc của thiết bị*\n  *C. Giá thành sản phẩm*\n  *D. Trọng lượng đóng gói*\n• **Câu 2 (TH)**: Vì sao cần áp dụng quy tắc 5S trước khi tiến hành thực hành?\n  *A. Để tránh bụi bẩn thông thường*\n  *B. Nhằm đảm bảo an toàn lao động và tăng năng suất gia công (Đáp án đúng)*\n  *C. Theo yêu cầu chụp ảnh báo cáo*\n  *D. Giảm thời gian học lý thuyết*\n\n**PHẦN 2: TỰ LUẬN & VẬN DỤNG THỰC HÀNH (${10 - (nbCount + thCount) * 0.5} điểm)**\n• **Câu 3 (VD - 2.0 điểm)**: Nêu quy trình 4 bước khắc phục sự cố sai lệch kích thước phôi khi gia công.\n• **Câu 4 (VDC - 1.0 điểm)**: Đề xuất một giải pháp chuyển đổi số hoặc áp dụng cảm biến an toàn để tự động ngắt điện khi có nguy cơ tai nạn xưởng.`,
+    text: `📋 **BẢNG MA TRẬN & ĐỀ THI ĐÁNH GIÁ CHUẨN THÔNG TƯ 22/2021/TT-BGDĐT**\n\n📌 **Môn học**: ${detectedSubj} | **Khối lớp**: Lớp ${detectedGrade} | **Thời gian**: 45 phút\n🎯 **Chủ đề**: ${cleanTopic}\n⚖️ **Tỉ lệ phân bổ 4 mức độ nhận thức**:\n• 🟢 **Nhận biết (40%)**: ${nbCount} câu (Tái hiện kiến thức cơ bản, định nghĩa, thông số)\n• 🔵 **Thông hiểu (30%)**: ${thCount} câu (Giải thích nguyên lý, so sánh, phân tích mối quan hệ)\n• 🟡 **Vận dụng (20%)**: ${vdCount} câu (Bài toán thực tế, áp dụng kiến thức)\n• 🔴 **Vận dụng cao (10%)**: ${vdcCount} câu (Tối ưu hóa, sáng tạo, liên hệ thực tiễn)\n\n═══════════════════════════════════════════════════════════\n📊 **BẢNG MA TRẬN ĐẶC TẢ ĐỀ THI**\n\n| Mạch kiến thức | Nhận biết (40%) | Thông hiểu (30%) | Vận dụng (20%) | Vận dụng cao (10%) | Tổng điểm |\n| :--- | :---: | :---: | :---: | :---: | :---: |\n| 1. Khái niệm & Nguyên lý cơ sở | ${nbCount} câu | - | - | - | 4.0 đ |\n| 2. Phân tích & Thông hiểu kiến thức | - | ${thCount} câu | - | - | 3.0 đ |\n| 3. Vận dụng giải quyết bài toán | - | - | ${vdCount} câu | - | 2.0 đ |\n| 4. Sáng tạo & Vận dụng thực tế | - | - | - | ${vdcCount} câu | 1.0 đ |\n\n═══════════════════════════════════════════════════════════\n📝 **ĐỀ THI MINH HOẠ KÈM ĐÁP ÁN**\n\n${sampleQuestions}`,
     quickActions: [
       { label: '📄 Xuất đề thi ra Word (.doc)', action: 'xuat_word_de_thi', mode: 'EXAM_MATRIX' },
       { label: '📋 Sao chép đề thi & ma trận', action: 'copy_de_thi', mode: 'EXAM_MATRIX' },
@@ -209,18 +406,21 @@ export function generateExamAndMatrixPackage(
 }
 
 // ----------------------------------------------------------------------------
-// 3. TẠO SLIDE THUYẾT TRÌNH BÀI GIẢNG (PRESENTATION SLIDES)
+// 3. TẠO SLIDE THUYẾT TRÌNH BÀI GIẢNG (PRESENTATION SLIDES - ĐA MÔN HỌC)
 // ----------------------------------------------------------------------------
 export function generateSlideDeckPackage(
-  lessonTitle: string = 'Công nghệ gia công cắt gọt',
+  lessonTitle: string = 'Bài học trọng tâm',
   grade: string = '10',
-  subject: string = 'Công nghệ'
+  subject: string = ''
 ): AiPedagogyResponse {
-  const cleanTitle = lessonTitle.replace(/slide|thuyết trình|tạo|bài giảng/gi, '').trim() || 'Gia công Cơ khí Hiện đại';
+  const info = detectSubjectAndTopic(lessonTitle, subject, grade);
+  const detectedSubj = info.subject;
+  const detectedGrade = info.grade;
+  const cleanTitle = info.topic;
 
   return {
     mode: 'SLIDES',
-    text: `📊 **BỘ SLIDE THUYẾT TRÌNH BÀI GIẢNG CHUẨN SƯ PHẠM (10 SLIDES)**\n\n🎯 **Chủ đề**: ${cleanTitle} | **Môn**: ${subject} | **Lớp**: ${grade}\n\n═══════════════════════════════════════════════════════════\n**SLIDE 1: BÌA BÀI GIẢNG**\n• **Tiêu đề**: BÀI DẠY: ${cleanTitle.toUpperCase()}\n• **Nội dung**: Môn học: ${subject} • Lớp: ${grade} • Ứng dụng CNTT & AI Sư phạm\n• **Gợi ý thị giác**: Ảnh vector công nghệ sắc nét, logo trường học số, tiêu đề nổi bật.\n• 🗣️ **Lời giảng viên (Speaker Notes)**: *"Nhiệt liệt chào mừng các em đến với tiết học hôm nay! Chúng ta sẽ cùng khám phá những công nghệ đột phá của ${cleanTitle}."*\n\n**SLIDE 2: MỤC TIÊU BÀI HỌC CẦN ĐẠT**\n• **Kiến thức**: Nắm vững khái niệm, nguyên lý vận hành và cấu tạo hệ thống.\n• **Năng lực số**: Khai thác mô hình 3D tương tác, tra cứu thông số kỹ thuật trực tuyến.\n• **Phẩm chất**: Kỷ luật an toàn, tỉ mỉ và tinh thần làm việc nhóm trách nhiệm.\n• **Gợi ý thị giác**: Sơ đồ 3 mảnh ghép tương hỗ: Kiến thức - Kỹ năng số - Phẩm chất.\n\n**SLIDE 3: KHỞI ĐỘNG (HOẠT ĐỘNG 1)**\n• **Tình huống dẫn nhập**: *"Quan sát chi tiết cơ khí bị lỗi bề mặt. Nguyên nhân do đâu?"*\n• **Câu hỏi gợi mở**: Tốc độ cắt hay chế độ tưới nguội đóng vai trò quyết định?\n• 🗣️ **Lời giảng viên**: *"Thầy/Cô dành cho các em 2 phút suy nghĩ và ghi dự đoán vào phiếu học tập số nhé!"*\n\n**SLIDE 4-5: HÌNH THÀNH KIẾN THỨC MỚI (PHẦN 1 & 2)**\n• Cấu tạo nguyên lý máy và các thông số công nghệ then chốt (vận tốc cắt, lượng chạy dao, chiều sâu cắt).\n• Bảng tra cứu chế độ làm việc tối ưu cho từng loại vật liệu (Nhôm, Thép, Đồng).\n• **Gợi ý thị giác**: Sơ đồ giải phẫu thiết bị có chú thích mũi tên chuyển động chính và chuyển động phụ.\n\n**SLIDE 6: NGUYÊN TẮC AN TOÀN LAO ĐỘNG & 5S**\n• 5 nguyên tắc an toàn tuyệt đối khi đứng máy.\n• Quy trình 5S: Sàng lọc - Sắp xếp - Sạch sẽ - Săn sóc - Sẵn sàng.\n\n**SLIDE 7-8: LUYỆN TẬP & THỰC HÀNH CỦNG CỐ**\n• Bài tập tình huống: Tính toán thông số gia công chi tiết theo bản vẽ kỹ thuật.\n• Thi đấu tương tác nhanh qua ứng dụng Mini game (4 câu hỏi trắc nghiệm).\n\n**SLIDE 9: VẬN DỤNG & DỰ ÁN THỰC TIỄN**\n• Dự án nhóm: Thiết kế quy trình chế tạo sản phẩm phục vụ đời sống gia đình.\n• Tiêu chí đánh giá: Tính chính xác (40%), Tính sáng tạo (30%), An toàn & thẩm mỹ (30%).\n\n**SLIDE 10: TỔNG KẾT & HƯỚNG DẪN VỀ NHÀ**\n• Sơ đồ tư duy tóm tắt 3 từ khóa cốt lõi của bài học.\n• Nhiệm vụ: Đọc trước bài tiếp theo trên nền tảng học tập số của lớp.`,
+    text: `📊 **BỘ SLIDE THUYẾT TRÌNH BÀI GIẢNG CHUẨN SƯ PHẠM (10 SLIDES)**\n\n🎯 **Chủ đề**: ${cleanTitle} | **Môn**: ${detectedSubj} | **Lớp**: ${detectedGrade}\n\n═══════════════════════════════════════════════════════════\n**SLIDE 1: BÌA BÀI GIẢNG ĐIỆN TỬ**\n• **Tiêu đề**: BÀI DẠY: ${cleanTitle.toUpperCase()}\n• **Nội dung**: Môn học: ${detectedSubj} • Lớp: ${detectedGrade} • Ứng dụng CNTT & AI Sư phạm\n• **Gợi ý thị giác**: Ảnh đồ họa chuyên nghiệp biểu trưng môn ${detectedSubj}, tiêu đề nổi bật.\n• 🗣️ **Lời giảng viên (Speaker Notes)**: *"Nhiệt liệt chào mừng các em đến với tiết học hôm nay! Chúng ta sẽ cùng khám phá những tri thức cốt lõi của bài: ${cleanTitle}."*\n\n**SLIDE 2: MỤC TIÊU BÀI HỌC CẦN ĐẠT (CV 5512)**\n• **Kiến thức**: Nắm vững khái niệm, nguyên lý và phương pháp vận dụng của ${cleanTitle}.\n• **Năng lực số**: Khai thác tài nguyên số, tra cứu học liệu và tương tác trực tuyến.\n• **Phẩm chất**: Kỷ luật, chăm chỉ và tinh thần làm việc nhóm trách nhiệm.\n• **Gợi ý thị giác**: Sơ đồ 3 mảnh ghép tương hỗ: Kiến thức - Năng lực số - Phẩm chất.\n\n**SLIDE 3: KHỞI ĐỘNG (HOẠT ĐỘNG 1)**\n• **Tình huống dẫn nhập**: *"Quan sát hiện tượng / bài toán thực tế liên quan đến ${cleanTitle}."*\n• **Câu hỏi gợi mở**: Nguyên nhân dẫn đến hiện tượng này là gì? Chúng ta giải quyết như thế nào?\n• 🗣️ **Lời giảng viên**: *"Thầy/Cô dành cho các em 2 phút suy nghĩ và ghi dự đoán vào phiếu học tập nhé!"*\n\n**SLIDE 4-5: HÌNH THÀNH KIẾN THỨC MỚI (PHẦN 1 & 2)**\n• Nội dung trọng tâm 1: Khái niệm bản chất, định lý hoặc quy tắc cơ bản của ${cleanTitle}.\n• Nội dung trọng tâm 2: Phân tích ví dụ điển hình và sơ đồ cấu trúc kiến thức.\n• **Gợi ý thị giác**: Sơ đồ cấu trúc trực quan có chú thích rõ ràng các thành phần.\n\n**SLIDE 6: NĂNG LỰC SỐ & KẾT NỐI ĐỜI SỐNG (CV 3456)**\n• Ứng dụng thực tiễn của ${cleanTitle} trong đời sống xã hội.\n• Khai thác phần mềm mô phỏng hoặc nền tảng số để tìm hiểu sâu hơn.\n\n**SLIDE 7-8: LUYỆN TẬP & THỰC HÀNH CỦNG CỐ**\n• Hệ thống 4 câu hỏi trắc nghiệm tương tác nhanh kiểm tra mức độ tiếp thu.\n• Bài tập tình huống vận dụng: Thảo luận nhóm trong 5 phút.\n\n**SLIDE 9: VẬN DỤNG & DỰ ÁN HỌC TẬP**\n• Dự án nhóm: Ứng dụng kiến thức bài học giải quyết một tình huống thực tế.\n• Tiêu chí đánh giá: Tính chính xác (40%), Tính sáng tạo (30%), Tinh thần hợp tác (30%).\n\n**SLIDE 10: TỔNG KẾT & HƯỚNG DẪN VỀ NHÀ**\n• Sơ đồ tư duy tóm tắt 3 từ khóa cốt lõi của bài học.\n• Nhiệm vụ: Hoàn thành bài tập củng cố và xem trước bài tiếp theo.`,
     quickActions: [
       { label: '📋 Sao chép Slide dạng Markdown', action: 'copy_slides_md', mode: 'SLIDES' },
       { label: '🎮 Tạo Mini game khởi động', action: 'tao_mini_game', mode: 'MINI_GAME' },
@@ -231,17 +431,20 @@ export function generateSlideDeckPackage(
 }
 
 // ----------------------------------------------------------------------------
-// 4. TẠO MINI GAME CHO TIẾT DẠY (INTERACTIVE LEARNING GAMES)
+// 4. TẠO MINI GAME CHO TIẾT DẠY (INTERACTIVE LEARNING GAMES - ĐA MÔN HỌC)
 // ----------------------------------------------------------------------------
 export function generateMiniGamePackage(
-  topic: string = 'An toàn xưởng & Công nghệ tiện',
+  topic: string = 'Kiến thức trọng tâm',
   grade: string = '10'
 ): AiPedagogyResponse {
-  const clean = topic.replace(/mini game|game|trò chơi|tạo/gi, '').trim() || 'Công nghệ & An toàn xưởng';
+  const info = detectSubjectAndTopic(topic, '', grade);
+  const detectedSubj = info.subject;
+  const detectedGrade = info.grade;
+  const clean = info.topic;
 
   return {
     mode: 'MINI_GAME',
-    text: `🎮 **BỘ CÂU HỎI MINI GAME TƯƠNG TÁC (KAHOOT / QUIZIZZ / RUNG CHUÔNG VÀNG)**\n\n🎯 **Chủ đề**: ${clean} | **Môn**: Công nghệ ${grade} | **Thời lượng**: 5 - 7 phút\n\n═══════════════════════════════════════════════════════════\n🏆 **CÂU 1: [Khởi động nhanh - 15 giây]**\n❓ **Câu hỏi**: Trước khi bấm nút khởi động máy gia công, hành động nào sau đây BẮT BUỘC phải làm trước tiên?\n• A. Bật đèn chiếu sáng tối đa\n• B. Kiểm tra bảo hộ cá nhân (kính mắt, tóc tai, trang phục gọn gàng) *(ĐÁP ÁN ĐÚNG - 1000 điểm)*\n• C. Chụp ảnh lưu niệm gửi nhóm lớp\n• D. Gọi bạn bên cạnh sang xem\n💡 **Lời giải thích sư phạm**: An toàn là sinh mệnh! BHLĐ đầy đủ giúp bảo vệ mắt khỏi phoi tiện văng và ngăn ngừa kẹt trang phục vào trục quay.\n\n═══════════════════════════════════════════════════════════\n🏆 **CÂU 2: [Tăng tốc tư duy - 20 giây]**\n❓ **Câu hỏi**: Trong phương pháp 5S xưởng thực hành, chữ "S" thứ hai (SEITON - SẮP XẾP) có ý nghĩa cốt lõi là gì?\n• A. Vứt hết đồ cũ ra bãi rác\n• B. Để dụng cụ ở vị trí dễ tìm, dễ thấy, dễ lấy, dễ trả lại *(ĐÁP ÁN ĐÚNG - 1200 điểm)*\n• C. Sơn lại tường xưởng thật đẹp\n• D. Đeo găng tay khi quét sàn\n💡 **Lời giải thích**: "Dễ tìm, dễ thấy, dễ lấy, dễ trả lại" giúp tiết kiệm 15-20% thời gian tìm đồ nghề và loại bỏ nguy cơ vấp ngã!\n\n═══════════════════════════════════════════════════════════\n🏆 **CÂU 3: [Thử thách chuyên gia - 30 giây]**\n❓ **Câu hỏi**: Khi đang tiện chi tiết bằng máy tiện vạn năng, nếu phôi phát ra tiếng rít chói tai và phoi đổi sang màu xanh tím đậm, hiện tượng này báo hiệu điều gì?\n• A. Máy chạy rất êm, đạt tốc độ cao\n• B. Tốc độ cắt quá cao hoặc thiếu dung dịch trơn nguội làm dao bị mòn cháy *(ĐÁP ÁN ĐÚNG - 1500 điểm)*\n• C. Dao đang tự mài bén lại\n• D. Phôi đã hoàn thiện xong\n💡 **Lời giải thích**: Phoi màu xanh tím chứng tỏ nhiệt độ vùng cắt vượt quá 600°C! Phải giảm vận tốc cắt và cấp ngay dung dịch tưới nguội.\n\n═══════════════════════════════════════════════════════════\n🏆 **CÂU 4: [Về đích ngoạn mục - 30 giây]**\n❓ **Câu hỏi**: Ứng dụng công nghệ nào giúp giáo viên giám sát từ xa sự an toàn của học sinh trong xưởng?\n• A. Camera thông minh tích hợp AI cảnh báo vùng nguy hiểm *(ĐÁP ÁN ĐÚNG - 2000 điểm)*\n• B. Loa phóng thanh công suất lớn\n• C. Chuông báo giờ thủ công\n• D. Kính lúp cầm tay\n💡 **Lời giải thích**: Camera AI nhận diện học sinh không đội mũ hoặc bước vào ranh giới nguy hiểm để cảnh báo tức thì!`,
+    text: `🎮 **BỘ CÂU HỎI MINI GAME TƯƠNG TÁC (KAHOOT / QUIZIZZ / RUNG CHUÔNG VÀNG)**\n\n🎯 **Chủ đề**: ${clean} | **Môn**: ${detectedSubj} ${detectedGrade} | **Thời lượng**: 5 - 7 phút\n\n═══════════════════════════════════════════════════════════\n🏆 **CÂU 1: [Khởi động nhanh - 15 giây]**\n❓ **Câu hỏi**: Khái niệm cơ bản hoặc dấu hiệu nhận biết nào sau đây là ĐÚNG khi nói về ${clean}?\n• A. Khái niệm chuẩn xác theo chương trình môn ${detectedSubj} *(ĐÁP ÁN ĐÚNG - 1000 điểm)*\n• B. Khái niệm sai lệch đối lập\n• C. Phương án nhiễu dễ gây nhầm lẫn 1\n• D. Phương án nhiễu dễ gây nhầm lẫn 2\n💡 **Lời giải thích sư phạm**: Nắm vững khái niệm nền tảng giúp học sinh giải quyết tự tin các câu hỏi nâng cao!\n\n═══════════════════════════════════════════════════════════\n🏆 **CÂU 2: [Tăng tốc tư duy - 20 giây]**\n❓ **Câu hỏi**: Trong các đặc điểm của ${clean}, yếu tố nào đóng vai trò QUYẾT ĐỊNH nhất?\n• A. Yếu tố ngẫu nhiên\n• B. Bản chất quy luật quyết định tính chất cốt lõi *(ĐÁP ÁN ĐÚNG - 1200 điểm)*\n• C. Yếu tố hình thức bên ngoài\n• D. Tùy ý cá nhân\n💡 **Lời giải thích**: Hiểu rõ bản chất giúp học sinh tránh được 80% bẫy câu hỏi thông hiểu!\n\n═══════════════════════════════════════════════════════════\n🏆 **CÂU 3: [Thử thách chuyên gia - 30 giây]**\n❓ **Câu hỏi**: Khi áp dụng kiến thức ${clean} vào thực tế có điều kiện thay đổi, hiện tượng/kết quả sẽ như thế nào?\n• A. Không thay đổi bất chấp điều kiện\n• B. Biến đổi phù hợp với quy luật khoa học đã học *(ĐÁP ÁN ĐÚNG - 1500 điểm)*\n• C. Mất hoàn toàn tác dụng\n• D. Không thể dự đoán\n💡 **Lời giải thích**: Vận dụng quy luật vào thực tiễn đòi hỏi tư duy phân tích và khả năng thích ứng linh hoạt.\n\n═══════════════════════════════════════════════════════════\n🏆 **CÂU 4: [Về đích ngoạn mục - 30 giây]**\n❓ **Câu hỏi**: Để phát triển năng lực tự học môn ${detectedSubj} với chủ đề ${clean}, học sinh nên áp dụng phương pháp nào?\n• A. Ứng dụng sơ đồ tư duy, thảo luận nhóm và học liệu số có hướng dẫn *(ĐÁP ÁN ĐÚNG - 2000 điểm)*\n• B. Học thuộc máy móc thụ động\n• C. Chỉ học trước ngày thi\n• D. Bỏ qua các bài tập thực hành\n💡 **Lời giải thích**: Học tập chủ động và sáng tạo là kim chỉ nam của Chương trình GDPT 2018!`,
     quickActions: [
       { label: '📋 Sao chép bảng câu hỏi Kahoot', action: 'copy_game_kahoot', mode: 'MINI_GAME' },
       { label: '🧠 Tạo Sơ đồ tư duy bài học', action: 'tao_mindmap_game', mode: 'MINDMAP' },
@@ -251,46 +454,40 @@ export function generateMiniGamePackage(
 }
 
 // ----------------------------------------------------------------------------
-// 5. TẠO SƠ ĐỒ TƯ DUY CHO TIẾT DẠY (MINDMAP & VISUAL TREE)
+// 5. TẠO SƠ ĐỒ TƯ DUY CHO TIẾT DẠY (MINDMAP & VISUAL TREE - ĐA MÔN HỌC)
 // ----------------------------------------------------------------------------
 export function generateMindmapPackage(
-  topic: string = 'Hệ thống Công nghệ Gia công Cơ khí',
+  topic: string = 'Kiến thức bài học',
   grade: string = '10'
 ): AiPedagogyResponse {
-  const clean = topic.replace(/sơ đồ tư duy|mindmap|sơ đồ|tạo/gi, '').trim() || 'Hệ Thống Cơ Khí Chế Tạo';
+  const info = detectSubjectAndTopic(topic, '', grade);
+  const detectedSubj = info.subject;
+  const detectedGrade = info.grade;
+  const clean = info.topic;
+  const safeRoot = clean.replace(/["()]/g, '');
 
   const mermaid = `mindmap
-  root(("${clean}"))
-    Khái Niệm Cốt Lõi
-      Định nghĩa quy trình
-      Bản vẽ kỹ thuật
-      Vật liệu phôi
-    Các Phương Pháp Gia Công
-      Cắt gọt truyền thống
-        Tiện mặt trụ ngoài
-        Phay mặt phẳng & rãnh
-        Khoan khoét doa lỗ
-      Gia công hiện đại CNC
-        Máy tiện CNC
-        Trung tâm phay 3-5 trục
-        Cắt dây EDM & Laser
-    Chế Độ Công Nghệ
-      Vận tốc cắt Vc
-      Lượng chạy dao S
-      Chiều sâu cắt t
-      Dung dịch tưới nguội
-    An Toàn Lao Động & 5S
-      Trang bị BHLĐ cá nhân
-      Quy trình 5S xưởng
-      Xử lý sự cố khẩn cấp
-    Ứng Dụng Thực Tiễn
-      Ngành ô tô & hàng không
-      Thiết bị y tế chính xác
-      Sản phẩm dân dụng`;
+  root(("${safeRoot}"))
+    1. Khái Niệm Nền Tảng
+      Định nghĩa cốt lõi
+      Đặc điểm bản chất
+      Ký hiệu chuẩn
+    2. Quy Luật & Cấu Trúc
+      Nguyên lý hoạt động
+      Mối quan hệ tương hỗ
+      Phân loại thành phần
+    3. Phương Pháp Vận Dụng
+      Quy trình các bước giải
+      Các dạng bài tập điển hình
+      Lỗi sai thường gặp
+    4. Ứng Dụng Thực Tiễn
+      Liên hệ đời sống
+      Tích hợp liên môn
+      Định hướng chuyển đổi số`;
 
   return {
     mode: 'MINDMAP',
-    text: `🧠 **SƠ ĐỒ TƯ DUY BÀI DẠY (MINDMAP & KNOWLEDGE TREE)**\n\n🎯 **Chủ đề**: ${clean} | **Khối lớp**: ${grade}\n\n═══════════════════════════════════════════════════════════\n🌳 **CÂY HỆ THỐNG KIẾN THỨC TRỰC QUAN (VISUAL TREE):**\n\n🌿 **[GỐC] ${clean.toUpperCase()}**\n├── 🔹 **1. Khái Niệm Cốt Lõi**\n│   ├── • Bản chất quy trình tạo hình chi tiết cơ khí\n│   ├── • Đọc hiểu bản vẽ thiết kế kỹ thuật (Kích thước, Dung sai)\n│   └── • Lựa chọn vật liệu phôi (Thép carbon, Nhôm hợp kim, Đồng thau)\n├── 🔹 **2. Phương Pháp Gia Công Hiện Đại**\n│   ├── • Cắt gọt truyền thống: Tiện trục tròn, Phay mặt phẳng, Bào rãnh, Khoan lỗ\n│   └── • Gia công kỹ thuật số: Máy CNC 3 trục, Cắt Plasma, Cắt Laser sợi quang\n├── 🔹 **3. Chế Độ Công Nghệ Tối Ưu**\n│   ├── • Vận tốc cắt (v - m/phút)\n│   ├── • Lượng chạy dao (s - mm/vòng)\n│   ├── • Chiều sâu cắt (t - mm)\n│   └── • Bôi trơn làm mát vùng cắt\n└── 🔹 **4. Tiêu Chuẩn ATLĐ & 5S Xưởng**\n    ├── • Kính bảo hộ, giày bảo hộ, không đeo găng khi đứng máy quay\n    └── • 5S: Sàng lọc ➔ Sắp xếp ➔ Sạch sẽ ➔ Săn sóc ➔ Sẵn sàng`,
+    text: `🧠 **SƠ ĐỒ TƯ DUY BÀI DẠY (MINDMAP & KNOWLEDGE TREE)**\n\n🎯 **Chủ đề**: ${clean} | **Môn**: ${detectedSubj} | **Khối lớp**: ${detectedGrade}\n\n═══════════════════════════════════════════════════════════\n🌳 **CÂY HỆ THỐNG KIẾN THỨC TRỰC QUAN (VISUAL TREE):**\n\n🌿 **[GỐC] ${clean.toUpperCase()} (${detectedSubj.toUpperCase()} ${detectedGrade})**\n├── 🔹 **1. Khái Niệm Nền Tảng**\n│   ├── • Bản chất quy luật và định nghĩa cốt lõi\n│   ├── • Ký hiệu, đơn vị đo hoặc quy ước chuẩn\n│   └── • Bối cảnh xuất hiện và ý nghĩa\n├── 🔹 **2. Quy Luật & Cấu Trúc Trọng Tâm**\n│   ├── • Mối liên hệ bản chất giữa các thành phần\n│   └── • Các trường hợp đặc biệt và điều kiện áp dụng\n├── 🔹 **3. Kỹ Năng & Phương Pháp Giải Quyết Vấn Đề**\n│   ├── • Quy trình thao tác 4 bước chuẩn mực\n│   └── • Nhận diện các lỗi sai kinh điển cần tránh\n└── 🔹 **4. Ứng Dụng Thực Tiễn & Năng Lực Số**\n    ├── • Kết nối các tình huống sinh động trong đời sống\n    └── • Khai thác công cụ số và sơ đồ tư duy củng cố`,
     mermaidCode: mermaid,
     quickActions: [
       { label: '📋 Sao chép mã Mermaid Mindmap', action: 'copy_mermaid', mode: 'MINDMAP' },
@@ -302,69 +499,59 @@ export function generateMindmapPackage(
 }
 
 // ----------------------------------------------------------------------------
-// 6. TẠO HÌNH ẢNH MINH HOẠ CHO TIẾT DẠY (PROMPT & SVG VECTOR)
+// 6. TẠO HÌNH ẢNH MINH HOẠ CHO TIẾT DẠY (PROMPT & SVG VECTOR ĐA MÔN HỌC)
 // ----------------------------------------------------------------------------
 export function generateIllustrationPackage(
-  topic: string = 'Nguyên lý chuyển động máy tiện cơ khí',
-  subject: string = 'Công nghệ'
+  topic: string = 'Kiến thức minh họa',
+  subject: string = ''
 ): AiPedagogyResponse {
-  const clean = topic.replace(/hình ảnh|minh họa|ảnh|tạo/gi, '').trim() || 'Cấu tạo & Nguyên lý máy gia công cơ khí';
+  const info = detectSubjectAndTopic(topic, subject);
+  const detectedSubj = info.subject;
+  const detectedGrade = info.grade;
+  const clean = info.topic;
 
-  // Vector SVG illustration sắc nét, chuẩn responsive, hiển thị ngay trên chat
-  const svg = `<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;border-radius:16px;background:linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0284c7 100%);box-shadow:0 10px 25px rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);">
+  const svg = `<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;border-radius:16px;background:linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0369a1 100%);box-shadow:0 10px 25px rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);">
     <defs>
-      <linearGradient id="metalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#94a3b8" />
-        <stop offset="50%" stop-color="#cbd5e1" />
-        <stop offset="100%" stop-color="#64748b" />
-      </linearGradient>
-      <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" stop-color="#38bdf8" />
         <stop offset="100%" stop-color="#818cf8" />
       </linearGradient>
     </defs>
-    <!-- Background grid -->
     <path d="M0 40 H600 M0 80 H600 M0 120 H600 M0 160 H600 M0 200 H600 M0 240 H600 M0 280 H600" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
-    <path d="M50 0 V320 M100 0 V320 M150 0 V320 M200 0 V320 M250 0 V320 M300 0 V320 M350 0 V320 M400 0 V320 M450 0 V320 M500 0 V320 M550 0 V320" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+    <path d="M60 0 V320 M120 0 V320 M180 0 V320 M240 0 V320 M300 0 V320 M360 0 V320 M420 0 V320 M480 0 V320 M540 0 V320" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
     
-    <!-- Title banner -->
-    <rect x="20" y="16" width="560" height="34" rx="10" fill="rgba(15,23,42,0.7)" stroke="#38bdf8" stroke-width="1"/>
-    <text x="300" y="38" fill="#38bdf8" font-size="14" font-weight="bold" text-anchor="middle" font-family="sans-serif">⚙️ SƠ ĐỒ NGUYÊN LÝ GIA CÔNG: ${clean.toUpperCase()}</text>
+    <rect x="20" y="16" width="560" height="36" rx="10" fill="rgba(15,23,42,0.8)" stroke="#38bdf8" stroke-width="1.2"/>
+    <text x="300" y="40" fill="#38bdf8" font-size="14" font-weight="bold" text-anchor="middle" font-family="sans-serif">📚 HỌC LIỆU SỐ TRỰC QUAN: ${detectedSubj.toUpperCase()} ${detectedGrade} - ${clean.toUpperCase()}</text>
 
-    <!-- Chuck (Mâm cặp) -->
-    <rect x="60" y="110" width="70" height="120" rx="8" fill="url(#metalGrad)" stroke="#334155" stroke-width="2"/>
-    <rect x="130" y="135" width="20" height="70" fill="#475569"/>
-    <text x="95" y="175" fill="#0f172a" font-size="11" font-weight="bold" text-anchor="middle" font-family="sans-serif">MÂM CẶP</text>
+    <rect x="180" y="80" width="240" height="150" rx="16" fill="rgba(30,41,59,0.9)" stroke="url(#cardGrad)" stroke-width="2"/>
+    <circle cx="300" cy="130" r="32" fill="#0284c7" opacity="0.8"/>
+    <text x="300" y="137" fill="#ffffff" font-size="20" font-weight="bold" text-anchor="middle" font-family="sans-serif">💡</text>
+    <text x="300" y="185" fill="#f8fafc" font-size="13" font-weight="bold" text-anchor="middle" font-family="sans-serif">${clean.length > 25 ? clean.substring(0, 25) + '...' : clean}</text>
+    <text x="300" y="208" fill="#94a3b8" font-size="11" text-anchor="middle" font-family="sans-serif">Môn: ${detectedSubj} - Lớp ${detectedGrade}</text>
 
-    <!-- Workpiece (Phôi xoay tròn) -->
-    <rect x="150" y="145" width="220" height="50" rx="4" fill="url(#accentGrad)" stroke="#0284c7" stroke-width="2"/>
-    <!-- Turning rotation arrow -->
-    <path d="M 230 130 A 25 25 0 0 1 270 130" fill="none" stroke="#f59e0b" stroke-width="3"/>
-    <text x="250" y="120" fill="#fbbf24" font-size="11" font-weight="bold" text-anchor="middle" font-family="sans-serif">Chuyển động chính (Vòng xoay Vc)</text>
-    <text x="260" y="175" fill="#ffffff" font-size="12" font-weight="bold" text-anchor="middle" font-family="sans-serif">PHÔI GIA CÔNG</text>
+    <rect x="35" y="110" width="115" height="40" rx="8" fill="rgba(15,23,42,0.85)" stroke="#38bdf8" stroke-width="1"/>
+    <text x="92" y="135" fill="#e2e8f0" font-size="11" font-weight="bold" text-anchor="middle" font-family="sans-serif">Khái Niệm</text>
+    <path d="M150 130 L180 130" stroke="#38bdf8" stroke-width="2" stroke-dasharray="4"/>
 
-    <!-- Tool (Dao tiện) -->
-    <polygon points="310,215 340,185 365,225 330,245" fill="#ef4444" stroke="#ffffff" stroke-width="1.5"/>
-    <rect x="330" y="225" width="80" height="40" rx="4" fill="#64748b" stroke="#334155" stroke-width="1.5"/>
-    <text x="370" y="250" fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle" font-family="sans-serif">ĐÀI DAO</text>
-    <!-- Feed arrow -->
-    <path d="M 330 200 L 260 200" fill="none" stroke="#ef4444" stroke-width="3"/>
-    <polygon points="260,195 250,200 260,205" fill="#ef4444"/>
-    <text x="300" y="215" fill="#f87171" font-size="10" font-weight="bold" text-anchor="middle" font-family="sans-serif">Chạy dao (S)</text>
+    <rect x="35" y="170" width="115" height="40" rx="8" fill="rgba(15,23,42,0.85)" stroke="#34d399" stroke-width="1"/>
+    <text x="92" y="195" fill="#e2e8f0" font-size="11" font-weight="bold" text-anchor="middle" font-family="sans-serif">Phương Pháp</text>
+    <path d="M150 190 L180 170" stroke="#34d399" stroke-width="2" stroke-dasharray="4"/>
 
-    <!-- Tailstock (Ụ động) -->
-    <polygon points="430,135 400,170 430,205" fill="#94a3b8" stroke="#334155" stroke-width="1.5"/>
-    <rect x="430" y="125" width="80" height="90" rx="8" fill="url(#metalGrad)" stroke="#334155" stroke-width="2"/>
-    <text x="470" y="175" fill="#0f172a" font-size="11" font-weight="bold" text-anchor="middle" font-family="sans-serif">Ụ ĐỘNG</text>
+    <rect x="450" y="110" width="115" height="40" rx="8" fill="rgba(15,23,42,0.85)" stroke="#fbbf24" stroke-width="1"/>
+    <text x="507" y="135" fill="#e2e8f0" font-size="11" font-weight="bold" text-anchor="middle" font-family="sans-serif">Luyện Tập</text>
+    <path d="M420 130 L450 130" stroke="#fbbf24" stroke-width="2" stroke-dasharray="4"/>
 
-    <!-- Badges footer -->
-    <rect x="40" y="275" width="520" height="30" rx="8" fill="rgba(0,0,0,0.4)"/>
-    <text x="300" y="295" fill="#a5f3fc" font-size="11" text-anchor="middle" font-family="sans-serif">🔒 Chuẩn An Toàn: Luôn gá kẹp phôi chắc chắn & đóng nắp che chắn trước khi mở máy!</text>
+    <rect x="450" y="170" width="115" height="40" rx="8" fill="rgba(15,23,42,0.85)" stroke="#f43f5e" stroke-width="1"/>
+    <text x="507" y="195" fill="#e2e8f0" font-size="11" font-weight="bold" text-anchor="middle" font-family="sans-serif">Vận Dụng</text>
+    <path d="M420 170 L450 190" stroke="#f43f5e" stroke-width="2" stroke-dasharray="4"/>
+
+    <rect x="40" y="260" width="520" height="32" rx="8" fill="rgba(0,0,0,0.5)"/>
+    <text x="300" y="281" fill="#a5f3fc" font-size="11" text-anchor="middle" font-family="sans-serif">✨ Học liệu số chuẩn hóa theo định hướng Chương trình GDPT 2018</text>
   </svg>`;
 
   return {
     mode: 'ILLUSTRATION',
-    text: `🎨 **THIẾT KẾ HÌNH ẢNH MINH HỌA BÀI HỌC & CÂU LỆNH PROMPT AI**\n\n🎯 **Chủ đề**: ${clean} | **Môn học**: ${subject}\n\n═══════════════════════════════════════════════════════════\n🖼️ **1. HÌNH MINH HỌA VECTOR SVG TRỰC QUAN (Hiển thị ngay tại đây):**\n*(Thầy/Cô có thể chiếu trực tiếp lên tivi/bảng tương tác cho học sinh quan sát nguyên lý)*\n\n═══════════════════════════════════════════════════════════\n🤖 **2. CÂU LỆNH PROMPT AI CAO CẤP (Dành cho Midjourney / DALL-E 3 / Gemini Imagen):**\n\n📝 **Prompt Tiếng Anh (Khuyến nghị dùng để đạt chất lượng ảnh 3D đẹp nhất):**\n\`\`\`text\nEducational 3D isometric cutaway diagram of ${clean}, precision CNC lathe machine mechanism, showing rotating steel workpiece in 3-jaw chuck, carbide cutting tool generating sharp metallic chips, blue cooling fluid spray, technical blueprint overlay, clean studio lighting, realistic industrial design, 8k resolution, educational textbook quality, infographic callouts --ar 16:9 --v 6.0\n\`\`\`\n\n📝 **Prompt Tiếng Việt (Dành cho Bing Image Creator / Canva AI):**\n\`\`\`text\nBản vẽ sơ đồ kỹ thuật 3D minh họa bài giảng môn ${subject}: ${clean}. Thể hiện rõ chi tiết máy, nguyên lý làm việc, có mũi tên chỉ hướng chuyển động, phong cách đồ họa công nghệ hiện đại, rõ nét cho bài giảng số.\n\`\`\``,
+    text: `🎨 **THIẾT KẾ HÌNH ẢNH MINH HỌA BÀI HỌC & CÂU LỆNH PROMPT AI**\n\n🎯 **Chủ đề**: ${clean} | **Môn học**: ${detectedSubj} | **Lớp**: ${detectedGrade}\n\n═══════════════════════════════════════════════════════════\n🖼️ **1. HÌNH MINH HỌA VECTOR SVG TRỰC QUAN (Hiển thị ngay tại đây):**\n*(Thầy/Cô có thể chiếu trực tiếp lên tivi/bảng tương tác cho học sinh quan sát nguyên lý)*\n\n═══════════════════════════════════════════════════════════\n🤖 **2. CÂU LỆNH PROMPT AI CAO CẤP (Dành cho Midjourney / DALL-E 3 / Gemini Imagen):**\n\n📝 **Prompt Tiếng Anh (Khuyến nghị dùng để đạt chất lượng ảnh 3D đẹp nhất):**\n\`\`\`text\nHigh quality educational 3D illustration about ${clean}, subject of ${detectedSubj} grade ${detectedGrade}, modern infographic elements, clean studio lighting, realistic details, textbook art style, 8k resolution --ar 16:9 --v 6.0\n\`\`\`\n\n📝 **Prompt Tiếng Việt (Dành cho Bing Image Creator / Canva AI):**\n\`\`\`text\nHình ảnh minh họa bài giảng môn ${detectedSubj} lớp ${detectedGrade}: Chủ đề "${clean}". Thể hiện rõ ràng các yếu tố kiến thức cốt lõi, màu sắc tươi sáng, phong cách đồ họa giáo dục sắc nét cho bài dạy số.\n\`\`\``,
     svgContent: svg,
     quickActions: [
       { label: '📋 Sao chép Prompt Tiếng Anh', action: 'copy_prompt_en', mode: 'ILLUSTRATION' },

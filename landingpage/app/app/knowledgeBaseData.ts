@@ -944,36 +944,38 @@ export function findMatchingKnowledgeDocument(
     const docContent = (doc.content || '').toLowerCase();
 
     // 1. Khớp môn học
-    if (cleanSubj && (docSubj.includes(cleanSubj) || cleanSubj.includes(docSubj) || docTitle.includes(cleanSubj) || docFileName.includes(cleanSubj))) {
-      score += 40;
-    } else if (docSubj === 'all') {
-      score += 10;
+    let hasSubjectMatch = false;
+    if (cleanSubj) {
+      if (docSubj.includes(cleanSubj) || cleanSubj.includes(docSubj) || docTitle.includes(cleanSubj) || docFileName.includes(cleanSubj)) {
+        score += 45;
+        hasSubjectMatch = true;
+      } else if (docSubj !== 'all') {
+        // Môn học cụ thể khác môn cần tìm -> Trừ điểm nặng để không gán nhầm
+        score -= 50;
+      }
     }
 
     // 2. Khớp khối lớp
     if (gradeNum) {
       if (docLevel.includes(gradeNum) || docTitle.includes(gradeNum) || docFileName.includes(gradeNum)) {
-        score += 30;
+        score += 25;
       }
     }
 
-    // 3. Ưu tiên loại Giáo trình nghề hoặc Đề cương
-    if (doc.category === 'GIAO_TRINH' || doc.category === 'DE_CUONG') {
-      score += 25;
-    }
-
-    // 4. Ưu tiên tài liệu Thầy/Cô đã tự tải lên (Custom uploaded document)
+    // 3. Ưu tiên tài liệu Thầy/Cô đã tự tải lên (Custom uploaded document)
     if (!doc.isBuiltIn) {
       score += 20;
     }
 
-    // 5. Khớp từ khóa bài học hoặc tiết dạy
+    // 4. Khớp từ khóa bài học hoặc tiết dạy
+    let topicMatched = false;
     if (cleanQuery) {
       const lessonNumMatch = cleanQuery.match(/(?:bài|tiết|chương|phần)\s*([0-9]+)/i);
       if (lessonNumMatch) {
         const lessonNum = lessonNumMatch[1];
         if (docContent.includes(`bài ${lessonNum}`) || docContent.includes(`bài số ${lessonNum}`) || docTitle.includes(`bài ${lessonNum}`)) {
-          score += 35;
+          score += 30;
+          topicMatched = true;
         }
       }
 
@@ -984,16 +986,21 @@ export function findMatchingKnowledgeDocument(
           matchCount++;
         }
       }
-      score += Math.min(30, matchCount * 6);
+      if (matchCount > 0) {
+        score += Math.min(30, matchCount * 8);
+        topicMatched = true;
+      }
     }
 
-    if (score > highestScore) {
+    // Chỉ xét ứng viên khi thực sự có điểm tương thích rõ ràng (khớp môn hoặc khớp từ khóa đặc trưng)
+    if ((hasSubjectMatch || topicMatched) && score > highestScore) {
       highestScore = score;
       bestDoc = doc;
     }
   }
 
-  if (!bestDoc || highestScore < 15) {
+  // Siết chặt ngưỡng tin cậy tối thiểu lên 35 điểm để loại bỏ hoàn toàn các gán ghép sai lệch
+  if (!bestDoc || highestScore < 35) {
     return { doc: null, relevantSnippet: '', confidence: 0 };
   }
 

@@ -309,89 +309,181 @@ class GeminiAIServiceImpl(
                     "• Bước 5: Hướng dẫn kết thúc (Đo kiểm sản phẩm, chấm điểm và thực hiện 5S)."
         }
 
-        // 3. Chức năng 2: Đề thi & Ma trận chuẩn Thông tư 22
+        // Phân tích Môn học & Chủ đề linh hoạt (Subject-Agnostic Detection)
+        var detectedSubj = "Môn học"
+        var detectedGrade = "10"
+        val gradeRegex = "\\b(?:lớp|khối)?\\s*([1-9]|1[0-2])\\b".toRegex(RegexOption.IGNORE_CASE)
+        gradeRegex.find(lower)?.let { detectedGrade = it.groupValues[1] }
+
+        var detectedTopic = userMessage
+            .replace("(?i)\\b(tạo|hãy tạo|soạn|lập|làm|viết|cho tôi|giúp tôi|đề thi|ma trận|slide|thuyết trình|mini game|game|sơ đồ tư duy|mindmap|hình ảnh|minh họa|vẽ)\\b".toRegex(), "")
+            .replace("(?i)\\b(lớp|khối|môn)?\\s*(10|11|12|[1-9])\\b".toRegex(), "")
+            .trim()
+
+        var isMath = false
+        var isLiterature = false
+        var isEnglish = false
+        var isScience = false
+        var isSocial = false
+        var isInformatics = false
+
+        when {
+            lower.contains("toán") || lower.contains("đại số") || lower.contains("hình học") || lower.contains("giải tích") || lower.contains("hàm số") -> {
+                detectedSubj = "Toán học"
+                isMath = true
+                detectedTopic = detectedTopic.replace("(?i)toán(\\s*học)?".toRegex(), "").trim().ifBlank { "Hàm số & Phương trình" }
+            }
+            lower.contains("văn") || lower.contains("ngữ văn") || lower.contains("thơ") || lower.contains("truyện") || lower.contains("nghị luận") -> {
+                detectedSubj = "Ngữ văn"
+                isLiterature = true
+                detectedTopic = detectedTopic.replace("(?i)ngữ\\s*văn|văn".toRegex(), "").trim().ifBlank { "Đọc hiểu văn bản & Nghị luận" }
+            }
+            lower.contains("tiếng anh") || lower.contains("tieng anh") || lower.contains("english") || lower.contains("grammar") -> {
+                detectedSubj = "Tiếng Anh"
+                isEnglish = true
+                detectedTopic = detectedTopic.replace("(?i)tiếng\\s*anh|tieng\\s*anh|english".toRegex(), "").trim().ifBlank { "Grammar & Reading Comprehension" }
+            }
+            lower.contains("vật lý") || lower.contains("vật lí") || lower.contains("hóa học") || lower.contains("hoá học") || lower.contains("sinh học") || lower.contains("khtn") -> {
+                detectedSubj = if (lower.contains("vật")) "Vật lý" else if (lower.contains("hóa") || lower.contains("hoá")) "Hóa học" else if (lower.contains("sinh")) "Sinh học" else "Khoa học tự nhiên"
+                isScience = true
+                detectedTopic = detectedTopic.ifBlank { "Quy luật tự nhiên & Thực nghiệm" }
+            }
+            lower.contains("lịch sử") || lower.contains("địa lý") || lower.contains("địa lí") -> {
+                detectedSubj = if (lower.contains("sử")) "Lịch sử" else "Địa lý"
+                isSocial = true
+                detectedTopic = detectedTopic.ifBlank { "Tiến trình phát triển & Đặc điểm địa lý" }
+            }
+            lower.contains("tin học") || lower.contains("lập trình") || lower.contains("python") -> {
+                detectedSubj = "Tin học"
+                isInformatics = true
+                detectedTopic = detectedTopic.replace("(?i)tin\\s*học".toRegex(), "").trim().ifBlank { "Thuật toán & Lập trình ứng dụng" }
+            }
+            lower.contains("công nghệ") || lower.contains("kỹ thuật") || lower.contains("cơ khí") || lower.contains("tiện") || lower.contains("5s") -> {
+                detectedSubj = "Công nghệ"
+                detectedTopic = detectedTopic.replace("(?i)công\\s*nghệ".toRegex(), "").trim().ifBlank { "Thiết kế kỹ thuật & Ứng dụng" }
+            }
+            else -> {
+                detectedTopic = detectedTopic.ifBlank { "Kiến thức bài học trọng tâm" }
+            }
+        }
+
+        // 3. Chức năng 2: Đề thi & Ma trận chuẩn Thông tư 22 (Đa môn học)
         if (lower.contains("ma trận") || lower.contains("đề thi") || lower.contains("đề kiểm tra") || lower.contains("tt 22") || lower.contains("thông tư 22")) {
+            val sampleQuestions = when {
+                isMath -> "I. TRẮC NGHIỆM (7.0 điểm):\n" +
+                        "• Câu 1 (NB): Khái niệm cơ bản về tập xác định và tính đơn điệu trong chủ đề $detectedTopic?\n" +
+                        "  A. Định nghĩa chuẩn xác theo SGK Toán $detectedGrade (Đúng)\n  B. Mẫu số bằng 0\n  C. Luôn đồng biến\n  D. Không xác định\n" +
+                        "• Câu 2 (TH): Biện luận số nghiệm của phương trình dựa trên bảng biến thiên $detectedTopic.\n" +
+                        "  A. Số giao điểm của đồ thị hàm số với đường thẳng tương ứng (Đúng)\n  B. Luôn có 1 nghiệm\n  C. Vô nghiệm\n  D. Tuỳ ý\n" +
+                        "II. TỰ LUẬN (3.0 điểm):\n" +
+                        "• Câu 3 (VD - 2.0đ): Giải bài toán định lượng và tìm tham số m trong chủ đề $detectedTopic.\n" +
+                        "• Câu 4 (VDC - 1.0đ): Bài toán ứng dụng tối ưu hóa thực tiễn liên môn."
+                isLiterature -> "I. ĐỌC HIỂU VĂN BẢN (4.0 điểm):\n" +
+                        "• Câu 1 (NB): Xác định thể thơ / phương thức biểu đạt chính trong ngữ liệu $detectedTopic.\n" +
+                        "  A. Biểu cảm kết hợp tự sự (Đúng)\n  B. Thuyết minh đơn thuần\n  C. Hành chính\n  D. Miêu tả\n" +
+                        "• Câu 2 (TH): Phân tích hiệu quả nghệ thuật của biện pháp tu từ trong tác phẩm.\n" +
+                        "II. LÀM VĂN & NGHỊ LUẬN (6.0 điểm):\n" +
+                        "• Câu 3 (VD - 2.0đ): Viết đoạn văn 200 chữ cảm nhận về hình tượng trong $detectedTopic.\n" +
+                        "• Câu 4 (VDC - 4.0đ): Nghị luận xã hội về thông điệp ý nghĩa rút ra từ tác phẩm đối với tuổi trẻ."
+                isEnglish -> "I. MULTIPLE CHOICE (7.0 pts):\n" +
+                        "• Question 1 (Recognition): Pronunciation and stress pattern regarding $detectedTopic.\n" +
+                        "  A. Correct option according to standard phonetic rules (Correct)\n  B. Distractor\n  C. Distractor\n  D. Distractor\n" +
+                        "• Question 2 (Comprehension): Choose the best grammatical structure to complete the sentence.\n" +
+                        "II. WRITING (3.0 pts):\n" +
+                        "• Question 3 (Application): Sentence transformation using target grammar of $detectedTopic.\n" +
+                        "• Question 4 (High Application): Paragraph writing (120-150 words) about practical benefits."
+                else -> "I. TRẮC NGHIỆM KHÁCH QUAN (7.0 điểm):\n" +
+                        "• Câu 1 (NB): Khái niệm cốt lõi hoặc định luật cơ bản của chủ đề $detectedTopic là gì?\n" +
+                        "  A. Phát biểu chuẩn xác theo chương trình GDPT môn $detectedSubj (Đúng)\n  B. Ý kiến chủ quan\n  C. Sai quy luật\n  D. Không liên quan\n" +
+                        "• Câu 2 (TH): Giải thích nguyên nhân hoặc mối liên hệ bản chất giữa các hiện tượng.\n" +
+                        "  A. Phù hợp nguyên lý khoa học và thực nghiệm (Đúng)\n  B. Do ngẫu nhiên\n  C. Không giải thích được\n  D. Sai lệch\n" +
+                        "II. TỰ LUẬN & VẬN DỤNG (3.0 điểm):\n" +
+                        "• Câu 3 (VD - 2.0đ): Trình bày các bước giải quyết bài toán / tình huống thực tế về $detectedTopic.\n" +
+                        "• Câu 4 (VDC - 1.0đ): Đề xuất giải pháp sáng tạo hoặc ứng dụng công nghệ để giải quyết vấn đề mới."
+            }
+
             return@withContext "📋 **BẢNG MA TRẬN & ĐỀ THI CHUẨN THÔNG TƯ 22/2021/TT-BGDĐT**\n\n" +
+                    "📌 **Môn học**: $detectedSubj | **Khối lớp**: Lớp $detectedGrade | **Chủ đề**: $detectedTopic\n" +
                     "⚖️ **Tỉ lệ phân bổ 4 mức độ nhận thức**:\n" +
                     "• 🟢 **Nhận biết (40%)**: 4 câu (Tái hiện khái niệm, định nghĩa, thông số)\n" +
                     "• 🔵 **Thông hiểu (30%)**: 3 câu (Giải thích nguyên lý, phân tích quy trình)\n" +
-                    "• 🟡 **Vận dụng (20%)**: 2 câu (Bài toán thực tế, chọn chế độ công nghệ)\n" +
-                    "• 🔴 **Vận dụng cao (10%)**: 1 câu (Tối ưu hóa giải pháp, khắc phục sự cố)\n\n" +
+                    "• 🟡 **Vận dụng (20%)**: 2 câu (Bài toán thực tế, áp dụng kiến thức)\n" +
+                    "• 🔴 **Vận dụng cao (10%)**: 1 câu (Tối ưu hóa, sáng tạo, liên hệ thực tiễn)\n\n" +
                     "═══════════════════════════════════════\n" +
                     "📝 **ĐỀ THI MINH HỌA (45 phút - Thang điểm 10)**\n" +
-                    "I. TRẮC NGHIỆM (7.0 điểm):\n" +
-                    "• Câu 1 (NB): Ký hiệu dung sai trên bản vẽ kỹ thuật biểu thị gì?\n" +
-                    "  A. Giới hạn sai lệch kích thước cho phép (Đúng)\n  B. Trọng lượng phôi\n  C. Vật liệu dao\n  D. Vận tốc cắt\n" +
-                    "• Câu 2 (TH): Vì sao cần thực hiện 5S trước khi gia công máy?\n" +
-                    "  A. Tránh nguy cơ tai nạn và tăng năng suất lao động (Đúng)\n  B. Cho đẹp mắt\n  C. Giảm tiền điện\n  D. Không cần thiết\n" +
-                    "II. TỰ LUẬN (3.0 điểm):\n" +
-                    "• Câu 3 (VD): Trình bày 4 bước xử lý khi phôi bị rung động mạnh lúc cắt gọt.\n" +
-                    "• Câu 4 (VDC): Đề xuất giải pháp cảm biến tự ngắt khẩn cấp để đảm bảo an toàn lao động."
+                    sampleQuestions
         }
 
-        // 4. Chức năng 3: Slide thuyết trình bài giảng
+        // 4. Chức năng 3: Slide thuyết trình bài giảng (Đa môn học)
         if (lower.contains("slide") || lower.contains("thuyết trình") || lower.contains("powerpoint") || lower.contains("canva")) {
-            return@withContext "📊 **CẤU TRÚC 10 SLIDE BÀI GIẢNG CHUẨN SƯ PHẠM**\n\n" +
-                    "• Slide 1: Bìa bài giảng (Tên bài, Môn học, Lớp, Giáo viên phụ trách).\n" +
-                    "• Slide 2: Mục tiêu cần đạt (Kiến thức, Năng lực số, Phẩm chất).\n" +
-                    "• Slide 3: Hoạt động 1 - Khởi động (Tình huống thực tế dẫn nhập).\n" +
-                    "• Slide 4-5: Hoạt động 2 - Khám phá kiến thức (Nguyên lý & Cấu tạo thiết bị).\n" +
-                    "• Slide 6: Tiêu chuẩn An toàn lao động & Quy trình 5S xưởng.\n" +
-                    "• Slide 7-8: Hoạt động 3 - Luyện tập & Thao tác củng cố.\n" +
-                    "• Slide 9: Hoạt động 4 - Vận dụng thực tế & Dự án nhóm.\n" +
-                    "• Slide 10: Sơ đồ tư duy tổng kết & Hướng dẫn tự học ở nhà.\n\n" +
-                    "🗣️ *Speaker Notes*: Giáo viên dẫn nhập bằng câu hỏi thực tiễn khơi gợi tính chủ động của học sinh."
+            return@withContext "📊 **BỘ 10 SLIDE BÀI GIẢNG ĐIỆN TỬ CHUẨN SƯ PHẠM**\n\n" +
+                    "🎯 **Chủ đề**: $detectedTopic | **Môn**: $detectedSubj | **Lớp**: $detectedGrade\n\n" +
+                    "• **Slide 1**: Bìa bài giảng điện tử (Tiêu đề: $detectedTopic - Môn $detectedSubj $detectedGrade).\n" +
+                    "• **Slide 2**: Mục tiêu cần đạt theo CV 5512 (Kiến thức, Năng lực số, Phẩm chất).\n" +
+                    "• **Slide 3**: Hoạt động 1 - Khởi động (Tình huống thực tiễn khơi gợi tư duy về $detectedTopic).\n" +
+                    "• **Slide 4-5**: Hoạt động 2 - Khám phá tri thức mới (Khái niệm cốt lõi & Quy luật khoa học).\n" +
+                    "• **Slide 6**: Kết nối thực tiễn & Ứng dụng công nghệ số (CV 3456).\n" +
+                    "• **Slide 7-8**: Hoạt động 3 - Luyện tập tương tác (Trắc nghiệm nhanh & Thảo luận nhóm).\n" +
+                    "• **Slide 9**: Hoạt động 4 - Vận dụng & Dự án học tập thực tế.\n" +
+                    "• **Slide 10**: Sơ đồ tư duy tổng kết bài học & Hướng dẫn tự học ở nhà.\n\n" +
+                    "🗣️ *Speaker Notes*: Thầy/Cô mở đầu bằng câu hỏi gợi mở thực tiễn giúp học sinh chủ động chiếm lĩnh tri thức."
         }
 
-        // 5. Chức năng 4: Mini game cho tiết dạy
+        // 5. Chức năng 4: Mini game cho tiết dạy (Đa môn học)
         if (lower.contains("mini game") || lower.contains("kahoot") || lower.contains("quizizz") || lower.contains("trò chơi") || lower.contains("đố vui")) {
             return@withContext "🎮 **BỘ CÂU HỎI MINI GAME TƯƠNG TÁC (KAHOOT / QUIZIZZ)**\n\n" +
-                    "🏆 **Câu 1 (15s)**: Trước khi nhấn nút khởi động máy, hành động nào BẮT BUỘC?\n" +
-                    "A. Bật quạt gió\nB. Đeo kính bảo hộ, buộc tóc gọn gàng (Đúng)\nC. Uống nước\nD. Chụp ảnh\n" +
-                    "💡 *Giải thích*: Kính bảo hộ ngăn phoi văng bảo vệ mắt tuyệt đối!\n\n" +
-                    "🏆 **Câu 2 (20s)**: Chữ 'S' thứ 2 trong 5S (Seiton - Sắp xếp) có nghĩa là gì?\n" +
-                    "A. Vứt rác bừa bãi\nB. Dễ tìm, dễ thấy, dễ lấy, dễ trả lại (Đúng)\nC. Lau chùi sàn nhà\nD. Để lộn xộn\n" +
-                    "💡 *Giải thích*: Sắp xếp khoa học giúp tiết kiệm 20% thời gian tìm đồ nghề!\n\n" +
-                    "🏆 **Câu 3 (30s)**: Khi phoi tiện chuyển sang màu xanh tím, hiện tượng này là gì?\n" +
-                    "A. Máy chạy rất mát\nB. Vùng cắt quá nóng trên 600°C cần cấp trơn nguội ngay (Đúng)\nC. Phôi đã đẹp\nD. Bình thường"
+                    "🎯 **Chủ đề**: $detectedTopic | **Môn**: $detectedSubj $detectedGrade | **Thời lượng**: 5-7 phút\n\n" +
+                    "🏆 **Câu 1 (Khởi động - 15s)**: Khái niệm cơ bản nào sau đây là ĐÚNG khi nói về $detectedTopic?\n" +
+                    "A. Định nghĩa chuẩn xác theo SGK môn $detectedSubj (ĐÚNG - 1000 điểm)\nB. Khái niệm sai lệch 1\nC. Khái niệm sai lệch 2\nD. Không xác định\n" +
+                    "💡 *Giải thích*: Nắm vững khái niệm nền tảng giúp học sinh giải quyết tốt các bài toán nâng cao!\n\n" +
+                    "🏆 **Câu 2 (Tăng tốc - 20s)**: Đặc trưng hay tính chất quan trọng nhất của $detectedTopic là gì?\n" +
+                    "A. Tính chất thứ yếu\nB. Tính chất bản chất quyết định quy luật (ĐÚNG - 1200 điểm)\nC. Yếu tố ngẫu nhiên\nD. Tuỳ ý\n" +
+                    "💡 *Giải thích*: Hiểu rõ bản chất giúp tránh các bẫy câu hỏi thông hiểu thường gặp.\n\n" +
+                    "🏆 **Câu 3 (Về đích - 30s)**: Vận dụng kiến thức $detectedTopic vào thực tiễn đòi hỏi nguyên tắc nào?\n" +
+                    "A. Ghi nhớ máy móc\nB. Phân tích bối cảnh và áp dụng linh hoạt quy luật (ĐÚNG - 1500 điểm)\nC. Bỏ qua các bước kiểm tra\nD. Không khả thi"
         }
 
-        // 6. Chức năng 5: Sơ đồ tư duy
+        // 6. Chức năng 5: Sơ đồ tư duy (Đa môn học)
         if (lower.contains("sơ đồ tư duy") || lower.contains("mindmap") || lower.contains("sơ đồ")) {
+            val safeRoot = detectedTopic.replace("\"", "").replace("'", "")
             return@withContext "🧠 **SƠ ĐỒ TƯ DUY BÀI DẠY (MÃ MERMAID & CÂY TRI THỨC)**\n\n" +
-                    "🌳 **Cây phân cấp kiến thức**:\n" +
-                    "🌿 [CHỦ ĐỀ BÀI HỌC]\n" +
-                    "├── 🔹 1. Khái niệm cốt lõi (Bản chất, Bản vẽ, Vật liệu)\n" +
-                    "├── 🔹 2. Phương pháp gia công (Cắt gọt, Phay, Tiện, CNC)\n" +
-                    "├── 🔹 3. Chế độ công nghệ (Vận tốc cắt, Lượng chạy dao, Chiều sâu)\n" +
-                    "└── 🔹 4. Tiêu chuẩn An toàn & 5S xưởng\n\n" +
+                    "🎯 **Chủ đề**: $detectedTopic | **Môn**: $detectedSubj $detectedGrade\n\n" +
+                    "🌳 **Cây phân cấp kiến thức trực quan**:\n" +
+                    "🌿 [GỐC] $detectedTopic.toUpperCase()\n" +
+                    "├── 🔹 1. Khái Niệm Nền Tảng (Định nghĩa, Ký hiệu, Ý nghĩa)\n" +
+                    "├── 🔹 2. Quy Luật & Cấu Trúc Trọng Tâm (Mối liên hệ, Công thức/Quy tắc)\n" +
+                    "├── 🔹 3. Kỹ Năng & Phương Pháp Giải Quyết Vấn Đề (Quy trình 4 bước, Lỗi sai cần tránh)\n" +
+                    "└── 🔹 4. Ứng Dụng Thực Tiễn & Chuyển Đổi Số (Liên hệ thực tế, Năng lực số)\n\n" +
                     "💻 **Mã nguồn Mermaid Mindmap**:\n" +
                     "```mermaid\n" +
                     "mindmap\n" +
-                    "  root((\"Bài Giảng Sư Phạm\"))\n" +
-                    "    Khái Niệm Cốt Lõi\n" +
-                    "      Bản chất công nghệ\n" +
-                    "      Đọc bản vẽ kỹ thuật\n" +
-                    "    Phương Pháp Gia Công\n" +
-                    "      Tiện mặt trụ\n" +
-                    "      Phay mặt phẳng\n" +
-                    "      Gia công CNC số\n" +
-                    "    An Toàn Lao Động 5S\n" +
-                    "      Bảo hộ cá nhân\n" +
-                    "      Quy trình 5S xưởng\n" +
+                    "  root((\"$safeRoot\"))\n" +
+                    "    Khái Niệm Nền Tảng\n" +
+                    "      Định nghĩa cốt lõi\n" +
+                    "      Ký hiệu chuẩn\n" +
+                    "    Quy Luật Trọng Tâm\n" +
+                    "      Nguyên lý hoạt động\n" +
+                    "      Cấu trúc bài học\n" +
+                    "    Phương Pháp Vận Dụng\n" +
+                    "      Quy trình các bước\n" +
+                    "      Bài tập củng cố\n" +
+                    "    Ứng Dụng Thực Tế\n" +
+                    "      Liên hệ đời sống\n" +
+                    "      Học liệu số số hóa\n" +
                     "```"
         }
 
-        // 7. Chức năng 6: Hình ảnh minh họa
+        // 7. Chức năng 6: Hình ảnh minh họa (Đa môn học)
         if (lower.contains("hình ảnh") || lower.contains("minh họa") || lower.contains("prompt") || lower.contains("vẽ")) {
             return@withContext "🎨 **CÂU LỆNH PROMPT AI TẠO HÌNH ẢNH MINH HỌA BÀI HỌC**\n\n" +
+                    "🎯 **Chủ đề**: $detectedTopic | **Môn**: $detectedSubj $detectedGrade\n\n" +
                     "📝 **Prompt Tiếng Anh (Midjourney / DALL-E 3 / Gemini Imagen)**:\n" +
                     "```text\n" +
-                    "Educational 3D isometric cutaway diagram of precision CNC lathe machine mechanism, showing rotating steel workpiece, carbide cutting tool, cooling fluid spray, technical blueprint overlay, clean studio lighting, realistic industrial design, 8k resolution, educational textbook quality --ar 16:9\n" +
+                    "High quality educational 3D illustration about $detectedTopic, subject of $detectedSubj grade $detectedGrade, modern infographic elements, clean studio lighting, realistic details, textbook art style, 8k resolution --ar 16:9\n" +
                     "```\n\n" +
                     "📝 **Prompt Tiếng Việt (Bing Image Creator / Canva AI)**:\n" +
                     "```text\n" +
-                    "Sơ đồ cấu tạo kỹ thuật 3D minh họa bài giảng Công nghệ: Thể hiện chi tiết máy gia công, nguyên lý cắt gọt, có mũi tên chỉ hướng chuyển động, phong cách đồ họa giáo dục sắc nét.\n" +
+                    "Hình ảnh minh họa bài giảng môn $detectedSubj lớp $detectedGrade: Chủ đề \"$detectedTopic\". Thể hiện rõ ràng các yếu tố kiến thức cốt lõi, màu sắc tươi sáng, phong cách đồ họa giáo dục sắc nét cho bài dạy số.\n" +
                     "```"
         }
 

@@ -304,10 +304,13 @@ fun AILessonPlannerView(
                         if (selectedStandard == 0) {
                             val periods = durationText.toIntOrNull() ?: 1
                             val activeDocs = knowledgeDao?.getAllActiveDocuments() ?: emptyList()
+                            val targetGrade = extractGradeNum(className)
                             val relevantDocs = activeDocs.filter { doc ->
-                                doc.category == KnowledgeDocumentEntity.CAT_PHAP_QUY ||
-                                doc.subject == "ALL" ||
-                                doc.subject.contains(subject.trim(), ignoreCase = true)
+                                isDocGradeCompatible(doc, targetGrade) && (
+                                    doc.category == KnowledgeDocumentEntity.CAT_PHAP_QUY ||
+                                    doc.subject == "ALL" ||
+                                    doc.subject.contains(subject.trim(), ignoreCase = true)
+                                )
                             }
                             val refContext = relevantDocs.joinToString("\n\n---\n") { doc ->
                                 "【${doc.title} (${doc.code})】\n${doc.content}"
@@ -343,12 +346,15 @@ fun AILessonPlannerView(
                         } else {
                             val hours = durationText.toFloatOrNull() ?: 4.0f
                             val activeDocs = knowledgeDao?.getAllActiveDocuments() ?: emptyList()
+                            val targetGrade = extractGradeNum(className)
                             val relevantDocs = activeDocs.filter { doc ->
-                                doc.category == KnowledgeDocumentEntity.CAT_PHAP_QUY ||
-                                doc.category == KnowledgeDocumentEntity.CAT_QUY_CHUAN_XUONG ||
-                                doc.category == KnowledgeDocumentEntity.CAT_GIAO_TRINH ||
-                                doc.subject == "ALL" ||
-                                doc.subject.contains(subject.trim(), ignoreCase = true)
+                                isDocGradeCompatible(doc, targetGrade) && (
+                                    doc.category == KnowledgeDocumentEntity.CAT_PHAP_QUY ||
+                                    doc.category == KnowledgeDocumentEntity.CAT_QUY_CHUAN_XUONG ||
+                                    doc.category == KnowledgeDocumentEntity.CAT_GIAO_TRINH ||
+                                    doc.subject == "ALL" ||
+                                    doc.subject.contains(subject.trim(), ignoreCase = true)
+                                )
                             }
                             val refContext = relevantDocs.joinToString("\n\n---\n") { doc ->
                                 "【${doc.title} (${doc.code})】\n${doc.content}"
@@ -799,11 +805,14 @@ fun AIExamMatrixView(
                     coroutineScope.launch {
                         val count = questionCount.toIntOrNull() ?: 10
                         val activeDocs = knowledgeDao?.getAllActiveDocuments() ?: emptyList()
+                        val targetGrade = extractGradeNum(grade)
                         val relevantDocs = activeDocs.filter { doc ->
-                            doc.category == KnowledgeDocumentEntity.CAT_PHAP_QUY ||
-                            doc.category == KnowledgeDocumentEntity.CAT_DE_CUONG ||
-                            doc.subject == "ALL" ||
-                            doc.subject.contains(subject.trim(), ignoreCase = true)
+                            isDocGradeCompatible(doc, targetGrade) && (
+                                doc.category == KnowledgeDocumentEntity.CAT_PHAP_QUY ||
+                                doc.category == KnowledgeDocumentEntity.CAT_DE_CUONG ||
+                                doc.subject == "ALL" ||
+                                doc.subject.contains(subject.trim(), ignoreCase = true)
+                            )
                         }
                         val refContext = relevantDocs.joinToString("\n\n---\n") { doc ->
                             "【${doc.title} (${doc.code})】\n${doc.content}"
@@ -987,4 +996,26 @@ fun AIExamMatrixView(
             }
         }
     }
+}
+
+private fun extractGradeNum(text: String): String {
+    if (text.isBlank()) return ""
+    val regex = Regex("""(?:\b|khối|lớp|k|grade)\s*(10|11|12|[1-9])(?=[a-zA-Z\s._\-/]|$)""", RegexOption.IGNORE_CASE)
+    val m = regex.find(text)
+    if (m != null) return m.groupValues[1]
+    val m2 = Regex("""\b(10|11|12|[1-9])\b""").find(text)
+    return m2?.groupValues?.get(1) ?: ""
+}
+
+private fun isDocGradeCompatible(doc: KnowledgeDocumentEntity, targetGrade: String): Boolean {
+    if (targetGrade.isBlank()) return true
+    if (doc.category == KnowledgeDocumentEntity.CAT_PHAP_QUY || doc.category == KnowledgeDocumentEntity.CAT_QUY_CHUAN_XUONG) {
+        val targetLvl = doc.targetLevel.lowercase()
+        if (targetLvl.contains("thcs") || targetLvl.contains("thpt") || targetLvl.contains("all") || targetLvl == "phổ thông") {
+            return true
+        }
+    }
+    val docGrade = extractGradeNum("${doc.targetLevel} ${doc.title}")
+    if (docGrade.isBlank()) return true
+    return docGrade == targetGrade
 }

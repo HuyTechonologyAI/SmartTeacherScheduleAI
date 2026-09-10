@@ -278,6 +278,70 @@ II. NGUYÊN TẮC BIÊN SOẠN BỘ ĐỀ KIỂM TRA CHUẨN SƯ PHẠM:
     isBuiltIn: true,
     isActive: true,
     createdAt: '2026-09-01T00:00:00Z'
+  },
+  {
+    id: 'builtin-sgv-cn10',
+    code: 'SGV-CN10-GDPT',
+    title: 'SGV - Công nghệ 10 - Công nghệ và Đời sống (Thiết kế và Công nghệ - GDPT 2018)',
+    category: 'GIAO_TRINH',
+    subject: 'Công nghệ',
+    targetLevel: 'Lớp 10',
+    content: `SÁCH GIÁO VIÊN CÔNG NGHỆ 10 - THIẾT KẾ VÀ CÔNG NGHỆ (CHƯƠNG TRÌNH GDPT 2018)
+BỘ GIÁO DỤC VÀ ĐÀO TẠO
+
+CHƯƠNG I: KHÁI QUÁT VỀ CÔNG NGHỆ
+BÀI 1: CÔNG NGHỆ VÀ ĐỜI SỐNG (Thời lượng: 2 tiết)
+
+I. MỤC TIÊU BÀI HỌC (THEO CHUẨN CÔNG VĂN 5512):
+1. Kiến thức:
+- Nêu được khái niệm khoa học, kỹ thuật, công nghệ và phân tích được mối quan hệ biện chứng giữa chúng.
+- Trình bày và làm rõ vai trò, tác động đa diện của công nghệ đối với đời sống con người, sự phát triển kinh tế, xã hội và bảo vệ môi trường.
+- Nhận biết và kể tên được một số lĩnh vực công nghệ phổ biến trong đời sống và sản xuất hiện đại (công nghệ cơ khí, điện - điện tử, công nghệ thông tin và truyền thông, tự động hóa, công nghệ sinh học, công nghệ vật liệu mới).
+
+2. Năng lực:
+- Năng lực nhận thức công nghệ: Phân biệt chính xác khoa học, kỹ thuật và công nghệ thông qua các ví dụ trực quan trong thực tiễn đời sống.
+- Năng lực giao tiếp công nghệ: Sử dụng đúng thuật ngữ công nghệ khi thảo luận nhóm, đặt câu hỏi và trình bày báo cáo trước tập thể lớp.
+- Năng lực sử dụng công nghệ: Nhận thức mặt tích cực và tác động tiêu cực tiềm ẩn của công nghệ; có thói quen lựa chọn, sử dụng sản phẩm công nghệ an toàn, tiết kiệm điện năng.
+- Năng lực số: Vận dụng công cụ tìm kiếm trên mạng để tra cứu tư liệu, hình ảnh về các thành tựu công nghệ tiêu biểu làm thay đổi thế giới.
+
+3. Phẩm chất:
+- Chăm chỉ: Tích cực nghiên cứu SGK, chủ động chuẩn bị bài và tìm tòi khám phá tri thức mới.
+- Trách nhiệm: Có ý thức sử dụng công nghệ an toàn, tiết kiệm và thân thiện với môi trường sinh thái; không phụ thuộc thụ động vào các thiết bị số.
+- Nhân ái: Lắng nghe, tôn trọng và hỗ trợ bạn bè trong các hoạt động học tập hợp tác nhóm.
+
+II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU SỐ:
+- Giáo viên: Kế hoạch bài dạy, slide trình chiếu đa phương tiện (PowerPoint/Canva), video ngắn giới thiệu về các cuộc cách mạng công nghiệp, hình ảnh so sánh cuộc sống xưa và nay; phiếu học tập số 1 (Phân biệt Khoa học - Kỹ thuật - Công nghệ) và phiếu số 2 (Tác động của công nghệ).
+- Học sinh: SGK Công nghệ 10 (Kết nối tri thức / Cánh diều), vở ghi, dụng cụ học tập, thiết bị thông minh tra cứu khi được giáo viên cho phép.
+
+III. TIẾN TRÌNH DẠY HỌC (4 HOẠT ĐỘNG SƯ PHẠM CHUẨN CV 5512):
+1. Hoạt động 1: Mở đầu / Khởi động (Xác định vấn đề)
+- Mục tiêu: Tạo tình huống nhận thức khơi gợi hứng thú tìm hiểu vai trò của công nghệ trong cuộc sống.
+- Nội dung: Giáo viên chiếu hình ảnh so sánh cuộc sống thời nguyên thủy với cuộc sống hiện đại thời 4.0; đặt câu hỏi: "Yếu tố nào đóng vai trò then chốt tạo nên bước nhảy vọt đó?".
+- Sản phẩm: Ý kiến phát biểu hào hứng của học sinh về sự xuất hiện của các công cụ, máy móc và công nghệ số.
+- Tổ chức thực hiện: GV chuyển giao nhiệm vụ -> HS suy nghĩ cá nhân trong 1 phút -> Đại diện phát biểu -> GV tổng hợp và dẫn dắt vào bài mới Bài 1.
+
+2. Hoạt động 2: Hình thành kiến thức mới (Khám phá và giải quyết nhiệm vụ)
+- Nhiệm vụ 2.1: Phân biệt khoa học, kỹ thuật, công nghệ và mối quan hệ giữa chúng.
+  + Khoa học: Hệ thống tri thức về bản chất và quy luật vận động của tự nhiên, xã hội và tư duy.
+  + Kỹ thuật: Ứng dụng tri thức khoa học để thiết kế, chế tạo công trình, máy móc phục vụ đời sống.
+  + Công nghệ: Giải pháp, quy trình và thiết bị kỹ thuật nhằm biến đổi nguyên liệu/thông tin thành sản phẩm hữu ích.
+  + Mối quan hệ: Khoa học là nền móng cho kỹ thuật và công nghệ; công nghệ tạo ra công cụ hiện đại giúp khoa học phát hiện quy luật mới.
+- Nhiệm vụ 2.2: Vai trò và tác động của công nghệ đối với đời sống, kinh tế và môi trường.
+  + Tác động tích cực: Tăng năng suất lao động, nâng cao chất lượng cuộc sống, mở rộng kết nối tri thức toàn cầu.
+  + Tác động tiêu cực cần phòng tránh: Cạn kiệt tài nguyên, ô nhiễm môi trường, nguy cơ lệ thuộc thế giới ảo và mất an toàn thông tin cá nhân.
+
+3. Hoạt động 3: Luyện tập
+- Mục tiêu: Khắc sâu kiến thức đã học, rèn luyện tư duy phân loại và liên hệ thực tế.
+- Nội dung: Học sinh hoàn thành bài tập phân loại các thành tựu (kính viễn vọng, định luật vạn vật hấp dẫn, điện thoại thông minh, quy trình sản xuất vắc-xin) thuộc phạm trù Khoa học, Kỹ thuật hay Công nghệ.
+- Sản phẩm: Phiếu học tập cá nhân đã hoàn thành lời giải chính xác.
+
+4. Hoạt động 4: Vận dụng
+- Mục tiêu: Giúp học sinh liên hệ tri thức công nghệ vào sinh hoạt gia đình và định hướng sử dụng công nghệ có trách nhiệm.
+- Nội dung: Nhiệm vụ về nhà: "Hãy khảo sát các thiết bị công nghệ tiêu thụ điện trong gia đình em và đề xuất 3 giải pháp công nghệ giúp tiết kiệm năng lượng và giảm thiểu rác thải điện tử".
+- Sản phẩm: Báo cáo khảo sát ngắn (1 trang A4) nộp vào tiết học tiếp theo.`,
+    isBuiltIn: true,
+    isActive: true,
+    createdAt: '2026-09-01T00:00:00Z'
   }
 ];
 
@@ -308,6 +372,7 @@ export function getCanonicalBuiltinId(doc: { id?: string; code?: string; title?:
   if (id === 'builtin-cv-2634' || code.includes('2634') || title.includes('2634')) return 'builtin-cv-2634';
   if (id === 'builtin-tt-22' || code.includes('tt_22') || code.includes('tt 22') || id.includes('tt-22') || title.includes('thông tư 22')) return 'builtin-tt-22';
   if (id === 'builtin-atld-5s' || code.includes('5s') || code.includes('atld') || title.includes('5s') || title.includes('an toàn lao động')) return 'builtin-atld-5s';
+  if (id === 'builtin-sgv-cn10' || code.includes('sgv-cn10') || title.includes('công nghệ 10 - công nghệ và đời sống')) return 'builtin-sgv-cn10';
   return null;
 }
 
@@ -912,8 +977,59 @@ export interface MatchedDocResult {
 }
 
 /**
+ * Trích xuất chuẩn xác số khối lớp từ chuỗi thông tin (ví dụ: "10A1.ML", "Khối 10", "Lớp 12", "11B2")
+ */
+export function extractGradeFromInput(text: string): string {
+  if (!text) return '';
+  const clean = text.toLowerCase().trim();
+
+  // Khớp các định dạng: "10a1", "10a1.ml", "khối 10", "lớp 10", "k10", "grade 10", "10/1", "10-1"
+  const m = clean.match(/(?:^|\b|khối|lớp|k|grade)\s*(10|11|12|[1-9])(?=[a-z\s._\-/]|$)/i);
+  if (m) return m[1];
+
+  const m2 = clean.match(/\b(10|11|12|[1-9])\b/);
+  if (m2) return m2[1];
+
+  return '';
+}
+
+/**
+ * Trích xuất khối lớp của tài liệu dựa vào targetLevel, title hoặc fileName
+ */
+export function extractGradeFromDoc(doc: KnowledgeDocument): string {
+  const cat = doc.category;
+  const targetLevel = (doc.targetLevel || '').toLowerCase();
+
+  // Văn bản pháp quy áp dụng chung cho nhiều cấp học (CV 5512, CV 3456, TT 22, ATLĐ)
+  if ((cat === 'PHAP_QUY' || cat === 'ATLD_5S') && (targetLevel.includes('thcs') || targetLevel.includes('thpt') || targetLevel.includes('all') || !targetLevel)) {
+    return 'ALL';
+  }
+  if (targetLevel === 'all' || targetLevel.includes('toàn trường') || targetLevel.includes('chung')) {
+    return 'ALL';
+  }
+
+  // 1. Kiểm tra từ targetLevel
+  if (targetLevel) {
+    const lvlGrade = targetLevel.match(/(?:khối|lớp|k|grade)?\s*(10|11|12|[1-9])(?=[a-z\s._\-/]|$)/i);
+    if (lvlGrade) return lvlGrade[1];
+  }
+
+  // 2. Kiểm tra từ title và fileName (loại trừ các số văn bản như 5512, 3456, 2422, 2634, năm 2021...)
+  const titleAndFile = `${doc.title} ${doc.fileName || ''}`.toLowerCase();
+  const titleGrade = titleAndFile.match(/(?:công nghệ|toán|văn|sử|địa|hóa|sinh|tin|lí|lý|gdcd|tiếng anh|sgk|sgv|sách|giáo trình|khối|lớp|k)\s*(10|11|12|[1-9])(?=[a-z\s._\-/]|$)/i);
+  if (titleGrade) return titleGrade[1];
+
+  const cleanTitle = titleAndFile.replace(/\b(5512|3456|2422|2634|202\d|19\d\d)\b/g, '');
+  const standalone = cleanTitle.match(/\b(10|11|12)\b/);
+  if (standalone) return standalone[1];
+
+  return '';
+}
+
+/**
  * Tìm kiếm và khớp nối chính xác giáo trình / tài liệu đính kèm từ Kho tư liệu
  * dựa trên Môn học, Khối lớp và Tiết/Bài học (ví dụ: Lớp 10, Môn Công nghệ, Tiết 1 Bài 1)
+ * TUYỆT ĐỐI KHÔNG GÁN GHÉP TÀI LIỆU LỆCH KHỐI LỚP (Ví dụ: Soạn lớp 10 thì không lấy SGV lớp 12).
  */
 export function findMatchingKnowledgeDocument(
   subject: string = '',
@@ -928,9 +1044,11 @@ export function findMatchingKnowledgeDocument(
   const cleanSubj = subject.toLowerCase().trim();
   const cleanQuery = lessonTitleOrQuery.toLowerCase().trim();
 
-  // Trích xuất số khối lớp (ví dụ: "10" từ "10A1", "Lớp 10")
-  const gradeMatch = gradeOrClass.match(/\b(10|11|12|[1-9])\b/);
-  const gradeNum = gradeMatch ? gradeMatch[1] : '';
+  // Trích xuất số khối lớp mục tiêu (từ gradeOrClass, hoặc từ query, hoặc từ subject)
+  let targetGrade = extractGradeFromInput(gradeOrClass);
+  if (!targetGrade) {
+    targetGrade = extractGradeFromInput(lessonTitleOrQuery) || extractGradeFromInput(subject);
+  }
 
   let bestDoc: KnowledgeDocument | null = null;
   let highestScore = -1;
@@ -939,32 +1057,55 @@ export function findMatchingKnowledgeDocument(
     let score = 0;
     const docTitle = doc.title.toLowerCase();
     const docSubj = doc.subject.toLowerCase();
-    const docLevel = doc.targetLevel.toLowerCase();
     const docFileName = (doc.fileName || '').toLowerCase();
     const docContent = (doc.content || '').toLowerCase();
+    const docGrade = extractGradeFromDoc(doc);
 
-    // 1. Khớp môn học
+    // =========================================================================
+    // NGUYÊN TẮC VÀNG: CHỐNG LỆCH KHỐI LỚP (STRICT GRADE COMPATIBILITY RULE)
+    // Tuyệt đối không được gán tài liệu của Lớp 12 khi người dùng đang soạn cho Lớp 10
+    // và ngược lại. Nếu phát hiện lệch khối lớp cụ thể -> LOẠI BỎ NGAY LẬP TỨC!
+    // =========================================================================
+    if (targetGrade && docGrade && docGrade !== 'ALL') {
+      if (docGrade !== targetGrade) {
+        // Tài liệu thuộc khối lớp khác -> Bỏ qua hoàn toàn, không xét điểm!
+        continue;
+      }
+    }
+
+    // 1. Khớp khối lớp chính xác (Exact Grade Match)
+    let gradeMatched = false;
+    if (targetGrade) {
+      if (docGrade === targetGrade) {
+        score += 35; // Điểm cộng rất cao cho tài liệu đúng chuẩn khối lớp
+        gradeMatched = true;
+      } else if (docGrade === 'ALL') {
+        // Tài liệu áp dụng chung (CV 5512, Khung Năng lực số 3456...)
+        score += 15;
+      }
+    }
+
+    // 2. Khớp môn học
     let hasSubjectMatch = false;
     if (cleanSubj) {
-      if (docSubj.includes(cleanSubj) || cleanSubj.includes(docSubj) || docTitle.includes(cleanSubj) || docFileName.includes(cleanSubj)) {
+      // Chuẩn hóa tên môn học (ví dụ: "công nghệ - công nghiệp" -> "công nghệ")
+      const baseSubj = cleanSubj.split(/[-–—/]/)[0].trim();
+      if (
+        docSubj.includes(cleanSubj) || cleanSubj.includes(docSubj) ||
+        docTitle.includes(cleanSubj) || docFileName.includes(cleanSubj) ||
+        (baseSubj && (docSubj.includes(baseSubj) || docTitle.includes(baseSubj)))
+      ) {
         score += 45;
         hasSubjectMatch = true;
       } else if (docSubj !== 'all') {
-        // Môn học cụ thể khác môn cần tìm -> Trừ điểm nặng để không gán nhầm
-        score -= 50;
+        // Môn học khác môn cần tìm -> Trừ điểm rất nặng
+        score -= 60;
       }
     }
 
-    // 2. Khớp khối lớp
-    if (gradeNum) {
-      if (docLevel.includes(gradeNum) || docTitle.includes(gradeNum) || docFileName.includes(gradeNum)) {
-        score += 25;
-      }
-    }
-
-    // 3. Ưu tiên tài liệu Thầy/Cô đã tự tải lên (Custom uploaded document)
+    // 3. Ưu tiên tài liệu do Thầy/Cô tự tải lên
     if (!doc.isBuiltIn) {
-      score += 20;
+      score += 15;
     }
 
     // 4. Khớp từ khóa bài học hoặc tiết dạy
@@ -979,7 +1120,7 @@ export function findMatchingKnowledgeDocument(
         }
       }
 
-      const words = cleanQuery.split(/[\s,.:;_\-]+/).filter(w => w.length > 3);
+      const words = cleanQuery.split(/[\s,.:;_\-]+/).filter(w => w.length > 3 && !w.match(/^(bài|tiết|chương|phần|khối|lớp)$/i));
       let matchCount = 0;
       for (const w of words) {
         if (docContent.includes(w) || docTitle.includes(w)) {
@@ -992,15 +1133,24 @@ export function findMatchingKnowledgeDocument(
       }
     }
 
-    // Chỉ xét ứng viên khi thực sự có điểm tương thích rõ ràng (khớp môn hoặc khớp từ khóa đặc trưng)
-    if ((hasSubjectMatch || topicMatched) && score > highestScore) {
+    // Chỉ xét ứng viên khi thực sự có điểm tương thích (khớp môn, khối lớp hoặc từ khóa đặc trưng)
+    if ((hasSubjectMatch || topicMatched || gradeMatched) && score > highestScore) {
       highestScore = score;
       bestDoc = doc;
     }
   }
 
-  // Siết chặt ngưỡng tin cậy tối thiểu lên 35 điểm để loại bỏ hoàn toàn các gán ghép sai lệch
+  // Nếu không tìm được tài liệu giáo trình chuyên biệt khớp đúng khối lớp,
+  // tự động fallback về văn bản quy chuẩn chung CV 5512/BGDĐT-GDTrH thay vì để trống hoặc gán nhầm sang lớp khác
   if (!bestDoc || highestScore < 35) {
+    const defaultRegulatoryDoc = allDocs.find(d => d.code.includes('5512')) || BUILT_IN_KNOWLEDGE_DOCUMENTS[0];
+    if (defaultRegulatoryDoc) {
+      return {
+        doc: defaultRegulatoryDoc,
+        relevantSnippet: defaultRegulatoryDoc.content.slice(0, 800) + '...',
+        confidence: 90
+      };
+    }
     return { doc: null, relevantSnippet: '', confidence: 0 };
   }
 
@@ -1015,7 +1165,7 @@ export function findMatchingKnowledgeDocument(
       targetIndex = fullContent.search(p);
     }
     if (targetIndex < 0) {
-      const words = cleanQuery.split(/[\s,.:;_\-]+/).filter(w => w.length > 3);
+      const words = cleanQuery.split(/[\s,.:;_\-]+/).filter(w => w.length > 3 && !w.match(/^(bài|tiết|chương|phần|khối|lớp)$/i));
       for (const w of words) {
         const idx = fullContent.toLowerCase().indexOf(w);
         if (idx >= 0) {

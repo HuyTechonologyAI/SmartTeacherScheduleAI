@@ -720,6 +720,9 @@ export default function UnifiedTeacherScheduleApp() {
               ? `${selectedEv.date} • Ca: ${selectedEv.startTime}-${selectedEv.endTime} (Phòng: ${selectedEv.room || 'Lớp học'})`
               : 'Theo phân phối chương trình';
 
+            const freshMatched = findMatchingKnowledgeDocument(plannerSubject, plannerClass, title);
+            setPlannerMatchedDocResult(freshMatched);
+
             const pkg = generateComprehensiveLessonPlanPackage({
               lessonTitle: title,
               subject: plannerSubject || 'Chung',
@@ -728,13 +731,13 @@ export default function UnifiedTeacherScheduleApp() {
               standard: plannerStandard,
               durationMinutes: durationNum * (plannerStandard === 5512 ? 45 : 60),
               customRequirements: plannerRequirements,
-              matchedDoc: plannerMatchedDocResult?.doc ? {
-                code: plannerMatchedDocResult.doc.code,
-                title: plannerMatchedDocResult.doc.title,
-                fileName: plannerMatchedDocResult.doc.fileName,
-                relevantSnippet: plannerMatchedDocResult.relevantSnippet
+              matchedDoc: freshMatched?.doc ? {
+                code: freshMatched.doc.code,
+                title: freshMatched.doc.title,
+                fileName: freshMatched.doc.fileName,
+                relevantSnippet: freshMatched.relevantSnippet
               } : null,
-              referenceContext: getActiveReferenceContext(plannerSubject, plannerStandard === 5512 ? 'PHAP_QUY' : 'ATLD_5S')
+              referenceContext: freshMatched?.relevantSnippet || getActiveReferenceContext(plannerSubject, plannerStandard === 5512 ? 'PHAP_QUY' : 'ATLD_5S')
             });
 
             setPlannerFullPackage(pkg);
@@ -3117,7 +3120,11 @@ export default function UnifiedTeacherScheduleApp() {
                         <input
                           type="text"
                           value={plannerClass}
-                          onChange={(e) => setPlannerClass(e.target.value)}
+                          onChange={(e) => {
+                            setPlannerClass(e.target.value);
+                            const matched = findMatchingKnowledgeDocument(plannerSubject, e.target.value, plannerLessonTitle);
+                            setPlannerMatchedDocResult(matched);
+                          }}
                           placeholder="Lớp 10A1 / Trung cấp K18..."
                           className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-blue-500"
                         />

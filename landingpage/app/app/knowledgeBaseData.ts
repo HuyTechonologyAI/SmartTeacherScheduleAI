@@ -392,7 +392,7 @@ export function saveKnowledgeDocument(doc: KnowledgeDocument): boolean {
       saveOriginalFileToStorage(doc.id, doc.fileData);
     }
 
-    const docToSave: KnowledgeDocument = { ...doc };
+    const docToSave: KnowledgeDocument = { ...doc, updatedAt: Date.now() };
     delete docToSave.fileData;
 
     const index = customDocs.findIndex(d => 
@@ -900,7 +900,7 @@ export function updateKnowledgeDocument(updatedDoc: KnowledgeDocument): boolean 
       (updatedDoc.fileName && d.fileName && d.fileName.toLowerCase().trim() === updatedDoc.fileName.toLowerCase().trim())
     );
 
-    const docToSave = { ...updatedDoc };
+    const docToSave = { ...updatedDoc, updatedAt: Date.now() };
     delete docToSave.fileData;
 
     if (index >= 0) {

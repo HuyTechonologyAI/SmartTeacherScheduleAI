@@ -1,10 +1,12 @@
 package com.smartteacher.schedule.feature.ai
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,6 +41,13 @@ import kotlinx.coroutines.withContext
  * Nơi lưu trữ căn cứ pháp quy (CV 5512, CV 2634, TT 22, ATLĐ) và tài liệu giáo viên nạp thêm.
  * AI sẽ bắt buộc đối chiếu các tài liệu này để sinh giáo án, chống ảo giác và bịa đặt thông tin.
  */
+private data class FilterTabItem(
+    val key: String,
+    val title: String,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val count: Int
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AIKnowledgeBaseScreen(
@@ -54,6 +63,18 @@ fun AIKnowledgeBaseScreen(
     var viewingDocument by remember { mutableStateOf<KnowledgeDocumentEntity?>(null) }
     var documentToDelete by remember { mutableStateOf<KnowledgeDocumentEntity?>(null) }
     var documentToEdit by remember { mutableStateOf<KnowledgeDocumentEntity?>(null) }
+    var isBannerExpanded by remember { mutableStateOf(false) }
+
+    val filterTabs = remember(allDocuments) {
+        listOf(
+            FilterTabItem("ALL", "Tất cả", Icons.Default.Folder, allDocuments.size),
+            FilterTabItem("GIAO_TRINH", "Giáo trình", Icons.Default.MenuBook, allDocuments.count { it.category == KnowledgeDocumentEntity.CAT_GIAO_TRINH }),
+            FilterTabItem("DE_CUONG", "Đề cương", Icons.Default.Assignment, allDocuments.count { it.category == KnowledgeDocumentEntity.CAT_DE_CUONG }),
+            FilterTabItem("PHAP_QUY", "Pháp quy", Icons.Default.AccountBalance, allDocuments.count { it.category == KnowledgeDocumentEntity.CAT_PHAP_QUY }),
+            FilterTabItem("ATLD", "ATLĐ & 5S", Icons.Default.HealthAndSafety, allDocuments.count { it.category == KnowledgeDocumentEntity.CAT_QUY_CHUAN_XUONG }),
+            FilterTabItem("CUSTOM", "Tự nạp", Icons.Default.Person, allDocuments.count { !it.isBuiltIn })
+        )
+    }
 
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
@@ -69,24 +90,43 @@ fun AIKnowledgeBaseScreen(
             for (b in blacklisted) {
                 knowledgeDao.deleteDocument(b)
             }
+
+            // Xóa các bản nhân bản không chuẩn của văn bản pháp quy gốc
+            val dupClones = docs.filter {
+                !it.isBuiltIn && (
+                    it.code.contains("-UPDATED", ignoreCase = true) ||
+                    it.code.equals("CV_5512", ignoreCase = true) ||
+                    it.code.equals("CV_3456_BGDDT", ignoreCase = true) ||
+                    it.code.equals("QD_2422_BGDDT", ignoreCase = true) ||
+                    it.code.equals("CV_2634", ignoreCase = true) ||
+                    it.code.equals("TT_22_BGDDT", ignoreCase = true) ||
+                    it.code.equals("QUY_CHUAN_5S_ATLD", ignoreCase = true)
+                )
+            }
+            for (d in dupClones) {
+                knowledgeDao.deleteDocument(d)
+            }
         }
     }
 
+    // Lọc theo Danh mục và Từ khóa tìm kiếm
     val filteredList = remember(allDocuments, selectedFilter, searchQuery) {
         allDocuments.filter { doc ->
             val matchFilter = when (selectedFilter) {
-                "BUILT_IN" -> doc.isBuiltIn
-                "CUSTOM" -> !doc.isBuiltIn
+                "ALL" -> true
                 "GIAO_TRINH" -> doc.category == KnowledgeDocumentEntity.CAT_GIAO_TRINH
                 "DE_CUONG" -> doc.category == KnowledgeDocumentEntity.CAT_DE_CUONG
                 "PHAP_QUY" -> doc.category == KnowledgeDocumentEntity.CAT_PHAP_QUY
                 "ATLD" -> doc.category == KnowledgeDocumentEntity.CAT_QUY_CHUAN_XUONG
+                "CUSTOM" -> !doc.isBuiltIn
                 else -> true
             }
             val matchSearch = if (searchQuery.isBlank()) true else {
                 doc.title.contains(searchQuery, ignoreCase = true) ||
-                        doc.code.contains(searchQuery, ignoreCase = true) ||
-                        doc.subject.contains(searchQuery, ignoreCase = true)
+                doc.code.contains(searchQuery, ignoreCase = true) ||
+                doc.subject.contains(searchQuery, ignoreCase = true) ||
+                doc.fileName.contains(searchQuery, ignoreCase = true) ||
+                doc.summary.contains(searchQuery, ignoreCase = true)
             }
             matchFilter && matchSearch
         }
@@ -97,66 +137,86 @@ fun AIKnowledgeBaseScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(14.dp)
     ) {
-        // Banner giải thích cơ chế Grounding & Anti-Hallucination
+        // Banner giải thích cơ chế Grounding & Anti-Hallucination (Thu gọn / Mở rộng linh hoạt)
         Card(
             colors = CardDefaults.cardColors(containerColor = Color(0xFFECFDF5)),
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth()
+            shape = RoundedCornerShape(14.dp),
+            border = BorderStroke(1.dp, Color(0xFFA7F3D0)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { isBannerExpanded = !isBannerExpanded }
         ) {
-            Column(modifier = Modifier.padding(14.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.VerifiedUser,
-                        contentDescription = null,
-                        tint = Color(0xFF059669),
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Kho Tư Liệu Đối Chiếu Chuẩn (Anti-Hallucination)",
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF065F46),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "AI sẽ bắt buộc đối chiếu với các văn bản đang 'BẬT' dưới đây để soạn Kế hoạch bài dạy & Đề thi. Tuyệt đối không tự bịa đặt điều luật, thông số kỹ thuật hay kiến thức ngoài nguồn chuẩn.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF047857)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
+            Column(modifier = Modifier.padding(12.dp)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(
-                        text = "Đang kích hoạt: $activeCount / ${allDocuments.size} tài liệu",
-                        fontWeight = FontWeight.SemiBold,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFF065F46)
-                    )
-                    TextButton(
-                        onClick = {
-                            coroutineScope.launch {
-                                val defaults = DefaultKnowledgeBase.getDefaultBuiltInDocuments()
-                                knowledgeDao.insertDocuments(defaults)
-                                Toast.makeText(context, "Đã khôi phục các văn bản pháp quy gốc!", Toast.LENGTH_SHORT).show()
-                            }
-                        }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
                     ) {
-                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Nạp lại mẫu gốc", fontSize = 12.sp)
+                        Icon(
+                            imageVector = Icons.Default.VerifiedUser,
+                            contentDescription = null,
+                            tint = Color(0xFF059669),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Kho Tư Liệu Chuẩn AI ($activeCount/${allDocuments.size} Đang bật)",
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF065F46),
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                    }
+                    IconButton(
+                        onClick = { isBannerExpanded = !isBannerExpanded },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isBannerExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = if (isBannerExpanded) "Thu gọn" else "Mở rộng",
+                            tint = Color(0xFF059669),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                if (isBannerExpanded) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "AI sẽ bắt buộc đối chiếu với các văn bản đang 'BẬT' dưới đây để soạn Kế hoạch bài dạy & Đề thi. Tuyệt đối không tự bịa đặt điều luật, thông số kỹ thuật hay kiến thức ngoài nguồn chuẩn.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF047857)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.End,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        TextButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    val defaults = DefaultKnowledgeBase.getDefaultBuiltInDocuments()
+                                    knowledgeDao.insertDocuments(defaults)
+                                    Toast.makeText(context, "Đã khôi phục các văn bản pháp quy gốc!", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        ) {
+                            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Nạp lại mẫu gốc", fontSize = 12.sp)
+                        }
                     }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         // Search and Add Bar
         Row(
@@ -167,12 +227,12 @@ fun AIKnowledgeBaseScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = { Text("Tìm theo tên, mã số, môn học...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                placeholder = { Text("Tìm theo tên, mã số, môn học...", fontSize = 13.sp) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
                 trailingIcon = if (searchQuery.isNotBlank()) {
                     {
                         IconButton(onClick = { searchQuery = "" }) {
-                            Icon(Icons.Default.Clear, contentDescription = null)
+                            Icon(Icons.Default.Clear, contentDescription = null, modifier = Modifier.size(18.dp))
                         }
                     }
                 } else null,
@@ -186,37 +246,66 @@ fun AIKnowledgeBaseScreen(
                 shape = RoundedCornerShape(12.dp),
                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = null)
+                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Thêm mới")
+                Text("Thêm mới", fontSize = 13.sp, fontWeight = FontWeight.Bold)
             }
         }
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Filter chips
-        ScrollableTabRow(
-            selectedTabIndex = when (selectedFilter) {
-                "ALL" -> 0
-                "GIAO_TRINH" -> 1
-                "DE_CUONG" -> 2
-                "PHAP_QUY" -> 3
-                "ATLD" -> 4
-                "CUSTOM" -> 5
-                else -> 0
-            },
-            edgePadding = 4.dp,
-            divider = {}
+        // Touch-Friendly Category Filter Chips
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(horizontal = 2.dp, vertical = 2.dp)
         ) {
-            Tab(selected = selectedFilter == "ALL", onClick = { selectedFilter = "ALL" }, text = { Text("Tất cả (${allDocuments.size})") })
-            Tab(selected = selectedFilter == "GIAO_TRINH", onClick = { selectedFilter = "GIAO_TRINH" }, text = { Text("Giáo trình (${allDocuments.count { it.category == KnowledgeDocumentEntity.CAT_GIAO_TRINH }})") })
-            Tab(selected = selectedFilter == "DE_CUONG", onClick = { selectedFilter = "DE_CUONG" }, text = { Text("Đề cương (${allDocuments.count { it.category == KnowledgeDocumentEntity.CAT_DE_CUONG }})") })
-            Tab(selected = selectedFilter == "PHAP_QUY", onClick = { selectedFilter = "PHAP_QUY" }, text = { Text("Pháp quy BGDĐT & GDNN") })
-            Tab(selected = selectedFilter == "ATLD", onClick = { selectedFilter = "ATLD" }, text = { Text("ATLĐ & 5S") })
-            Tab(selected = selectedFilter == "CUSTOM", onClick = { selectedFilter = "CUSTOM" }, text = { Text("Tài liệu tự nạp (${allDocuments.count { !it.isBuiltIn }})") })
+            items(filterTabs, key = { it.key }) { tab ->
+                val isSelected = selectedFilter == tab.key
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f),
+                    border = if (isSelected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
+                    shadowElevation = if (isSelected) 3.dp else 0.dp,
+                    modifier = Modifier
+                        .height(44.dp)
+                        .clickable { selectedFilter = tab.key }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = tab.icon,
+                            contentDescription = null,
+                            tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = tab.title,
+                            fontSize = 13.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.25f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                        ) {
+                            Text(
+                                text = tab.count.toString(),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+            }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         // Document list
         if (filteredList.isEmpty()) {
@@ -245,6 +334,7 @@ fun AIKnowledgeBaseScreen(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
+                contentPadding = PaddingValues(bottom = 76.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(filteredList, key = { it.id }) { doc ->
@@ -360,7 +450,9 @@ fun KnowledgeDocumentCard(
             containerColor = if (doc.isActive) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = if (doc.isActive) 2.dp else 0.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onViewContent() }
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(
@@ -506,15 +598,21 @@ fun KnowledgeDocumentCard(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    TextButton(
+                    FilledTonalButton(
                         onClick = onViewContent,
-                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        modifier = Modifier.height(34.dp)
                     ) {
                         Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(15.dp))
-                        Spacer(modifier = Modifier.width(3.dp))
-                        Text("Xem trước", fontSize = 11.sp)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Xem trước & Đọc", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
 
                     if (doc.fileName.isNotBlank()) {

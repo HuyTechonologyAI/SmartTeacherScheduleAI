@@ -49,6 +49,20 @@ object CloudSyncManager {
 
     private const val KEY_SYNC_PIN = "sync_pin"
 
+    private fun parseTimestamp(element: com.google.gson.JsonElement?): Long {
+        if (element == null || element.isJsonNull) return System.currentTimeMillis()
+        return try {
+            if (element.asJsonPrimitive.isNumber) {
+                element.asLong
+            } else {
+                val str = element.asString.trim()
+                str.toLongOrNull() ?: System.currentTimeMillis()
+            }
+        } catch (e: Exception) {
+            System.currentTimeMillis()
+        }
+    }
+
     /**
      * Lấy hoặc tạo mã đồng bộ đám mây duy nhất cho giáo viên (VD: ST-883921 hoặc mã cá nhân)
      */
@@ -388,7 +402,7 @@ object CloudSyncManager {
                 db.attendanceDao().insertRecords(list)
             }
 
-            val docsArray = jsonObject.getAsJsonArray("knowledgeDocs")
+            val docsArray = jsonObject.getAsJsonArray("knowledgeDocs") ?: jsonObject.getAsJsonArray("knowledgeDocuments")
 
             var changedCount = (classroomsArray?.size() ?: 0) + (studentsArray?.size() ?: 0) + (attendanceArray?.size() ?: 0)
 
@@ -631,9 +645,10 @@ object CloudSyncManager {
             if (docsArray != null && docsArray.size() > 0) {
                 for (elem in docsArray) {
                     val item = elem.asJsonObject
-                    val rawCode = item.get("code")?.asString ?: item.get("id")?.asString ?: ""
+                    val rawId = item.get("id")?.asString ?: ""
+                    val rawCode = item.get("code")?.asString ?: ""
                     val title = item.get("title")?.asString ?: ""
-                    if (rawCode.isBlank() && title.isBlank()) continue
+                    if (rawCode.isBlank() && title.isBlank() && rawId.isBlank()) continue
 
                     val fileName = item.get("fileName")?.asString ?: ""
                     // Skip blacklisted
@@ -647,9 +662,9 @@ object CloudSyncManager {
                     val content = item.get("content")?.asString ?: ""
                     val isBuiltIn = item.get("isBuiltIn")?.asBoolean ?: false
                     val isActive = if (item.has("isActive")) item.get("isActive").asBoolean else true
-                    val fileSize = item.get("fileSize")?.asLong ?: 0L
+                    val fileSize = try { item.get("fileSize")?.asLong ?: 0L } catch (e: Exception) { 0L }
                     val fileType = item.get("fileType")?.asString ?: ""
-                    val itemUpdatedAt = item.get("updatedAt")?.asLong ?: System.currentTimeMillis()
+                    val itemUpdatedAt = parseTimestamp(item.get("updatedAt"))
 
                     // Check if it matches one of the 6 canonical built-in documents in Android
                     val targetBuiltinCode = when {
@@ -687,47 +702,49 @@ object CloudSyncManager {
                     // Custom document matching
                     val existing = currentDocs.find {
                         !it.isBuiltIn && (
+                            (rawId.isNotBlank() && (
+                                it.code.equals(rawId, ignoreCase = true) ||
+                                "custom_${it.id}".equals(rawId, ignoreCase = true) ||
+                                "custom-${it.id}".equals(rawId, ignoreCase = true) ||
+                                it.id.toString() == rawId
+                            )) ||
+                            (rawCode.isNotBlank() && it.code.equals(rawCode, ignoreCase = true)) ||
                             (fileName.isNotBlank() && it.fileName.equals(fileName, ignoreCase = true)) ||
-                            (rawCode.isNotBlank() && !rawCode.startsWith("DOC_") && it.code.equals(rawCode, ignoreCase = true)) ||
-                            (title.isNotBlank() && it.title.equals(title, ignoreCase = true) && subject.isNotBlank() && it.subject.equals(subject, ignoreCase = true))
+                            (title.isNotBlank() && it.title.equals(title, ignoreCase = true))
                         )
                     }
 
                     if (existing != null) {
-                        // Protect rich content: never overwrite with shorter/empty text
-                        val preservedContent = if (content.isNotBlank() && (content.length >= existing.content.length || existing.content.isBlank())) {
-                            content
-                        } else {
-                            existing.content
-                        }
+                        // Luôn nhận nội dung mới nhất từ Đám mây / Máy tính nếu có nội dung
+                        val targetContent = if (content.isNotBlank()) content else existing.content
 
                         val isDiff = existing.title != title ||
                                      existing.category != category ||
                                      existing.subject != subject ||
                                      existing.targetLevel != targetLevel ||
-                                     existing.content != preservedContent ||
+                                     existing.content != targetContent ||
                                      existing.isActive != isActive ||
                                      (fileName.isNotBlank() && existing.fileName != fileName)
 
-                        if (isDiff && itemUpdatedAt >= existing.updatedAt) {
+                        if (isDiff) {
                             val updated = existing.copy(
-                                title = title,
+                                title = if (title.isNotBlank()) title else existing.title,
                                 category = category,
                                 subject = subject,
                                 targetLevel = targetLevel,
-                                content = preservedContent,
+                                content = targetContent,
                                 isActive = isActive,
                                 fileName = if (fileName.isNotBlank()) fileName else existing.fileName,
                                 fileSizeBytes = if (fileSize > 0) fileSize else existing.fileSizeBytes,
                                 fileExtension = if (fileType.isNotBlank()) fileType else existing.fileExtension,
-                                updatedAt = itemUpdatedAt
+                                updatedAt = itemUpdatedAt.coerceAtLeast(System.currentTimeMillis())
                             )
                             db.knowledgeDocumentDao().updateDocument(updated)
                             changedCount++
                         }
-                    } else if (category != "PHAP_QUY") {
+                    } else if (!isBuiltIn) {
                         val newDoc = KnowledgeDocumentEntity(
-                            code = if (rawCode.isNotBlank()) rawCode else "DOC_${System.currentTimeMillis()}",
+                            code = if (rawCode.isNotBlank()) rawCode else (if (rawId.isNotBlank()) rawId else "DOC_${System.currentTimeMillis()}"),
                             title = title,
                             category = category,
                             subject = subject,

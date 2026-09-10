@@ -525,9 +525,10 @@ function mergeKnowledgeDocs(
 
       const incContent = (inc.content || '').trim();
       const prevContent = (prev.content || '').trim();
-      const safeContent = (incContent.length >= prevContent.length || prevContent.length === 0)
-        ? (incContent || prevContent)
-        : prevContent;
+      // Nếu bản ghi mới hơn (incTs >= prevTs), chấp nhận nội dung mới (không ép phải dài hơn nội dung cũ)
+      const safeContent = incTs >= prevTs
+        ? (incContent.length > 0 ? incContent : prevContent)
+        : ((incContent.length >= prevContent.length || prevContent.length === 0) ? (incContent || prevContent) : prevContent);
 
       if (incHasFile && !prevHasFile) {
         map.set(key, { ...inc, content: safeContent });

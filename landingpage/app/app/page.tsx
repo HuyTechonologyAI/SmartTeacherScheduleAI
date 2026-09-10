@@ -546,6 +546,7 @@ export default function UnifiedTeacherScheduleApp() {
             fileSize,
             fileType,
             content: fullText,
+            updatedAt: Date.now()
           };
 
           // 4. Lưu vào localStorage
@@ -554,6 +555,9 @@ export default function UnifiedTeacherScheduleApp() {
           // 5. Cập nhật state giao diện
           refreshKnowledgeDocs();
           setKbViewingDoc(updatedDoc);
+
+          // 6. Tự động đồng bộ lên Đám mây để điện thoại nhận được ngay
+          pushToCloud(events, schedules, syncCode, false);
 
           if (fileName.toLowerCase().endsWith('.pdf') || fileType.includes('pdf')) {
             const blobUrl = dataUrlToBlobUrl(dataUrl);
@@ -5395,7 +5399,8 @@ export default function UnifiedTeacherScheduleApp() {
                               fileName: kbAttachedFileName || undefined,
                               fileSize: kbAttachedFileSize || undefined,
                               fileType: kbAttachedFileType || undefined,
-                              fileData: kbAttachedFileData || undefined
+                              fileData: kbAttachedFileData || undefined,
+                              updatedAt: Date.now()
                             };
                             const savedOk = saveKnowledgeDocument(newDoc);
                             if (savedOk) {

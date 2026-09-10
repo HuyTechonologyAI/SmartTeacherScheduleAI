@@ -49,6 +49,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.FileProvider
 import com.smartteacher.schedule.core.database.entity.LessonAttachmentEntity
 import com.smartteacher.schedule.core.util.AttachmentFileHelper
+import com.smartteacher.schedule.core.util.KnowledgeFileHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -90,18 +91,22 @@ fun DocumentReaderDialog(
     var htmlContent by remember { mutableStateOf("") }
     var pdfPages by remember { mutableStateOf<List<Bitmap>>(emptyList()) }
     var pdfError by remember { mutableStateOf<String?>(null) }
+    var isCloudSyncedDoc by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) }
     var zoomScale by remember { mutableFloatStateOf(1.0f) }
 
     LaunchedEffect(filePath, webUrl, textContent) {
         isLoading = true
         pdfError = null
+        isCloudSyncedDoc = false
 
         withContext(Dispatchers.IO) {
             try {
+                var fileReadSuccess = false
                 if (!filePath.isNullOrBlank()) {
                     val file = File(filePath)
-                    if (file.exists()) {
+                    if (file.exists() && file.length() > 0L) {
+                        fileReadSuccess = true
                         when (ext) {
                             "pdf" -> {
                                 try {
@@ -183,21 +188,35 @@ fun DocumentReaderDialog(
                                 }
                             }
                         }
-                    } else {
-                        resolvedText = "Không tìm thấy tệp cục bộ trên máy. Đường dẫn: $filePath"
                     }
-                } else if (!textContent.isNullOrBlank()) {
-                    if (textContent.contains("<html", ignoreCase = true)) {
-                        isHtmlFile = true
-                        htmlContent = wrapHtmlForMobile(textContent)
-                        resolvedText = extractPlainTextFromHtml(textContent)
-                    } else {
-                        resolvedText = textContent
+                }
+
+                // Nếu không đọc được từ tệp cục bộ (tệp lưu trên PC/Cloud hoặc đường dẫn khác): Tự động hiển thị nội dung trích xuất số hoá!
+                if (!fileReadSuccess || (ext == "pdf" && pdfPages.isEmpty() && pdfError != null)) {
+                    if (!textContent.isNullOrBlank()) {
+                        isCloudSyncedDoc = true
+                        pdfError = null // Xoá lỗi PDF vì đã có văn bản số hoá đầy đủ
+                        if (textContent.contains("<html", ignoreCase = true) || textContent.contains("<!DOCTYPE html", ignoreCase = true)) {
+                            isHtmlFile = true
+                            htmlContent = wrapHtmlForMobile(textContent)
+                            resolvedText = extractPlainTextFromHtml(textContent)
+                        } else {
+                            isHtmlFile = true
+                            htmlContent = wrapDocxTextToHtml(title, textContent)
+                            resolvedText = textContent
+                        }
+                    } else if (!fileReadSuccess) {
+                        resolvedText = "Không tìm thấy tệp cục bộ trên thiết bị và chưa có nội dung số hóa.\nĐường dẫn tệp gốc: ${filePath ?: "N/A"}"
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                resolvedText = "Lỗi khi đọc tệp: ${e.localizedMessage}"
+                if (!textContent.isNullOrBlank()) {
+                    isCloudSyncedDoc = true
+                    resolvedText = textContent
+                } else {
+                    resolvedText = "Lỗi khi đọc tệp: ${e.localizedMessage}"
+                }
             } finally {
                 isLoading = false
             }
@@ -236,17 +255,34 @@ fun DocumentReaderDialog(
                         Toast.makeText(context, "Đã sao chép toàn bộ văn bản!", Toast.LENGTH_SHORT).show()
                     },
                     onOpenExternal = {
+                        val file = if (!filePath.isNullOrBlank()) File(filePath) else null
                         if (!webUrl.isNullOrBlank()) {
                             openWeb(context, webUrl)
-                        } else if (!filePath.isNullOrBlank()) {
-                            openExternalFile(context, File(filePath), ext)
+                        } else if (file != null && file.exists()) {
+                            openExternalFile(context, file, ext)
+                        } else if (resolvedText.isNotBlank()) {
+                            val tempDoc = KnowledgeFileHelper.exportDocumentToDoc(
+                                context = context,
+                                title = title,
+                                code = "DOC",
+                                category = "TAI_LIEU",
+                                subject = "ALL",
+                                targetLevel = "ALL",
+                                content = resolvedText
+                            )
+                            if (tempDoc != null) {
+                                KnowledgeFileHelper.openOrShareFile(context, tempDoc, "application/msword", title)
+                            } else {
+                                shareText(context, title, resolvedText)
+                            }
                         }
                     },
                     onShare = {
+                        val file = if (!filePath.isNullOrBlank()) File(filePath) else null
                         if (!webUrl.isNullOrBlank()) {
                             shareText(context, title, "Tài liệu học tập: $title\nLink: $webUrl")
-                        } else if (!filePath.isNullOrBlank()) {
-                            shareLocalFile(context, File(filePath), title, ext)
+                        } else if (file != null && file.exists()) {
+                            shareLocalFile(context, file, title, ext)
                         } else if (resolvedText.isNotBlank()) {
                             shareText(context, title, resolvedText)
                         }
@@ -255,6 +291,30 @@ fun DocumentReaderDialog(
                 )
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                if (isCloudSyncedDoc) {
+                    Surface(
+                        color = Color(0xFFEFF6FF),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.CloudDone, contentDescription = null, tint = Color(0xFF2563EB), modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                "Nội dung văn bản số hóa đồng bộ từ Đám mây (Tệp gốc lưu trên máy tính)",
+                                fontSize = 11.sp,
+                                color = Color(0xFF1E40AF),
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
 
                 // Body Content
                 Box(

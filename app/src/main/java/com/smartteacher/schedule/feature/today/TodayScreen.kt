@@ -90,6 +90,7 @@ fun TodayScreen(
     var viewingDocumentsEvent by remember { mutableStateOf<CalendarEventEntity?>(null) }
     var attendanceTargetEvent by remember { mutableStateOf<CalendarEventEntity?>(null) }
     var showStudentManagementDialog by remember { mutableStateOf(false) }
+    var todayFilter by remember { mutableStateOf("Tất cả") }
 
 
     if (viewingDocumentsEvent != null) {
@@ -240,6 +241,20 @@ fun TodayScreen(
                 val end = LocalTime.parse(event.endTime)
                 end.isAfter(liveTime)
             }.getOrDefault(false)
+        }
+    }
+
+    val filteredTodayEvents = remember(todayEvents, todayFilter) {
+        todayEvents.filter { ev ->
+            val isPrac = ev.sessionType.contains("thực hành", true) ||
+                    ev.title.contains("thực hành", true) ||
+                    ev.room.contains("xưởng", true) ||
+                    ev.notes.contains("thực hành", true)
+            when (todayFilter) {
+                "Lý thuyết" -> !isPrac
+                "Thực hành" -> isPrac
+                else -> true
+            }
         }
     }
 
@@ -653,11 +668,62 @@ fun TodayScreen(
 
             // 4. Section: Today's Timeline
             item {
-                Text(
-                    text = "Lịch trình hôm nay",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Lịch trình hôm nay",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "${filteredTodayEvents.size}/${todayEvents.size} tiết",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+            }
+
+            // Quick filter chips: Tất cả / Lý thuyết / Thực hành
+            if (todayEvents.isNotEmpty()) {
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 2.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        FilterChip(
+                            selected = todayFilter == "Tất cả",
+                            onClick = { todayFilter = "Tất cả" },
+                            label = { Text("Tất cả (${todayEvents.size})", fontSize = 12.sp) }
+                        )
+                        val theoryCount = todayEvents.count { ev ->
+                            !ev.sessionType.contains("thực hành", true) &&
+                            !ev.title.contains("thực hành", true) &&
+                            !ev.room.contains("xưởng", true) &&
+                            !ev.notes.contains("thực hành", true)
+                        }
+                        FilterChip(
+                            selected = todayFilter == "Lý thuyết",
+                            onClick = { todayFilter = "Lý thuyết" },
+                            label = { Text("📘 Lý thuyết ($theoryCount)", fontSize = 12.sp) }
+                        )
+                        val pracCount = todayEvents.count { ev ->
+                            ev.sessionType.contains("thực hành", true) ||
+                            ev.title.contains("thực hành", true) ||
+                            ev.room.contains("xưởng", true) ||
+                            ev.notes.contains("thực hành", true)
+                        }
+                        FilterChip(
+                            selected = todayFilter == "Thực hành",
+                            onClick = { todayFilter = "Thực hành" },
+                            label = { Text("🛠️ Thực hành ($pracCount)", fontSize = 12.sp) }
+                        )
+                    }
+                }
             }
 
             if (todayEvents.isEmpty()) {
@@ -668,8 +734,23 @@ fun TodayScreen(
                         onAction = onAddScheduleClick
                     )
                 }
+            } else if (filteredTodayEvents.isEmpty()) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "Không có tiết $todayFilter nào hôm nay.",
+                            modifier = Modifier.padding(16.dp),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             } else {
-                items(todayEvents) { event ->
+                items(filteredTodayEvents) { event ->
                     val eventAttachments = allAttachments.filter {
                         it.eventId == event.id || (event.teachingScheduleId != null && it.teachingScheduleId == event.teachingScheduleId)
                     }
@@ -763,18 +844,39 @@ fun NextClassHeroBanner(
                 )
 
                 if (nextEvent != null) {
+                    val isPractice = nextEvent.sessionType.contains("thực hành", true) ||
+                            nextEvent.title.contains("thực hành", true) ||
+                            nextEvent.room.contains("xưởng", true) ||
+                            nextEvent.notes.contains("thực hành", true)
                     val countdownText = calculateRemainingText(nextEvent.startTime, nextEvent.endTime, liveTime)
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.primary
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = countdownText,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isPractice) Color(0xFFFEF3C7) else Color(0xFFEFF6FF)
+                        ) {
+                            Text(
+                                text = if (isPractice) "🛠️ Thực hành (60p)" else "📘 Lý thuyết (45p)",
+                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isPractice) Color(0xFFB45309) else Color(0xFF1D4ED8)
+                            )
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.primary
+                        ) {
+                            Text(
+                                text = countdownText,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
                     }
                 }
             }

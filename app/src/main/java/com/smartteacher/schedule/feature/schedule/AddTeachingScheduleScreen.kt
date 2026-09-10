@@ -1,6 +1,7 @@
 package com.smartteacher.schedule.feature.schedule
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -384,24 +385,49 @@ fun AddTeachingScheduleScreen(
                 )
             }
 
-            // Session type & Instructor
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = sessionType,
-                    onValueChange = { sessionType = it },
-                    label = { Text("Loại buổi học") },
-                    placeholder = { Text("Lý thuyết / Thực hành") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = instructor,
-                    onValueChange = { instructor = it },
-                    label = { Text("Giảng viên") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true
-                )
+            // Session type selector (Lý thuyết / Thực hành)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
+                    .padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text("Hình thức giảng dạy *", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = sessionType == "Lý thuyết",
+                        onClick = {
+                            sessionType = "Lý thuyết"
+                            selectedPresetTab = 0
+                        },
+                        label = { Text("📘 Lý thuyết (45p/T)") },
+                        modifier = Modifier.weight(1f)
+                    )
+                    FilterChip(
+                        selected = sessionType == "Thực hành",
+                        onClick = {
+                            sessionType = "Thực hành"
+                            selectedPresetTab = 1
+                        },
+                        label = { Text("🛠️ Thực hành (60p/T)") },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
+
+            // Instructor field
+            OutlinedTextField(
+                value = instructor,
+                onValueChange = { instructor = it },
+                label = { Text("Giảng viên phụ trách") },
+                placeholder = { Text("Thầy / Cô bộ môn") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
 
             // Recurrence selection
             Text("Quy luật lặp:", style = MaterialTheme.typography.labelMedium)

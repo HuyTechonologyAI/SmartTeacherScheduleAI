@@ -148,9 +148,16 @@ fun CalendarScreen(
     }
 
     // Sự kiện cho chế độ xem theo ngày đơn lẻ
-    val singleDayEvents = remember(events, selectedDate) {
+    val singleDayEvents = remember(events, selectedDate, selectedFilter) {
         val dateStr = selectedDate.toString()
-        events.filter { it.date == dateStr }.sortedBy { it.startTime }
+        events.filter { event ->
+            if (event.date != dateStr) return@filter false
+            when (selectedFilter) {
+                "Lý thuyết" -> event.sessionType.contains("lý thuyết", ignoreCase = true) || (!event.sessionType.contains("thực hành", ignoreCase = true) && !event.title.contains("thực hành", ignoreCase = true) && !event.notes.contains("thực hành", ignoreCase = true))
+                "Thực hành" -> event.sessionType.contains("thực hành", ignoreCase = true) || event.title.contains("thực hành", ignoreCase = true) || event.notes.contains("thực hành", ignoreCase = true) || event.room.contains("xưởng", ignoreCase = true)
+                else -> true
+            }
+        }.sortedBy { it.startTime }
     }
 
     Scaffold(
@@ -239,27 +246,38 @@ fun CalendarScreen(
                 )
             }
 
+            // Quick Filter Chips row (Lý thuyết / Thực hành / Thời gian) - Available in BOTH view modes
+            val filterOptions = if (viewMode == 0) {
+                listOf("Tất cả", "Tuần này", "Tuần tới", "📘 Lý thuyết", "🛠️ Thực hành")
+            } else {
+                listOf("Tất cả", "📘 Lý thuyết", "🛠️ Thực hành")
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                filterOptions.forEach { filterName ->
+                    val normalizedFilter = when (filterName) {
+                        "📘 Lý thuyết" -> "Lý thuyết"
+                        "🛠️ Thực hành" -> "Thực hành"
+                        else -> filterName
+                    }
+                    FilterChip(
+                        selected = selectedFilter == normalizedFilter,
+                        onClick = { selectedFilter = normalizedFilter },
+                        label = { Text(filterName, fontSize = 12.sp) }
+                    )
+                }
+            }
+
             // =========================================================================
             // CHẾ ĐỘ 1: LỊCH TRÌNH TỔNG THỂ (AGENDA TIMELINE - KHÔNG CẦN BẤM TỪNG NGÀY)
             // =========================================================================
             if (viewMode == 0) {
-                // Filter chips row
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 6.dp)
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    listOf("Tất cả", "Tuần này", "Tuần tới", "Lý thuyết", "Thực hành").forEach { filterName ->
-                        FilterChip(
-                            selected = selectedFilter == filterName,
-                            onClick = { selectedFilter = filterName },
-                            label = { Text(filterName, fontSize = 12.sp) }
-                        )
-                    }
-                }
-
                 if (groupedAgendaEvents.isEmpty()) {
                     Box(
                         modifier = Modifier

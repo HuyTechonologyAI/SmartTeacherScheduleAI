@@ -212,6 +212,26 @@ export function getDayInfo(dateStr: string) {
   };
 }
 
+// Helper: Add months to a YYYY-MM-DD date string
+export function addMonthsToDate(dateStr: string, months: number): string {
+  try {
+    const d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d.getTime())) return '2027-02-15';
+    const day = d.getDate();
+    d.setMonth(d.getMonth() + months);
+    // Handle month-end overflow
+    if (d.getDate() !== day) {
+      d.setDate(0);
+    }
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dt = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dt}`;
+  } catch {
+    return '2027-02-15';
+  }
+}
+
 // Generate 288 events from schedules
 export function generateEventsFromSchedules(schedules: ScheduleItem[]): CalendarEventItem[] {
   const events: CalendarEventItem[] = [];
@@ -1523,11 +1543,18 @@ export default function UnifiedTeacherScheduleApp() {
 
   // Add New Single or Recurring Event (Tạo Ca Dạy Mới Từ Máy Tính)
   const handleCreateNewEvent = () => {
-    if (!newSubject.trim() || !newClass.trim() || !newDate.trim()) {
-      alert('Vui lòng điền đủ Tên môn học, Lớp giảng dạy và Ngày dạy!');
+    const effectiveStartDate = newStartDate || newDate;
+    if (!newSubject.trim() || !newClass.trim() || !effectiveStartDate) {
+      alert('Vui lòng điền đủ Tên môn học, Lớp giảng dạy và Ngày bắt đầu ca dạy!');
       return;
     }
 
+    if (newCreateRecurring && newEndDate && newEndDate < effectiveStartDate) {
+      alert('Ngày kết thúc ca dạy không được trước ngày bắt đầu!');
+      return;
+    }
+
+    const effectiveDate = effectiveStartDate;
     const newEvId = 'ev_' + Date.now();
     const createdEvent: CalendarEventItem = {
       id: newEvId,
@@ -1536,7 +1563,7 @@ export default function UnifiedTeacherScheduleApp() {
       subject: newSubject.trim(),
       className: newClass.trim(),
       room: newRoom.trim() || 'Phòng học bộ môn',
-      date: newDate,
+      date: effectiveDate,
       startTime: newStartTime,
       endTime: newEndTime,
       sessionType: newSessionType,
@@ -1545,13 +1572,14 @@ export default function UnifiedTeacherScheduleApp() {
       updatedAt: Date.now()
     };
 
-    let updatedEvents = [createdEvent, ...events];
+    let updatedEvents = [createdEvent, ...events.filter(e => e.id !== newEvId)];
     let updatedSchedules = [...schedules];
 
     if (newCreateRecurring) {
-      const dt = new Date(newDate + 'T00:00:00');
+      const dt = new Date(effectiveStartDate + 'T00:00:00');
       const dayOfWeek = dt.getDay() === 0 ? 7 : dt.getDay(); // ISO: 1..7
       const newSchId = 'sch_' + Date.now();
+      const finalEndDate = newEndDate || addMonthsToDate(effectiveStartDate, 5);
       const newSchedule: ScheduleItem = {
         id: newSchId,
         subject: newSubject.trim(),
@@ -1563,8 +1591,8 @@ export default function UnifiedTeacherScheduleApp() {
         endTime: newEndTime,
         type: newSessionType === 'Thực hành' ? 'practice' : 'theory',
         sessionType: newSessionType,
-        startDate: newStartDate || newDate,
-        endDate: newEndDate || '2027-02-15',
+        startDate: effectiveStartDate,
+        endDate: finalEndDate,
         notes: newNotes.trim(),
         updatedAt: Date.now()
       };
@@ -1575,7 +1603,7 @@ export default function UnifiedTeacherScheduleApp() {
       // Generate remaining recurring events for the semester
       const generated = generateEventsFromSchedules([newSchedule]);
       for (const g of generated) {
-        if (g.date !== newDate && !updatedEvents.some(e => e.date === g.date && e.startTime === g.startTime && e.className === g.className)) {
+        if (g.date !== effectiveDate && !updatedEvents.some(e => e.date === g.date && e.startTime === g.startTime && e.className === g.className)) {
           updatedEvents.push(g);
         }
       }
@@ -1589,7 +1617,7 @@ export default function UnifiedTeacherScheduleApp() {
     setNewClass('');
     setNewRoom('');
     setNewNotes('');
-    alert(`🎉 ĐÃ THÊM CA DẠY THÀNH CÔNG!\n\nCa dạy đã được lưu trên máy tính và tự động đẩy lên Đám mây cho Điện thoại!`);
+    alert(`🎉 ĐÃ THÊM CA DẠY THÀNH CÔNG!\n\nLịch dạy (${newCreateRecurring ? `Từ ${effectiveStartDate} đến ${newEndDate || addMonthsToDate(effectiveStartDate, 5)}` : effectiveStartDate}) đã được lưu trên máy tính và tự động đẩy lên Đám mây cho Điện thoại!`);
   };
 
   // Delete Single Event
@@ -1971,9 +1999,26 @@ export default function UnifiedTeacherScheduleApp() {
                     <CalendarDays className="w-5 h-5 text-blue-400" />
                     <span>Lịch giảng dạy hôm nay ({todayEvents.length} ca dạy)</span>
                   </h3>
-                  <span className="text-xs text-slate-400">
-                    Chuẩn thời gian ISO & Giờ Việt Nam
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const initDate = todayStr || new Date().toISOString().slice(0, 10);
+                        setNewDate(initDate);
+                        setNewStartDate(initDate);
+                        setNewEndDate(addMonthsToDate(initDate, 5));
+                        setNewCreateRecurring(true);
+                        setShowAddEventModal(true);
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer transition-all"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Thêm Ca Dạy</span>
+                    </button>
+                    <span className="text-xs text-slate-400 hidden sm:inline">
+                      Chuẩn thời gian ISO & Giờ Việt Nam
+                    </span>
+                  </div>
                 </div>
 
                 {todayEvents.length === 0 ? (
@@ -2178,7 +2223,11 @@ export default function UnifiedTeacherScheduleApp() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
-                      setNewDate(selectedDate || todayStr);
+                      const initDate = selectedDate || todayStr || new Date().toISOString().slice(0, 10);
+                      setNewDate(initDate);
+                      setNewStartDate(initDate);
+                      setNewEndDate(addMonthsToDate(initDate, 5));
+                      setNewCreateRecurring(true);
                       setShowAddEventModal(true);
                     }}
                     className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-600/25 cursor-pointer transition-all"
@@ -5419,20 +5468,11 @@ export default function UnifiedTeacherScheduleApp() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-300 font-medium block mb-1">
-                    Ngày dạy: <span className="text-rose-400">*</span>
+                    Giờ bắt đầu: <span className="text-rose-400">*</span>
                   </label>
-                  <input
-                    type="date"
-                    value={newDate}
-                    onChange={(e) => setNewDate(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-                <div>
-                  <label className="text-slate-300 font-medium block mb-1">Giờ bắt đầu:</label>
                   <input
                     type="time"
                     value={newStartTime}
@@ -5441,7 +5481,9 @@ export default function UnifiedTeacherScheduleApp() {
                   />
                 </div>
                 <div>
-                  <label className="text-slate-300 font-medium block mb-1">Giờ kết thúc:</label>
+                  <label className="text-slate-300 font-medium block mb-1">
+                    Giờ kết thúc: <span className="text-rose-400">*</span>
+                  </label>
                   <input
                     type="time"
                     value={newEndTime}
@@ -5451,6 +5493,46 @@ export default function UnifiedTeacherScheduleApp() {
                 </div>
               </div>
 
+              {/* Khung giờ chọn nhanh */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] text-slate-400 mr-1">Khung giờ:</span>
+                <button
+                  type="button"
+                  onClick={() => { setNewStartTime('07:00'); setNewEndTime('08:35'); }}
+                  className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] text-slate-300 cursor-pointer"
+                >
+                  Tiết 1-2 (07:00-08:35)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setNewStartTime('08:50'); setNewEndTime('10:25'); }}
+                  className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] text-slate-300 cursor-pointer"
+                >
+                  Tiết 3-4 (08:50-10:25)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setNewStartTime('13:00'); setNewEndTime('14:35'); }}
+                  className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] text-slate-300 cursor-pointer"
+                >
+                  Tiết 7-8 (13:00-14:35)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setNewStartTime('07:00'); setNewEndTime('11:00'); setNewSessionType('Thực hành'); }}
+                  className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] text-slate-300 cursor-pointer"
+                >
+                  Ca xưởng sáng (07:00-11:00)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setNewStartTime('13:00'); setNewEndTime('17:00'); setNewSessionType('Thực hành'); }}
+                  className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] text-slate-300 cursor-pointer"
+                >
+                  Ca xưởng chiều (13:00-17:00)
+                </button>
+              </div>
+
               {/* Session Type */}
               <div>
                 <label className="text-slate-300 font-medium block mb-1">Hình thức giảng dạy:</label>
@@ -5458,7 +5540,7 @@ export default function UnifiedTeacherScheduleApp() {
                   <button
                     type="button"
                     onClick={() => setNewSessionType('Lý thuyết')}
-                    className={`py-2 rounded-xl border text-center font-semibold transition-all ${
+                    className={`py-2 rounded-xl border text-center font-semibold transition-all cursor-pointer ${
                       newSessionType === 'Lý thuyết'
                         ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-600/30'
                         : 'bg-slate-800 text-slate-300 border-slate-700'
@@ -5469,7 +5551,7 @@ export default function UnifiedTeacherScheduleApp() {
                   <button
                     type="button"
                     onClick={() => setNewSessionType('Thực hành')}
-                    className={`py-2 rounded-xl border text-center font-semibold transition-all ${
+                    className={`py-2 rounded-xl border text-center font-semibold transition-all cursor-pointer ${
                       newSessionType === 'Thực hành'
                         ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-600/30'
                         : 'bg-slate-800 text-slate-300 border-slate-700'
@@ -5480,42 +5562,145 @@ export default function UnifiedTeacherScheduleApp() {
                 </div>
               </div>
 
-              {/* Recurring schedule option */}
-              <div className="p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={newCreateRecurring}
-                    onChange={(e) => setNewCreateRecurring(e.target.checked)}
-                    className="rounded border-slate-700 text-emerald-600 focus:ring-0"
-                  />
-                  <span className="text-xs text-slate-200 font-semibold">
-                    Lặp lại định kỳ hàng tuần cho toàn bộ học kỳ
+              {/* ================= KHUNG CHỌN LỊCH: NGÀY BẮT ĐẦU & NGÀY KẾT THÚC ================= */}
+              <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-emerald-400" />
+                    <span className="text-xs font-bold text-white uppercase tracking-wider">
+                      Thời gian hiệu lực ca dạy
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                    {newCreateRecurring ? 'Lặp định kỳ hàng tuần' : 'Chỉ 1 buổi duy nhất'}
                   </span>
-                </label>
+                </div>
 
+                {/* Chọn kiểu lặp */}
+                <div className="grid grid-cols-2 gap-2 p-1 bg-slate-900/90 rounded-xl border border-slate-700/70 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setNewCreateRecurring(true)}
+                    className={`py-1.5 px-2 rounded-lg font-semibold transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer ${
+                      newCreateRecurring
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <span>🔄 Toàn học kỳ (Lặp lại)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewCreateRecurring(false);
+                      setNewEndDate(newStartDate || newDate);
+                    }}
+                    className={`py-1.5 px-2 rounded-lg font-semibold transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer ${
+                      !newCreateRecurring
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <span>📌 Chỉ 1 buổi duy nhất</span>
+                  </button>
+                </div>
+
+                {/* Lưới Ngày Bắt Đầu & Ngày Kết Thúc */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] text-slate-300 font-semibold block mb-1 flex items-center gap-1">
+                      <span>Ngày bắt đầu:</span>
+                      <span className="text-rose-400">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={newStartDate || newDate}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setNewStartDate(val);
+                        setNewDate(val);
+                        if (newEndDate && val > newEndDate) {
+                          setNewEndDate(addMonthsToDate(val, 5));
+                        }
+                      }}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-emerald-500"
+                    />
+                    <span className="text-[10px] text-emerald-400 font-medium mt-1 block">
+                      🗓️ {getDayInfo(newStartDate || newDate).dayName}
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] text-slate-300 font-semibold block mb-1">
+                      <span>Ngày kết thúc:</span>
+                      {newCreateRecurring && <span className="text-rose-400"> *</span>}
+                    </label>
+                    <input
+                      type="date"
+                      disabled={!newCreateRecurring}
+                      value={newCreateRecurring ? (newEndDate || addMonthsToDate(newStartDate || newDate, 5)) : (newStartDate || newDate)}
+                      onChange={(e) => setNewEndDate(e.target.value)}
+                      className={`w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-emerald-500 ${
+                        !newCreateRecurring ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                    />
+                    <span className="text-[10px] text-slate-400 mt-1 block">
+                      {newCreateRecurring ? `🗓️ ${getDayInfo(newEndDate || addMonthsToDate(newStartDate || newDate, 5)).dayName}` : 'Cùng ngày bắt đầu'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Phím tắt chọn nhanh chu kỳ học kỳ */}
                 {newCreateRecurring && (
-                  <div className="grid grid-cols-2 gap-3 pt-2">
-                    <div>
-                      <label className="text-[10px] text-slate-400 block">Bắt đầu học kỳ:</label>
-                      <input
-                        type="date"
-                        value={newStartDate}
-                        onChange={(e) => setNewStartDate(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white font-mono text-xs"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-slate-400 block">Kết thúc học kỳ:</label>
-                      <input
-                        type="date"
-                        value={newEndDate}
-                        onChange={(e) => setNewEndDate(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white font-mono text-xs"
-                      />
-                    </div>
+                  <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                    <span className="text-[10px] text-slate-400 mr-1">Chọn nhanh:</span>
+                    <button
+                      type="button"
+                      onClick={() => setNewEndDate(addMonthsToDate(newStartDate || newDate, 5))}
+                      className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-700 border border-slate-700 text-[11px] text-slate-300 hover:text-white cursor-pointer transition-all"
+                    >
+                      Học kỳ 1 (+5 tháng)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewEndDate(addMonthsToDate(newStartDate || newDate, 9))}
+                      className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-700 border border-slate-700 text-[11px] text-slate-300 hover:text-white cursor-pointer transition-all"
+                    >
+                      Cả năm (+9 tháng)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewEndDate(addMonthsToDate(newStartDate || newDate, 2.5))}
+                      className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-700 border border-slate-700 text-[11px] text-slate-300 hover:text-white cursor-pointer transition-all"
+                    >
+                      Nửa kỳ (+10 tuần)
+                    </button>
                   </div>
                 )}
+
+                {/* Banner tóm tắt trực quan */}
+                {(() => {
+                  const curStart = newStartDate || newDate || todayStr;
+                  const curEnd = newEndDate || addMonthsToDate(curStart, 5);
+                  const dayInfo = getDayInfo(curStart);
+                  const endInfo = getDayInfo(curEnd);
+                  return (
+                    <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 text-[11px] text-slate-300 flex items-start gap-2">
+                      <span className="text-emerald-400 mt-0.5">ℹ️</span>
+                      <div>
+                        {newCreateRecurring ? (
+                          <span>
+                            Ca dạy sẽ bắt đầu từ <strong>{dayInfo.dayName} ({curStart})</strong>, tự động xếp lịch vào mỗi <strong>{dayInfo.dayName}</strong> hàng tuần cho đến hết ngày <strong>{endInfo.dayName} ({curEnd})</strong> và đồng bộ sang Điện thoại.
+                          </span>
+                        ) : (
+                          <span>
+                            Ca dạy chỉ diễn ra <strong>1 buổi duy nhất</strong> vào <strong>{dayInfo.dayName}</strong>, ngày <strong>{curStart}</strong>.
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div>

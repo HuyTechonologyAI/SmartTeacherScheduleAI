@@ -227,6 +227,9 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onDeleteEvent = { event ->
                                     deleteEventAndCancelAlarms(event)
+                                },
+                                onAddScheduleClick = {
+                                    navController.navigate(Screen.AddSchedule.route)
                                 }
                             )
                         }

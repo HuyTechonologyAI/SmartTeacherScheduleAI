@@ -72,6 +72,7 @@ fun AddTeachingScheduleScreen(
             { _, year, month, dayOfMonth ->
                 val picked = LocalDate.of(year, month + 1, dayOfMonth)
                 startDate = picked
+                dayOfWeek = picked.dayOfWeek.value
                 if (endDate != null && endDate!!.isBefore(picked)) {
                     endDate = picked.plusMonths(5)
                 }

@@ -39,7 +39,8 @@ fun CalendarScreen(
     events: List<CalendarEventEntity>,
     onEventClick: (CalendarEventEntity) -> Unit,
     onEditEvent: (updatedEvent: CalendarEventEntity, syncSubsequent: Boolean, updateWhole: Boolean, startD: String, endD: String) -> Unit,
-    onDeleteEvent: (CalendarEventEntity) -> Unit
+    onDeleteEvent: (CalendarEventEntity) -> Unit,
+    onAddScheduleClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -174,6 +175,14 @@ fun CalendarScreen(
                             tint = Color(0xFF10B981)
                         )
                     }
+                    // Nút Thêm lịch dạy mới
+                    IconButton(onClick = onAddScheduleClick) {
+                        Icon(
+                            imageVector = Icons.Default.AddCircle,
+                            contentDescription = "Thêm lịch dạy mới",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                     // Nút chuyển chế độ xem
                     IconButton(onClick = { viewMode = if (viewMode == 0) 1 else 0 }) {
                         Icon(
@@ -184,6 +193,15 @@ fun CalendarScreen(
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onAddScheduleClick,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Thêm lịch dạy mới")
+            }
         }
     ) { paddingValues ->
         if (showReportDialog) {

@@ -272,6 +272,7 @@ async function getFromGist(syncCode: string): Promise<SyncPayload | null> {
       return null;
     }
 
+    const json = await res.json();
     const file = json.files?.[fileName];
     if (!file) {
       return null;

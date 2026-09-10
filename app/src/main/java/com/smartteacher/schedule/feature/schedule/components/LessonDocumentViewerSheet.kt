@@ -54,6 +54,7 @@ fun LessonDocumentViewerSheet(
     var showGenerateAiDialog by remember { mutableStateOf(false) }
     var isGeneratingAiPlan by remember { mutableStateOf(false) }
     var itemToDelete by remember { mutableStateOf<LessonAttachmentEntity?>(null) }
+    var previewingAttachment by remember { mutableStateOf<LessonAttachmentEntity?>(null) }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenMultipleDocuments()
@@ -481,6 +482,13 @@ fun LessonDocumentViewerSheet(
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .clickable {
+                                    if (item.isWebLink) {
+                                        AttachmentFileHelper.openAttachment(context, item)
+                                    } else {
+                                        previewingAttachment = item
+                                    }
+                                }
                                 .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
@@ -561,7 +569,13 @@ fun LessonDocumentViewerSheet(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     Button(
-                                        onClick = { AttachmentFileHelper.openAttachment(context, item) },
+                                        onClick = {
+                                            if (item.isWebLink) {
+                                                AttachmentFileHelper.openAttachment(context, item)
+                                            } else {
+                                                previewingAttachment = item
+                                            }
+                                        },
                                         modifier = Modifier.weight(1f).height(36.dp),
                                         colors = ButtonDefaults.buttonColors(containerColor = visualMeta.color),
                                         contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
@@ -569,7 +583,7 @@ fun LessonDocumentViewerSheet(
                                     ) {
                                         Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.White)
                                         Spacer(modifier = Modifier.width(6.dp))
-                                        Text(if (item.isWebLink) "Mở Link Drive" else "Mở tài liệu đọc ngay", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                        Text(if (item.isWebLink) "Mở Link Drive" else "Xem trước & Đọc ngay", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                                     }
 
                                     OutlinedButton(
@@ -589,5 +603,16 @@ fun LessonDocumentViewerSheet(
                 }
             }
         }
+    }
+
+    // In-App Document Reader Dialog
+    previewingAttachment?.let { att ->
+        DocumentReaderDialog(
+            title = att.fileName,
+            filePath = att.filePath,
+            webUrl = att.webUrl,
+            fileExtension = att.fileExtension,
+            onDismiss = { previewingAttachment = null }
+        )
     }
 }

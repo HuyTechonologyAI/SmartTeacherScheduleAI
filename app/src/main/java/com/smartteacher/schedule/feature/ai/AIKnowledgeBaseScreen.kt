@@ -28,6 +28,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.text.style.TextOverflow
 import com.smartteacher.schedule.core.util.KnowledgeFileHelper
+import com.smartteacher.schedule.feature.schedule.components.DocumentReaderDialog
 import com.smartteacher.schedule.core.database.entity.KnowledgeDocumentEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -269,148 +270,15 @@ fun AIKnowledgeBaseScreen(
         }
     }
 
-    // Dialog Xem Nội Dung Chi Tiết
+    // Dialog Xem Trước Nội Dung Tài Liệu (Hỗ trợ PDF trực quan, Word HTML, Zoom, Copy, Chia sẻ)
     viewingDocument?.let { doc ->
-        Dialog(onDismissRequest = { viewingDocument = null }) {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(0.85f)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(18.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = doc.title,
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Text(
-                                text = "Mã: ${doc.code} • Phân loại: ${doc.category}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                        IconButton(onClick = { viewingDocument = null }) {
-                            Icon(Icons.Default.Close, contentDescription = "Đóng")
-                        }
-                    }
-
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .verticalScroll(rememberScrollState())
-                    ) {
-                        Text(
-                            text = doc.content,
-                            style = MaterialTheme.typography.bodyMedium,
-                            lineHeight = 22.sp
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            if (doc.fileName.isNotBlank()) {
-                                Button(
-                                    onClick = {
-                                        KnowledgeFileHelper.shareOrSaveOriginalFile(context, doc.filePath, doc.fileName)
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)),
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
-                                ) {
-                                    Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(15.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Tải file .${doc.fileExtension.ifBlank { "gốc" }.uppercase()}", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                }
-                            }
-
-                            // Tải về Word (.doc)
-                            OutlinedButton(
-                                onClick = {
-                                    val docFile = KnowledgeFileHelper.exportDocumentToDoc(
-                                        context = context,
-                                        title = doc.title,
-                                        code = doc.code,
-                                        category = doc.category,
-                                        subject = doc.subject,
-                                        targetLevel = doc.targetLevel,
-                                        content = doc.content
-                                    )
-                                    if (docFile != null) {
-                                        KnowledgeFileHelper.openOrShareFile(context, docFile, "application/msword", doc.title)
-                                    } else {
-                                        Toast.makeText(context, "Không thể xuất file Word!", Toast.LENGTH_SHORT).show()
-                                    }
-                                },
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
-                            ) {
-                                Icon(Icons.Default.Description, contentDescription = null, modifier = Modifier.size(15.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Xuất Word", fontSize = 11.sp)
-                            }
-
-                            // Tải về Text (.txt)
-                            OutlinedButton(
-                                onClick = {
-                                    val txtFile = KnowledgeFileHelper.exportDocumentToTxt(
-                                        context = context,
-                                        title = doc.title,
-                                        code = doc.code,
-                                        content = doc.content
-                                    )
-                                    if (txtFile != null) {
-                                        KnowledgeFileHelper.openOrShareFile(context, txtFile, "text/plain", doc.title)
-                                    } else {
-                                        Toast.makeText(context, "Không thể xuất file Text!", Toast.LENGTH_SHORT).show()
-                                    }
-                                },
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
-                            ) {
-                                Text("Text", fontSize = 11.sp)
-                            }
-                        }
-
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            FilledTonalButton(
-                                onClick = {
-                                    documentToEdit = doc
-                                },
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
-                            ) {
-                                Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Sửa", fontSize = 12.sp)
-                            }
-
-                            Button(
-                                onClick = { viewingDocument = null },
-                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
-                            ) {
-                                Text("Đóng", fontSize = 12.sp)
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        DocumentReaderDialog(
+            title = doc.title,
+            filePath = doc.filePath.takeIf { it.isNotBlank() },
+            textContent = doc.content,
+            fileExtension = doc.fileExtension.takeIf { it.isNotBlank() },
+            onDismiss = { viewingDocument = null }
+        )
     }
 
     // Dialog Xác nhận Xóa
@@ -591,7 +459,7 @@ fun KnowledgeDocumentCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            KnowledgeFileHelper.openAttachedFile(context, doc.filePath)
+                            onViewContent()
                         }
                 ) {
                     Row(

@@ -29,6 +29,7 @@ import com.smartteacher.schedule.core.database.entity.CalendarEventEntity
 import com.smartteacher.schedule.core.database.entity.LessonAttachmentEntity
 import com.smartteacher.schedule.core.database.entity.TeachingScheduleEntity
 import com.smartteacher.schedule.core.util.AttachmentFileHelper
+import com.smartteacher.schedule.feature.schedule.components.DocumentReaderDialog
 import kotlinx.coroutines.launch
 
 /**
@@ -66,6 +67,7 @@ fun AILessonPlannerView(
     var result5512 by remember { mutableStateOf<LessonPlan5512Result?>(null) }
     var result2634 by remember { mutableStateOf<LessonPlan2634Result?>(null) }
     var currentAttachment by remember { mutableStateOf<LessonAttachmentEntity?>(null) }
+    var previewAttachment by remember { mutableStateOf<LessonAttachmentEntity?>(null) }
 
     val activeDocsFlow = knowledgeDao?.getAllActiveDocumentsFlow()?.collectAsState(initial = emptyList())
     val allActiveDocs = activeDocsFlow?.value ?: emptyList()
@@ -540,13 +542,21 @@ fun AILessonPlannerView(
                         ) {
                             currentAttachment?.let { att ->
                                 Button(
-                                    onClick = { AttachmentFileHelper.openAttachment(context, att) },
+                                    onClick = { previewAttachment = att },
                                     modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB))
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669))
+                                ) {
+                                    Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Xem trước", fontSize = 12.sp)
+                                }
+                                OutlinedButton(
+                                    onClick = { AttachmentFileHelper.openAttachment(context, att) },
+                                    modifier = Modifier.weight(1f)
                                 ) {
                                     Icon(Icons.Default.Description, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Mở Word / WPS", fontSize = 12.sp)
+                                    Text("Mở Word", fontSize = 12.sp)
                                 }
                                 OutlinedButton(
                                     onClick = { AttachmentFileHelper.shareAttachment(context, att) },
@@ -818,6 +828,17 @@ fun AILessonPlannerView(
                     Text("Đóng")
                 }
             }
+        )
+    }
+
+    // In-App Document Reader Preview
+    previewAttachment?.let { att ->
+        DocumentReaderDialog(
+            title = att.fileName,
+            filePath = att.filePath,
+            webUrl = att.webUrl,
+            fileExtension = att.fileExtension,
+            onDismiss = { previewAttachment = null }
         )
     }
 }

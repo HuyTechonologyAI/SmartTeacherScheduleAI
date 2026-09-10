@@ -132,7 +132,11 @@ import {
   Edit3,
   Gamepad2,
   Video,
-  Network
+  Network,
+  Maximize2,
+  Minimize2,
+  ZoomIn,
+  ZoomOut
 } from 'lucide-react';
 
 export interface CalendarEventItem {
@@ -475,6 +479,10 @@ export default function UnifiedTeacherScheduleApp() {
   const [kbPreviewMode, setKbPreviewMode] = useState<'AUTO' | 'TEXT' | 'PDF'>('AUTO');
   const [kbPreviewIsLoading, setKbPreviewIsLoading] = useState(false);
   const [kbPreviewStatusText, setKbPreviewStatusText] = useState('');
+  const [kbPreviewFullScreen, setKbPreviewFullScreen] = useState(false);
+  const [kbPreviewZoom, setKbPreviewZoom] = useState(100);
+  const [kbPreviewSearchTerm, setKbPreviewSearchTerm] = useState('');
+  const [kbCopied, setKbCopied] = useState(false);
 
   useEffect(() => {
     let activeBlobUrl: string | null = null;
@@ -1650,6 +1658,32 @@ export default function UnifiedTeacherScheduleApp() {
     setAttachFileUrl('');
   };
 
+  // Open / Preview Event Attachment
+  const handleOpenEventAttachment = (ev: CalendarEventItem) => {
+    if (!ev.attachmentName) return;
+    const url = (ev.attachmentUrl || '').trim();
+    if (url.startsWith('http://') || url.startsWith('https://') || url.includes('drive.google.com') || url.includes('docs.google.com')) {
+      window.open(url, '_blank');
+      return;
+    }
+    // Open in rich document preview modal
+    setKbViewingDoc({
+      id: `event-att-${ev.id}`,
+      title: `Tài liệu tiết dạy: ${ev.title} - ${ev.className}`,
+      code: `LỊCH-${ev.startTime || 'CA'}`,
+      category: 'GIAO_TRINH',
+      subject: ev.subject,
+      targetLevel: ev.className,
+      content: `KẾ HOẠCH TIẾT DẠY & HỌC LIỆU\n\n• Tên bài giảng: ${ev.title}\n• Môn học: ${ev.subject}\n• Lớp giảng dạy: ${ev.className}\n• Thời gian: ${ev.date} (${ev.startTime || 'Ca dạy'} - ${ev.endTime || ''})\n• Phòng học: ${ev.room}\n• Tệp đính kèm: ${ev.attachmentName}\n\n${ev.notes ? `Ghi chú chuyên môn:\n${ev.notes}\n\n` : ''}Tài liệu này đã được lưu trữ và liên kết với lịch dạy của Thầy/Cô.`,
+      fileName: ev.attachmentName,
+      fileType: ev.attachmentName.split('.').pop()?.toLowerCase() || '',
+      isActive: true,
+      isBuiltIn: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: ev.updatedAt || Date.now()
+    });
+  };
+
   // Toggle Task
   const handleToggleTask = (id: string) => {
     const updated = tasks.map((t) => (t.id === id ? { ...t, isCompleted: !t.isCompleted } : t));
@@ -2078,8 +2112,18 @@ export default function UnifiedTeacherScheduleApp() {
 
                               {ev.attachmentName && (
                                 <div className="flex items-center gap-1.5 text-xs text-blue-400 pt-1">
-                                  <Paperclip className="w-3 h-3" />
-                                  <span className="underline cursor-pointer">{ev.attachmentName}</span>
+                                  <Paperclip className="w-3 h-3 text-blue-400 shrink-0" />
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleOpenEventAttachment(ev);
+                                    }}
+                                    className="underline cursor-pointer hover:text-blue-300 font-medium text-left truncate max-w-[200px]"
+                                    title="Nhấn để xem trước tài liệu đính kèm này"
+                                  >
+                                    {ev.attachmentName}
+                                  </button>
                                 </div>
                               )}
                             </div>
@@ -2405,9 +2449,14 @@ export default function UnifiedTeacherScheduleApp() {
                         {/* Action buttons */}
                         <div className="flex items-center justify-between border-t border-slate-700/50 pt-2 text-xs">
                           {ev.attachmentName ? (
-                            <span className="text-blue-400 flex items-center gap-1 truncate max-w-[150px]">
-                              <Paperclip className="w-3 h-3" /> {ev.attachmentName}
-                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEventAttachment(ev)}
+                              className="text-blue-400 hover:text-blue-300 flex items-center gap-1 truncate max-w-[170px] text-xs cursor-pointer underline font-medium text-left"
+                              title="Bấm để xem trước tài liệu này"
+                            >
+                              <Paperclip className="w-3 h-3 shrink-0" /> {ev.attachmentName}
+                            </button>
                           ) : (
                             <span className="text-slate-500">Chưa đính kèm giáo án</span>
                           )}
@@ -4625,7 +4674,7 @@ export default function UnifiedTeacherScheduleApp() {
                 {/* Modal Xem Toàn Văn (Preview & Export Toolbar) */}
                 {kbViewingDoc && (
                   <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-                    <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl">
+                    <div className={`bg-slate-900 border border-slate-700 rounded-2xl flex flex-col shadow-2xl transition-all ${kbPreviewFullScreen ? 'fixed inset-2 z-50 max-w-none max-h-none h-[calc(100vh-16px)]' : 'max-w-4xl w-full max-h-[90vh]'}`}>
                       {/* Header */}
                       <div className="p-4 sm:p-5 border-b border-slate-800 flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
@@ -4658,13 +4707,85 @@ export default function UnifiedTeacherScheduleApp() {
                             </div>
                           )}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setKbViewingDoc(null)}
-                          className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
+
+                        {/* Actions: Zoom, Copy, Print, Fullscreen, Close */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {/* Zoom Controls */}
+                          <div className="hidden sm:flex items-center bg-slate-800/80 rounded-xl p-0.5 border border-slate-700/60">
+                            <button
+                              type="button"
+                              onClick={() => setKbPreviewZoom(z => Math.max(70, z - 15))}
+                              className="p-1 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white cursor-pointer"
+                              title="Thu nhỏ (-)"
+                            >
+                              <ZoomOut className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setKbPreviewZoom(100)}
+                              className="text-[11px] text-slate-300 font-mono px-1.5 hover:text-white cursor-pointer"
+                              title="Tỷ lệ 100%"
+                            >
+                              {kbPreviewZoom}%
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setKbPreviewZoom(z => Math.min(180, z + 15))}
+                              className="p-1 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white cursor-pointer"
+                              title="Phóng to (+)"
+                            >
+                              <ZoomIn className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          {/* Copy Text */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(kbViewingDoc.content);
+                              setKbCopied(true);
+                              setTimeout(() => setKbCopied(false), 2000);
+                            }}
+                            className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 hover:text-white cursor-pointer flex items-center gap-1 text-xs"
+                            title="Sao chép toàn bộ văn bản"
+                          >
+                            {kbCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span className="hidden md:inline text-[11px] font-medium">{kbCopied ? 'Đã chép' : 'Chép'}</span>
+                          </button>
+
+                          {/* Print */}
+                          <button
+                            type="button"
+                            onClick={() => window.print()}
+                            className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 hover:text-white cursor-pointer"
+                            title="In / Xuất PDF"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Fullscreen Toggle */}
+                          <button
+                            type="button"
+                            onClick={() => setKbPreviewFullScreen(f => !f)}
+                            className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 hover:text-white cursor-pointer"
+                            title={kbPreviewFullScreen ? "Thu nhỏ cửa sổ" : "Phóng to toàn màn hình"}
+                          >
+                            {kbPreviewFullScreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                          </button>
+
+                          {/* Close */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setKbViewingDoc(null);
+                              setKbPreviewFullScreen(false);
+                              setKbPreviewSearchTerm('');
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer ml-0.5"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
                       </div>
 
                       {/* Content Preview: Hỗ trợ xem trực quan PDF hoặc xem toàn văn nội dung trích xuất */}
@@ -4685,13 +4806,26 @@ export default function UnifiedTeacherScheduleApp() {
                               <FileText className="w-4 h-4" />
                               <span>Bản xem trước PDF trực quan nguyên bản gốc</span>
                             </span>
-                            <button
-                              type="button"
-                              onClick={() => setKbPreviewMode('TEXT')}
-                              className="text-xs text-blue-400 hover:text-blue-300 underline cursor-pointer font-medium"
-                            >
-                              Chuyển sang xem toàn văn trích xuất AI
-                            </button>
+                            <div className="flex items-center gap-3">
+                              {kbPreviewPdfUrl && (
+                                <button
+                                  type="button"
+                                  onClick={() => window.open(kbPreviewPdfUrl, '_blank')}
+                                  className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-medium cursor-pointer"
+                                  title="Mở PDF trong tab mới của trình duyệt"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                  <span>Mở tab riêng</span>
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setKbPreviewMode('TEXT')}
+                                className="text-xs text-blue-400 hover:text-blue-300 underline cursor-pointer font-medium"
+                              >
+                                Chuyển sang xem toàn văn trích xuất AI
+                              </button>
+                            </div>
                           </div>
                           <iframe
                             src={kbPreviewPdfUrl}
@@ -4702,6 +4836,27 @@ export default function UnifiedTeacherScheduleApp() {
                         </div>
                       ) : (
                         <div className="p-5 overflow-y-auto flex-1 text-xs sm:text-sm text-slate-200 whitespace-pre-wrap leading-relaxed font-sans bg-slate-950/40">
+                          {/* Search inside doc bar */}
+                          <div className="mb-3 flex items-center gap-2 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800 shadow-inner">
+                            <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <input
+                              type="text"
+                              value={kbPreviewSearchTerm}
+                              onChange={(e) => setKbPreviewSearchTerm(e.target.value)}
+                              placeholder="Tìm kiếm từ khoá trong văn bản (ví dụ: 'Điều 1', 'Mục tiêu', 'Thời lượng')..."
+                              className="bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none flex-1 font-sans"
+                            />
+                            {kbPreviewSearchTerm && (
+                              <button
+                                type="button"
+                                onClick={() => setKbPreviewSearchTerm('')}
+                                className="text-slate-400 hover:text-white text-xs cursor-pointer"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+
                           {/* Card nhắc nạp tệp nếu tài liệu cũ chưa có tệp đệm trong IndexedDB */}
                           {!kbPreviewPdfUrl && kbViewingDoc.fileName?.toLowerCase().endsWith('.pdf') && (
                             <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/5 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
@@ -4748,7 +4903,36 @@ export default function UnifiedTeacherScheduleApp() {
                               )}
                             </div>
                           )}
-                          {kbViewingDoc.content}
+
+                          <div style={{ fontSize: `${kbPreviewZoom}%` }} className="leading-relaxed selection:bg-emerald-500/30">
+                            {kbPreviewSearchTerm.trim() ? (
+                              <div>
+                                <div className="mb-2.5 text-xs text-emerald-400 font-semibold border-b border-slate-800 pb-1.5 flex items-center justify-between">
+                                  <span>Đoạn trích chứa từ khoá: &quot;{kbPreviewSearchTerm}&quot;</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setKbPreviewSearchTerm('')}
+                                    className="text-[11px] text-slate-400 hover:text-white underline cursor-pointer"
+                                  >
+                                    Xem toàn bộ văn bản
+                                  </button>
+                                </div>
+                                {kbViewingDoc.content
+                                  .split('\n')
+                                  .filter(line => line.toLowerCase().includes(kbPreviewSearchTerm.toLowerCase()))
+                                  .map((matchingLine, idx) => (
+                                    <div key={idx} className="p-2 mb-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-slate-100">
+                                      {matchingLine}
+                                    </div>
+                                  ))}
+                                {kbViewingDoc.content.toLowerCase().indexOf(kbPreviewSearchTerm.toLowerCase()) === -1 && (
+                                  <div className="text-xs text-slate-400 italic">Không tìm thấy đoạn văn nào chứa từ khóa này.</div>
+                                )}
+                              </div>
+                            ) : (
+                              kbViewingDoc.content
+                            )}
+                          </div>
                         </div>
                       )}
 

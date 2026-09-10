@@ -310,11 +310,21 @@ fun LessonDocumentViewerSheet(
         )
     }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        containerColor = MaterialTheme.colorScheme.surface
-    ) {
+    if (previewingAttachment != null) {
+        val att = previewingAttachment!!
+        DocumentReaderDialog(
+            title = att.fileName,
+            filePath = att.filePath,
+            webUrl = att.webUrl,
+            fileExtension = att.fileExtension,
+            onDismiss = { previewingAttachment = null }
+        )
+    } else {
+        ModalBottomSheet(
+            onDismissRequest = onDismiss,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            containerColor = MaterialTheme.colorScheme.surface
+        ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -563,10 +573,10 @@ fun LessonDocumentViewerSheet(
 
                                 Spacer(modifier = Modifier.height(10.dp))
 
-                                // Quick Action Buttons (Open + Share)
+                                // Quick Action Buttons (Read directly + Open App + Share)
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Button(
                                         onClick = {
@@ -578,23 +588,36 @@ fun LessonDocumentViewerSheet(
                                         },
                                         modifier = Modifier.weight(1f).height(36.dp),
                                         colors = ButtonDefaults.buttonColors(containerColor = visualMeta.color),
-                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
                                         shape = RoundedCornerShape(10.dp)
                                     ) {
-                                        Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.White)
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(if (item.isWebLink) "Mở Link Drive" else "Xem trước & Đọc ngay", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                        Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(15.dp), tint = Color.White)
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(if (item.isWebLink) "Mở Link Drive" else "Đọc trực tiếp", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                    }
+
+                                    if (!item.isWebLink) {
+                                        OutlinedButton(
+                                            onClick = { AttachmentFileHelper.openAttachment(context, item) },
+                                            modifier = Modifier.height(36.dp),
+                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                            shape = RoundedCornerShape(10.dp)
+                                        ) {
+                                            Icon(Icons.Default.Description, contentDescription = null, modifier = Modifier.size(15.dp))
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text("Mở Word/WPS", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                                        }
                                     }
 
                                     OutlinedButton(
                                         onClick = { AttachmentFileHelper.shareAttachment(context, item) },
                                         modifier = Modifier.height(36.dp),
-                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                                         shape = RoundedCornerShape(10.dp)
                                     ) {
-                                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(15.dp))
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Chia sẻ Zalo", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                        Text("Zalo", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                                     }
                                 }
                             }
@@ -604,15 +627,6 @@ fun LessonDocumentViewerSheet(
             }
         }
     }
-
-    // In-App Document Reader Dialog
-    previewingAttachment?.let { att ->
-        DocumentReaderDialog(
-            title = att.fileName,
-            filePath = att.filePath,
-            webUrl = att.webUrl,
-            fileExtension = att.fileExtension,
-            onDismiss = { previewingAttachment = null }
-        )
-    }
 }
+}
+

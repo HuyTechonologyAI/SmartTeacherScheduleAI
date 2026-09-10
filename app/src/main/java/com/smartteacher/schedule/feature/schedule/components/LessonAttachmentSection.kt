@@ -305,6 +305,7 @@ fun AttachmentItemCard(
     onOpen: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val context = LocalContext.current
     val visualMeta = AttachmentFileHelper.getFileVisualMeta(attachment.fileExtension, attachment.isWebLink)
     val sizeText = AttachmentFileHelper.formatFileSize(attachment.fileSizeBytes)
 
@@ -368,6 +369,20 @@ fun AttachmentItemCard(
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                         )
                     }
+                }
+            }
+
+            if (!attachment.isWebLink) {
+                IconButton(
+                    onClick = { AttachmentFileHelper.openAttachment(context, attachment) },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.OpenInNew,
+                        contentDescription = "Mở bằng Word/WPS",
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                        modifier = Modifier.size(17.dp)
+                    )
                 }
             }
 

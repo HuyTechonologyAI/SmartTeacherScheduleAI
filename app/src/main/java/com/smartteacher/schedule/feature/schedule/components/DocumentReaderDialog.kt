@@ -104,9 +104,13 @@ fun DocumentReaderDialog(
 
     val ext = remember(currentFilePath, fileExtension, title) {
         val path = currentFilePath
-        val rawExt = fileExtension
-            ?: if (!path.isNullOrBlank()) AttachmentFileHelper.getExtensionFromFileName(path)
-            else AttachmentFileHelper.getExtensionFromFileName(title)
+        val rawExt = if (!fileExtension.isNullOrBlank()) {
+            fileExtension
+        } else if (!path.isNullOrBlank()) {
+            AttachmentFileHelper.getExtensionFromFileName(path)
+        } else {
+            AttachmentFileHelper.getExtensionFromFileName(title)
+        }
         rawExt.lowercase().trim()
     }
 
@@ -171,9 +175,16 @@ fun DocumentReaderDialog(
                                 }
                             }
 
-                            "doc", "html", "htm" -> {
-                                val raw = file.readText(Charsets.UTF_8).ifBlank { file.readText(Charsets.ISO_8859_1) }
-                                if (raw.contains("<html", ignoreCase = true) || raw.contains("<!DOCTYPE html", ignoreCase = true)) {
+                            "doc", "html", "htm", "" -> {
+                                val raw = try {
+                                    file.readText(Charsets.UTF_8).ifBlank { file.readText(Charsets.ISO_8859_1) }
+                                } catch (_: Exception) { "" }
+                                if (raw.contains("<html", ignoreCase = true) ||
+                                    raw.contains("<!DOCTYPE html", ignoreCase = true) ||
+                                    raw.contains("<body", ignoreCase = true) ||
+                                    raw.contains("<table", ignoreCase = true) ||
+                                    raw.contains("<div", ignoreCase = true) ||
+                                    ext == "html" || ext == "htm") {
                                     isHtmlFile = true
                                     htmlContent = wrapHtmlForMobile(raw)
                                     resolvedText = extractPlainTextFromHtml(raw)
@@ -217,6 +228,20 @@ fun DocumentReaderDialog(
                             }
 
                             else -> {
+                                try {
+                                    val raw = file.readText(Charsets.UTF_8)
+                                    if (raw.contains("<html", ignoreCase = true) ||
+                                        raw.contains("<!DOCTYPE html", ignoreCase = true) ||
+                                        raw.contains("<table", ignoreCase = true) ||
+                                        raw.contains("<div", ignoreCase = true)) {
+                                        isHtmlFile = true
+                                        htmlContent = wrapHtmlForMobile(raw)
+                                        resolvedText = extractPlainTextFromHtml(raw)
+                                    } else if (raw.isNotBlank() && raw.length < 500000 && raw.none { it.code == 0 }) {
+                                        resolvedText = raw
+                                    }
+                                } catch (_: Exception) {}
+
                                 if (resolvedText.isBlank()) {
                                     resolvedText = "Tài liệu đính kèm: ${file.name}\nĐịnh dạng: .$ext\nDung lượng: ${AttachmentFileHelper.formatFileSize(file.length())}\n\nThầy/Cô hãy nhấn nút 'Mở app ngoài' để xem đầy đủ bằng WPS Office hoặc Word."
                                 }
@@ -632,7 +657,8 @@ private fun HtmlDocumentViewer(htmlContent: String) {
                     ViewGroup.LayoutParams.MATCH_PARENT
                 )
                 settings.apply {
-                    javaScriptEnabled = false
+                    javaScriptEnabled = true
+                    domStorageEnabled = true
                     useWideViewPort = true
                     loadWithOverviewMode = true
                     builtInZoomControls = true
@@ -642,11 +668,11 @@ private fun HtmlDocumentViewer(htmlContent: String) {
                 }
                 webViewClient = WebViewClient()
                 setBackgroundColor(AndroidColor.parseColor("#F8FAFC"))
-                loadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null)
+                loadDataWithBaseURL("file:///android_asset/", htmlContent, "text/html", "UTF-8", null)
             }
         },
         update = { webView ->
-            webView.loadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null)
+            webView.loadDataWithBaseURL("file:///android_asset/", htmlContent, "text/html", "UTF-8", null)
         },
         modifier = Modifier.fillMaxSize()
     )

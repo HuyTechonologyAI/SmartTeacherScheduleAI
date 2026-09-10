@@ -122,11 +122,14 @@ fun AIKnowledgeBaseScreen(
                 else -> true
             }
             val matchSearch = if (searchQuery.isBlank()) true else {
-                doc.title.contains(searchQuery, ignoreCase = true) ||
-                doc.code.contains(searchQuery, ignoreCase = true) ||
-                doc.subject.contains(searchQuery, ignoreCase = true) ||
-                doc.fileName.contains(searchQuery, ignoreCase = true) ||
-                doc.summary.contains(searchQuery, ignoreCase = true)
+                val q = searchQuery.trim().lowercase()
+                doc.title.lowercase().contains(q) ||
+                doc.code.lowercase().contains(q) ||
+                doc.subject.lowercase().contains(q) ||
+                doc.fileName.lowercase().contains(q) ||
+                doc.summary.lowercase().contains(q) ||
+                (q.contains("sgk") && (doc.title.contains("sgv", ignoreCase = true) || doc.fileName.contains("sgv", ignoreCase = true))) ||
+                (q.contains("sgv") && (doc.title.contains("sgk", ignoreCase = true) || doc.fileName.contains("sgk", ignoreCase = true)))
             }
             matchFilter && matchSearch
         }
@@ -367,6 +370,13 @@ fun AIKnowledgeBaseScreen(
             filePath = doc.filePath.takeIf { it.isNotBlank() },
             textContent = doc.content,
             fileExtension = doc.fileExtension.takeIf { it.isNotBlank() },
+            onFileSelected = { newPath ->
+                coroutineScope.launch {
+                    val updated = doc.copy(filePath = newPath)
+                    knowledgeDao.updateDocument(updated)
+                    viewingDocument = updated
+                }
+            },
             onDismiss = { viewingDocument = null }
         )
     }
@@ -544,9 +554,10 @@ fun KnowledgeDocumentCard(
             }
 
             if (doc.fileName.isNotBlank()) {
+                val hasLocalFile = doc.filePath.isNotBlank() && java.io.File(doc.filePath).exists()
                 Spacer(modifier = Modifier.height(8.dp))
                 Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                    color = if (hasLocalFile) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f) else Color(0xFFF1F5F9),
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -559,28 +570,41 @@ fun KnowledgeDocumentCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = when (doc.fileExtension.lowercase()) {
-                                "docx", "doc" -> Icons.Default.Description
-                                "pdf" -> Icons.Default.PictureAsPdf
+                            imageVector = when {
+                                doc.fileExtension.contains("pdf", ignoreCase = true) || doc.fileName.endsWith(".pdf", ignoreCase = true) -> Icons.Default.PictureAsPdf
+                                doc.fileExtension.contains("doc", ignoreCase = true) || doc.fileName.endsWith(".doc", ignoreCase = true) || doc.fileName.endsWith(".docx", ignoreCase = true) -> Icons.Default.Description
                                 else -> Icons.Default.AttachFile
                             },
                             contentDescription = null,
                             modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = if (hasLocalFile) MaterialTheme.colorScheme.primary else Color(0xFF2563EB)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "${doc.fileName} (${KnowledgeFileHelper.formatFileSize(doc.fileSizeBytes)})",
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = if (hasLocalFile) MaterialTheme.colorScheme.primary else Color(0xFF1E293B),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
                         )
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = if (hasLocalFile) Color(0xFFDCFCE7) else Color(0xFFDBEAFE),
+                            modifier = Modifier.padding(start = 4.dp, end = 4.dp)
+                        ) {
+                            Text(
+                                text = if (hasLocalFile) "Đã có trên máy" else "Lưu trên PC",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (hasLocalFile) Color(0xFF15803D) else Color(0xFF1D4ED8),
+                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.5.dp)
+                            )
+                        }
                         Icon(
                             imageVector = Icons.Default.OpenInNew,
-                            contentDescription = "Mở tệp gốc",
+                            contentDescription = "Mở tệp",
                             modifier = Modifier.size(14.dp),
                             tint = MaterialTheme.colorScheme.primary
                         )
@@ -616,15 +640,33 @@ fun KnowledgeDocumentCard(
                     }
 
                     if (doc.fileName.isNotBlank()) {
-                        TextButton(
-                            onClick = {
-                                KnowledgeFileHelper.shareOrSaveOriginalFile(context, doc.filePath, doc.fileName)
-                            },
-                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(15.dp))
-                            Spacer(modifier = Modifier.width(3.dp))
-                            Text("Tải .${doc.fileExtension.ifBlank { "FILE" }.uppercase()}", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        val hasLocalFile = doc.filePath.isNotBlank() && java.io.File(doc.filePath).exists()
+                        val cleanExt = when {
+                            doc.fileExtension.contains("pdf", ignoreCase = true) || doc.fileName.endsWith(".pdf", ignoreCase = true) -> "PDF"
+                            doc.fileExtension.contains("word", ignoreCase = true) || doc.fileName.endsWith(".doc", ignoreCase = true) || doc.fileName.endsWith(".docx", ignoreCase = true) -> "Word"
+                            else -> doc.fileExtension.replace("application/", "").uppercase().ifBlank { "Tệp" }
+                        }
+
+                        if (hasLocalFile) {
+                            TextButton(
+                                onClick = {
+                                    KnowledgeFileHelper.shareOrSaveOriginalFile(context, doc.filePath, doc.fileName)
+                                },
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(15.dp))
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text("Tải $cleanExt", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        } else {
+                            TextButton(
+                                onClick = onViewContent,
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(15.dp))
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text("Đính kèm $cleanExt", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
                         }
                     } else {
                         TextButton(

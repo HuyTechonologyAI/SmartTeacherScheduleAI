@@ -271,6 +271,11 @@ object AttachmentFileHelper {
                 color = Color(0xFF9333EA), // Tím Ảnh
                 typeBadge = "Ảnh"
             )
+            "html", "htm" -> FileVisualMeta(
+                icon = Icons.Default.Article,
+                color = Color(0xFF0284C7), // Xanh Cyan Học liệu
+                typeBadge = "Học liệu"
+            )
             else -> FileVisualMeta(
                 icon = Icons.Default.InsertDriveFile,
                 color = Color(0xFF64748B),
@@ -280,8 +285,8 @@ object AttachmentFileHelper {
     }
 
     /**
-     * Lưu Kế hoạch bài dạy (Giáo án CV 5512, CV 2634 hoặc Đề thi) vào tệp văn bản trong bộ nhớ nội bộ.
-     * Tệp này được lưu dưới định dạng .doc (HTML Word Document UTF-8) giúp mở trực tiếp bằng WPS Office, Word, Google Docs 100% offline.
+     * Lưu Kế hoạch bài dạy (Giáo án CV 5512, CV 2634 hoặc Đề thi, Slide, Mini game...) vào tệp văn bản trong bộ nhớ nội bộ.
+     * Tệp này được lưu dưới định dạng .doc (HTML Word Document UTF-8) hoặc .html giúp mở trực tiếp bằng WPS Office, Word hoặc WebView nội bộ 100% offline.
      */
     fun saveLessonPlanToStorage(
         context: Context,
@@ -298,13 +303,17 @@ object AttachmentFileHelper {
 
             targetFile.writeText(htmlContent, Charsets.UTF_8)
 
+            val ext = getExtensionFromFileName(fileName)
+            val mime = if (ext == "doc") "application/msword" else if (ext == "html" || ext == "htm") "text/html" else "text/plain"
+
             PickedFileInfo(
                 fileName = fileName,
                 localFilePath = targetFile.absolutePath,
-                mimeType = "application/msword",
+                mimeType = mime,
                 fileSize = targetFile.length(),
-                extension = "doc"
+                extension = ext
             )
+
         } catch (e: Exception) {
             e.printStackTrace()
             null

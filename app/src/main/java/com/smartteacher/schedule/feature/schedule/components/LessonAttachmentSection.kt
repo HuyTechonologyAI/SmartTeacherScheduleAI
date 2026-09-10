@@ -45,6 +45,7 @@ fun LessonAttachmentSection(
     val coroutineScope = rememberCoroutineScope()
     var isImporting by remember { mutableStateOf(false) }
     var showAddLinkDialog by remember { mutableStateOf(false) }
+    var previewAttachment by remember { mutableStateOf<LessonAttachmentEntity?>(null) }
 
     // Bộ chọn tệp hệ thống (PDF, Word, PPTX, Excel, Images)
     val filePickerLauncher = rememberLauncherForActivityResult(
@@ -271,7 +272,13 @@ fun LessonAttachmentSection(
                     attachments.forEach { item ->
                         AttachmentItemCard(
                             attachment = item,
-                            onOpen = { AttachmentFileHelper.openAttachment(context, item) },
+                            onOpen = {
+                                if (item.isWebLink) {
+                                    AttachmentFileHelper.openAttachment(context, item)
+                                } else {
+                                    previewAttachment = item
+                                }
+                            },
                             onDelete = { onRemoveAttachment(item) }
                         )
                     }
@@ -279,7 +286,18 @@ fun LessonAttachmentSection(
             }
         }
     }
+
+    previewAttachment?.let { att ->
+        DocumentReaderDialog(
+            title = att.fileName,
+            filePath = att.filePath,
+            webUrl = att.webUrl,
+            fileExtension = att.fileExtension,
+            onDismiss = { previewAttachment = null }
+        )
+    }
 }
+
 
 @Composable
 fun AttachmentItemCard(

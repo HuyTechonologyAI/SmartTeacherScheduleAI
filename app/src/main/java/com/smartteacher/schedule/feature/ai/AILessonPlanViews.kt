@@ -69,6 +69,126 @@ fun AILessonPlannerView(
     var currentAttachment by remember { mutableStateOf<LessonAttachmentEntity?>(null) }
     var previewAttachment by remember { mutableStateOf<LessonAttachmentEntity?>(null) }
 
+    // TRỤ CỘT 3: Gói Học Liệu 6-in-1 Cho Ca Dạy
+    var teachingPack by remember { mutableStateOf<LessonTeachingPack?>(null) }
+    var selectedPackTab by remember { mutableStateOf(0) }
+    var showAssignScheduleDialog by remember { mutableStateOf(false) }
+    var savedPackAttachments by remember { mutableStateOf<List<LessonAttachmentEntity>>(emptyList()) }
+    var assignedEventTitle by remember { mutableStateOf<String?>(null) }
+
+    // Hàm đóng gói và gán 1 chạm 6 học liệu vào ca dạy
+    fun saveCompletePackToSchedule(targetEvent: CalendarEventEntity, pack: LessonTeachingPack) {
+        val list = mutableListOf<LessonAttachmentEntity>()
+        val safeName = pack.lessonPlanName.take(25).replace("[^a-zA-Z0-9_]".toRegex(), "_")
+
+        // 1. Giáo án
+        val p1 = AttachmentFileHelper.saveLessonPlanToStorage(context, "1_GiaoAn_${safeName}.doc", pack.lessonPlanHtml)
+        if (p1 != null) {
+            val att = LessonAttachmentEntity(
+                eventId = targetEvent.id,
+                teachingScheduleId = targetEvent.teachingScheduleId,
+                fileName = "1. Kế hoạch bài dạy - ${pack.lessonPlanName}.doc",
+                filePath = p1.localFilePath,
+                mimeType = p1.mimeType,
+                fileSizeBytes = p1.fileSize,
+                fileExtension = p1.extension,
+                attachmentType = LessonAttachmentEntity.TYPE_FILE
+            )
+            onSaveAttachment(att)
+            list.add(att)
+            currentAttachment = att
+        }
+
+        // 2. Slide thuyết trình
+        val p2 = AttachmentFileHelper.saveLessonPlanToStorage(context, "2_Slide_${safeName}.html", pack.slides.toHtmlDocument())
+        if (p2 != null) {
+            val att = LessonAttachmentEntity(
+                eventId = targetEvent.id,
+                teachingScheduleId = targetEvent.teachingScheduleId,
+                fileName = "2. Slide thuyết trình - ${pack.lessonPlanName}.html",
+                filePath = p2.localFilePath,
+                mimeType = p2.mimeType,
+                fileSizeBytes = p2.fileSize,
+                fileExtension = p2.extension,
+                attachmentType = LessonAttachmentEntity.TYPE_FILE
+            )
+            onSaveAttachment(att)
+            list.add(att)
+        }
+
+        // 3. Mini game tương tác
+        val p3 = AttachmentFileHelper.saveLessonPlanToStorage(context, "3_MiniGame_${safeName}.html", pack.miniGame.toHtmlDocument())
+        if (p3 != null) {
+            val att = LessonAttachmentEntity(
+                eventId = targetEvent.id,
+                teachingScheduleId = targetEvent.teachingScheduleId,
+                fileName = "3. Mini game tương tác - ${pack.lessonPlanName}.html",
+                filePath = p3.localFilePath,
+                mimeType = p3.mimeType,
+                fileSizeBytes = p3.fileSize,
+                fileExtension = p3.extension,
+                attachmentType = LessonAttachmentEntity.TYPE_FILE
+            )
+            onSaveAttachment(att)
+            list.add(att)
+        }
+
+        // 4. Sơ đồ tư duy
+        val p4 = AttachmentFileHelper.saveLessonPlanToStorage(context, "4_Mindmap_${safeName}.html", pack.mindmap.toHtmlDocument())
+        if (p4 != null) {
+            val att = LessonAttachmentEntity(
+                eventId = targetEvent.id,
+                teachingScheduleId = targetEvent.teachingScheduleId,
+                fileName = "4. Sơ đồ tư duy (Mindmap) - ${pack.lessonPlanName}.html",
+                filePath = p4.localFilePath,
+                mimeType = p4.mimeType,
+                fileSizeBytes = p4.fileSize,
+                fileExtension = p4.extension,
+                attachmentType = LessonAttachmentEntity.TYPE_FILE
+            )
+            onSaveAttachment(att)
+            list.add(att)
+        }
+
+        // 5. Video học liệu
+        val p5 = AttachmentFileHelper.saveLessonPlanToStorage(context, "5_Video_${safeName}.html", pack.videoResource.toHtmlDocument())
+        if (p5 != null) {
+            val att = LessonAttachmentEntity(
+                eventId = targetEvent.id,
+                teachingScheduleId = targetEvent.teachingScheduleId,
+                fileName = "5. Video học liệu & hướng dẫn - ${pack.lessonPlanName}.html",
+                filePath = p5.localFilePath,
+                mimeType = p5.mimeType,
+                fileSizeBytes = p5.fileSize,
+                fileExtension = p5.extension,
+                attachmentType = LessonAttachmentEntity.TYPE_FILE
+            )
+            onSaveAttachment(att)
+            list.add(att)
+        }
+
+        // 6. Rubric chấm điểm
+        val p6 = AttachmentFileHelper.saveLessonPlanToStorage(context, "6_Rubric_${safeName}.html", pack.rubricScore.toHtmlDocument())
+        if (p6 != null) {
+            val att = LessonAttachmentEntity(
+                eventId = targetEvent.id,
+                teachingScheduleId = targetEvent.teachingScheduleId,
+                fileName = "6. Bảng điểm Rubric chấm giáo án (${pack.rubricScore.totalScore}đ).html",
+                filePath = p6.localFilePath,
+                mimeType = p6.mimeType,
+                fileSizeBytes = p6.fileSize,
+                fileExtension = p6.extension,
+                attachmentType = LessonAttachmentEntity.TYPE_FILE
+            )
+            onSaveAttachment(att)
+            list.add(att)
+        }
+
+        savedPackAttachments = list
+        assignedEventTitle = "${targetEvent.title} (${targetEvent.className})"
+        Toast.makeText(context, "⚡ Đã gán trọn bộ 6 học liệu vào ca dạy ${targetEvent.title}!", Toast.LENGTH_LONG).show()
+    }
+
     val activeDocsFlow = knowledgeDao?.getAllActiveDocumentsFlow()?.collectAsState(initial = emptyList())
     val allActiveDocs = activeDocsFlow?.value ?: emptyList()
     var selectedDocId by remember { mutableStateOf(-1L) }
@@ -373,114 +493,68 @@ fun AILessonPlannerView(
                     isGenerating = true
                     result5512 = null
                     result2634 = null
+                    teachingPack = null
                     currentAttachment = null
+                    savedPackAttachments = emptyList()
+                    assignedEventTitle = null
 
                     coroutineScope.launch {
-                        if (selectedStandard == 0) {
-                            val periods = durationText.toIntOrNull() ?: 1
-                            val activeDocs = knowledgeDao?.getAllActiveDocuments() ?: emptyList()
-                            val refContext = when {
-                                selectedDocId == -2L -> ""
-                                selectedDocId > 0L -> {
-                                    val explicitDoc = activeDocs.find { it.id == selectedDocId }
-                                    if (explicitDoc != null) "【${explicitDoc.title} (${explicitDoc.code})】\n${explicitDoc.content}" else ""
-                                }
-                                else -> {
-                                    val targetGrade = extractGradeNum(className)
-                                    val relevantDocs = activeDocs.filter { doc ->
-                                        isDocGradeCompatible(doc, targetGrade) && (
-                                            doc.category == KnowledgeDocumentEntity.CAT_PHAP_QUY ||
-                                            doc.subject == "ALL" ||
-                                            doc.subject.contains(subject.trim(), ignoreCase = true)
-                                        )
-                                    }
-                                    relevantDocs.joinToString("\n\n---\n") { doc ->
-                                        "【${doc.title} (${doc.code})】\n${doc.content}"
-                                    }
-                                }
+                        val activeDocs = knowledgeDao?.getAllActiveDocuments() ?: emptyList()
+                        val refContext = when {
+                            selectedDocId == -2L -> ""
+                            selectedDocId > 0L -> {
+                                val explicitDoc = activeDocs.find { it.id == selectedDocId }
+                                if (explicitDoc != null) "【${explicitDoc.title} (${explicitDoc.code})】\n${explicitDoc.content}" else ""
                             }
-
-                            val res = aiService.generateLessonPlan5512(
-                                lessonName = lessonTitle.trim(),
-                                subject = subject.ifBlank { "Chung" }.trim(),
-                                grade = className.ifBlank { "Phổ thông" }.trim(),
-                                durationPeriods = periods,
-                                customObjectives = specialRequirements,
-                                referenceContext = refContext
-                            )
-                            result5512 = res
-                            // Auto-save .doc and prepare attachment
-                            val docHtml = res.toHtmlDocument()
-                            val cleanName = "GiaoAn_5512_${res.lessonName.take(30).replace(" ", "_")}.doc"
-                            val fileInfo = AttachmentFileHelper.saveLessonPlanToStorage(context, cleanName, docHtml)
-                            if (fileInfo != null) {
-                                val entity = LessonAttachmentEntity(
-                                    eventId = selectedEvent?.id,
-                                    teachingScheduleId = selectedEvent?.teachingScheduleId,
-                                    fileName = fileInfo.fileName,
-                                    filePath = fileInfo.localFilePath,
-                                    mimeType = fileInfo.mimeType,
-                                    fileSizeBytes = fileInfo.fileSize,
-                                    fileExtension = fileInfo.extension,
-                                    attachmentType = LessonAttachmentEntity.TYPE_FILE
-                                )
-                                currentAttachment = entity
-                                onSaveAttachment(entity)
-                            }
-                        } else {
-                            val hours = durationText.toFloatOrNull() ?: 4.0f
-                            val activeDocs = knowledgeDao?.getAllActiveDocuments() ?: emptyList()
-                            val refContext = when {
-                                selectedDocId == -2L -> ""
-                                selectedDocId > 0L -> {
-                                    val explicitDoc = activeDocs.find { it.id == selectedDocId }
-                                    if (explicitDoc != null) "【${explicitDoc.title} (${explicitDoc.code})】\n${explicitDoc.content}" else ""
+                            else -> {
+                                val targetGrade = extractGradeNum(className)
+                                val relevantDocs = activeDocs.filter { doc ->
+                                    isDocGradeCompatible(doc, targetGrade) && (
+                                        doc.category == KnowledgeDocumentEntity.CAT_PHAP_QUY ||
+                                        doc.category == KnowledgeDocumentEntity.CAT_QUY_CHUAN_XUONG ||
+                                        doc.category == KnowledgeDocumentEntity.CAT_GIAO_TRINH ||
+                                        doc.subject == "ALL" ||
+                                        doc.subject.contains(subject.trim(), ignoreCase = true)
+                                    )
                                 }
-                                else -> {
-                                    val targetGrade = extractGradeNum(className)
-                                    val relevantDocs = activeDocs.filter { doc ->
-                                        isDocGradeCompatible(doc, targetGrade) && (
-                                            doc.category == KnowledgeDocumentEntity.CAT_PHAP_QUY ||
-                                            doc.category == KnowledgeDocumentEntity.CAT_QUY_CHUAN_XUONG ||
-                                            doc.category == KnowledgeDocumentEntity.CAT_GIAO_TRINH ||
-                                            doc.subject == "ALL" ||
-                                            doc.subject.contains(subject.trim(), ignoreCase = true)
-                                        )
-                                    }
-                                    relevantDocs.joinToString("\n\n---\n") { doc ->
-                                        "【${doc.title} (${doc.code})】\n${doc.content}"
-                                    }
+                                relevantDocs.joinToString("\n\n---\n") { doc ->
+                                    "【${doc.title} (${doc.code})】\n${doc.content}"
                                 }
-                            }
-
-                            val res = aiService.generateLessonPlan2634(
-                                moduleName = moduleTitle.ifBlank { lessonTitle }.trim(),
-                                lessonName = lessonTitle.trim(),
-                                profession = subject.ifBlank { "Kỹ thuật Công nghệ" }.trim(),
-                                trainingLevel = className.ifBlank { "Trung cấp" }.trim(),
-                                durationHours = hours,
-                                customSafety = specialRequirements.ifBlank { "Máy móc gia công, thiết bị đo kiểm, trang bị BHLĐ cá nhân" },
-                                referenceContext = refContext
-                            )
-                            result2634 = res
-                            val docHtml = res.toHtmlDocument()
-                            val cleanName = "GiaoAn_2634_${res.lessonName.take(30).replace(" ", "_")}.doc"
-                            val fileInfo = AttachmentFileHelper.saveLessonPlanToStorage(context, cleanName, docHtml)
-                            if (fileInfo != null) {
-                                val entity = LessonAttachmentEntity(
-                                    eventId = selectedEvent?.id,
-                                    teachingScheduleId = selectedEvent?.teachingScheduleId,
-                                    fileName = fileInfo.fileName,
-                                    filePath = fileInfo.localFilePath,
-                                    mimeType = fileInfo.mimeType,
-                                    fileSizeBytes = fileInfo.fileSize,
-                                    fileExtension = fileInfo.extension,
-                                    attachmentType = LessonAttachmentEntity.TYPE_FILE
-                                )
-                                currentAttachment = entity
-                                onSaveAttachment(entity)
                             }
                         }
+
+                        // Sinh trọn bộ gói học liệu 6-in-1
+                        val pack = aiService.generateCompleteLessonPack(
+                            lessonName = lessonTitle.trim(),
+                            subject = subject.ifBlank { "Chung" }.trim(),
+                            grade = className.ifBlank { "Phổ thông" }.trim(),
+                            standard = selectedStandard,
+                            customRequirements = specialRequirements,
+                            referenceContext = refContext
+                        )
+                        teachingPack = pack
+
+                        // Tạo bản lưu tạm cho giáo án chính
+                        val cleanName = "GiaoAn_${if (selectedStandard == 0) "5512" else "2634"}_${pack.lessonPlanName.take(25).replace(" ", "_")}.doc"
+                        val p1 = AttachmentFileHelper.saveLessonPlanToStorage(context, cleanName, pack.lessonPlanHtml)
+                        if (p1 != null) {
+                            currentAttachment = LessonAttachmentEntity(
+                                eventId = selectedEvent?.id,
+                                teachingScheduleId = selectedEvent?.teachingScheduleId,
+                                fileName = p1.fileName,
+                                filePath = p1.localFilePath,
+                                mimeType = p1.mimeType,
+                                fileSizeBytes = p1.fileSize,
+                                fileExtension = p1.extension,
+                                attachmentType = LessonAttachmentEntity.TYPE_FILE
+                            )
+                        }
+
+                        // Nếu Thầy/Cô đã chọn ca dạy gợi ý từ trước -> Tự động gán 1 chạm ngay lập tức!
+                        if (selectedEvent != null) {
+                            saveCompletePackToSchedule(selectedEvent!!, pack)
+                        }
+
                         isGenerating = false
                     }
                 },
@@ -493,220 +567,722 @@ fun AILessonPlannerView(
                 if (isGenerating) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
                     Spacer(modifier = Modifier.width(10.dp))
-                    Text("AI đang thiết kế Kế hoạch bài dạy chuẩn...")
+                    Text("AI đang soạn Kế hoạch bài dạy & Đóng gói 6 học liệu...")
                 } else {
                     Icon(Icons.Default.AutoAwesome, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        if (selectedStandard == 0) "⚡ Sinh Kế Hoạch Bài Dạy Chuẩn CV 5512" else "⚡ Sinh Kế Hoạch Bài Dạy Chuẩn CV 2634",
+                        "⚡ Soạn Giáo Án & Trọn Bộ Học Liệu 6-in-1 (CV " + (if (selectedStandard == 0) "5512" else "2634") + ")",
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
         }
 
-        // Action Toolbar khi đã có kết quả
-        if (currentAttachment != null || result5512 != null || result2634 != null) {
+        // =====================================================================
+        // TRỤ CỘT 3: BẢNG ĐIỀU KHIỂN & XEM TRƯỚC GÓI HỌC LIỆU 6-IN-1
+        // =====================================================================
+        if (teachingPack != null) {
+            val pack = teachingPack!!
+
+            // Banner Gán ca dạy 1 chạm (1-Tap Schedule Assignment)
             item {
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF3B82F6)),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (assignedEventTitle != null) Color(0xFFECFDF5) else Color(0xFFF3E8FF)
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.5.dp,
+                        if (assignedEventTitle != null) Color(0xFF10B981) else Color(0xFF9333EA)
+                    ),
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
+                    Column(modifier = Modifier.padding(16.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF1D4ED8))
-                                Spacer(modifier = Modifier.width(8.dp))
+                            Icon(
+                                imageVector = if (assignedEventTitle != null) Icons.Default.CheckCircle else Icons.Default.Bolt,
+                                contentDescription = null,
+                                tint = if (assignedEventTitle != null) Color(0xFF059669) else Color(0xFF7E22CE),
+                                modifier = Modifier.size(28.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    "Đã tạo & đính kèm file Word (.doc)!",
+                                    text = if (assignedEventTitle != null) "🎉 ĐÃ GÁN 6 HỌC LIỆU VÀO CA DẠY!" else "⚡ GÓI HỌC LIỆU 6-IN-1 ĐÃ SẴN SÀNG",
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF1D4ED8)
+                                    fontSize = 15.sp,
+                                    color = if (assignedEventTitle != null) Color(0xFF065F46) else Color(0xFF581C87)
+                                )
+                                Text(
+                                    text = if (assignedEventTitle != null) 
+                                        "Ca dạy: " + assignedEventTitle + " • Toàn bộ 6 tệp đã sẵn sàng trong lịch!" 
+                                    else 
+                                        "Gồm: Giáo án, Slide, Game, Mindmap, Video, Chấm điểm Rubric.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (assignedEventTitle != null) Color(0xFF047857) else Color(0xFF6B21A8)
                                 )
                             }
-                            Text(
-                                if (currentAttachment != null) AttachmentFileHelper.formatFileSize(currentAttachment!!.fileSizeBytes) else "",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color(0xFF1D4ED8)
-                            )
                         }
-                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            currentAttachment?.let { att ->
-                                Button(
-                                    onClick = { previewAttachment = att },
-                                    modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669))
-                                ) {
-                                    Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Xem trước", fontSize = 12.sp)
-                                }
-                                OutlinedButton(
-                                    onClick = { AttachmentFileHelper.openAttachment(context, att) },
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Icon(Icons.Default.Description, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Mở Word", fontSize = 12.sp)
-                                }
-                                OutlinedButton(
-                                    onClick = { AttachmentFileHelper.shareAttachment(context, att) },
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Gửi Zalo", fontSize = 12.sp)
-                                }
-                            }
-                            IconButton(
-                                onClick = {
-                                    val textToCopy = if (result5512 != null) {
-                                        val p = result5512!!
-                                        """
-                                        KẾ HOẠCH BÀI DẠY (CV 5512)
-                                        Tên bài: ${p.lessonName}
-                                        Môn: ${p.subject} - Khối: ${p.grade} - Thời lượng: ${p.durationPeriods} tiết
-                                        I. MỤC TIÊU:
-                                        - Kiến thức: ${p.knowledgeObjective}
-                                        - Năng lực: ${p.generalCompetence} • ${p.specificCompetence}
-                                        - Phẩm chất: ${p.qualitiesObjective}
-                                        II. THIẾT BỊ DẠY HỌC:
-                                        - GV: ${p.teacherEquipment}
-                                        - HS: ${p.studentEquipment}
-                                        III. CÁC HOẠT ĐỘNG DẠY HỌC:
-                                        ${p.activities.joinToString("\n") { "${it.title}: ${it.objective}" }}
-                                        """.trimIndent()
-                                    } else if (result2634 != null) {
-                                        val p = result2634!!
-                                        """
-                                        GIÁO ÁN BÀI DẠY THỰC HÀNH NGHỀ (CV 2634)
-                                        Tên bài: ${p.lessonName} (Module: ${p.moduleName})
-                                        Nghề: ${p.profession} - Khóa: ${p.trainingLevel} - Thời lượng: ${p.durationHours} giờ
-                                        I. MỤC TIÊU BÀI DẠY:
-                                        - Kiến thức: ${p.knowledgeObjective}
-                                        - Kỹ năng nghề: ${p.skillObjective}
-                                        - An toàn & Tự chủ: ${p.autonomyAndResponsibility}
-                                        II. ĐIỀU KIỆN MÁY MÓC & 5S:
-                                        - Thiết bị: ${p.machineryAndEquipment}
-                                        - Phôi mẫu: ${p.materialsAndDrawings}
-                                        - An toàn & 5S: ${p.safetyGear}
-                                        III. CÁC BƯỚC THỰC HIỆN TẠI XƯỞNG:
-                                        ${p.steps.joinToString("\n") { "${it.stepName}: ${it.teacherActivity}" }}
-                                        """.trimIndent()
-                                    } else ""
-
-                                    clipboardManager.setText(AnnotatedString(textToCopy))
-                                    Toast.makeText(context, "Đã sao chép nội dung giáo án!", Toast.LENGTH_SHORT).show()
-                                }
+                            Button(
+                                onClick = { showAssignScheduleDialog = true },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (assignedEventTitle != null) Color(0xFF059669) else Color(0xFF7E22CE)
+                                ),
+                                shape = RoundedCornerShape(10.dp)
                             ) {
-                                Icon(Icons.Default.ContentCopy, contentDescription = "Sao chép")
+                                Icon(Icons.Default.TouchApp, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (assignedEventTitle != null) "⚡ Đổi sang ca dạy khác" else "⚡ Gán vào ca dạy (1 Chạm)",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Tabs chọn 6 thành phần của gói học liệu
+            item {
+                val packTabs = listOf(
+                    "📄 Giáo án",
+                    "🖥️ Slide (6)",
+                    "🎮 Mini game (4)",
+                    "🧠 Mindmap",
+                    "🎬 Video (3)",
+                    "📋 Rubric (" + pack.rubricScore.totalScore + "đ)"
+                )
+                ScrollableTabRow(
+                    selectedTabIndex = selectedPackTab,
+                    edgePadding = 0.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    packTabs.forEachIndexed { index, title ->
+                        Tab(
+                            selected = selectedPackTab == index,
+                            onClick = { selectedPackTab = index },
+                            text = { Text(title, fontWeight = if (selectedPackTab == index) FontWeight.Bold else FontWeight.Normal) }
+                        )
+                    }
+                }
+            }
+
+            // Render Tab Nội Dung Được Chọn
+            when (selectedPackTab) {
+                // TAB 0: GIÁO ÁN CHI TIẾT
+                0 -> {
+                    item {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Button(
+                                        onClick = {
+                                            val p = AttachmentFileHelper.saveLessonPlanToStorage(context, "GiaoAn_" + pack.lessonPlanName.take(20) + ".doc", pack.lessonPlanHtml)
+                                            if (p != null) {
+                                                previewAttachment = LessonAttachmentEntity(
+                                                    fileName = p.fileName,
+                                                    filePath = p.localFilePath,
+                                                    fileExtension = p.extension
+                                                )
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669))
+                                    ) {
+                                        Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Xem trước", fontSize = 12.sp)
+                                    }
+                                    OutlinedButton(
+                                        onClick = {
+                                            val p = AttachmentFileHelper.saveLessonPlanToStorage(context, "GiaoAn_" + pack.lessonPlanName.take(20) + ".doc", pack.lessonPlanHtml)
+                                            if (p != null) {
+                                                val entity = LessonAttachmentEntity(fileName = p.fileName, filePath = p.localFilePath, fileExtension = p.extension)
+                                                AttachmentFileHelper.openAttachment(context, entity)
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(Icons.Default.Description, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Mở Word", fontSize = 12.sp)
+                                    }
+                                    OutlinedButton(
+                                        onClick = {
+                                            val p = AttachmentFileHelper.saveLessonPlanToStorage(context, "GiaoAn_" + pack.lessonPlanName.take(20) + ".doc", pack.lessonPlanHtml)
+                                            if (p != null) {
+                                                val entity = LessonAttachmentEntity(fileName = p.fileName, filePath = p.localFilePath, fileExtension = p.extension)
+                                                AttachmentFileHelper.shareAttachment(context, entity)
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Gửi Zalo", fontSize = 12.sp)
+                                    }
+                                }
+
+                                Divider()
+
+                                Text(
+                                    "KẾ HOẠCH BÀI DẠY: " + pack.lessonPlanName,
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    "Môn: " + subject.ifBlank { "Chung" } + " • Lớp/Khối: " + className.ifBlank { "Phổ thông" },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                )
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = "Kế hoạch bài dạy đã được chuyển đổi sang chuẩn HTML Word UTF-8 với đầy đủ các mục Mục tiêu, Thiết bị học liệu và Tiến trình sư phạm. Bấm 'Xem trước' để đọc mượt mà toàn màn hình.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.padding(10.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // TAB 1: BỘ SLIDE THUYẾT TRÌNH (6 SLIDES)
+                1 -> {
+                    item {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        "🖥️ Bộ Slide Thuyết Trình (" + pack.slides.slides.size + " slide)",
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = Color(0xFF2563EB)
+                                    )
+                                    Button(
+                                        onClick = {
+                                            val p = AttachmentFileHelper.saveLessonPlanToStorage(context, "Slide_" + pack.lessonPlanName.take(20) + ".html", pack.slides.toHtmlDocument())
+                                            if (p != null) {
+                                                previewAttachment = LessonAttachmentEntity(
+                                                    fileName = "Slide_" + pack.lessonPlanName + ".html",
+                                                    filePath = p.localFilePath,
+                                                    fileExtension = "html"
+                                                )
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Icon(Icons.Default.Slideshow, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Trình chiếu", fontSize = 12.sp)
+                                    }
+                                }
+
+                                pack.slides.slides.forEach { s ->
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = Color(0xFFF8FAFC),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = Color(0xFF3B82F6)
+                                                ) {
+                                                    Text(
+                                                        "SLIDE " + s.slideNumber + "/" + pack.slides.slides.size,
+                                                        color = Color.White,
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                    )
+                                                }
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(s.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF1E293B))
+                                            }
+                                            s.bulletPoints.forEach { pt ->
+                                                Text("• " + pt, style = MaterialTheme.typography.bodySmall, color = Color(0xFF334155))
+                                            }
+                                            if (s.visualHint.isNotBlank()) {
+                                                Text("🖼️ Minh họa: " + s.visualHint, style = MaterialTheme.typography.labelSmall, color = Color(0xFF0284C7))
+                                            }
+                                            if (s.teacherScript.isNotBlank()) {
+                                                Text("🎙️ Lời giảng: " + s.teacherScript, style = MaterialTheme.typography.labelSmall, color = Color(0xFF059669))
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // TAB 2: MINI GAME TƯƠNG TÁC
+                2 -> {
+                    item {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        "🎮 " + pack.miniGame.gameTitle,
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = Color(0xFF7C3AED)
+                                    )
+                                    Button(
+                                        onClick = {
+                                            val p = AttachmentFileHelper.saveLessonPlanToStorage(context, "Game_" + pack.lessonPlanName.take(20) + ".html", pack.miniGame.toHtmlDocument())
+                                            if (p != null) {
+                                                previewAttachment = LessonAttachmentEntity(
+                                                    fileName = "Game_" + pack.lessonPlanName + ".html",
+                                                    filePath = p.localFilePath,
+                                                    fileExtension = "html"
+                                                )
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7C3AED)),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Icon(Icons.Default.SportsEsports, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Mở Game", fontSize = 12.sp)
+                                    }
+                                }
+
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = Color(0xFFFDF4FF),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF0ABFC)),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("⚡ Luật chơi: " + pack.miniGame.rules, style = MaterialTheme.typography.bodySmall, color = Color(0xFF701A75), modifier = Modifier.padding(10.dp))
+                                }
+
+                                pack.miniGame.questions.forEachIndexed { idx, q ->
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = Color(0xFFFAF5FF),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE9D5FF)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            Text("Câu " + (idx + 1) + ": " + q.question, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF581C87))
+                                            q.options.forEachIndexed { oIdx, opt ->
+                                                val isCorrect = oIdx == q.correctIndex
+                                                val optLabel = listOf("A", "B", "C", "D").getOrElse(oIdx) { "" + oIdx }
+                                                Surface(
+                                                    shape = RoundedCornerShape(6.dp),
+                                                    color = if (isCorrect) Color(0xFFDCFCE7) else Color.White,
+                                                    border = androidx.compose.foundation.BorderStroke(1.dp, if (isCorrect) Color(0xFF22C55E) else Color(0xFFE2E8F0)),
+                                                    modifier = Modifier.fillMaxWidth()
+                                                ) {
+                                                    Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                                        Text(optLabel + ". " + opt, style = MaterialTheme.typography.bodySmall, color = if (isCorrect) Color(0xFF15803D) else Color(0xFF334155))
+                                                        if (isCorrect) {
+                                                            Spacer(modifier = Modifier.weight(1f))
+                                                            Text("✓ ĐÁP ÁN ĐÚNG", fontWeight = FontWeight.Bold, fontSize = 10.sp, color = Color(0xFF15803D))
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            if (q.explanation.isNotBlank()) {
+                                                Text("💡 Giải thích: " + q.explanation, style = MaterialTheme.typography.labelSmall, color = Color(0xFF64748B))
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // TAB 3: SƠ ĐỒ TƯ DUY (MINDMAP)
+                3 -> {
+                    item {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        "🧠 Sơ Đồ Tư Duy Bài Học",
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = Color(0xFF0284C7)
+                                    )
+                                    Button(
+                                        onClick = {
+                                            val p = AttachmentFileHelper.saveLessonPlanToStorage(context, "Mindmap_" + pack.lessonPlanName.take(20) + ".html", pack.mindmap.toHtmlDocument())
+                                            if (p != null) {
+                                                previewAttachment = LessonAttachmentEntity(
+                                                    fileName = "Mindmap_" + pack.lessonPlanName + ".html",
+                                                    filePath = p.localFilePath,
+                                                    fileExtension = "html"
+                                                )
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Icon(Icons.Default.AccountTree, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Xem Sơ đồ", fontSize = 12.sp)
+                                    }
+                                }
+
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = Color(0xFF0284C7),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = "🧠 " + pack.mindmap.centerNode,
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp,
+                                        modifier = Modifier.padding(14.dp),
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                    )
+                                }
+
+                                pack.mindmap.branches.forEach { br ->
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = Color(0xFFF0F9FF),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBAE6FD)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            Text(br.title, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF0369A1))
+                                            br.subItems.forEach { item ->
+                                                Text("  ↳ " + item, style = MaterialTheme.typography.bodySmall, color = Color(0xFF334155))
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // TAB 4: VIDEO HỌC LIỆU ĐA PHƯƠNG TIỆN
+                4 -> {
+                    item {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        "🎬 Video Học Liệu & Hướng Dẫn",
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = Color(0xFFDC2626)
+                                    )
+                                    Button(
+                                        onClick = {
+                                            val p = AttachmentFileHelper.saveLessonPlanToStorage(context, "Video_" + pack.lessonPlanName.take(20) + ".html", pack.videoResource.toHtmlDocument())
+                                            if (p != null) {
+                                                previewAttachment = LessonAttachmentEntity(
+                                                    fileName = "Video_" + pack.lessonPlanName + ".html",
+                                                    filePath = p.localFilePath,
+                                                    fileExtension = "html"
+                                                )
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Icon(Icons.Default.SmartDisplay, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Mở Video", fontSize = 12.sp)
+                                    }
+                                }
+
+                                pack.videoResource.videos.forEachIndexed { idx, v ->
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = Color(0xFFFFF5F5),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFED7D7)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Surface(shape = RoundedCornerShape(4.dp), color = Color(0xFFFEEBC8)) {
+                                                    Text("⏱️ " + v.durationApprox, color = Color(0xFFC05621), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                                }
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(v.title, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF991B1B))
+                                            }
+                                            if (v.guideQuestion.isNotBlank()) {
+                                                Text("❓ Định hướng: " + v.guideQuestion, style = MaterialTheme.typography.bodySmall, color = Color(0xFF2C5282))
+                                            }
+                                            Text("🔍 " + v.suggestedUrlOrKeyword, style = MaterialTheme.typography.labelSmall, color = Color(0xFF64748B), maxLines = 1)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // TAB 5: BẢNG ĐIỂM RUBRIC CHẤM GIÁO ÁN (CV 5512)
+                5 -> {
+                    item {
+                        val rubric = pack.rubricScore
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        "📋 Kết Quả Đánh Giá Rubric",
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = Color(0xFF16A34A)
+                                    )
+                                    Button(
+                                        onClick = {
+                                            val p = AttachmentFileHelper.saveLessonPlanToStorage(context, "Rubric_" + pack.lessonPlanName.take(20) + ".html", pack.rubricScore.toHtmlDocument())
+                                            if (p != null) {
+                                                previewAttachment = LessonAttachmentEntity(
+                                                    fileName = "Rubric_" + pack.lessonPlanName + ".html",
+                                                    filePath = p.localFilePath,
+                                                    fileExtension = "html"
+                                                )
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Icon(Icons.Default.Assessment, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Bảng điểm", fontSize = 12.sp)
+                                    }
+                                }
+
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = Color(0xFF16A34A),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(14.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text("TỔNG ĐIỂM ĐÁNH GIÁ SƯ PHẠM", color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp)
+                                        Text("" + rubric.totalScore + "/100", color = Color.White, fontWeight = FontWeight.Black, fontSize = 32.sp)
+                                        Surface(shape = RoundedCornerShape(12.dp), color = Color.White.copy(alpha = 0.2f)) {
+                                            Text("XẾP LOẠI: " + rubric.gradeLevel.uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp))
+                                        }
+                                    }
+                                }
+
+                                rubric.criteria.forEach { c ->
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = Color(0xFFF0FDF4),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBBF7D0)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                                Text(c.standardName, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF166534), modifier = Modifier.weight(1f))
+                                                Text("" + c.selfScore + "/" + c.maxScore + "đ", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF15803D))
+                                            }
+                                            Text(c.description, style = MaterialTheme.typography.bodySmall, color = Color(0xFF4B5563))
+                                            Text("✓ Ưu điểm: " + c.strengths, style = MaterialTheme.typography.labelSmall, color = Color(0xFF166534))
+                                            Text("⚡ Gợi ý: " + c.suggestions, style = MaterialTheme.typography.labelSmall, color = Color(0xFF854D0E))
+                                        }
+                                    }
+                                }
+
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = Color(0xFFECFDF5),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFA7F3D0)),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(modifier = Modifier.padding(10.dp)) {
+                                        Text("🎖️ Kết luận sư phạm:", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF065F46))
+                                        Text(rubric.generalConclusion, style = MaterialTheme.typography.bodySmall, color = Color(0xFF047857))
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
         }
+    }
 
-        // Preview chi tiết CV 5512
-        result5512?.let { plan ->
-            item {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    // Modal Chọn Ca Dạy Thông Minh (1-Tap Schedule Assignment Dialog)
+    if (showAssignScheduleDialog && teachingPack != null) {
+        val pack = teachingPack!!
+        AlertDialog(
+            onDismissRequest = { showAssignScheduleDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Bolt, contentDescription = null, tint = Color(0xFFEAB308))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Gán Gói Học Liệu Vào Ca Dạy (1 Chạm)", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Chọn ca dạy trên lịch để tự động đính kèm trọn bộ 6 học liệu (Giáo án, Slide, Game, Mindmap, Video, Rubric):",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                    )
+
+                    if (events.isEmpty()) {
                         Text(
-                            "KẾ HOẠCH BÀI DẠY: ${plan.lessonName}",
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary
+                            "Chưa có ca dạy nào trong lịch. Thầy/Cô hãy thêm lịch dạy ở trang Lịch trình trước nhé!",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
                         )
-                        Text(
-                            "Môn: ${plan.subject} • Lớp: ${plan.grade} • Thời lượng: ${plan.durationPeriods} tiết",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    } else {
+                        val sortedEvents = events.sortedWith(
+                            compareByDescending<CalendarEventEntity> { ev ->
+                                (ev.subject.isNotBlank() && subject.isNotBlank() && ev.subject.contains(subject, ignoreCase = true)) ||
+                                (ev.className.isNotBlank() && className.isNotBlank() && ev.className.contains(className, ignoreCase = true))
+                            }.thenBy { it.date }
                         )
 
-                        Divider()
-
-                        Text("I. MỤC TIÊU BÀI DẠY", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        Text("1. Kiến thức: ${plan.knowledgeObjective}", style = MaterialTheme.typography.bodySmall)
-                        Text("2. Năng lực chung: ${plan.generalCompetence}", style = MaterialTheme.typography.bodySmall)
-                        Text("• Năng lực đặc thù: ${plan.specificCompetence}", style = MaterialTheme.typography.bodySmall)
-                        Text("3. Phẩm chất: ${plan.qualitiesObjective}", style = MaterialTheme.typography.bodySmall)
-
-                        Divider()
-
-                        Text("II. THIẾT BỊ DẠY HỌC & HỌC LIỆU", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        Text("• Giáo viên: ${plan.teacherEquipment}", style = MaterialTheme.typography.bodySmall)
-                        Text("• Học sinh: ${plan.studentEquipment}", style = MaterialTheme.typography.bodySmall)
-
-                        Divider()
-
-                        Text("III. TIẾN TRÌNH DẠY HỌC (4 HOẠT ĐỘNG BẮT BUỘC)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        plan.activities.forEach { act ->
-                            Activity5512Item(act.title, act)
+                        LazyColumn(
+                            modifier = Modifier.heightIn(max = 340.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(sortedEvents) { ev ->
+                                val isMatch = (ev.subject.isNotBlank() && subject.isNotBlank() && ev.subject.contains(subject, ignoreCase = true)) ||
+                                              (ev.className.isNotBlank() && className.isNotBlank() && ev.className.contains(className, ignoreCase = true))
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = if (isMatch) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                    border = if (isMatch) androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else null,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            saveCompletePackToSchedule(ev, pack)
+                                            showAssignScheduleDialog = false
+                                        }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(
+                                                    text = ev.title.ifBlank { ev.subject },
+                                                    fontWeight = FontWeight.Bold,
+                                                    style = MaterialTheme.typography.bodySmall
+                                                )
+                                                if (isMatch) {
+                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                    Surface(
+                                                        shape = RoundedCornerShape(4.dp),
+                                                        color = Color(0xFF10B981)
+                                                    ) {
+                                                        Text(
+                                                            "✨ Phù hợp nhất",
+                                                            color = Color.White,
+                                                            fontSize = 9.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = "Lớp: " + ev.className + " • " + ev.date + " (" + ev.startTime + " - " + ev.endTime + ")",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                            )
+                                        }
+                                        Icon(
+                                            Icons.Default.TouchApp,
+                                            contentDescription = "Chọn 1 chạm",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-            }
-        }
-
-        // Preview chi tiết CV 2634
-        result2634?.let { plan ->
-            item {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text(
-                            "GIÁO ÁN THỰC HÀNH NGHỀ: ${plan.lessonName}",
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = Color(0xFFD97706)
-                        )
-                        Text(
-                            "Mô-đun: ${plan.moduleName} • Nghề: ${plan.profession} • Trình độ: ${plan.trainingLevel} • Thời lượng: ${plan.durationHours} giờ",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                        )
-
-                        Divider()
-
-                        Text("I. MỤC TIÊU BÀI DẠY", fontWeight = FontWeight.Bold, color = Color(0xFFD97706))
-                        Text("1. Kiến thức: ${plan.knowledgeObjective}", style = MaterialTheme.typography.bodySmall)
-                        Text("2. Kỹ năng nghề: ${plan.skillObjective}", style = MaterialTheme.typography.bodySmall)
-                        Text("3. Năng lực tự chủ, An toàn & 5S: ${plan.autonomyAndResponsibility}", style = MaterialTheme.typography.bodySmall)
-
-                        Divider()
-
-                        Text("II. ĐIỀU KIỆN THỰC HIỆN BÀI DẠY", fontWeight = FontWeight.Bold, color = Color(0xFFD97706))
-                        Text("• Máy móc thiết bị: ${plan.machineryAndEquipment}", style = MaterialTheme.typography.bodySmall)
-                        Text("• Vật tư phôi mẫu: ${plan.materialsAndDrawings}", style = MaterialTheme.typography.bodySmall)
-                        Text("• Trang bị BHLĐ & 5S: ${plan.safetyGear}", style = MaterialTheme.typography.bodySmall)
-
-                        Divider()
-
-                        Text("III. TIẾN TRÌNH THỰC HIỆN TẠI XƯỞNG (4 BƯỚC THỰC HÀNH)", fontWeight = FontWeight.Bold, color = Color(0xFFD97706))
-                        plan.steps.forEach { step ->
-                            Step2634Item(step.stepName, step)
-                        }
-                    }
+            },
+            confirmButton = {
+                TextButton(onClick = { showAssignScheduleDialog = false }) {
+                    Text("Đóng")
                 }
             }
-        }
+        )
     }
 
     if (showDocSelectDialog) {

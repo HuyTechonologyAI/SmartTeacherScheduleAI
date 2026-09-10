@@ -58,4 +58,15 @@ interface AIService {
         questionCount: Int = 10,
         referenceContext: String = ""
     ): ExamMatrixResult
+
+    // TRỤ CỘT 3: Gói Học Liệu Hoàn Chỉnh 6-in-1 Cho Ca Dạy
+    suspend fun generateCompleteLessonPack(
+        lessonName: String,
+        subject: String,
+        grade: String,
+        standard: Int = 0, // 0: CV 5512, 1: CV 2634
+        customRequirements: String = "",
+        referenceContext: String = ""
+    ): LessonTeachingPack
 }
+

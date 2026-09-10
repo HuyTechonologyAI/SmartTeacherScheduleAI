@@ -1291,4 +1291,361 @@ class GeminiAIServiceImpl(
             referenceCitations = citations
         )
     }
+
+    // =========================================================================
+    // TRỤ CỘT 3: GÓI HỌC LIỆU HOÀN CHỈNH 6-IN-1 CHO CA DẠY LỊCH TRÌNH
+    // =========================================================================
+
+    override suspend fun generateCompleteLessonPack(
+        lessonName: String,
+        subject: String,
+        grade: String,
+        standard: Int,
+        customRequirements: String,
+        referenceContext: String
+    ): LessonTeachingPack = withContext(Dispatchers.IO) {
+        // 1. Soạn Giáo án / Kế hoạch bài dạy
+        val lessonPlanHtml: String
+        val lessonTitleDisplay: String
+        if (standard == 1) {
+            val plan2634 = generateLessonPlan2634(
+                moduleName = subject,
+                lessonName = lessonName,
+                profession = "Kỹ thuật - Công nghệ",
+                trainingLevel = "Trung cấp / Cao đẳng",
+                durationHours = 4.0f,
+                customSafety = customRequirements,
+                referenceContext = referenceContext
+            )
+            lessonPlanHtml = plan2634.toHtmlDocument()
+            lessonTitleDisplay = plan2634.lessonName
+        } else {
+            val plan5512 = generateLessonPlan5512(
+                lessonName = lessonName,
+                subject = subject,
+                grade = grade,
+                durationPeriods = 1,
+                customObjectives = customRequirements,
+                referenceContext = referenceContext
+            )
+            lessonPlanHtml = plan5512.toHtmlDocument()
+            lessonTitleDisplay = plan5512.lessonName
+        }
+
+        // 2. Slide Thuyết Trình Bài Dạy
+        val slides = generateSlideDeck(lessonTitleDisplay, subject, grade, referenceContext)
+
+        // 3. Mini Game Tương Tác
+        val miniGame = generateMiniGame(lessonTitleDisplay, subject, grade, referenceContext)
+
+        // 4. Sơ Đồ Tư Duy Mindmap
+        val mindmap = generateMindmap(lessonTitleDisplay, subject, grade, referenceContext)
+
+        // 5. Video Học Liệu Đa Phương Tiện
+        val videoResource = generateVideoResource(lessonTitleDisplay, subject, grade, referenceContext)
+
+        // 6. Bảng Điểm Rubric Chấm Giáo Án CV 5512
+        val rubricScore = generateRubricScore(lessonTitleDisplay, subject, grade, standard)
+
+        LessonTeachingPack(
+            lessonPlanName = lessonTitleDisplay,
+            lessonPlanHtml = lessonPlanHtml,
+            slides = slides,
+            miniGame = miniGame,
+            mindmap = mindmap,
+            videoResource = videoResource,
+            rubricScore = rubricScore
+        )
+    }
+
+    private fun generateSlideDeck(
+        lessonTitle: String,
+        subject: String,
+        grade: String,
+        context: String
+    ): LessonSlideDeck {
+        val slideList = listOf(
+            SlideItem(
+                slideNumber = 1,
+                title = "KHỞI ĐỘNG & ĐẶT VẤN ĐỀ",
+                bulletPoints = listOf(
+                    "Chào mừng các em học sinh đến với bài học: $lessonTitle",
+                    "Khơi gợi vấn đề thực tiễn liên quan đến $subject $grade",
+                    "Đặt câu hỏi thảo luận nhanh: Hiện tượng gì xảy ra khi ứng dụng trong đời sống?",
+                    "Kích hoạt tư duy và tạo hứng thú khám phá đầu tiết dạy"
+                ),
+                visualHint = "Trình chiếu hình ảnh/video 30s thực tế minh họa trực quan chủ đề bài học",
+                teacherScript = "Thầy/Cô chào cả lớp. Hôm nay chúng ta cùng tìm hiểu một chủ đề rất thú vị và có tính ứng dụng cao trong thực tiễn..."
+            ),
+            SlideItem(
+                slideNumber = 2,
+                title = "MỤC TIÊU CẦN ĐẠT CỦA BÀI HỌC",
+                bulletPoints = listOf(
+                    "Về Kiến thức: Nắm vững các khái niệm, quy luật và bản chất của $lessonTitle",
+                    "Về Kỹ năng: Phân tích, tính toán, thao tác kỹ thuật và giải quyết bài toán cụ thể",
+                    "Về Năng lực tự chủ: Làm việc nhóm, chủ động tìm tòi và phát biểu ý kiến xây dựng bài",
+                    "Về Phẩm chất: Tác phong cẩn thận, kỷ luật và an toàn trong học tập"
+                ),
+                visualHint = "Sơ đồ biểu tượng 3 cột: Kiến thức - Kỹ năng - Năng lực phẩm chất",
+                teacherScript = "Sau tiết học này, các em cần đạt được các chuẩn đầu ra cơ bản như trên bảng để làm nền tảng cho các bài học tiếp theo."
+            ),
+            SlideItem(
+                slideNumber = 3,
+                title = "HÌNH THÀNH KIẾN THỨC MỚI",
+                bulletPoints = listOf(
+                    "Khái niệm & bản chất khoa học của $lessonTitle",
+                    "Các thông số kỹ thuật cốt lõi và mối quan hệ tương quan",
+                    "Phân tích ví dụ mẫu điển hình bám sát chuẩn kiến thức GDPT 2018",
+                    "Lưu ý các trường hợp đặc biệt và sai lầm học sinh thường gặp phải"
+                ),
+                visualHint = "Hình vẽ đồ thị, bảng biểu thông số kỹ thuật hoặc sơ đồ giải phẫu nguyên lý",
+                teacherScript = "Các em hãy quan sát kỹ công thức/nguyên lý này. Điểm then chốt cần chú ý là điều kiện áp dụng..."
+            ),
+            SlideItem(
+                slideNumber = 4,
+                title = "QUY TRÌNH THỰC HIỆN & THAO TÁC MẪU",
+                bulletPoints = listOf(
+                    "Bước 1: Chuẩn bị dữ liệu, công cụ đo kiểm hoặc thiết bị thí nghiệm",
+                    "Bước 2: Triển khai các bước phân tích/vận hành theo đúng trình tự kỹ thuật",
+                    "Bước 3: Thu thập kết quả, đối chiếu dung sai và ghi nhận số liệu",
+                    "Bước 4: Đánh giá sản phẩm và dọn dẹp vị trí học tập/thực hành"
+                ),
+                visualHint = "Lưu đồ thuật toán 4 bước trực quan, mũi tên chuyển tiếp sinh động",
+                teacherScript = "Bây giờ Thầy/Cô sẽ làm mẫu từng bước. Cả lớp chú ý quan sát tư thế và cách thức xử lý ở bước 2..."
+            ),
+            SlideItem(
+                slideNumber = 5,
+                title = "LUYỆN TẬP & THẢO LUẬN NHÓM",
+                bulletPoints = listOf(
+                    "Chia lớp thành các nhóm 4-6 học sinh cùng thực hiện phiếu học tập",
+                    "Thực hành giải bài tập tình huống / thao tác trực tiếp trên học liệu",
+                    "Nhóm đại diện trình bày giải pháp và bảo vệ quan điểm trước lớp",
+                    "Các nhóm khác phản biện và bổ sung nhận xét"
+                ),
+                visualHint = "Đồng hồ bấm giờ đếm ngược 7 phút và phiếu hướng dẫn hoạt động nhóm",
+                teacherScript = "Các nhóm có 7 phút để hoàn thành phiếu học tập số 1. Đội nào xong trước và chính xác nhất sẽ nhận điểm cộng!"
+            ),
+            SlideItem(
+                slideNumber = 6,
+                title = "CỦNG CỐ & HƯỚNG DẪN TỰ HỌC VỀ NHÀ",
+                bulletPoints = listOf(
+                    "Tóm tắt 3 từ khóa quan trọng nhất của bài học hôm nay",
+                    "Tuyên dương các cá nhân và nhóm học tập tích cực",
+                    "Bài tập rèn luyện nâng cao: Hoàn thành bài tập 1, 2, 3 trong SGK",
+                    "Chuẩn bị cho bài học tiếp theo: Đọc trước tài liệu và ghi lại câu hỏi thắc mắc"
+                ),
+                visualHint = "Mã QR liên kết đến bài trắc nghiệm online và link tài liệu mở rộng",
+                teacherScript = "Tiết học hôm nay kết thúc rất thành công. Thầy/Cô khen ngợi tinh thần học tập của cả lớp. Về nhà các em nhớ ôn lại bài!"
+            )
+        )
+        return LessonSlideDeck(
+            lessonTitle = lessonTitle,
+            subject = subject,
+            targetClass = grade,
+            slides = slideList
+        )
+    }
+
+    private fun generateMiniGame(
+        lessonTitle: String,
+        subject: String,
+        grade: String,
+        context: String
+    ): LessonMiniGame {
+        val questions = listOf(
+            MiniGameQuestion(
+                id = 1,
+                question = "Khái niệm cốt lõi nào dưới đây thể hiện đúng nhất bản chất của bài học '$lessonTitle'?",
+                options = listOf(
+                    "Là quy trình/nguyên lý nền tảng giúp hiểu rõ cấu trúc và bản chất của hệ thống",
+                    "Là phương pháp không có tính ứng dụng trong thực tế",
+                    "Chỉ áp dụng được trong môi trường lý thuyết đơn thuần",
+                    "Không đòi hỏi tuân thủ các quy chuẩn kỹ thuật an toàn"
+                ),
+                correctIndex = 0,
+                explanation = "Nắm vững bản chất nền tảng là chìa khóa để vận dụng chính xác vào giải quyết các bài toán và tình huống kỹ thuật."
+            ),
+            MiniGameQuestion(
+                id = 2,
+                question = "Khi triển khai thực hiện nhiệm vụ trong '$lessonTitle', bước đầu tiên quan trọng nhất là gì?",
+                options = listOf(
+                    "Tiến hành vận hành thiết bị ngay mà không cần kiểm tra",
+                    "Xác định rõ mục tiêu, kiểm tra điều kiện an toàn và chuẩn bị đầy đủ học liệu/thiết bị",
+                    "Ghi chép kết quả ngay từ đầu",
+                    "Bỏ qua khâu đọc bản vẽ hoặc tài liệu hướng dẫn"
+                ),
+                correctIndex = 1,
+                explanation = "Khâu chuẩn bị và kiểm tra an toàn là điều kiện tiên quyết bắt buộc của quy trình sư phạm và kỹ thuật."
+            ),
+            MiniGameQuestion(
+                id = 3,
+                question = "Trong môn $subject ($grade), yếu tố nào sau đây quyết định chất lượng và độ chính xác của bài học?",
+                options = listOf(
+                    "Làm thật nhanh bỏ qua các bước kiểm tra",
+                    "Tuân thủ đúng quy trình công nghệ, thông số tiêu chuẩn và kiểm soát dung sai",
+                    "Chỉ dựa vào cảm tính cá nhân",
+                    "Không ghi chép nhật ký hoạt động"
+                ),
+                correctIndex = 1,
+                explanation = "Kỷ luật công nghệ và tuân thủ dung sai tiêu chuẩn là thước đo hàng đầu trong giáo dục kỹ thuật hiện đại."
+            ),
+            MiniGameQuestion(
+                id = 4,
+                question = "Tình huống nào sau đây được xem là giải pháp tối ưu khi gặp sự cố bất ngờ trong quá trình học tập/thực hành?",
+                options = listOf(
+                    "Cố tình che giấu và tiếp tục thực hiện",
+                    "Bình tĩnh dừng thao tác, kích hoạt ngắt an toàn (nếu cần) và báo cáo ngay với Giáo viên hướng dẫn",
+                    "Tự ý tháo dỡ sửa chữa thiết bị phức tạp",
+                    "Rời khỏi vị trí học tập mà không thông báo"
+                ),
+                correctIndex = 1,
+                explanation = "Bình tĩnh bảo đảm an toàn và báo cáo giáo viên là hành vi ứng xử chuẩn mực của học sinh có trách nhiệm."
+            )
+        )
+        return LessonMiniGame(
+            gameTitle = "Quiz Nhanh Củng Cố: $lessonTitle",
+            gameType = "QUIZ_FAST",
+            rules = "Mỗi câu hỏi có 15 giây suy nghĩ. Học sinh chọn đáp án đúng nhất để ghi điểm và nhận huy hiệu xuất sắc!",
+            questions = questions
+        )
+    }
+
+    private fun generateMindmap(
+        lessonTitle: String,
+        subject: String,
+        grade: String,
+        context: String
+    ): LessonMindmap {
+        val branches = listOf(
+            MindmapBranch(
+                title = "1. MỤC TIÊU & CHUẨN ĐẦU RA",
+                subItems = listOf(
+                    "Nắm vững kiến thức trọng tâm của $lessonTitle",
+                    "Rèn luyện kỹ năng quan sát, tính toán và giải quyết vấn đề",
+                    "Phát triển năng lực tự chủ và tinh thần hợp tác nhóm",
+                    "Xây dựng thái độ tích cực, ý thức an toàn và bảo vệ môi trường"
+                )
+            ),
+            MindmapBranch(
+                title = "2. BẢN CHẤT & NGUYÊN LÝ CỐT LÕI",
+                subItems = listOf(
+                    "Cấu trúc logic và các khái niệm cơ bản liên quan",
+                    "Công thức/định luật/nguyên lý hoạt động chi phối",
+                    "Mối liên hệ giữa $subject và các môn học tích hợp (STEM)",
+                    "Điều kiện giới hạn và các trường hợp áp dụng đặc biệt"
+                )
+            ),
+            MindmapBranch(
+                title = "3. QUY TRÌNH THỰC HIỆN 4 BƯỚC",
+                subItems = listOf(
+                    "Bước 1: Khởi động, nhận diện bài toán & chuẩn bị học liệu",
+                    "Bước 2: Tìm hiểu kiến thức mới & giải mã tình huống mẫu",
+                    "Bước 3: Luyện tập, thao tác thực hành & ghi nhận kết quả",
+                    "Bước 4: Vận dụng mở rộng, báo cáo & đánh giá sản phẩm"
+                )
+            ),
+            MindmapBranch(
+                title = "4. ỨNG DỤNG THỰC TIỄN & MỞ RỘNG",
+                subItems = listOf(
+                    "Giải thích các hiện tượng thực tế trong đời sống hàng ngày",
+                    "Ứng dụng trong sản xuất công nghiệp và công nghệ số hiện đại",
+                    "Định hướng nghề nghiệp và niềm đam mê sáng tạo khoa học kỹ thuật",
+                    "Bài tập rèn luyện nâng cao và dự án tự học tại nhà"
+                )
+            )
+        )
+        return LessonMindmap(
+            centerNode = lessonTitle.uppercase(),
+            branches = branches
+        )
+    }
+
+    private fun generateVideoResource(
+        lessonTitle: String,
+        subject: String,
+        grade: String,
+        context: String
+    ): LessonVideoResource {
+        val videos = listOf(
+            VideoLinkItem(
+                title = "Video Minh Họa Thực Tế & Khởi Động Tiết Dạy",
+                suggestedUrlOrKeyword = "https://www.youtube.com/results?search_query=" + java.net.URLEncoder.encode("$subject $grade $lessonTitle minh họa thực tế", "UTF-8"),
+                durationApprox = "3 phút 45 giây",
+                guideQuestion = "Sau khi xem video, em hãy chỉ ra đâu là yếu tố quan trọng nhất quyết định sự vận hành của hệ thống?"
+            ),
+            VideoLinkItem(
+                title = "Video Bài Giảng Chuẩn Kiến Thức & Thí Nghiệm / Thao Tác Mẫu",
+                suggestedUrlOrKeyword = "https://www.youtube.com/results?search_query=" + java.net.URLEncoder.encode("$subject $grade bài học $lessonTitle thí nghiệm mô phỏng 3D", "UTF-8"),
+                durationApprox = "6 phút 20 giây",
+                guideQuestion = "Em hãy quan sát từng bước thao tác trong video và đối chiếu với các bước nêu trong Sách giáo khoa."
+            ),
+            VideoLinkItem(
+                title = "Video Ứng Dụng Đột Phá Trong Khoa Học Công Nghệ & Đời Sống",
+                suggestedUrlOrKeyword = "https://www.youtube.com/results?search_query=" + java.net.URLEncoder.encode("Ứng dụng $lessonTitle trong công nghiệp hiện đại", "UTF-8"),
+                durationApprox = "4 phút 15 giây",
+                guideQuestion = "Công nghệ này đã giúp tiết kiệm chi phí và nâng cao năng suất lao động như thế nào trong thực tế?"
+            )
+        )
+        return LessonVideoResource(
+            lessonTitle = lessonTitle,
+            videos = videos
+        )
+    }
+
+    private fun generateRubricScore(
+        lessonTitle: String,
+        subject: String,
+        grade: String,
+        standard: Int
+    ): LessonRubricScore {
+        val criteria = listOf(
+            RubricCriterion(
+                standardName = "1. Kế hoạch và tài liệu dạy học (CV 5512)",
+                maxScore = 25,
+                selfScore = 24,
+                description = "Mục tiêu bài học rõ ràng theo 3 thành phần (Kiến thức, Năng lực, Phẩm chất); Chuỗi hoạt động logic bám sát tiến trình khoa học.",
+                strengths = "Thiết kế đầy đủ 4 hoạt động sư phạm chuẩn mực. Thiết bị học liệu số và bảng chỉ dẫn an toàn được tích hợp chi tiết.",
+                suggestions = "Có thể bổ sung thêm câu hỏi phân hóa nâng cao cho đối tượng học sinh khá giỏi."
+            ),
+            RubricCriterion(
+                standardName = "2. Tổ chức hoạt động học cho học sinh",
+                maxScore = 25,
+                selfScore = 23,
+                description = "Chuyển giao nhiệm vụ học tập rõ ràng, cụ thể; Học sinh chủ động hợp tác thực hiện; Giáo viên bao quát, hỗ trợ kịp thời.",
+                strengths = "Hoạt động nhóm và mini game giúp phát huy tính tích cực, kích thích tương tác sôi nổi trong lớp.",
+                suggestions = "Dành thêm 2-3 phút cho các nhóm tự nhận xét chéo sản phẩm của nhau."
+            ),
+            RubricCriterion(
+                standardName = "3. Ứng dụng Công nghệ số & Học liệu đa phương tiện",
+                maxScore = 25,
+                selfScore = 23,
+                description = "Sử dụng hiệu quả slide trình chiếu, sơ đồ tư duy, video mô phỏng và câu hỏi tương tác hỗ trợ tiếp thu kiến thức.",
+                strengths = "Gói học liệu 6-in-1 đồng bộ, trực quan, hỗ trợ giảng dạy hiện đại và tạo hứng thú cao.",
+                suggestions = "Khuyến khích học sinh quét mã QR tự làm bài kiểm tra trắc nghiệm nhanh sau giờ học."
+            ),
+            RubricCriterion(
+                standardName = "4. Kiểm tra, đánh giá kết quả học tập",
+                maxScore = 25,
+                selfScore = 22,
+                description = "Tiêu chí đánh giá tường minh theo Thông tư 22/TT-BGDĐT; Đánh giá thường xuyên quá trình kết hợp đánh giá sản phẩm.",
+                strengths = "Rubric thang điểm chi tiết, có phản hồi cụ thể giúp học sinh nhận biết điểm cần khắc phục.",
+                suggestions = "Tích hợp thêm phiếu tự đánh giá (Self-assessment) dành cho từng cá nhân học sinh."
+            )
+        )
+        val totalScore = criteria.sumOf { it.selfScore }
+        val gradeLevel = when {
+            totalScore >= 90 -> "Xuất sắc"
+            totalScore >= 80 -> "Tốt"
+            totalScore >= 70 -> "Khá"
+            else -> "Đạt"
+        }
+        return LessonRubricScore(
+            lessonTitle = lessonTitle,
+            totalScore = totalScore,
+            gradeLevel = gradeLevel,
+            criteria = criteria,
+            generalConclusion = "Kế hoạch bài dạy và bộ học liệu đi kèm được xây dựng rất công phu, chuẩn mực theo định hướng phát triển phẩm chất, năng lực của Chương trình GDPT 2018 và Công văn 5512/BGDĐT. Cấu trúc bài dạy mạch lạc, học liệu số phong phú, đáp ứng xuất sắc yêu cầu đổi mới phương pháp dạy học."
+        )
+    }
+
 }

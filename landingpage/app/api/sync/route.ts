@@ -108,6 +108,7 @@ export interface SyncPayload {
   events: CalendarEventPayload[];
   knowledgeDocs?: KnowledgeDocPayload[];
   deletedKnowledgeDocKeys?: string[];
+  deletedEventIds?: string[];
   deletedStudentIds?: string[];
   deletedClassroomIds?: string[];
   classrooms?: ClassroomPayload[];
@@ -317,6 +318,11 @@ async function getFromGist(syncCode: string): Promise<SyncPayload | null> {
     const deletedKDocs = new Set((parsed.deletedKnowledgeDocKeys || []).map((k: string) => k.toLowerCase().trim()));
     const deletedStudents = new Set(parsed.deletedStudentIds || []);
     const deletedClasses = new Set((parsed.deletedClassroomIds || []).map((c: string) => c.toLowerCase().trim()));
+    const deletedEvents = new Set((parsed.deletedEventIds || []).map(String));
+
+    if (Array.isArray(events)) {
+      events = events.filter((e: any) => !isTestSyncData(e) && !deletedEvents.has(String(e.id)));
+    }
 
     const knowledgeDocs: KnowledgeDocPayload[] = (Array.isArray(parsed.knowledgeDocs) ? parsed.knowledgeDocs : [])
       .filter((d: any) => !isTestSyncData(d) && !deletedKDocs.has((d.code || d.id || '').toLowerCase().trim()));
@@ -457,6 +463,7 @@ function mergeSchedules(existing: SchedulePayload[], incoming: SchedulePayload[]
   }
 
   for (const inc of incoming) {
+    if (!inc || isTestSyncData(inc)) continue;
     const key = getKey(inc);
     const prev = map.get(key);
     if (!prev) {
@@ -739,7 +746,7 @@ function mergeAttendance(existing: AttendanceRecordPayload[], incoming: Attendan
   return Array.from(map.values());
 }
 
-function mergeEvents(existing: CalendarEventPayload[], incoming: CalendarEventPayload[]): CalendarEventPayload[] {
+function mergeEvents(existing: CalendarEventPayload[], incoming: CalendarEventPayload[], deletedEventIds: Set<string> = new Set()): CalendarEventPayload[] {
   const map = new Map<string, CalendarEventPayload>();
 
   const getKey = (e: CalendarEventPayload) => {
@@ -754,10 +761,14 @@ function mergeEvents(existing: CalendarEventPayload[], incoming: CalendarEventPa
   };
 
   for (const e of existing) {
+    if (!e || isTestSyncData(e)) continue;
+    if (e.id && deletedEventIds.has(String(e.id).trim())) continue;
     map.set(getKey(e), e);
   }
 
   for (const inc of incoming) {
+    if (!inc || isTestSyncData(inc)) continue;
+    if (inc.id && deletedEventIds.has(String(inc.id).trim())) continue;
     const key = getKey(inc);
     const prev = map.get(key);
     if (!prev) {
@@ -805,6 +816,7 @@ export async function POST(req: NextRequest) {
     let incomingEvents: CalendarEventPayload[] = Array.isArray(body.events) ? body.events : [];
     const incomingKnowledgeDocs: KnowledgeDocPayload[] = Array.isArray(body.knowledgeDocs) ? body.knowledgeDocs : [];
     const incomingDeletedKeys: string[] = Array.isArray(body.deletedKnowledgeDocKeys) ? body.deletedKnowledgeDocKeys : [];
+    const incomingDeletedEventIds: string[] = Array.isArray(body.deletedEventIds) ? body.deletedEventIds.map(String) : [];
     const incomingDeletedStudentIds: string[] = Array.isArray(body.deletedStudentIds) ? body.deletedStudentIds : [];
     const incomingDeletedClassroomIds: string[] = Array.isArray(body.deletedClassroomIds) ? body.deletedClassroomIds : [];
     const incomingClassrooms: ClassroomPayload[] = Array.isArray(body.classrooms) ? body.classrooms : [];
@@ -859,7 +871,11 @@ export async function POST(req: NextRequest) {
     } else if (existing && !body.forceOverwrite) {
       // Hợp nhất ca dạy, lịch mẫu và tài liệu theo mốc thời gian sửa đổi (Last-Write-Wins per item)
       finalSchedules = mergeSchedules(existing.schedules || [], incomingSchedules);
-      finalEvents = mergeEvents(existing.events || [], incomingEvents);
+      const combinedDeletedEventIds = new Set([
+        ...incomingDeletedEventIds,
+        ...(((existing as any)?.deletedEventIds || []).map(String))
+      ]);
+      finalEvents = mergeEvents(existing.events || [], incomingEvents, combinedDeletedEventIds);
       finalKnowledgeDocs = mergeKnowledgeDocs(existing.knowledgeDocs || [], incomingKnowledgeDocs, combinedDeletedKeys);
       const combinedDeletedStudentIds = new Set([
         ...incomingDeletedStudentIds,
@@ -891,6 +907,7 @@ export async function POST(req: NextRequest) {
       events: finalEvents,
       knowledgeDocs: finalKnowledgeDocs,
       deletedKnowledgeDocKeys: combinedDeletedKeys,
+      deletedEventIds: Array.from(new Set([...incomingDeletedEventIds, ...(((existing as any)?.deletedEventIds || []).map(String))])),
       deletedStudentIds: Array.from(new Set([...incomingDeletedStudentIds, ...((existing as any)?.deletedStudentIds || [])])),
       deletedClassroomIds: Array.from(new Set([...incomingDeletedClassroomIds, ...((existing as any)?.deletedClassroomIds || [])])),
       classrooms: finalClassrooms,

@@ -1,5 +1,31 @@
 "use client";
 
+export const STORAGE_DELETED_EVENTS_KEY = 'smart_teacher_deleted_event_ids_v1';
+
+export function getDeletedEventIds(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_DELETED_EVENTS_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function recordDeletedEventIds(ids: (string | number)[]): void {
+  if (typeof window === 'undefined' || !Array.isArray(ids) || ids.length === 0) return;
+  try {
+    const current = new Set(getDeletedEventIds());
+    ids.forEach(id => {
+      if (id !== undefined && id !== null) current.add(String(id).trim());
+    });
+    localStorage.setItem(STORAGE_DELETED_EVENTS_KEY, JSON.stringify(Array.from(current)));
+  } catch (e) {
+    console.error('Error recording deleted event IDs:', e);
+  }
+}
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import TodayCommandCenter from '@/components/dashboard/TodayCommandCenter';
@@ -76,7 +102,7 @@ import {
   recordDeletedStudentId,
   recordDeletedClassroomId
 } from './studentRosterData';
-import { isTestStudent, isTestClassroom } from './testDataSanitizer';
+import { isTestStudent, isTestClassroom, isTestSyncData } from './testDataSanitizer';
 
 import AIAssistantWidget from '@/components/AIAssistantWidget';
 import { AiPedagogyMode, processPedagogicalAiQuery } from '@/components/aiPedagogyEngine';
@@ -327,19 +353,27 @@ export function mergeSchedulesDesktop(current: ScheduleItem[], incoming: Schedul
 }
 
 // Merge events based on updatedAt (Last-Write-Wins per item)
-export function mergeEventsDesktop(current: CalendarEventItem[], incoming: CalendarEventItem[]): CalendarEventItem[] {
+export function mergeEventsDesktop(
+  current: CalendarEventItem[],
+  incoming: CalendarEventItem[],
+  deletedIds: Set<string> = new Set()
+): CalendarEventItem[] {
   const map = new Map<string, CalendarEventItem>();
   const getKey = (e: CalendarEventItem) => {
     const numId = Number(e.id);
     if (!isNaN(numId) && numId > 0) return `id_${numId}`;
     if (e.teachingScheduleId) return `sch_${e.teachingScheduleId}_${e.date}`;
-    return `${e.date}_${e.className.toLowerCase().trim()}_${e.startTime.trim()}_${e.subject.toLowerCase().trim()}`;
+    return `${e.date}_${(e.className || '').toLowerCase().trim()}_${(e.startTime || '').trim()}_${(e.subject || '').toLowerCase().trim()}`;
   };
 
   for (const e of current) {
+    if (!e || isTestSyncData(e)) continue;
+    if (e.id && deletedIds.has(String(e.id).trim())) continue;
     map.set(getKey(e), e);
   }
   for (const inc of incoming) {
+    if (!inc || isTestSyncData(inc)) continue;
+    if (inc.id && deletedIds.has(String(inc.id).trim())) continue;
     const k = getKey(inc);
     const prev = map.get(k);
     if (!prev) {
@@ -1137,6 +1171,7 @@ export default function UnifiedTeacherScheduleApp() {
           students: getStoredStudents(),
           attendanceRecords: getStoredAttendance(),
           deletedKnowledgeDocKeys: getDeletedKnowledgeDocKeys(),
+          deletedEventIds: getDeletedEventIds(),
           deletedStudentIds: getDeletedStudentIds(),
           deletedClassroomIds: getDeletedClassroomIds(),
           purgeTestData: purgeTestData
@@ -1145,9 +1180,11 @@ export default function UnifiedTeacherScheduleApp() {
       if (res.ok) {
         const result = await res.json();
         // Cập nhật state với danh sách đã hợp nhất 2 chiều từ server
-        if (Array.isArray(result.events) && result.events.length > 0) {
-          setEvents(result.events);
-          localStorage.setItem('smart_teacher_events', JSON.stringify(result.events));
+        if (Array.isArray(result.events)) {
+          const deletedEvents = new Set(getDeletedEventIds());
+          const cleanEvents = result.events.filter((e: any) => !isTestSyncData(e) && !deletedEvents.has(String(e.id)));
+          setEvents(cleanEvents);
+          localStorage.setItem('smart_teacher_events', JSON.stringify(cleanEvents));
         }
         if (Array.isArray(result.schedules) && result.schedules.length > 0) {
           setSchedules(result.schedules);
@@ -1278,7 +1315,10 @@ export default function UnifiedTeacherScheduleApp() {
             }
           })();
 
-          const mergedEvents = mergeEventsDesktop(currentSavedEvents, cloudEvents);
+          const deletedEvents = new Set(getDeletedEventIds());
+          const cleanCloudEvents = cloudEvents.filter((e: any) => !isTestSyncData(e) && !deletedEvents.has(String(e.id)));
+          const cleanSavedEvents = currentSavedEvents.filter((e: any) => !isTestSyncData(e) && !deletedEvents.has(String(e.id)));
+          const mergedEvents = mergeEventsDesktop(cleanSavedEvents, cleanCloudEvents, deletedEvents);
           const mergedSchedules = mergeSchedulesDesktop(currentSavedSchedules, cloudSchedules);
 
           setEvents(mergedEvents);
@@ -1405,10 +1445,28 @@ export default function UnifiedTeacherScheduleApp() {
     // Pull from cloud immediately
     pullFromCloud(savedCode, false);
 
-    // Auto sync polling every 30 seconds
-    const interval = setInterval(() => {
+    // ================= CHẾ ĐỘ ĐỒNG BỘ MỚI THEO YÊU CẦU =================
+    // 1/ Người dùng chủ động tự đồng bộ (bấm "Đồng bộ ngay" hoặc Ctrl+S)
+    // 2/ Tự động đồng bộ đúng lúc 00h00 phút hàng ngày (không đồng bộ liên tục 30s để tránh phiền toái)
+    const getMsUntilMidnight = (): number => {
+      const now = new Date();
+      const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+      return Math.max(1000, nextMidnight.getTime() - now.getTime());
+    };
+
+    let midnightInterval: NodeJS.Timeout | null = null;
+    const midnightTimer = setTimeout(() => {
+      console.log('⏰ Đã đến 00h00: Tự động đồng bộ lịch dạy ngày mới...');
       pullFromCloud(savedCode, false);
-    }, 30000);
+      setSelectedDate(new Date().toISOString().split('T')[0]);
+
+      // Thiết lập chu kỳ 24h đồng bộ đúng 00h00 cho các ngày tiếp theo
+      midnightInterval = setInterval(() => {
+        console.log('⏰ Tự động đồng bộ lúc 00h00 hàng ngày...');
+        pullFromCloud(savedCode, false);
+        setSelectedDate(new Date().toISOString().split('T')[0]);
+      }, 24 * 60 * 60 * 1000);
+    }, getMsUntilMidnight());
 
     // Listen to Desktop App menu "Đồng bộ Đám mây ngay" (Ctrl+S)
     if (typeof window !== 'undefined' && (window as any).desktopAPI?.onSyncTriggered) {
@@ -1417,7 +1475,10 @@ export default function UnifiedTeacherScheduleApp() {
       });
     }
 
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(midnightTimer);
+      if (midnightInterval) clearInterval(midnightInterval);
+    };
   }, []);
 
   // Today's Events
@@ -1711,11 +1772,15 @@ export default function UnifiedTeacherScheduleApp() {
 
   // Delete Single Event
   const handleDeleteEvent = (id: string) => {
-    if (!confirm('Thầy/Cô có chắc chắn muốn xoá ca dạy này không?')) return;
-    const updated = events.filter((e) => e.id !== id);
+    if (!confirm('Thầy/Cô có chắc chắn muốn xoá ca dạy này không? Thao tác này sẽ xoá vĩnh viễn trên máy và Đám mây Supabase.')) return;
+    recordDeletedEventIds([id]);
+    const updated = events.filter((e) => String(e.id) !== String(id));
     setEvents(updated);
     localStorage.setItem('smart_teacher_events', JSON.stringify(updated));
-    pushToCloud(updated, schedules, syncCode);
+    setAlertBanner('🟢 Đã xoá ca dạy thành công!');
+    setTimeout(() => setAlertBanner(null), 3500);
+    // Đồng bộ ngay lên Đám mây kèm deletedEventIds để xoá vĩnh viễn
+    pushToCloud(updated, schedules, syncCode, false, true);
   };
 
   // Save Attachment

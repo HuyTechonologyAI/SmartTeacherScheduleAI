@@ -216,51 +216,23 @@ abstract class SmartTeacherDatabase : RoomDatabase() {
                             CoroutineScope(Dispatchers.IO).launch {
                                 INSTANCE?.let { database ->
                                     try {
-                                        val existingClasses = database.classroomDao().getAllClassrooms()
-                                        if (existingClasses.isEmpty()) {
-                                            val defaultClasses = listOf(
-                                                ClassroomEntity(
-                                                    id = "cls_cg24tc34",
-                                                    name = "CG24TC34",
-                                                    grade = "Trung cấp K24",
-                                                    totalStudents = 32,
-                                                    academicYear = "2024-2025",
-                                                    notes = "Lớp Chế tạo máy & Cơ điện tử - Tiết thực hành xưởng X1"
-                                                ),
-                                                ClassroomEntity(
-                                                    id = "cls_cdck02",
-                                                    name = "CĐCK02",
-                                                    grade = "Cao đẳng K02",
-                                                    totalStudents = 28,
-                                                    academicYear = "2024-2025",
-                                                    notes = "Lớp Cơ khí Chế tạo - Phòng lý thuyết P204"
-                                                ),
-                                                ClassroomEntity(
-                                                    id = "cls_10a1",
-                                                    name = "10A1",
-                                                    grade = "Khối 10",
-                                                    totalStudents = 40,
-                                                    academicYear = "2024-2025",
-                                                    notes = "Môn Công nghệ 10 (Công nghiệp & Năng lực số)"
-                                                )
-                                            )
-                                            database.classroomDao().insertClassrooms(defaultClasses)
+                                        // Tự động dọn dẹp các dữ liệu kiểm thử thử nghiệm (mock / sample test data)
+                                        val testClassNames = listOf("CG24TC34", "CĐCK02", "10A1")
+                                        val testClassIds = listOf("cls_cg24tc34", "cls_cdck02", "cls_10a1")
+                                        val testStudentIds = listOf(
+                                            "std_01", "std_02", "std_03", "std_04", "std_05",
+                                            "std_06", "std_07", "std_08", "std_101", "std_102", "std_103", "std_104"
+                                        )
 
-                                            val defaultStudents = listOf(
-                                                StudentEntity("std_01", "cls_cg24tc34", "CG24TC34", "CG24-01", "Nguyễn Văn An", "Nam", "0981234567", "Nguyễn Văn Bình", 12, "Lớp trưởng, gương mẫu 5S"),
-                                                StudentEntity("std_02", "cls_cg24tc34", "CG24TC34", "CG24-02", "Trần Thị Bích", "Nữ", "0912345678", "Trần Văn Cường", 8, "Tổ trưởng tổ 1"),
-                                                StudentEntity("std_03", "cls_cg24tc34", "CG24TC34", "CG24-03", "Lê Hoàng Dũng", "Nam", "0978901234", "Lê Văn Đạt", 15, "Thao tác máy tiện rất chuẩn xác"),
-                                                StudentEntity("std_04", "cls_cg24tc34", "CG24TC34", "CG24-04", "Phạm Minh Đức", "Nam", "0903456789", "Phạm Văn Giang", 6, "Cần nhắc nhở mang kính BHLĐ"),
-                                                StudentEntity("std_05", "cls_cg24tc34", "CG24TC34", "CG24-05", "Vũ Quốc Huy", "Nam", "0934567890", "Vũ Đình Hải", 10, "Hăng hái phát biểu"),
-                                                StudentEntity("std_06", "cls_cg24tc34", "CG24TC34", "CG24-06", "Hoàng Kim Loan", "Nữ", "0965432109", "Hoàng Văn Khanh", 9, "Ghi chép sổ tay công nghệ cẩn thận"),
-                                                StudentEntity("std_07", "cls_cg24tc34", "CG24TC34", "CG24-07", "Đặng Tuấn Kiệt", "Nam", "0943219876", "Đặng Quốc Lâm", 7, "Tích cực vệ sinh máy sau giờ học"),
-                                                StudentEntity("std_08", "cls_cg24tc34", "CG24TC34", "CG24-08", "Bùi Thị Mai", "Nữ", "0922334455", "Bùi Văn Nam", 11, "Khéo tay trong việc lắp ráp"),
-                                                StudentEntity("std_101", "cls_10a1", "10A1", "10A1-01", "Đỗ Hải Phong", "Nam", "0988776655", "Đỗ Văn Phát", 14, "Học tốt Năng lực số & AI"),
-                                                StudentEntity("std_102", "cls_10a1", "10A1", "10A1-02", "Ngô Thùy Trang", "Nữ", "0977665544", "Ngô Quang Tuyến", 16, "Thuyết trình slide công nghệ xuất sắc"),
-                                                StudentEntity("std_103", "cls_10a1", "10A1", "10A1-03", "Phan Tuấn Tú", "Nam", "0911223344", "Phan Văn Tùng", 8, "Sáng tạo trong sơ đồ tư duy"),
-                                                StudentEntity("std_104", "cls_10a1", "10A1", "10A1-04", "Lý Diệu Linh", "Nữ", "0900112233", "Lý Thành Long", 10, "Làm mini game đạt điểm tuyệt đối")
-                                            )
-                                            database.studentDao().insertStudents(defaultStudents)
+                                        testClassNames.forEach { cName ->
+                                            database.studentDao().deleteStudentsByClassName(cName)
+                                        }
+                                        testClassIds.forEach { cId ->
+                                            database.studentDao().deleteStudentsByClassId(cId)
+                                            database.classroomDao().deleteClassroomById(cId)
+                                        }
+                                        testStudentIds.forEach { sId ->
+                                            database.studentDao().deleteStudentById(sId)
                                         }
                                     } catch (e: Exception) {
                                         e.printStackTrace()

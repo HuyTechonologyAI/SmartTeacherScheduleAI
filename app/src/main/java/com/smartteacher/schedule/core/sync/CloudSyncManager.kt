@@ -210,6 +210,7 @@ object CloudSyncManager {
             val classroomsArray = JsonArray()
             val allClassrooms = db.classroomDao().getAllClassrooms()
             for (c in allClassrooms) {
+                if (isTestSyncItem(c.id, c.name)) continue
                 classroomsArray.add(JsonObject().apply {
                     addProperty("id", c.id)
                     addProperty("name", c.name)
@@ -224,6 +225,7 @@ object CloudSyncManager {
             val studentsArray = JsonArray()
             val allStudents = db.studentDao().getAllStudents()
             for (st in allStudents) {
+                if (isTestSyncItem(st.id, st.fullName) || isTestSyncItem(st.classId, st.className)) continue
                 studentsArray.add(JsonObject().apply {
                     addProperty("id", st.id)
                     addProperty("classId", st.classId)
@@ -346,6 +348,9 @@ object CloudSyncManager {
                 val list = mutableListOf<ClassroomEntity>()
                 for (i in 0 until classroomsArray.size()) {
                     val obj = classroomsArray.get(i).asJsonObject
+                    val cId = obj.get("id")?.asString ?: ""
+                    val cName = obj.get("name")?.asString ?: ""
+                    if (isTestSyncItem(cId, cName)) continue
                     list.add(ClassroomEntity(
                         id = obj.get("id")?.asString ?: "cls_${System.currentTimeMillis()}",
                         name = obj.get("name")?.asString ?: "",
@@ -364,6 +369,10 @@ object CloudSyncManager {
                 val list = mutableListOf<StudentEntity>()
                 for (i in 0 until studentsArray.size()) {
                     val obj = studentsArray.get(i).asJsonObject
+                    val sId = obj.get("id")?.asString ?: ""
+                    val sName = obj.get("fullName")?.asString ?: ""
+                    val sClass = obj.get("className")?.asString ?: ""
+                    if (isTestSyncItem(sId, sName) || isTestSyncItem("", sClass)) continue
                     list.add(StudentEntity(
                         id = obj.get("id")?.asString ?: "std_${System.currentTimeMillis()}",
                         classId = obj.get("classId")?.asString ?: "",

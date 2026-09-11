@@ -38,4 +38,10 @@ interface StudentDao {
 
     @Query("DELETE FROM students WHERE id = :id")
     suspend fun deleteStudentById(id: String)
+
+    @Query("DELETE FROM students WHERE LOWER(className) = LOWER(:className)")
+    suspend fun deleteStudentsByClassName(className: String)
+
+    @Query("DELETE FROM students WHERE LOWER(classId) = LOWER(:classId)")
+    suspend fun deleteStudentsByClassId(classId: String)
 }

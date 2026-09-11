@@ -1,3 +1,4 @@
+import { isTestStudent, isTestClassroom, isTestSyncData, sanitizePayload } from '@/app/app/testDataSanitizer';
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { supabase } from '@/lib/supabase';
@@ -107,6 +108,8 @@ export interface SyncPayload {
   events: CalendarEventPayload[];
   knowledgeDocs?: KnowledgeDocPayload[];
   deletedKnowledgeDocKeys?: string[];
+  deletedStudentIds?: string[];
+  deletedClassroomIds?: string[];
   classrooms?: ClassroomPayload[];
   students?: StudentPayload[];
   attendanceRecords?: AttendanceRecordPayload[];
@@ -311,10 +314,18 @@ async function getFromGist(syncCode: string): Promise<SyncPayload | null> {
       events = generateEventsFromSchedules(schedules);
     }
 
-    const knowledgeDocs: KnowledgeDocPayload[] = Array.isArray(parsed.knowledgeDocs) ? parsed.knowledgeDocs : [];
-    const classrooms: ClassroomPayload[] = Array.isArray(parsed.classrooms) ? parsed.classrooms : [];
-    const students: StudentPayload[] = Array.isArray(parsed.students) ? parsed.students : [];
-    const attendanceRecords: AttendanceRecordPayload[] = Array.isArray(parsed.attendanceRecords) ? parsed.attendanceRecords : [];
+    const deletedKDocs = new Set((parsed.deletedKnowledgeDocKeys || []).map((k: string) => k.toLowerCase().trim()));
+    const deletedStudents = new Set(parsed.deletedStudentIds || []);
+    const deletedClasses = new Set((parsed.deletedClassroomIds || []).map((c: string) => c.toLowerCase().trim()));
+
+    const knowledgeDocs: KnowledgeDocPayload[] = (Array.isArray(parsed.knowledgeDocs) ? parsed.knowledgeDocs : [])
+      .filter((d: any) => !isTestSyncData(d) && !deletedKDocs.has((d.code || d.id || '').toLowerCase().trim()));
+    const classrooms: ClassroomPayload[] = (Array.isArray(parsed.classrooms) ? parsed.classrooms : [])
+      .filter((c: any) => !isTestClassroom(c) && !isTestSyncData(c) && !deletedClasses.has(c.id?.toLowerCase().trim()) && !deletedClasses.has((c.name || '').toLowerCase().trim()));
+    const students: StudentPayload[] = (Array.isArray(parsed.students) ? parsed.students : [])
+      .filter((s: any) => !isTestStudent(s) && !isTestSyncData(s) && !deletedStudents.has(s.id) && !deletedClasses.has((s.className || '').toLowerCase().trim()));
+    const attendanceRecords: AttendanceRecordPayload[] = (Array.isArray(parsed.attendanceRecords) ? parsed.attendanceRecords : [])
+      .filter((a: any) => !isTestSyncData(a));
     const syncPayload: SyncPayload = {
       syncCode: cleanCode,
       deviceName: parsed.deviceName || 'Smart Device',
@@ -657,12 +668,23 @@ function mergeKnowledgeDocs(
 }
 
 
-function mergeClassrooms(existing: ClassroomPayload[], incoming: ClassroomPayload[]): ClassroomPayload[] {
+function mergeClassrooms(
+  existing: ClassroomPayload[],
+  incoming: ClassroomPayload[],
+  deletedClassroomIds: Set<string>
+): ClassroomPayload[] {
   const map = new Map<string, ClassroomPayload>();
   const getKey = (c: ClassroomPayload) => (c.name || c.id).toLowerCase().trim();
-  for (const c of existing) map.set(getKey(c), c);
+  for (const c of existing) {
+    if (!c || isTestClassroom(c) || isTestSyncData(c)) continue;
+    const key = getKey(c);
+    if (deletedClassroomIds.has(key) || (c.id && deletedClassroomIds.has(c.id.toLowerCase().trim()))) continue;
+    map.set(key, c);
+  }
   for (const inc of incoming) {
+    if (!inc || isTestClassroom(inc) || isTestSyncData(inc)) continue;
     const key = getKey(inc);
+    if (deletedClassroomIds.has(key) || (inc.id && deletedClassroomIds.has(inc.id.toLowerCase().trim()))) continue;
     const prev = map.get(key);
     if (!prev || (Number(inc.updatedAt) || 0) >= (Number(prev.updatedAt) || 0)) {
       map.set(key, inc);
@@ -671,14 +693,29 @@ function mergeClassrooms(existing: ClassroomPayload[], incoming: ClassroomPayloa
   return Array.from(map.values());
 }
 
-function mergeStudents(existing: StudentPayload[], incoming: StudentPayload[]): StudentPayload[] {
+function mergeStudents(
+  existing: StudentPayload[],
+  incoming: StudentPayload[],
+  deletedStudentIds: Set<string>,
+  deletedClassroomIds: Set<string>
+): StudentPayload[] {
   const map = new Map<string, StudentPayload>();
   const getKey = (s: StudentPayload) => {
     if (s.id && !s.id.startsWith('std_temp')) return s.id;
     return `${(s.className || '').toLowerCase().trim()}__${(s.fullName || '').toLowerCase().trim()}`;
   };
-  for (const s of existing) map.set(getKey(s), s);
+  for (const s of existing) {
+    if (!s || isTestStudent(s) || isTestSyncData(s)) continue;
+    if (s.id && deletedStudentIds.has(s.id)) continue;
+    if (s.className && deletedClassroomIds.has(s.className.toLowerCase().trim())) continue;
+    if (s.classId && deletedClassroomIds.has(s.classId.toLowerCase().trim())) continue;
+    map.set(getKey(s), s);
+  }
   for (const inc of incoming) {
+    if (!inc || isTestStudent(inc) || isTestSyncData(inc)) continue;
+    if (inc.id && deletedStudentIds.has(inc.id)) continue;
+    if (inc.className && deletedClassroomIds.has(inc.className.toLowerCase().trim())) continue;
+    if (inc.classId && deletedClassroomIds.has(inc.classId.toLowerCase().trim())) continue;
     const key = getKey(inc);
     const prev = map.get(key);
     if (!prev || (Number(inc.updatedAt) || 0) >= (Number(prev.updatedAt) || 0)) {
@@ -768,6 +805,8 @@ export async function POST(req: NextRequest) {
     let incomingEvents: CalendarEventPayload[] = Array.isArray(body.events) ? body.events : [];
     const incomingKnowledgeDocs: KnowledgeDocPayload[] = Array.isArray(body.knowledgeDocs) ? body.knowledgeDocs : [];
     const incomingDeletedKeys: string[] = Array.isArray(body.deletedKnowledgeDocKeys) ? body.deletedKnowledgeDocKeys : [];
+    const incomingDeletedStudentIds: string[] = Array.isArray(body.deletedStudentIds) ? body.deletedStudentIds : [];
+    const incomingDeletedClassroomIds: string[] = Array.isArray(body.deletedClassroomIds) ? body.deletedClassroomIds : [];
     const incomingClassrooms: ClassroomPayload[] = Array.isArray(body.classrooms) ? body.classrooms : [];
     const incomingStudents: StudentPayload[] = Array.isArray(body.students) ? body.students : [];
     const incomingAttendance: AttendanceRecordPayload[] = Array.isArray(body.attendanceRecords) ? body.attendanceRecords : [];
@@ -822,8 +861,16 @@ export async function POST(req: NextRequest) {
       finalSchedules = mergeSchedules(existing.schedules || [], incomingSchedules);
       finalEvents = mergeEvents(existing.events || [], incomingEvents);
       finalKnowledgeDocs = mergeKnowledgeDocs(existing.knowledgeDocs || [], incomingKnowledgeDocs, combinedDeletedKeys);
-      finalClassrooms = mergeClassrooms(existing.classrooms || [], incomingClassrooms);
-      finalStudents = mergeStudents(existing.students || [], incomingStudents);
+      const combinedDeletedStudentIds = new Set([
+        ...incomingDeletedStudentIds,
+        ...((existing as any).deletedStudentIds || [])
+      ]);
+      const combinedDeletedClassroomIds = new Set([
+        ...incomingDeletedClassroomIds.map(c => c.toLowerCase().trim()),
+        ...(((existing as any).deletedClassroomIds || []).map((c: string) => c.toLowerCase().trim()))
+      ]);
+      finalClassrooms = mergeClassrooms(existing.classrooms || [], incomingClassrooms, combinedDeletedClassroomIds);
+      finalStudents = mergeStudents(existing.students || [], incomingStudents, combinedDeletedStudentIds, combinedDeletedClassroomIds);
       finalAttendance = mergeAttendance(existing.attendanceRecords || [], incomingAttendance);
     } else {
       finalKnowledgeDocs = mergeKnowledgeDocs([], incomingKnowledgeDocs, combinedDeletedKeys);
@@ -844,6 +891,8 @@ export async function POST(req: NextRequest) {
       events: finalEvents,
       knowledgeDocs: finalKnowledgeDocs,
       deletedKnowledgeDocKeys: combinedDeletedKeys,
+      deletedStudentIds: Array.from(new Set([...incomingDeletedStudentIds, ...((existing as any)?.deletedStudentIds || [])])),
+      deletedClassroomIds: Array.from(new Set([...incomingDeletedClassroomIds, ...((existing as any)?.deletedClassroomIds || [])])),
       classrooms: finalClassrooms,
       students: finalStudents,
       attendanceRecords: finalAttendance

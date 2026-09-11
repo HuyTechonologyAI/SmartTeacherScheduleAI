@@ -258,3 +258,96 @@ export function cleanAllTestData(): CleanReport {
 
   return report;
 }
+
+
+// ================= ROSTER SPECIFIC TEST DATA FILTERS =================
+export const KNOWN_TEST_STUDENT_IDS = new Set([
+  'std_01', 'std_02', 'std_03', 'std_04', 'std_05', 'std_06', 'std_07', 'std_08',
+  'std_101', 'std_102', 'std_103', 'std_104'
+]);
+
+export const KNOWN_TEST_CLASS_IDS = new Set([
+  'cls_cg24tc34', 'cls_cdck02', 'cls_10a1'
+]);
+
+export const KNOWN_TEST_CLASS_NAMES = new Set([
+  'cg24tc34', 'cđck02', 'cdck02', '10a1'
+]);
+
+export const KNOWN_TEST_STUDENT_NAMES = new Set([
+  'trần thị bích',
+  'lê hoàng dũng',
+  'phạm minh đức',
+  'vũ quốc huy',
+  'hoàng kim loan',
+  'đặng tuấn kiệt',
+  'bùi thị mai',
+  'nguyễn văn an',
+  'đỗ hải phong',
+  'ngô thùy trang',
+  'phan tuấn tú',
+  'lý diệu linh'
+]);
+
+export function isTestStudent(st: any): boolean {
+  if (!st) return false;
+  const id = String(st.id || '').toLowerCase().trim();
+  if (KNOWN_TEST_STUDENT_IDS.has(id)) return true;
+  if (/^(std_0|std_10[1-4]$)/i.test(id)) return true;
+
+  const code = String(st.studentCode || '').toLowerCase().trim();
+  if (/^cg24-0[1-8]$/i.test(code) || /^10a1-0[1-4]$/i.test(code)) return true;
+
+  const name = String(st.fullName || '').toLowerCase().trim();
+  if (KNOWN_TEST_STUDENT_NAMES.has(name)) return true;
+
+  const cName = String(st.className || '').toLowerCase().trim();
+  const cId = String(st.classId || '').toLowerCase().trim();
+  if (KNOWN_TEST_CLASS_NAMES.has(cName) || KNOWN_TEST_CLASS_IDS.has(cId)) return true;
+
+  return isTestData(st);
+}
+
+export function isTestClassroom(cl: any): boolean {
+  if (!cl) return false;
+  const id = String(cl.id || '').toLowerCase().trim();
+  if (KNOWN_TEST_CLASS_IDS.has(id)) return true;
+
+  const name = String(cl.name || '').toLowerCase().trim();
+  if (KNOWN_TEST_CLASS_NAMES.has(name)) return true;
+
+  return isTestData(cl);
+}
+
+export function isTestSyncData(item: any): boolean {
+  if (!item) return false;
+  return isTestData(item) || isTestStudent(item) || isTestClassroom(item);
+}
+
+export function purgeTestRosterItems(students: any[], classrooms: any[]): {
+  cleanStudents: any[];
+  cleanClassrooms: any[];
+  removedStudentsCount: number;
+  removedClassroomsCount: number;
+} {
+  const cleanStudents = (Array.isArray(students) ? students : []).filter(s => !isTestStudent(s));
+  const cleanClassrooms = (Array.isArray(classrooms) ? classrooms : []).filter(c => !isTestClassroom(c));
+  return {
+    cleanStudents,
+    cleanClassrooms,
+    removedStudentsCount: (students?.length || 0) - cleanStudents.length,
+    removedClassroomsCount: (classrooms?.length || 0) - cleanClassrooms.length
+  };
+}
+
+export function sanitizePayload<T extends Record<string, any>>(payload: T): T {
+  if (!payload || typeof payload !== 'object') return payload;
+  const result: any = { ...payload };
+  if (Array.isArray(result.events)) result.events = result.events.filter((e: any) => !isTestSyncData(e));
+  if (Array.isArray(result.schedules)) result.schedules = result.schedules.filter((s: any) => !isTestSyncData(s));
+  if (Array.isArray(result.knowledgeDocs)) result.knowledgeDocs = result.knowledgeDocs.filter((d: any) => !isTestSyncData(d));
+  if (Array.isArray(result.classrooms)) result.classrooms = result.classrooms.filter((c: any) => !isTestClassroom(c));
+  if (Array.isArray(result.students)) result.students = result.students.filter((s: any) => !isTestStudent(s));
+  if (Array.isArray(result.attendanceRecords)) result.attendanceRecords = result.attendanceRecords.filter((a: any) => !isTestSyncData(a));
+  return result;
+}

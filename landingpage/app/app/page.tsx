@@ -62,14 +62,21 @@ import {
   getStudentsByClass,
   saveStudent,
   deleteStudent,
+  deleteStudentsByClass,
   addKudosToStudent,
   importStudentsFromText,
   getStoredAttendance,
   getAttendanceForSession,
   saveAttendanceRecords,
   exportAttendanceToCsv,
-  parseStudentFile
+  parseStudentFile,
+  purgeTestRosterData,
+  getDeletedStudentIds,
+  getDeletedClassroomIds,
+  recordDeletedStudentId,
+  recordDeletedClassroomId
 } from './studentRosterData';
+import { isTestStudent, isTestClassroom } from './testDataSanitizer';
 
 import AIAssistantWidget from '@/components/AIAssistantWidget';
 import { AiPedagogyMode, processPedagogicalAiQuery } from '@/components/aiPedagogyEngine';
@@ -360,7 +367,7 @@ export default function UnifiedTeacherScheduleApp() {
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
-  const [selectedRosterClass, setSelectedRosterClass] = useState<string>('CG24TC34');
+  const [selectedRosterClass, setSelectedRosterClass] = useState<string>('');
   const [rosterSearch, setRosterSearch] = useState<string>('');
   const [showAddStudentModal, setShowAddStudentModal] = useState<boolean>(false);
   const [newStudentName, setNewStudentName] = useState<string>('');
@@ -1130,6 +1137,8 @@ export default function UnifiedTeacherScheduleApp() {
           students: getStoredStudents(),
           attendanceRecords: getStoredAttendance(),
           deletedKnowledgeDocKeys: getDeletedKnowledgeDocKeys(),
+          deletedStudentIds: getDeletedStudentIds(),
+          deletedClassroomIds: getDeletedClassroomIds(),
           purgeTestData: purgeTestData
         })
       });
@@ -1145,13 +1154,21 @@ export default function UnifiedTeacherScheduleApp() {
           localStorage.setItem('smart_teacher_schedules', JSON.stringify(result.schedules));
         }
 
-        if (Array.isArray(result.classrooms) && result.classrooms.length > 0) {
-          setClassrooms(result.classrooms);
-          localStorage.setItem('smart_teacher_classrooms_v1', JSON.stringify(result.classrooms));
+        if (Array.isArray(result.classrooms)) {
+          const deletedClasses = new Set(getDeletedClassroomIds());
+          const cleanClassrooms = result.classrooms.filter((c: any) => !isTestClassroom(c) && !deletedClasses.has(c.id) && !deletedClasses.has((c.name || '').toLowerCase()));
+          setClassrooms(cleanClassrooms);
+          localStorage.setItem('smart_teacher_classrooms_v1', JSON.stringify(cleanClassrooms));
+          if (!selectedRosterClass && cleanClassrooms.length > 0) {
+            setSelectedRosterClass(cleanClassrooms[0].name);
+          }
         }
-        if (Array.isArray(result.students) && result.students.length > 0) {
-          setStudents(result.students);
-          localStorage.setItem('smart_teacher_students_v1', JSON.stringify(result.students));
+        if (Array.isArray(result.students)) {
+          const deletedIds = new Set(getDeletedStudentIds());
+          const deletedClasses = new Set(getDeletedClassroomIds());
+          const cleanStudents = result.students.filter((s: any) => !isTestStudent(s) && !deletedIds.has(s.id) && !deletedClasses.has((s.className || '').toLowerCase()));
+          setStudents(cleanStudents);
+          localStorage.setItem('smart_teacher_students_v1', JSON.stringify(cleanStudents));
         }
         if (Array.isArray(result.attendanceRecords) && result.attendanceRecords.length > 0) {
           setAttendanceRecords(result.attendanceRecords);
@@ -1215,13 +1232,21 @@ export default function UnifiedTeacherScheduleApp() {
         }
 
         // Cập nhật lớp học, học sinh, điểm danh nếu có từ cloud
-        if (Array.isArray(data.classrooms) && data.classrooms.length > 0) {
-          setClassrooms(data.classrooms);
-          localStorage.setItem('smart_teacher_classrooms_v1', JSON.stringify(data.classrooms));
+        if (Array.isArray(data.classrooms)) {
+          const deletedClasses = new Set(getDeletedClassroomIds());
+          const cleanClassrooms = data.classrooms.filter((c: any) => !isTestClassroom(c) && !deletedClasses.has(c.id) && !deletedClasses.has((c.name || '').toLowerCase()));
+          setClassrooms(cleanClassrooms);
+          localStorage.setItem('smart_teacher_classrooms_v1', JSON.stringify(cleanClassrooms));
+          if (!selectedRosterClass && cleanClassrooms.length > 0) {
+            setSelectedRosterClass(cleanClassrooms[0].name);
+          }
         }
-        if (Array.isArray(data.students) && data.students.length > 0) {
-          setStudents(data.students);
-          localStorage.setItem('smart_teacher_students_v1', JSON.stringify(data.students));
+        if (Array.isArray(data.students)) {
+          const deletedIds = new Set(getDeletedStudentIds());
+          const deletedClasses = new Set(getDeletedClassroomIds());
+          const cleanStudents = data.students.filter((s: any) => !isTestStudent(s) && !deletedIds.has(s.id) && !deletedClasses.has((s.className || '').toLowerCase()));
+          setStudents(cleanStudents);
+          localStorage.setItem('smart_teacher_students_v1', JSON.stringify(cleanStudents));
         }
         if (Array.isArray(data.attendanceRecords) && data.attendanceRecords.length > 0) {
           setAttendanceRecords(data.attendanceRecords);
@@ -1320,6 +1345,15 @@ export default function UnifiedTeacherScheduleApp() {
     setIsClient(true);
     setSelectedDate(todayStr);
 
+    // Tự động quét và thanh lọc dữ liệu kiểm thử (mock / sample test data)
+    const rosterPurge = purgeTestRosterData();
+    const storedCls = getStoredClassrooms();
+    const storedSts = getStoredStudents();
+    setClassrooms(storedCls);
+    setStudents(storedSts);
+    if (storedCls.length > 0) {
+      setSelectedRosterClass(storedCls[0].name);
+    }
     const initialTest = countTestData();
     setTestDataCount(initialTest.total);
 
@@ -3008,7 +3042,48 @@ export default function UnifiedTeacherScheduleApp() {
                   />
                 </div>
 
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+                  {selectedRosterClass && (
+                    <>
+                      <button
+                        onClick={() => {
+                          if (confirm(`Thầy/Cô có chắc muốn xóa toàn bộ học sinh của lớp ${selectedRosterClass}? Thao tác này sẽ xóa vĩnh viễn cả trên máy và Cloud.`)) {
+                            const updated = deleteStudentsByClass(selectedRosterClass);
+                            setStudents(updated);
+                            pushToCloud(events, schedules, syncCode, false, true);
+                            setAlertBanner(`🟢 Đã xóa toàn bộ học sinh lớp ${selectedRosterClass} và đồng bộ lên Đám mây!`);
+                            setTimeout(() => setAlertBanner(null), 4000);
+                          }
+                        }}
+                        className="px-2.5 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/25 text-red-400 border border-red-500/30 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                        title="Xóa toàn bộ học sinh của lớp này"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Xóa hết HS lớp</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (confirm(`Thầy/Cô có chắc muốn xóa lớp ${selectedRosterClass} và toàn bộ học sinh? Thao tác này sẽ xóa vĩnh viễn cả trên máy và Cloud.`)) {
+                            const updatedClasses = deleteClassroom(selectedRosterClass);
+                            setClassrooms(updatedClasses);
+                            const updatedStudents = deleteStudentsByClass(selectedRosterClass);
+                            setStudents(updatedStudents);
+                            setSelectedRosterClass(updatedClasses.length > 0 ? updatedClasses[0].name : '');
+                            pushToCloud(events, schedules, syncCode, false, true);
+                            setAlertBanner(`🟢 Đã xóa lớp ${selectedRosterClass} thành công!`);
+                            setTimeout(() => setAlertBanner(null), 4000);
+                          }
+                        }}
+                        className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-red-900/30 text-slate-400 hover:text-red-300 border border-slate-700 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                        title="Xóa lớp này khỏi hệ thống"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Xóa Lớp</span>
+                      </button>
+                    </>
+                  )}
+
                   <button
                     onClick={() => rosterFileInputRef.current?.click()}
                     className="px-3 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
@@ -3119,9 +3194,10 @@ export default function UnifiedTeacherScheduleApp() {
                           <td className="py-3 px-4 text-center">
                             <button
                               onClick={() => {
-                                if (confirm(`Xóa học sinh ${st.fullName} khỏi danh sách?`)) {
+                                if (confirm(`Xóa học sinh ${st.fullName} khỏi danh sách? Thao tác này sẽ xóa vĩnh viễn trên máy và Đám mây Supabase.`)) {
                                   const updated = deleteStudent(st.id);
                                   setStudents(updated);
+                                  pushToCloud(events, schedules, syncCode, false, true);
                                 }
                               }}
                               className="p-1 rounded-lg hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors cursor-pointer"
@@ -6386,7 +6462,7 @@ export default function UnifiedTeacherScheduleApp() {
                         </button>
                       </div>
 
-                      {rec.kudosDelta > 0 && (
+                      {(rec.kudosDelta || 0) > 0 && (
                         <span className="text-[11px] text-amber-400 font-bold">+{rec.kudosDelta}đ</span>
                       )}
                     </div>

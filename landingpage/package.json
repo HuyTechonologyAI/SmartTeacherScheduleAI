@@ -4,8 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/sanitize-test-data.js",
     "build": "next build",
     "start": "next start",
+    "clean-test-data": "node scripts/sanitize-test-data.js",
     "lint": "eslint"
   },
   "dependencies": {

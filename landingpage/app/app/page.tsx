@@ -27,6 +27,7 @@ import {
   fullPackageToDocHtml,
   downloadWordDoc
 } from './lessonPlanAi';
+import { isTestData, cleanAllTestData, countTestData } from './testDataSanitizer';
 import {
   KnowledgeDocument,
   getResolvedKnowledgeDocuments,
@@ -702,6 +703,35 @@ export default function UnifiedTeacherScheduleApp() {
   const [lessonPackageActiveTab, setLessonPackageActiveTab] = useState<'plan' | 'slides' | 'game' | 'video' | 'mindmap' | 'audit' | 'all'>('plan');
   const [lessonPackageFullScreen, setLessonPackageFullScreen] = useState(false);
   const [lessonPackageCopied, setLessonPackageCopied] = useState(false);
+
+  // Chế độ Chỉnh sửa Giáo án AI
+  const [isEditingLessonPackage, setIsEditingLessonPackage] = useState(false);
+  const [editLessonTitle, setEditLessonTitle] = useState('');
+  const [editLessonSubject, setEditLessonSubject] = useState('');
+  const [editLessonClass, setEditLessonClass] = useState('');
+  const [editLessonDuration, setEditLessonDuration] = useState(45);
+  const [editKnowledgeObj, setEditKnowledgeObj] = useState('');
+  const [editCompetenciesObj, setEditCompetenciesObj] = useState('');
+  const [editQualitiesObj, setEditQualitiesObj] = useState('');
+  const [editTeacherEquip, setEditTeacherEquip] = useState('');
+  const [editStudentEquip, setEditStudentEquip] = useState('');
+  const [editAct1Name, setEditAct1Name] = useState('');
+  const [editAct1Content, setEditAct1Content] = useState('');
+  const [editAct1Implementation, setEditAct1Implementation] = useState('');
+  const [editAct2Name, setEditAct2Name] = useState('');
+  const [editAct2Content, setEditAct2Content] = useState('');
+  const [editAct2Implementation, setEditAct2Implementation] = useState('');
+  const [editAct3Name, setEditAct3Name] = useState('');
+  const [editAct3Content, setEditAct3Content] = useState('');
+  const [editAct3Implementation, setEditAct3Implementation] = useState('');
+  const [editAct4Name, setEditAct4Name] = useState('');
+  const [editAct4Content, setEditAct4Content] = useState('');
+  const [editAct4Implementation, setEditAct4Implementation] = useState('');
+
+  // Bộ lọc an toàn dữ liệu thử nghiệm (Test Data Filter & Safety Hook)
+  const [excludeTestData, setExcludeTestData] = useState(true);
+  const [testDataCount, setTestDataCount] = useState(0);
+  const [dismissTestBanner, setDismissTestBanner] = useState(false);
   const [plannerActiveResultTab, setPlannerActiveResultTab] = useState<'plan' | 'slides' | 'game' | 'video' | 'mindmap' | 'audit'>('plan');
   const [plannerStepProgress, setPlannerStepProgress] = useState('');
 
@@ -1060,7 +1090,7 @@ export default function UnifiedTeacherScheduleApp() {
   };
 
   // Push to Cloud (Máy tính -> Đám mây -> Điện thoại)
-  const pushToCloud = async (curEvents: CalendarEventItem[], curSchedules: ScheduleItem[], code = syncCode, isManual = false) => {
+  const pushToCloud = async (curEvents: CalendarEventItem[], curSchedules: ScheduleItem[], code = syncCode, isManual = false, purgeTestData = false) => {
     if (!code) return false;
     setIsSyncing(true);
     setSyncStatus('syncing');
@@ -1099,7 +1129,8 @@ export default function UnifiedTeacherScheduleApp() {
           classrooms: getStoredClassrooms(),
           students: getStoredStudents(),
           attendanceRecords: getStoredAttendance(),
-          deletedKnowledgeDocKeys: getDeletedKnowledgeDocKeys()
+          deletedKnowledgeDocKeys: getDeletedKnowledgeDocKeys(),
+          purgeTestData: purgeTestData
         })
       });
       if (res.ok) {
@@ -1289,6 +1320,9 @@ export default function UnifiedTeacherScheduleApp() {
     setIsClient(true);
     setSelectedDate(todayStr);
 
+    const initialTest = countTestData();
+    setTestDataCount(initialTest.total);
+
     let savedCode = localStorage.getItem('smart_teacher_sync_code');
     if (!savedCode || savedCode === '0961364600') {
       savedCode = 'ST-' + Math.floor(100000 + Math.random() * 900000);
@@ -1355,22 +1389,23 @@ export default function UnifiedTeacherScheduleApp() {
   // Today's Events
   const todayEvents = useMemo(() => {
     return events
-      .filter((e) => e.date === todayStr)
+      .filter((e) => (!excludeTestData || !isTestData(e)) && e.date === todayStr)
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
-  }, [events, todayStr]);
+  }, [events, todayStr, excludeTestData]);
 
   // Selected Date Events
   const selectedDateEvents = useMemo(() => {
     if (!selectedDate) return todayEvents;
     return events
-      .filter((e) => e.date === selectedDate)
+      .filter((e) => (!excludeTestData || !isTestData(e)) && e.date === selectedDate)
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
-  }, [events, selectedDate, todayEvents]);
+  }, [events, selectedDate, todayEvents, excludeTestData]);
 
   // Filtered Events for Calendar Agenda
   const filteredEvents = useMemo(() => {
     return events
       .filter((e) => {
+        if (excludeTestData && isTestData(e)) return false;
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase();
           const matchSub = e.subject.toLowerCase().includes(q);
@@ -1404,6 +1439,7 @@ export default function UnifiedTeacherScheduleApp() {
   const reportStats = useMemo(() => {
     const groups: { [key: string]: { subject: string; className: string; room: string; total: number; done: number; remaining: number; theory: number; practice: number } } = {};
     for (const ev of events) {
+      if (excludeTestData && isTestData(ev)) continue;
       const key = `${ev.subject}__${ev.className}`;
       if (!groups[key]) {
         groups[key] = {
@@ -1667,6 +1703,212 @@ export default function UnifiedTeacherScheduleApp() {
     setAttachingEvent(null);
     setAttachFileName('');
     setAttachFileUrl('');
+  };
+
+  // Xoá / Gỡ bỏ hoàn toàn giáo án AI khỏi ca dạy
+  const handleRemoveEventAttachment = (targetEvent?: CalendarEventItem, targetPkg?: FullLessonPackage | null) => {
+    const ev = targetEvent || viewingLessonEvent;
+    if (!ev) {
+      if (confirm('Thầy/Cô có chắc chắn muốn đóng và xoá gói học liệu này khỏi bộ nhớ tạm không?')) {
+        setViewingLessonPackage(null);
+        setViewingLessonEvent(null);
+        setIsEditingLessonPackage(false);
+      }
+      return;
+    }
+
+    const confirmMsg = `Thầy/Cô có chắc chắn muốn gỡ bỏ hoàn toàn giáo án và bộ học liệu AI khỏi ca dạy '${ev.subject} - Lớp ${ev.className}' không?\n\n• Tệp đính kèm: ${ev.attachmentName || 'Giáo án bài dạy'}\n• Thời gian: ${ev.date} (${ev.startTime} - ${ev.endTime})\n\nHành động này sẽ huỷ đính kèm và làm sạch bộ nhớ cho ca học này.`;
+    if (!confirm(confirmMsg)) return;
+
+    // 1. Cập nhật ca dạy trong state và localStorage
+    const updatedEvents = events.map(e => {
+      if (e.id === ev.id) {
+        const copy = { ...e };
+        delete copy.attachmentName;
+        delete copy.attachmentUrl;
+        delete copy.attachmentContent;
+        copy.updatedAt = Date.now();
+        return copy;
+      }
+      return e;
+    });
+
+    setEvents(updatedEvents);
+    localStorage.setItem('smart_teacher_events', JSON.stringify(updatedEvents));
+
+    // 2. Xoá bộ nhớ đệm AI liên quan
+    try {
+      localStorage.removeItem(`smart_teacher_ai_pack_${ev.id}`);
+      localStorage.removeItem(`smart_teacher_ai_plan_${ev.id}`);
+      if (ev.attachmentName) {
+        localStorage.removeItem(`smart_teacher_ai_pack_${ev.attachmentName}`);
+        localStorage.removeItem(`smart_teacher_ai_plan_${ev.attachmentName}`);
+      }
+    } catch (_) {}
+
+    // 3. Đồng bộ lên Cloud Supabase
+    pushToCloud(updatedEvents, schedules, syncCode, false);
+
+    // 4. Đóng modal xem bài giảng
+    setViewingLessonPackage(null);
+    setViewingLessonEvent(null);
+    setIsEditingLessonPackage(false);
+
+    alert(`✅ Đã gỡ bỏ giáo án khỏi ca dạy '${ev.subject} - Lớp ${ev.className}' thành công!`);
+  };
+
+  // Khởi động chế độ Chỉnh sửa Giáo án AI
+  const handleStartEditLessonPackage = (pkg: FullLessonPackage) => {
+    setEditLessonTitle(pkg.lessonTitle || '');
+    setEditLessonSubject(pkg.subject || '');
+    setEditLessonClass(pkg.className || '');
+    if (pkg.standard === 5512 && pkg.plan5512) {
+      setEditLessonDuration(pkg.plan5512.durationMinutes || 45);
+      setEditKnowledgeObj(pkg.plan5512.objectives.knowledge || '');
+      setEditCompetenciesObj(pkg.plan5512.objectives.competencies || '');
+      setEditQualitiesObj(pkg.plan5512.objectives.qualities || '');
+      setEditTeacherEquip(pkg.plan5512.equipment.teacherEquipment || '');
+      setEditStudentEquip(pkg.plan5512.equipment.studentEquipment || '');
+      setEditAct1Name(pkg.plan5512.activity1Opening.name || '');
+      setEditAct1Content(pkg.plan5512.activity1Opening.content || '');
+      setEditAct1Implementation(pkg.plan5512.activity1Opening.implementation || '');
+      setEditAct2Name(pkg.plan5512.activity2Knowledge.name || '');
+      setEditAct2Content(pkg.plan5512.activity2Knowledge.content || '');
+      setEditAct2Implementation(pkg.plan5512.activity2Knowledge.implementation || '');
+      setEditAct3Name(pkg.plan5512.activity3Practice.name || '');
+      setEditAct3Content(pkg.plan5512.activity3Practice.content || '');
+      setEditAct3Implementation(pkg.plan5512.activity3Practice.implementation || '');
+      setEditAct4Name(pkg.plan5512.activity4Application.name || '');
+      setEditAct4Content(pkg.plan5512.activity4Application.content || '');
+      setEditAct4Implementation(pkg.plan5512.activity4Application.implementation || '');
+    } else if (pkg.plan2634) {
+      setEditLessonDuration(pkg.plan2634.durationMinutes || 180);
+      setEditKnowledgeObj(pkg.plan2634.objectives.knowledge || '');
+      setEditCompetenciesObj(pkg.plan2634.objectives.skills || '');
+      setEditQualitiesObj(pkg.plan2634.objectives.autonomyAndSafety || '');
+      setEditTeacherEquip(pkg.plan2634.conditions.equipmentAndMachines || '');
+      setEditStudentEquip(pkg.plan2634.conditions.materialsAndWorkpieces || '');
+      setEditAct1Name(pkg.plan2634.step1Orientation.name || '');
+      setEditAct1Content(pkg.plan2634.step1Orientation.teacherActivity || '');
+      setEditAct1Implementation(pkg.plan2634.step1Orientation.studentActivity || '');
+      setEditAct2Name(pkg.plan2634.step2Demonstration.name || '');
+      setEditAct2Content(pkg.plan2634.step2Demonstration.teacherActivity || '');
+      setEditAct2Implementation(pkg.plan2634.step2Demonstration.studentActivity || '');
+      setEditAct3Name(pkg.plan2634.step3Practice.name || '');
+      setEditAct3Content(pkg.plan2634.step3Practice.teacherActivity || '');
+      setEditAct3Implementation(pkg.plan2634.step3Practice.studentActivity || '');
+      setEditAct4Name(pkg.plan2634.step4Evaluation.name || '');
+      setEditAct4Content(pkg.plan2634.step4Evaluation.teacherActivity || '');
+      setEditAct4Implementation(pkg.plan2634.step4Evaluation.studentActivity || '');
+    }
+    setIsEditingLessonPackage(true);
+  };
+
+  // Lưu các nội dung đã chỉnh sửa vào Giáo án AI & Ca dạy
+  const handleSaveLessonPackageEdit = () => {
+    if (!viewingLessonPackage) return;
+    const updatedPkg: FullLessonPackage = JSON.parse(JSON.stringify(viewingLessonPackage));
+    updatedPkg.lessonTitle = editLessonTitle.trim() || updatedPkg.lessonTitle;
+    updatedPkg.subject = editLessonSubject.trim() || updatedPkg.subject;
+    updatedPkg.className = editLessonClass.trim() || updatedPkg.className;
+
+    if (updatedPkg.standard === 5512 && updatedPkg.plan5512) {
+      updatedPkg.plan5512.lessonTitle = updatedPkg.lessonTitle;
+      updatedPkg.plan5512.subject = updatedPkg.subject;
+      updatedPkg.plan5512.grade = updatedPkg.className;
+      updatedPkg.plan5512.durationMinutes = Number(editLessonDuration) || 45;
+      updatedPkg.plan5512.objectives.knowledge = editKnowledgeObj;
+      updatedPkg.plan5512.objectives.competencies = editCompetenciesObj;
+      updatedPkg.plan5512.objectives.qualities = editQualitiesObj;
+      updatedPkg.plan5512.equipment.teacherEquipment = editTeacherEquip;
+      updatedPkg.plan5512.equipment.studentEquipment = editStudentEquip;
+      if (editAct1Name) updatedPkg.plan5512.activity1Opening.name = editAct1Name;
+      if (editAct1Content) updatedPkg.plan5512.activity1Opening.content = editAct1Content;
+      if (editAct1Implementation) updatedPkg.plan5512.activity1Opening.implementation = editAct1Implementation;
+      if (editAct2Name) updatedPkg.plan5512.activity2Knowledge.name = editAct2Name;
+      if (editAct2Content) updatedPkg.plan5512.activity2Knowledge.content = editAct2Content;
+      if (editAct2Implementation) updatedPkg.plan5512.activity2Knowledge.implementation = editAct2Implementation;
+      if (editAct3Name) updatedPkg.plan5512.activity3Practice.name = editAct3Name;
+      if (editAct3Content) updatedPkg.plan5512.activity3Practice.content = editAct3Content;
+      if (editAct3Implementation) updatedPkg.plan5512.activity3Practice.implementation = editAct3Implementation;
+      if (editAct4Name) updatedPkg.plan5512.activity4Application.name = editAct4Name;
+      if (editAct4Content) updatedPkg.plan5512.activity4Application.content = editAct4Content;
+      if (editAct4Implementation) updatedPkg.plan5512.activity4Application.implementation = editAct4Implementation;
+    } else if (updatedPkg.plan2634) {
+      updatedPkg.plan2634.moduleTitle = updatedPkg.lessonTitle;
+      updatedPkg.plan2634.occupation = updatedPkg.subject;
+      updatedPkg.plan2634.level = updatedPkg.className;
+      updatedPkg.plan2634.durationMinutes = Number(editLessonDuration) || 180;
+      updatedPkg.plan2634.objectives.knowledge = editKnowledgeObj;
+      updatedPkg.plan2634.objectives.skills = editCompetenciesObj;
+      updatedPkg.plan2634.objectives.autonomyAndSafety = editQualitiesObj;
+      updatedPkg.plan2634.conditions.equipmentAndMachines = editTeacherEquip;
+      updatedPkg.plan2634.conditions.materialsAndWorkpieces = editStudentEquip;
+    }
+
+    setViewingLessonPackage(updatedPkg);
+
+    // Cập nhật vào ca dạy và lưu trữ localStorage
+    if (viewingLessonEvent) {
+      const newHtmlContent = fullPackageToDocHtml(updatedPkg);
+      const updatedEvents = events.map(e => {
+        if (e.id === viewingLessonEvent.id) {
+          return {
+            ...e,
+            title: updatedPkg.lessonTitle,
+            subject: updatedPkg.subject,
+            className: updatedPkg.className,
+            attachmentContent: newHtmlContent,
+            updatedAt: Date.now()
+          };
+        }
+        return e;
+      });
+      setEvents(updatedEvents);
+      localStorage.setItem('smart_teacher_events', JSON.stringify(updatedEvents));
+
+      try {
+        localStorage.setItem(`smart_teacher_ai_pack_${viewingLessonEvent.id}`, JSON.stringify(updatedPkg));
+        if (viewingLessonEvent.attachmentName) {
+          localStorage.setItem(`smart_teacher_ai_pack_${viewingLessonEvent.attachmentName}`, JSON.stringify(updatedPkg));
+        }
+      } catch (_) {}
+
+      pushToCloud(updatedEvents, schedules, syncCode, false);
+    }
+
+    setIsEditingLessonPackage(false);
+    alert('🎉 Đã lưu cập nhật giáo án và đồng bộ thành công!');
+  };
+
+  // Dọn dẹp & Xoá sạch toàn bộ Dữ liệu thử nghiệm (One-click Purge Test Data)
+  const handlePurgeTestData = () => {
+    if (!confirm('Thầy/Cô có chắc chắn muốn quét và xoá sạch toàn bộ dữ liệu thử nghiệm (Test Data) khỏi hệ thống không?\n\n• Mọi ca dạy thử, học sinh test và tài liệu mẫu sẽ được lọc sạch hoàn toàn.\n• Dữ liệu thật của Thầy/Cô sẽ được giữ nguyên 100%.\n• Thao tác này sẽ đồng bộ ngay lên Đám mây để làm sạch cả trên điện thoại.')) {
+      return;
+    }
+
+    const report = cleanAllTestData();
+
+    // Cập nhật lại state trong bộ nhớ
+    const rawEv = localStorage.getItem('smart_teacher_events');
+    const cleanEvents: CalendarEventItem[] = rawEv ? JSON.parse(rawEv) : [];
+    setEvents(cleanEvents);
+
+    const rawSch = localStorage.getItem('smart_teacher_schedules');
+    const cleanSchedules: ScheduleItem[] = rawSch ? JSON.parse(rawSch) : [];
+    setSchedules(cleanSchedules);
+
+    const rawTasks = localStorage.getItem('smart_teacher_tasks');
+    const cleanTasks: TaskItem[] = rawTasks ? JSON.parse(rawTasks) : [];
+    setTasks(cleanTasks);
+
+    setTestDataCount(0);
+    setDismissTestBanner(true);
+
+    // Đồng bộ ngay lên Cloud Supabase (với cờ purgeTestData=true)
+    pushToCloud(cleanEvents, cleanSchedules, syncCode, false, true);
+
+    alert(`🧹 ĐÃ DỌN DẸP SẠCH DỮ LIỆU THỬ NGHIỆM!\n\n• Ca dạy test đã xoá: ${report.eventsRemoved}\n• Thời khóa biểu test: ${report.schedulesRemoved}\n• Nhắc việc test: ${report.tasksRemoved}\n• Học sinh test: ${report.studentsRemoved}\n• Tài liệu mẫu test: ${report.docsRemoved}\n• Tổng mục đã làm sạch: ${report.totalRemoved}\n\nHệ thống hiện tại hoàn toàn sạch sẽ, sẵn sàng cho giảng dạy và xuất bản!`);
   };
 
   // Open / Preview Event Attachment - Unified 6-in-1 Teaching Kit Viewer
@@ -2537,14 +2779,27 @@ export default function UnifiedTeacherScheduleApp() {
                         {/* Action buttons */}
                         <div className="flex items-center justify-between border-t border-slate-700/50 pt-2 text-xs">
                           {ev.attachmentName ? (
-                            <button
-                              type="button"
-                              onClick={() => handleOpenEventAttachment(ev)}
-                              className="text-blue-400 hover:text-blue-300 flex items-center gap-1 truncate max-w-[170px] text-xs cursor-pointer underline font-medium text-left"
-                              title="Bấm để xem trước tài liệu này"
-                            >
-                              <Paperclip className="w-3 h-3 shrink-0" /> {ev.attachmentName}
-                            </button>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEventAttachment(ev)}
+                                className="text-blue-400 hover:text-blue-300 flex items-center gap-1 truncate max-w-[150px] text-xs cursor-pointer underline font-medium text-left"
+                                title="Bấm để xem trước toàn bộ học liệu 6-in-1"
+                              >
+                                <Paperclip className="w-3 h-3 shrink-0" /> {ev.attachmentName}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveEventAttachment(ev);
+                                }}
+                                className="p-1 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors cursor-pointer"
+                                title="Gỡ bỏ giáo án khỏi ca dạy này"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
                           ) : (
                             <span className="text-slate-500">Chưa đính kèm giáo án</span>
                           )}
@@ -6835,6 +7090,28 @@ export default function UnifiedTeacherScheduleApp() {
 
               {/* Action Toolbar Header */}
               <div className="flex items-center gap-1.5 shrink-0">
+                {/* Edit Lesson Plan Button */}
+                <button
+                  type="button"
+                  onClick={() => handleStartEditLessonPackage(viewingLessonPackage)}
+                  className="p-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 hover:text-white border border-purple-500/30 cursor-pointer text-xs flex items-center gap-1.5"
+                  title="Chỉnh sửa nội dung giáo án AI"
+                >
+                  <Edit3 className="w-4 h-4" />
+                  <span className="hidden md:inline font-semibold">Chỉnh sửa</span>
+                </button>
+
+                {/* Delete / Detach Lesson Plan Button */}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveEventAttachment(viewingLessonEvent || undefined, viewingLessonPackage)}
+                  className="p-2 rounded-xl bg-red-600/20 hover:bg-red-600/30 text-red-400 hover:text-red-300 border border-red-500/30 cursor-pointer text-xs flex items-center gap-1.5"
+                  title="Gỡ bỏ hoàn toàn giáo án này khỏi ca dạy"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span className="hidden md:inline font-semibold">Gỡ bỏ</span>
+                </button>
+
                 {/* Print */}
                 <button
                   type="button"
@@ -6968,6 +7245,234 @@ export default function UnifiedTeacherScheduleApp() {
 
             {/* TAB CONTENTS (Scrollable area) */}
             <div className="p-4 sm:p-6 overflow-y-auto flex-1 bg-slate-950/50 space-y-5">
+
+              {/* FORM CHỈNH SỬA GIÁO ÁN AI (KHI ĐANG Ở EDIT MODE) */}
+              {isEditingLessonPackage && (
+                <div className="p-5 sm:p-6 bg-slate-900 border-2 border-purple-500/40 rounded-2xl shadow-2xl space-y-5 animate-fade-in">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <Edit3 className="w-5 h-5 text-purple-400" />
+                      <h4 className="text-base sm:text-lg font-bold text-white">Chỉnh Sửa Nội Dung Giáo Án AI Sư Phạm</h4>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleSaveLessonPackageEdit}
+                        className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-purple-600/30 cursor-pointer transition-all"
+                      >
+                        <Check className="w-4 h-4" />
+                        <span>Lưu Thay Đổi</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingLessonPackage(false)}
+                        className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium cursor-pointer"
+                      >
+                        Hủy
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Tên bài giảng / Kế hoạch bài dạy:</label>
+                      <input
+                        type="text"
+                        value={editLessonTitle}
+                        onChange={(e) => setEditLessonTitle(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Môn học / Chuyên ngành:</label>
+                      <input
+                        type="text"
+                        value={editLessonSubject}
+                        onChange={(e) => setEditLessonSubject(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Lớp / Thời lượng (tiết/phút):</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          value={editLessonClass}
+                          onChange={(e) => setEditLessonClass(e.target.value)}
+                          placeholder="10A1"
+                          className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-purple-500"
+                        />
+                        <input
+                          type="number"
+                          value={editLessonDuration}
+                          onChange={(e) => setEditLessonDuration(Number(e.target.value))}
+                          placeholder="45"
+                          className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-purple-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mục tiêu bài học */}
+                  <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3">
+                    <h5 className="text-xs font-bold text-blue-400 uppercase">I. Mục tiêu bài dạy:</h5>
+                    <div className="space-y-2">
+                      <div>
+                        <label className="block text-slate-400 text-[11px] mb-0.5">1. Về Kiến thức:</label>
+                        <textarea
+                          rows={2}
+                          value={editKnowledgeObj}
+                          onChange={(e) => setEditKnowledgeObj(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-slate-100 text-xs focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-400 text-[11px] mb-0.5">2. Về Năng lực:</label>
+                        <textarea
+                          rows={2}
+                          value={editCompetenciesObj}
+                          onChange={(e) => setEditCompetenciesObj(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-slate-100 text-xs focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-400 text-[11px] mb-0.5">3. Về Phẩm chất:</label>
+                        <textarea
+                          rows={2}
+                          value={editQualitiesObj}
+                          onChange={(e) => setEditQualitiesObj(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-slate-100 text-xs focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Thiết bị dạy học */}
+                  <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3">
+                    <h5 className="text-xs font-bold text-blue-400 uppercase">II. Thiết bị dạy học và học liệu:</h5>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-slate-400 text-[11px] mb-0.5">Giáo viên:</label>
+                        <textarea
+                          rows={2}
+                          value={editTeacherEquip}
+                          onChange={(e) => setEditTeacherEquip(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-slate-100 text-xs focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-400 text-[11px] mb-0.5">Học sinh:</label>
+                        <textarea
+                          rows={2}
+                          value={editStudentEquip}
+                          onChange={(e) => setEditStudentEquip(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-slate-100 text-xs focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 4 Hoạt động dạy học */}
+                  <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3">
+                    <h5 className="text-xs font-bold text-blue-400 uppercase">III. Tiến trình 4 Hoạt động dạy học:</h5>
+                    
+                    {/* HĐ 1 */}
+                    <div className="p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-2">
+                      <span className="font-bold text-white text-xs">1. Khởi động (Xác định vấn đề):</span>
+                      <input
+                        type="text"
+                        value={editAct1Name}
+                        onChange={(e) => setEditAct1Name(e.target.value)}
+                        placeholder="Tên hoạt động"
+                        className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-xs mb-1"
+                      />
+                      <textarea
+                        rows={2}
+                        value={editAct1Content}
+                        onChange={(e) => setEditAct1Content(e.target.value)}
+                        placeholder="Nội dung hoạt động"
+                        className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-slate-200 text-xs"
+                      />
+                    </div>
+
+                    {/* HĐ 2 */}
+                    <div className="p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-2">
+                      <span className="font-bold text-white text-xs">2. Hình thành kiến thức mới:</span>
+                      <input
+                        type="text"
+                        value={editAct2Name}
+                        onChange={(e) => setEditAct2Name(e.target.value)}
+                        placeholder="Tên hoạt động"
+                        className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-xs mb-1"
+                      />
+                      <textarea
+                        rows={2}
+                        value={editAct2Content}
+                        onChange={(e) => setEditAct2Content(e.target.value)}
+                        placeholder="Nội dung hoạt động"
+                        className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-slate-200 text-xs"
+                      />
+                    </div>
+
+                    {/* HĐ 3 */}
+                    <div className="p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-2">
+                      <span className="font-bold text-white text-xs">3. Luyện tập &amp; Củng cố:</span>
+                      <input
+                        type="text"
+                        value={editAct3Name}
+                        onChange={(e) => setEditAct3Name(e.target.value)}
+                        placeholder="Tên hoạt động"
+                        className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-xs mb-1"
+                      />
+                      <textarea
+                        rows={2}
+                        value={editAct3Content}
+                        onChange={(e) => setEditAct3Content(e.target.value)}
+                        placeholder="Nội dung hoạt động"
+                        className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-slate-200 text-xs"
+                      />
+                    </div>
+
+                    {/* HĐ 4 */}
+                    <div className="p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-2">
+                      <span className="font-bold text-white text-xs">4. Vận dụng &amp; Mở rộng:</span>
+                      <input
+                        type="text"
+                        value={editAct4Name}
+                        onChange={(e) => setEditAct4Name(e.target.value)}
+                        placeholder="Tên hoạt động"
+                        className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-xs mb-1"
+                      />
+                      <textarea
+                        rows={2}
+                        value={editAct4Content}
+                        onChange={(e) => setEditAct4Content(e.target.value)}
+                        placeholder="Nội dung hoạt động"
+                        className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-slate-200 text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingLessonPackage(false)}
+                      className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer"
+                    >
+                      Hủy Bỏ
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveLessonPackageEdit}
+                      className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-purple-600/30 cursor-pointer transition-all"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>Lưu Thay Đổi &amp; Cập Nhật Giáo Án</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               
               {/* ===== TAB 1: KẾ HOẠCH BÀI DẠY (GIÁO ÁN CHUẨN CV 5512 / CV 2634) ===== */}
               {lessonPackageActiveTab === 'plan' && (
@@ -7451,10 +7956,31 @@ export default function UnifiedTeacherScheduleApp() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  onClick={() => handleStartEditLessonPackage(viewingLessonPackage)}
+                  className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow transition-all"
+                  title="Chỉnh sửa giáo án và học liệu bài dạy"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Chỉnh sửa giáo án</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleRemoveEventAttachment(viewingLessonEvent || undefined, viewingLessonPackage)}
+                  className="px-3.5 py-2 rounded-xl bg-red-600/20 hover:bg-red-600/30 text-red-400 hover:text-red-300 border border-red-500/30 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+                  title="Xoá và huỷ liên kết giáo án khỏi ca dạy"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Gỡ bỏ giáo án</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => {
                     setViewingLessonPackage(null);
                     setViewingLessonEvent(null);
                     setLessonPackageFullScreen(false);
+                    setIsEditingLessonPackage(false);
                   }}
                   className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold cursor-pointer"
                 >

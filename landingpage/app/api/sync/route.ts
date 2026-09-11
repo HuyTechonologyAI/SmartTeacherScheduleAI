@@ -740,6 +740,18 @@ function mergeEvents(existing: CalendarEventPayload[], incoming: CalendarEventPa
   });
 }
 
+function isTestSyncItem(item: any): boolean {
+  if (!item) return false;
+  const id = String(item.id || item.code || '');
+  if (/^(test_|mock_|dummy_|sample_|demo_|temp_)/i.test(id)) return true;
+  if (/_test_|_mock_|_dummy_/i.test(id)) return true;
+  const text = [
+    item.title, item.subject, item.className, item.room, item.notes,
+    item.fileName, item.name, item.fullName, item.studentCode
+  ].filter(Boolean).join(' ').toLowerCase();
+  return /\[test\]|\(test\)|\[thử\s*nghiệm\]|\bdữ liệu test\b|\bca dạy thử\b|\bmock data\b|\bkiểm thử\b/i.test(text);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -797,7 +809,15 @@ export async function POST(req: NextRequest) {
     let finalStudents = incomingStudents;
     let finalAttendance = incomingAttendance;
 
-    if (existing && !body.forceOverwrite) {
+    const shouldPurgeTest = Boolean(body.purgeTestData);
+    if (shouldPurgeTest) {
+      finalSchedules = incomingSchedules.filter(s => !isTestSyncItem(s));
+      finalEvents = incomingEvents.filter(e => !isTestSyncItem(e));
+      finalKnowledgeDocs = incomingKnowledgeDocs.filter(d => !isTestSyncItem(d));
+      finalClassrooms = incomingClassrooms.filter(c => !isTestSyncItem(c));
+      finalStudents = incomingStudents.filter(st => !isTestSyncItem(st));
+      finalAttendance = incomingAttendance.filter(a => !isTestSyncItem(a));
+    } else if (existing && !body.forceOverwrite) {
       // Hợp nhất ca dạy, lịch mẫu và tài liệu theo mốc thời gian sửa đổi (Last-Write-Wins per item)
       finalSchedules = mergeSchedules(existing.schedules || [], incomingSchedules);
       finalEvents = mergeEvents(existing.events || [], incomingEvents);

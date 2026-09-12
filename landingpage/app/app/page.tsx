@@ -2674,19 +2674,19 @@ export default function UnifiedTeacherScheduleApp() {
               onSwitchToCalendar={() => setActiveTab('calendar')}
             />
             {/* Pedagogical Motivation Card */}
-            <div className="bg-gradient-to-r from-amber-50/80 via-rose-50/50 to-orange-50/80 border border-amber-200/80 rounded-2xl p-5 shadow-sm relative overflow-hidden text-slate-800">
+            <div className="bg-gradient-to-r from-amber-50/80 via-rose-50/50 to-orange-50/80 dark:from-amber-950/40 dark:via-rose-950/30 dark:to-orange-950/40 border border-amber-200/80 dark:border-amber-800/50 rounded-2xl p-5 shadow-sm relative overflow-hidden text-slate-800 dark:text-slate-200">
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center shrink-0 shadow-xs">
-                  <Sun className="w-6 h-6 text-amber-600" />
+                <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 flex items-center justify-center shrink-0 shadow-xs">
+                  <Sun className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     Lời chúc sư phạm hôm nay
                     <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 font-semibold">
                       {todayDayInfo.dayName}
                     </span>
                   </h2>
-                  <p className="text-sm text-slate-700 mt-1 leading-relaxed italic">
+                  <p className="text-sm text-slate-700 dark:text-slate-300 mt-1 leading-relaxed italic">
                     "{quote}"
                   </p>
                 </div>
@@ -2754,10 +2754,10 @@ export default function UnifiedTeacherScheduleApp() {
                 </div>
 
                 {todayEvents.length === 0 ? (
-                  <div className="bg-white border border-slate-200/80 rounded-2xl p-10 text-center space-y-3 shadow-sm">
+                  <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-10 text-center space-y-3 shadow-sm">
                     <Coffee className="w-12 h-12 text-slate-400 mx-auto" />
-                    <p className="text-base font-semibold text-slate-800">Hôm nay Thầy/Cô không có lịch dạy trên lớp!</p>
-                    <p className="text-xs text-slate-500 max-w-md mx-auto">
+                    <p className="text-base font-semibold text-slate-800 dark:text-slate-200">Hôm nay Thầy/Cô không có lịch dạy trên lớp!</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
                       Chúc Thầy/Cô có thời gian nghiên cứu tài liệu, soạn giáo án và nạp lại năng lượng thật tuyệt vời.
                     </p>
                   </div>
@@ -2768,20 +2768,20 @@ export default function UnifiedTeacherScheduleApp() {
                       return (
                         <div
                           key={ev.id}
-                          className="bg-white hover:border-rose-300 border border-slate-200/80 rounded-2xl p-4 transition-all shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                          className="bg-white dark:bg-slate-800/70 hover:border-rose-300 dark:hover:border-slate-600 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-4 transition-all shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
                         >
                           <div className="flex items-start gap-4">
                             {/* Period Number / Time badge */}
-                            <div className="text-center shrink-0 w-16 bg-slate-50 border border-slate-200 rounded-xl p-2">
-                              <span className="text-xs font-bold text-slate-500">Ca #{index + 1}</span>
-                              <p className="text-sm font-bold text-slate-900 font-mono mt-0.5">{ev.startTime}</p>
-                              <p className="text-xs text-slate-500 font-mono">{ev.endTime}</p>
+                            <div className="text-center shrink-0 w-16 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-xl p-2">
+                              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Ca #{index + 1}</span>
+                              <p className="text-sm font-bold text-slate-900 dark:text-white font-mono mt-0.5">{ev.startTime}</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">{ev.endTime}</p>
                             </div>
 
                             {/* Session Details */}
                             <div className="space-y-1">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <h4 className="text-base font-bold text-slate-900">{ev.subject}</h4>
+                                <h4 className="text-base font-bold text-slate-900 dark:text-white">{ev.subject}</h4>
                                 <span
                                   className={`text-xs px-2.5 py-0.5 rounded-full font-semibold border ${
                                     isPractice
@@ -2851,7 +2851,7 @@ export default function UnifiedTeacherScheduleApp() {
                                 setAttachFileUrl(ev.attachmentUrl || '');
                               }}
                               title="Đính kèm file giáo án"
-                              className="p-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition-all text-xs flex items-center gap-1 cursor-pointer shadow-xs"
+                              className="p-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-all text-xs flex items-center gap-1 cursor-pointer shadow-xs"
                             >
                               <Paperclip className="w-4 h-4 text-slate-500" />
                               <span className="hidden sm:inline">File</span>
@@ -2884,7 +2884,7 @@ export default function UnifiedTeacherScheduleApp() {
               {/* Tasks & AI Warnings (1 Col) */}
               <div className="space-y-6">
                 {/* AI Risk Warnings */}
-                <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-3 shadow-sm">
+                <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-5 space-y-3 shadow-sm">
                   <div className="flex items-center gap-2 text-amber-700 font-bold text-sm">
                     <ShieldCheck className="w-4 h-4 text-amber-600" />
                     <span>Trợ lý An Toàn & Rủi Ro Lịch Dạy</span>
@@ -2904,7 +2904,7 @@ export default function UnifiedTeacherScheduleApp() {
                 </div>
 
                 {/* Tasks Card */}
-                <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-4 shadow-sm">
+                <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-5 space-y-4 shadow-sm">
                   <div className="flex items-center justify-between">
                     <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-rose-600" />
@@ -2926,7 +2926,7 @@ export default function UnifiedTeacherScheduleApp() {
                         className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-all ${
                           task.isCompleted
                             ? 'bg-slate-50 border-slate-200 text-slate-400 line-through'
-                            : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 shadow-xs'
+                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 shadow-xs'
                         }`}
                       >
                         <div className="flex items-center gap-2.5 text-xs font-medium">
@@ -2951,14 +2951,14 @@ export default function UnifiedTeacherScheduleApp() {
         {activeTab === 'calendar' && (
           <div className="space-y-6 animate-fade-in">
             {/* Filter & Controls Bar */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm">
+            <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm transition-colors">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-rose-600" />
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-rose-600 dark:text-rose-400" />
                     <span>Lịch trình Giảng dạy Chi tiết ({events.length} ca dạy toàn học kỳ)</span>
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     Đồng bộ 2 chiều chuẩn xác từng ngày, từng phòng học và hình thức lý thuyết/thực hành
                   </p>
                 </div>
@@ -2980,11 +2980,11 @@ export default function UnifiedTeacherScheduleApp() {
                   </button>
 
                   {/* View Mode Toggle */}
-                  <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+                  <div className="flex items-center bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
                     <button
                       onClick={() => setCalendarViewMode('day')}
                       className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                        calendarViewMode === 'day' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                        calendarViewMode === 'day' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
                       Xem theo ngày
@@ -2992,7 +2992,7 @@ export default function UnifiedTeacherScheduleApp() {
                     <button
                       onClick={() => setCalendarViewMode('all')}
                       className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                        calendarViewMode === 'all' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                        calendarViewMode === 'all' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
                       Xem toàn bộ 288 ca
@@ -3002,25 +3002,25 @@ export default function UnifiedTeacherScheduleApp() {
               </div>
 
               {/* Filter Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-slate-100">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-slate-100 dark:border-slate-700/60">
                 {/* Date Picker */}
                 <div>
-                  <label className="text-xs text-slate-700 block mb-1 font-medium">Chọn ngày cụ thể:</label>
+                  <label className="text-xs text-slate-700 dark:text-slate-300 block mb-1 font-medium">Chọn ngày cụ thể:</label>
                   <input
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 font-mono shadow-xs"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 font-mono shadow-xs"
                   />
                 </div>
 
                 {/* Subject Dropdown */}
                 <div>
-                  <label className="text-xs text-slate-700 block mb-1 font-medium">Lọc môn học:</label>
+                  <label className="text-xs text-slate-700 dark:text-slate-300 block mb-1 font-medium">Lọc môn học:</label>
                   <select
                     value={filterSubject}
                     onChange={(e) => setFilterSubject(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 shadow-xs"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 shadow-xs"
                   >
                     <option value="ALL">Tất cả môn ({subjectList.length} môn)</option>
                     {subjectList.map((s) => (
@@ -3031,11 +3031,11 @@ export default function UnifiedTeacherScheduleApp() {
 
                 {/* Class Dropdown */}
                 <div>
-                  <label className="text-xs text-slate-700 block mb-1 font-medium">Lọc lớp:</label>
+                  <label className="text-xs text-slate-700 dark:text-slate-300 block mb-1 font-medium">Lọc lớp:</label>
                   <select
                     value={filterClass}
                     onChange={(e) => setFilterClass(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 shadow-xs"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 shadow-xs"
                   >
                     <option value="ALL">Tất cả lớp ({classList.length} lớp)</option>
                     {classList.map((c) => (
@@ -3046,7 +3046,7 @@ export default function UnifiedTeacherScheduleApp() {
 
                 {/* Search Box */}
                 <div>
-                  <label className="text-xs text-slate-700 block mb-1 font-medium">Tìm kiếm nhanh:</label>
+                  <label className="text-xs text-slate-700 dark:text-slate-300 block mb-1 font-medium">Tìm kiếm nhanh:</label>
                   <div className="relative">
                     <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
                     <input
@@ -3054,7 +3054,7 @@ export default function UnifiedTeacherScheduleApp() {
                       placeholder="Tên môn, lớp, phòng..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 shadow-xs"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 shadow-xs"
                     />
                   </div>
                 </div>
@@ -3065,7 +3065,7 @@ export default function UnifiedTeacherScheduleApp() {
             <div className="space-y-4">
               <div className="flex items-center justify-between text-xs text-slate-500 px-1">
                 <span>
-                  Hiển thị: <strong className="text-slate-900">{filteredEvents.length}</strong> ca dạy phù hợp
+                  Hiển thị: <strong className="text-slate-900 dark:text-white">{filteredEvents.length}</strong> ca dạy phù hợp
                 </span>
                 {calendarViewMode === 'day' && (
                   <span className="text-rose-600 font-semibold">
@@ -3075,10 +3075,10 @@ export default function UnifiedTeacherScheduleApp() {
               </div>
 
               {filteredEvents.length === 0 ? (
-                <div className="bg-white border border-slate-200/80 rounded-2xl p-12 text-center space-y-2 shadow-sm">
+                <div className="bg-white dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-12 text-center space-y-2 shadow-sm">
                   <Calendar className="w-10 h-10 text-slate-400 mx-auto" />
-                  <p className="text-sm font-semibold text-slate-800">Không tìm thấy ca dạy nào phù hợp với bộ lọc!</p>
-                  <p className="text-xs text-slate-500">Thầy/Cô có thể đổi ngày hoặc chọn chế độ "Xem toàn bộ 288 ca" ở trên.</p>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Không tìm thấy ca dạy nào phù hợp với bộ lọc!</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Thầy/Cô có thể đổi ngày hoặc chọn chế độ "Xem toàn bộ 288 ca" ở trên.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -3089,8 +3089,8 @@ export default function UnifiedTeacherScheduleApp() {
                     return (
                       <div
                         key={ev.id}
-                        className={`bg-white border rounded-2xl p-4 transition-all hover:border-rose-300 shadow-sm flex flex-col justify-between gap-3 ${
-                          isPast ? 'border-slate-200/60 opacity-80' : 'border-slate-200/90'
+                        className={`bg-white dark:bg-slate-800/70 border rounded-2xl p-4 transition-all hover:border-rose-300 dark:hover:border-slate-600 shadow-sm flex flex-col justify-between gap-3 ${
+                          isPast ? 'border-slate-200/60 dark:border-slate-700/50 opacity-80' : 'border-slate-200/90 dark:border-slate-700'
                         }`}
                       >
                         <div className="space-y-2">
@@ -3109,7 +3109,7 @@ export default function UnifiedTeacherScheduleApp() {
                                   </span>
                                 )}
                               </div>
-                              <h4 className="text-base font-bold text-slate-900 mt-1.5 leading-snug">{ev.subject}</h4>
+                              <h4 className="text-base font-bold text-slate-900 dark:text-white mt-1.5 leading-snug">{ev.subject}</h4>
                             </div>
 
                             <span
@@ -3123,31 +3123,31 @@ export default function UnifiedTeacherScheduleApp() {
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-3 gap-2 text-xs text-slate-700 pt-1">
-                            <div className="bg-slate-50 p-2 rounded-xl border border-slate-200/80">
-                              <span className="text-slate-500 block text-[10px]">Giờ dạy</span>
-                              <span className="font-mono font-bold text-slate-900">{ev.startTime} - {ev.endTime}</span>
+                          <div className="grid grid-cols-3 gap-2 text-xs text-slate-700 dark:text-slate-300 pt-1">
+                            <div className="bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-200/80 dark:border-slate-700/60">
+                              <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Giờ dạy</span>
+                              <span className="font-mono font-bold text-slate-900 dark:text-white">{ev.startTime} - {ev.endTime}</span>
                             </div>
-                            <div className="bg-slate-50 p-2 rounded-xl border border-slate-200/80">
-                              <span className="text-slate-500 block text-[10px]">Lớp học</span>
-                              <span className="font-bold text-slate-900">{ev.className}</span>
+                            <div className="bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-200/80 dark:border-slate-700/60">
+                              <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Lớp học</span>
+                              <span className="font-bold text-slate-900 dark:text-white">{ev.className}</span>
                             </div>
-                            <div className="bg-slate-50 p-2 rounded-xl border border-slate-200/80">
-                              <span className="text-slate-500 block text-[10px]">Phòng dạy</span>
-                              <span className="font-bold text-slate-900">{ev.room}</span>
+                            <div className="bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-200/80 dark:border-slate-700/60">
+                              <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Phòng dạy</span>
+                              <span className="font-bold text-slate-900 dark:text-white">{ev.room}</span>
                             </div>
                           </div>
 
                           {ev.notes && (
-                            <p className="text-xs text-amber-950 font-medium bg-amber-50 px-2.5 py-1.5 rounded-xl border border-amber-200 flex items-start gap-1.5 shadow-xs">
-                              <span className="font-bold text-amber-800 shrink-0">📝</span>
-                              <span className="text-slate-800 font-medium line-clamp-2">{ev.notes}</span>
+                            <p className="text-xs text-amber-950 dark:text-amber-300 font-medium bg-amber-50 dark:bg-amber-950/60 px-2.5 py-1.5 rounded-xl border border-amber-200 dark:border-amber-800/60 flex items-start gap-1.5 shadow-xs">
+                              <span className="font-bold text-amber-800 dark:text-amber-400 shrink-0">📝</span>
+                              <span className="text-slate-800 dark:text-slate-200 font-medium line-clamp-2">{ev.notes}</span>
                             </p>
                           )}
                         </div>
 
                         {/* Action buttons */}
-                        <div className="flex items-center justify-between border-t border-slate-100 pt-2.5 text-xs">
+                        <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-700/60 pt-2.5 text-xs">
                           {ev.attachmentName ? (
                             <div className="flex items-center gap-1">
                               <button
@@ -3181,7 +3181,7 @@ export default function UnifiedTeacherScheduleApp() {
                                 setAttachFileName(ev.attachmentName || '');
                                 setAttachFileUrl(ev.attachmentUrl || '');
                               }}
-                              className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium cursor-pointer shadow-xs"
+                              className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-medium cursor-pointer shadow-xs"
                             >
                               File
                             </button>
@@ -3222,19 +3222,19 @@ export default function UnifiedTeacherScheduleApp() {
             />
 
             {/* Header / Intro Card */}
-            <div className="bg-gradient-to-r from-rose-50 via-sky-50/40 to-amber-50/60 border border-slate-200/80 rounded-2xl p-5 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="bg-gradient-to-r from-rose-50 via-sky-50/40 to-amber-50/60 dark:from-slate-900 dark:via-slate-850 dark:to-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-rose-100 border border-rose-200 flex items-center justify-center shrink-0 shadow-xs">
                   <Users className="w-6 h-6 text-rose-600" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     Quản Lý Lớp Học & Danh Sách Học Sinh (Teacher Cockpit)
                     <span className="text-xs px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-200 font-semibold">
                       Phase 1
                     </span>
                   </h2>
-                  <p className="text-xs text-slate-600 mt-0.5">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
                     Quản lý danh sách lớp, nề nếp, điểm danh 1-chạm theo ca dạy và khen thưởng tích cực (Kudos) đồng bộ Đám mây.
                   </p>
                 </div>
@@ -3265,7 +3265,7 @@ export default function UnifiedTeacherScheduleApp() {
                 {/* 3. Dán danh sách nhanh */}
                 <button
                   onClick={() => setShowImportRosterModal(true)}
-                  className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer shadow-xs"
+                  className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer shadow-xs"
                 >
                   <Download className="w-4 h-4 text-slate-500" />
                   <span>Dán văn bản</span>
@@ -3274,7 +3274,7 @@ export default function UnifiedTeacherScheduleApp() {
                 {/* 4. Thêm Lớp mới */}
                 <button
                   onClick={() => setShowAddClassModal(true)}
-                  className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                  className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
                 >
                   <Plus className="w-3.5 h-3.5 text-slate-500" />
                   <span>Thêm Lớp</span>
@@ -3294,7 +3294,7 @@ export default function UnifiedTeacherScheduleApp() {
                     className={`px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer border ${
                       isSelected
                         ? 'bg-rose-600 text-white border-rose-500 shadow-xs'
-                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                     }`}
                   >
                     <span>{c.name}</span>
@@ -3319,32 +3319,32 @@ export default function UnifiedTeacherScheduleApp() {
               return (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Stat Card 1: Total Students */}
-                  <div className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center gap-4 shadow-sm">
-                    <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 shrink-0">
+                  <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-4 flex items-center gap-4 shadow-sm">
+                    <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
                       <Users className="w-6 h-6" />
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500 font-medium">Sĩ số lớp {selectedRosterClass}</p>
-                      <p className="text-2xl font-black text-slate-900">{currentClassStudents.length} <span className="text-xs font-normal text-slate-500">học sinh</span></p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Sĩ số lớp {selectedRosterClass}</p>
+                      <p className="text-2xl font-black text-slate-900 dark:text-white">{currentClassStudents.length} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">học sinh</span></p>
                     </div>
                   </div>
 
                   {/* Stat Card 2: Total Kudos Points */}
-                  <div className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center gap-4 shadow-sm">
-                    <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shrink-0">
+                  <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-4 flex items-center gap-4 shadow-sm">
+                    <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
                       <Award className="w-6 h-6" />
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500 font-medium">Điểm thi đua nề nếp (Kudos)</p>
-                      <p className="text-2xl font-black text-amber-600">+{totalKudos} <span className="text-xs font-normal text-slate-500">điểm tích lũy</span></p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Điểm thi đua nề nếp (Kudos)</p>
+                      <p className="text-2xl font-black text-amber-600 dark:text-amber-400">+{totalKudos} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">điểm tích lũy</span></p>
                     </div>
                   </div>
 
                   {/* Stat Card 3: Top Students Honor Podium */}
-                  <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm">
-                    <p className="text-xs text-slate-500 font-medium mb-1.5 flex items-center gap-1.5">
+                  <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-4 shadow-sm">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-1.5 flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                      <span className="font-bold text-slate-700">Gương mẫu tuần này</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-300">Gương mẫu tuần này</span>
                     </p>
                     <div className="flex items-center gap-2 overflow-x-auto">
                       {topThree.map((st, i) => (
@@ -3364,7 +3364,7 @@ export default function UnifiedTeacherScheduleApp() {
             })()}
 
             {/* Students Table Section */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+            <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl overflow-hidden shadow-sm">
               {/* Search & Action Bar */}
               <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="relative w-full sm:w-80">
@@ -3411,7 +3411,7 @@ export default function UnifiedTeacherScheduleApp() {
                             setTimeout(() => setAlertBanner(null), 4000);
                           }
                         }}
-                        className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors shadow-xs"
+                        className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 hover:text-rose-600 border border-slate-200 dark:border-slate-700 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors shadow-xs"
                         title="Xóa lớp này khỏi hệ thống"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -3437,7 +3437,7 @@ export default function UnifiedTeacherScheduleApp() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 text-[11px] font-bold text-slate-600 uppercase tracking-wider border-b border-slate-200">
+                    <tr className="bg-slate-50 dark:bg-slate-900/80 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">
                       <th className="py-3 px-4 w-12 text-center">STT</th>
                       <th className="py-3 px-4 w-28">Mã HS</th>
                       <th className="py-3 px-4">Họ và Tên</th>
@@ -3448,15 +3448,15 @@ export default function UnifiedTeacherScheduleApp() {
                       <th className="py-3 px-4 w-20 text-center">Thao tác</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs">
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50 text-xs">
                     {students
                       .filter(s => s.className.toLowerCase() === selectedRosterClass.toLowerCase())
                       .filter(s => !rosterSearch.trim() || s.fullName.toLowerCase().includes(rosterSearch.toLowerCase()) || s.studentCode.toLowerCase().includes(rosterSearch.toLowerCase()))
                       .map((st, idx) => (
-                        <tr key={st.id} className="hover:bg-slate-50/70 transition-colors">
+                        <tr key={st.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
                           <td className="py-3 px-4 text-center font-mono text-slate-400">{idx + 1}</td>
                           <td className="py-3 px-4 font-mono font-semibold text-rose-600">{st.studentCode}</td>
-                          <td className="py-3 px-4 font-medium text-slate-900">
+                          <td className="py-3 px-4 font-medium text-slate-900 dark:text-white">
                             <div className="flex items-center gap-2">
                               <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
                                 st.gender === 'Nữ' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'
@@ -3464,7 +3464,7 @@ export default function UnifiedTeacherScheduleApp() {
                                 {st.fullName.trim().charAt(st.fullName.trim().lastIndexOf(' ') + 1) || 'A'}
                               </div>
                               <div>
-                                <p className="font-semibold text-slate-900">{st.fullName}</p>
+                                <p className="font-semibold text-slate-900 dark:text-white">{st.fullName}</p>
                                 {st.notes && <p className="text-[10.5px] text-amber-950 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 inline-flex items-center gap-1 font-medium shadow-xs"><span>📝</span> <span>{st.notes}</span></p>}
                               </div>
                             </div>
@@ -3515,7 +3515,7 @@ export default function UnifiedTeacherScheduleApp() {
                               </button>
                             </div>
                           </td>
-                          <td className="py-3 px-4 text-slate-700 font-mono">
+                          <td className="py-3 px-4 text-slate-700 dark:text-slate-300 font-mono">
                             {st.parentPhone ? (
                               <a
                                 href={`tel:${st.parentPhone}`}
@@ -3562,7 +3562,7 @@ export default function UnifiedTeacherScheduleApp() {
                               </button>
                               <button
                                 onClick={() => setShowImportRosterModal(true)}
-                                className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-semibold cursor-pointer shadow-xs"
+                                className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-xs font-semibold cursor-pointer shadow-xs"
                               >
                                 Dán văn bản
                               </button>
@@ -3583,13 +3583,13 @@ export default function UnifiedTeacherScheduleApp() {
         {activeTab === 'report' && (
           <div className="space-y-6 animate-fade-in">
             {/* Header & Export actions */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm flex flex-wrap items-center justify-between gap-4">
+            <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-5 shadow-sm flex flex-wrap items-center justify-between gap-4">
               <div>
-                <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <h3 className="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
                   <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
                   <span>Sổ Báo Giảng & Thống Kê Tiến Độ Giảng Dạy</span>
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Tổng hợp {events.length} ca dạy • Tiến độ từng môn học & lớp theo chuẩn báo cáo nhà trường
                 </p>
               </div>
@@ -3611,10 +3611,10 @@ export default function UnifiedTeacherScheduleApp() {
             </div>
 
             {/* Summary Statistics Table */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+            <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 text-slate-700 font-bold uppercase tracking-wider border-b border-slate-200/80 text-[11px]">
+                  <thead className="bg-slate-50 dark:bg-slate-900/80 text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider border-b border-slate-200/80 dark:border-slate-700/80 text-[11px]">
                     <tr>
                       <th className="p-3.5">STT</th>
                       <th className="p-3.5">Môn học</th>
@@ -3627,13 +3627,13 @@ export default function UnifiedTeacherScheduleApp() {
                       <th className="p-3.5 text-center">Tiến độ</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50 text-slate-700 dark:text-slate-200">
                     {reportStats.map((st, idx) => {
                       const pct = Math.round((st.done / (st.total || 1)) * 100);
                       return (
                         <tr key={idx} className="hover:bg-rose-50/30 transition-colors">
                           <td className="p-3.5 font-mono text-slate-500">{idx + 1}</td>
-                          <td className="p-3.5 font-bold text-slate-900">{st.subject}</td>
+                          <td className="p-3.5 font-bold text-slate-900 dark:text-white">{st.subject}</td>
                           <td className="p-3.5">
                             <span className="px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-semibold">
                               {st.className}
@@ -3676,14 +3676,14 @@ export default function UnifiedTeacherScheduleApp() {
         {activeTab === 'ai' && (
           <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
             {/* Header banner */}
-            <div className="bg-gradient-to-r from-rose-50 via-white to-amber-50/80 border border-rose-200/80 rounded-2xl p-5 shadow-sm">
+            <div className="bg-gradient-to-r from-rose-50 via-white to-amber-50/80 dark:from-slate-900 dark:via-slate-850 dark:to-slate-900 border border-rose-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3.5">
                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-500 to-amber-500 flex items-center justify-center shadow-md shadow-rose-500/20">
                     <Sparkles className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                       <span>Trợ Lý Sư Phạm Trí Tuệ Nhân Tạo (Generative AI)</span>
                       <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200">
                         Made by Huy Technology AI
@@ -3696,13 +3696,13 @@ export default function UnifiedTeacherScheduleApp() {
                 </div>
 
                 {/* Sub-tab navigation */}
-                <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200 shrink-0">
+                <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0">
                   <button
                     onClick={() => setAiSubTab('planner')}
                     className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                       aiSubTab === 'planner'
                         ? 'bg-blue-600 text-white shadow-md'
-                        : 'text-slate-600 hover:text-slate-900'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
                     <BookOpen className="w-3.5 h-3.5" />
@@ -3749,7 +3749,7 @@ export default function UnifiedTeacherScheduleApp() {
             {aiSubTab === 'planner' && (
               <div className="space-y-6">
                 {/* Framework Selector & Input Form */}
-                <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-4 shadow-sm">
+                <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-5 space-y-4 shadow-sm">
 
                 {/* Grounding Banner */}
                 <div
@@ -3830,7 +3830,7 @@ export default function UnifiedTeacherScheduleApp() {
                         <select
                           value={plannerClassFilter}
                           onChange={(e) => setPlannerClassFilter(e.target.value)}
-                          className="bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs text-slate-800 focus:outline-none focus:border-rose-500 cursor-pointer"
+                          className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-800 focus:outline-none focus:border-rose-500 cursor-pointer"
                         >
                           <option value="ALL">Tất cả các lớp ({events.length} ca dạy)</option>
                           {Array.from(new Set(events.map(ev => ev.className).filter(Boolean))).sort().map(cls => (
@@ -3949,7 +3949,7 @@ export default function UnifiedTeacherScheduleApp() {
                           value={plannerModuleTitle}
                           onChange={(e) => setPlannerModuleTitle(e.target.value)}
                           placeholder="Ví dụ: Mô-đun Tiện CNC và Gia công chi tiết máy"
-                          className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                         />
                       </div>
                     )}
@@ -3969,7 +3969,7 @@ export default function UnifiedTeacherScheduleApp() {
                           }
                         }}
                         placeholder={plannerStandard === 5512 ? 'Ví dụ: Bài 1: Khái quát về công nghệ' : 'Ví dụ: Gia công tiện ren tam giác hệ mét trên máy tiện CNC'}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                       />
                     </div>
 
@@ -3987,7 +3987,7 @@ export default function UnifiedTeacherScheduleApp() {
                             }
                           }}
                           placeholder="Công nghệ, Toán, Cắt gọt kim loại..."
-                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                         />
                       </div>
 
@@ -4002,7 +4002,7 @@ export default function UnifiedTeacherScheduleApp() {
                             setPlannerMatchedDocResult(matched);
                           }}
                           placeholder="Lớp 10A1 / Trung cấp K18..."
-                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                         />
                       </div>
 
@@ -4015,7 +4015,7 @@ export default function UnifiedTeacherScheduleApp() {
                           value={plannerDuration}
                           onChange={(e) => setPlannerDuration(e.target.value)}
                           placeholder={plannerStandard === 5512 ? '1 hoặc 2' : '4.0 hoặc 6.0'}
-                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                         />
                       </div>
                     </div>
@@ -4029,7 +4029,7 @@ export default function UnifiedTeacherScheduleApp() {
                         value={plannerRequirements}
                         onChange={(e) => setPlannerRequirements(e.target.value)}
                         placeholder={plannerStandard === 5512 ? 'Tivi tương tác, video mô phỏng, phần mềm Kahoot, phiếu học tập số...' : 'Máy tiện vạn năng T616, kính bảo hộ, quy trình 5S xưởng...'}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2 text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                       />
                     </div>
 
@@ -4068,7 +4068,7 @@ export default function UnifiedTeacherScheduleApp() {
                             }
                           }
                         }}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-rose-500 cursor-pointer"
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-none focus:border-rose-500 cursor-pointer"
                       >
                         <option value="AUTO">🤖 [Tự động] Nhận diện & so khớp thông minh theo Môn & Khối lớp</option>
 
@@ -4151,7 +4151,7 @@ export default function UnifiedTeacherScheduleApp() {
 
                 {/* ================= KHUNG KẾT QUẢ ĐA PHƯƠNG TIỆN 6 TAB ================= */}
                 {(plannerFullPackage || plannerResult5512 || plannerResult2634) && (
-                  <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm animate-fade-in">
+                  <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm animate-fade-in">
                     {/* Header Thanh Công Cụ Toàn Cục */}
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200/80">
                       <div>
@@ -4596,7 +4596,7 @@ export default function UnifiedTeacherScheduleApp() {
                                       className={`p-2.5 rounded-lg border text-xs flex items-center justify-between ${
                                         isCorrect
                                           ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-semibold'
-                                          : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
                                       }`}
                                     >
                                       <span>{opt}</span>
@@ -4655,7 +4655,7 @@ export default function UnifiedTeacherScheduleApp() {
                                     <strong>Chữ trên màn hình:</strong> {sc.onScreenText}
                                   </div>
                                 </div>
-                                <div className="p-3 rounded-lg bg-white border border-slate-200">
+                                <div className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                                   <strong className="text-emerald-300 block mb-1">🎙️ Lời bình thuyết minh (Voiceover):</strong>
                                   <p className="italic text-slate-200">"{sc.voiceover}"</p>
                                 </div>
@@ -4722,7 +4722,7 @@ export default function UnifiedTeacherScheduleApp() {
                         {/* Mermaid Code Box */}
                         <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
                           <span className="text-xs font-mono text-slate-400 block">Cú pháp Mermaid Mindmap:</span>
-                          <pre className="text-xs font-mono text-teal-800 overflow-x-auto p-3 bg-white border border-slate-200 rounded-lg">
+                          <pre className="text-xs font-mono text-teal-800 dark:text-teal-300 overflow-x-auto p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg">
                             {plannerFullPackage.mindmap.mermaidCode}
                           </pre>
                         </div>
@@ -4769,7 +4769,7 @@ export default function UnifiedTeacherScheduleApp() {
                         </div>
 
                         {/* Bảng Chi Tiết 4 Tiêu Chí */}
-                        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                        <div className="bg-white dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
                           <table className="w-full text-xs text-left">
                             <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 text-[11px] uppercase">
                               <tr>
@@ -4835,7 +4835,7 @@ export default function UnifiedTeacherScheduleApp() {
             {/* ================= SUB-TAB 2: ĐỀ THI & MA TRẬN 4 MỨC ĐỘ ================= */}
             {aiSubTab === 'exam' && (
               <div className="space-y-6">
-                <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-4 shadow-sm">
+                <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-5 space-y-4 shadow-sm">
                   <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                     <Award className="w-4 h-4 text-purple-600" />
                     <span>Thiết Lập Đề Thi & Bảng Ma Trận 4 Mức Độ Nhận Thức</span>
@@ -4852,7 +4852,7 @@ export default function UnifiedTeacherScheduleApp() {
                         value={examTopic}
                         onChange={(e) => setExamTopic(e.target.value)}
                         placeholder="Ví dụ: Kiểm tra 15 phút - An toàn xưởng và Quy trình tiện CNC"
-                        className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
                       />
                     </div>
 
@@ -4864,7 +4864,7 @@ export default function UnifiedTeacherScheduleApp() {
                           value={examSubject}
                           onChange={(e) => setExamSubject(e.target.value)}
                           placeholder="Toán, Công nghệ, Cơ khí..."
-                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
                         />
                       </div>
                       <div>
@@ -4874,7 +4874,7 @@ export default function UnifiedTeacherScheduleApp() {
                           value={examGrade}
                           onChange={(e) => setExamGrade(e.target.value)}
                           placeholder="Lớp 10 / CĐ Nghề K22..."
-                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
                         />
                       </div>
                       <div>
@@ -4882,7 +4882,7 @@ export default function UnifiedTeacherScheduleApp() {
                         <select
                           value={examQuestionCount}
                           onChange={(e) => setExamQuestionCount(Number(e.target.value))}
-                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
                         >
                           <option value={10}>10 câu (Kiểm tra 15 phút / Thường xuyên)</option>
                           <option value={20}>20 câu (Kiểm tra 45 phút / Định kỳ)</option>
@@ -4928,7 +4928,7 @@ export default function UnifiedTeacherScheduleApp() {
 
                 {/* Exam Result Preview */}
                 {examResult && (
-                  <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-4 shadow-sm animate-fade-in">
+                  <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-5 space-y-4 shadow-sm animate-fade-in">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                       <div className="flex items-center gap-2 text-xs font-semibold text-purple-300">
                         <CheckCircle2 className="w-4 h-4 text-purple-400" />
@@ -4966,19 +4966,19 @@ export default function UnifiedTeacherScheduleApp() {
                     <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
                       <h5 className="font-bold text-purple-400 text-xs uppercase">Bảng Ma Trận 4 Mức Độ Nhận Thức:</h5>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                        <div className="p-2.5 rounded-lg bg-white border border-slate-200">
+                        <div className="p-2.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                           <span className="text-slate-400 block text-[11px]">1. Nhận biết</span>
                           <span className="text-sm font-bold text-white">{examResult.matrix.recognitionCount} câu ({examResult.matrix.recognitionPercent}%)</span>
                         </div>
-                        <div className="p-2.5 rounded-lg bg-white border border-slate-200">
+                        <div className="p-2.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                           <span className="text-slate-400 block text-[11px]">2. Thông hiểu</span>
                           <span className="text-sm font-bold text-white">{examResult.matrix.comprehensionCount} câu ({examResult.matrix.comprehensionPercent}%)</span>
                         </div>
-                        <div className="p-2.5 rounded-lg bg-white border border-slate-200">
+                        <div className="p-2.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                           <span className="text-slate-400 block text-[11px]">3. Vận dụng</span>
                           <span className="text-sm font-bold text-white">{examResult.matrix.applicationCount} câu ({examResult.matrix.applicationPercent}%)</span>
                         </div>
-                        <div className="p-2.5 rounded-lg bg-white border border-slate-200">
+                        <div className="p-2.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                           <span className="text-slate-400 block text-[11px]">4. Vận dụng cao</span>
                           <span className="text-sm font-bold text-white">{examResult.matrix.advancedApplicationCount} câu ({examResult.matrix.advancedApplicationPercent}%)</span>
                         </div>
@@ -5016,7 +5016,7 @@ export default function UnifiedTeacherScheduleApp() {
 
             {/* ================= SUB-TAB 3: TƯ VẤN CHAT AI ================= */}
             {aiSubTab === 'chat' && (
-              <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 h-[620px] flex flex-col justify-between shadow-sm">
+              <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-4 sm:p-5 h-[620px] flex flex-col justify-between shadow-sm">
                 {/* 7 Mode Selector Bar */}
                 <div className="pb-3 mb-2 border-b border-slate-100 flex items-center gap-1.5 overflow-x-auto text-xs scrollbar-thin">
                   {[
@@ -5221,7 +5221,7 @@ export default function UnifiedTeacherScheduleApp() {
                       value={aiInput}
                       onChange={(e) => setAiInput(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleSendAiMessage()}
-                      className="flex-1 bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                      className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                     />
                     <button
                       type="button"
@@ -5278,7 +5278,7 @@ export default function UnifiedTeacherScheduleApp() {
                 </div>
 
                 {/* Filters & Search */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white border border-slate-200/80 rounded-2xl p-3.5 shadow-sm">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-3.5 shadow-sm">
                   <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 text-xs">
                     {(['ALL', 'GIAO_TRINH', 'DE_CUONG', 'PHAP_QUY', 'ATLD_5S', 'CUSTOM'] as const).map((cat) => {
                       const labels = {
@@ -5314,7 +5314,7 @@ export default function UnifiedTeacherScheduleApp() {
                       value={kbSearch}
                       onChange={(e) => setKbSearch(e.target.value)}
                       placeholder="Tìm theo tên, mã số, môn học..."
-                      className="w-full bg-white border border-slate-300 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
                     />
                   </div>
                 </div>
@@ -5343,7 +5343,7 @@ export default function UnifiedTeacherScheduleApp() {
                         key={doc.id}
                         className={`p-4 rounded-2xl border transition-all space-y-3.5 ${
                           doc.isActive
-                            ? 'bg-white border-slate-200/90 shadow-sm'
+                            ? 'bg-white dark:bg-slate-800/80 border-slate-200/90 dark:border-slate-700 shadow-sm'
                             : 'bg-slate-50 border-slate-200 opacity-60'
                         }`}
                       >
@@ -5495,7 +5495,7 @@ export default function UnifiedTeacherScheduleApp() {
                                 {/* Modal Chỉnh Sửa / Bổ Sung Tài Liệu */}
                 {kbEditingDoc && (
                   <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-                    <div className="bg-white border border-slate-200/80 rounded-2xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-2xl">
+                    <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-2xl">
                       <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
                         <div>
                           <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
@@ -5527,7 +5527,7 @@ export default function UnifiedTeacherScheduleApp() {
                             value={kbEditTitle}
                             onChange={(e) => setKbEditTitle(e.target.value)}
                             placeholder="Ví dụ: Đề cương chi tiết môn Tiện CNC hoặc Giáo trình Khí cụ điện"
-                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-amber-500"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-none focus:border-amber-500"
                           />
                         </div>
 
@@ -5539,7 +5539,7 @@ export default function UnifiedTeacherScheduleApp() {
                               value={kbEditCode}
                               onChange={(e) => setKbEditCode(e.target.value)}
                               placeholder="Mã số văn bản..."
-                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-amber-500"
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-amber-500"
                             />
                           </div>
                           <div>
@@ -5549,7 +5549,7 @@ export default function UnifiedTeacherScheduleApp() {
                               value={kbEditSubject}
                               onChange={(e) => setKbEditSubject(e.target.value)}
                               placeholder="ALL hoặc Toán, Tiện CNC..."
-                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-amber-500"
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-amber-500"
                             />
                           </div>
                         </div>
@@ -5562,7 +5562,7 @@ export default function UnifiedTeacherScheduleApp() {
                               value={kbEditLevel}
                               onChange={(e) => setKbEditLevel(e.target.value)}
                               placeholder="ALL, THPT, Trung cấp, Cao đẳng..."
-                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-amber-500"
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-amber-500"
                             />
                           </div>
                           <div>
@@ -5570,7 +5570,7 @@ export default function UnifiedTeacherScheduleApp() {
                             <select
                               value={kbEditCategory}
                               onChange={(e) => setKbEditCategory(e.target.value as any)}
-                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-amber-500"
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-amber-500"
                             >
                               <option value="GIAO_TRINH">Giáo trình nghề</option>
                               <option value="DE_CUONG">Đề cương môn học</option>
@@ -5662,7 +5662,7 @@ export default function UnifiedTeacherScheduleApp() {
                             rows={8}
                             value={kbEditContent}
                             onChange={(e) => setKbEditContent(e.target.value)}
-                            className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs text-slate-800 focus:outline-none focus:border-amber-500 font-mono leading-relaxed"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-800 focus:outline-none focus:border-amber-500 font-mono leading-relaxed"
                           />
                         </div>
                       </div>
@@ -5691,7 +5691,7 @@ export default function UnifiedTeacherScheduleApp() {
                 {/* Modal Thêm Tài Liệu Mới */}
                 {kbShowAddModal && (
                   <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-                    <div className="bg-white border border-slate-200/80 rounded-2xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-2xl">
+                    <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-2xl">
                       <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
                         <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                           <Plus className="w-5 h-5 text-emerald-400" />
@@ -5715,7 +5715,7 @@ export default function UnifiedTeacherScheduleApp() {
                             value={kbNewTitle}
                             onChange={(e) => setKbNewTitle(e.target.value)}
                             placeholder="Ví dụ: Đề cương chi tiết môn Tiện CNC Lớp 11 hoặc Giáo trình Khí cụ điện"
-                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-emerald-500"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500"
                           />
                         </div>
 
@@ -5727,7 +5727,7 @@ export default function UnifiedTeacherScheduleApp() {
                               value={kbNewCode}
                               onChange={(e) => setKbNewCode(e.target.value)}
                               placeholder="Ví dụ: DC-TIEN-11"
-                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500"
                             />
                           </div>
                           <div>
@@ -5737,7 +5737,7 @@ export default function UnifiedTeacherScheduleApp() {
                               value={kbNewSubject}
                               onChange={(e) => setKbNewSubject(e.target.value)}
                               placeholder="ALL hoặc Toán, Tiện CNC..."
-                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500"
                             />
                           </div>
                         </div>
@@ -5750,7 +5750,7 @@ export default function UnifiedTeacherScheduleApp() {
                               value={kbNewLevel}
                               onChange={(e) => setKbNewLevel(e.target.value)}
                               placeholder="ALL, THPT, Trung cấp, Cao đẳng..."
-                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500"
                             />
                           </div>
                           <div>
@@ -5758,7 +5758,7 @@ export default function UnifiedTeacherScheduleApp() {
                             <select
                               value={kbNewCategory}
                               onChange={(e) => setKbNewCategory(e.target.value as any)}
-                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500"
                             >
                               <option value="GIAO_TRINH">Giáo trình nghề</option>
                               <option value="DE_CUONG">Đề cương môn học</option>
@@ -5855,7 +5855,7 @@ export default function UnifiedTeacherScheduleApp() {
                             value={kbNewContent}
                             onChange={(e) => setKbNewContent(e.target.value)}
                             placeholder="Nội dung được tự động điền khi Thầy/Cô đính kèm file ở trên, hoặc có thể dán/chỉnh sửa trực tiếp tại đây..."
-                            className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 font-mono leading-relaxed"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 font-mono leading-relaxed"
                           />
                         </div>
                       </div>
@@ -5973,14 +5973,14 @@ export default function UnifiedTeacherScheduleApp() {
               </p>
             </div>
             {/* Version Badge & Info */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-6 space-y-4 shadow-sm">
+            <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-6 space-y-4 shadow-sm">
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3.5">
                   <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-rose-500 to-amber-500 flex items-center justify-center shadow-md shadow-rose-500/20">
                     <BookOpen className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                       Smart Teacher Schedule AI
                       <span className="px-2.5 py-0.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 text-xs font-mono font-bold">
                         v1.5.0
@@ -5993,7 +5993,7 @@ export default function UnifiedTeacherScheduleApp() {
                   ✓ Phiên bản chính thức v1.5.0
                 </span>
               </div>
-              <div className="text-xs text-slate-600 grid sm:grid-cols-2 gap-2.5 pt-3 border-t border-slate-100">
+              <div className="text-xs text-slate-600 dark:text-slate-300 grid sm:grid-cols-2 gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-700/60">
                 <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Nền tảng: <strong className="text-slate-800">Desktop (PC/Laptop), Android & Web App</strong></div>
                 <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Cơ sở dữ liệu: <strong className="text-slate-800">Supabase Cloud Sync & Local Offline</strong></div>
                 <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Trợ lý AI: <strong className="text-slate-800">Soạn giáo án CV 5512, Đề thi TT 22, Slide, Mindmap</strong></div>
@@ -6002,13 +6002,13 @@ export default function UnifiedTeacherScheduleApp() {
             </div>
 
             {/* Cloud Sync Settings */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-6 space-y-4 shadow-sm">
+            <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-6 space-y-4 shadow-sm">
               <div className="flex items-center gap-3.5">
                 <div className="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-200/80 flex items-center justify-center text-blue-600 shadow-sm">
                   <Cloud className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">Đồng Bộ Đám Mây Đa Nền Tảng</h3>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Đồng Bộ Đám Mây Đa Nền Tảng</h3>
                   <p className="text-xs text-slate-500">Kết nối tức thời Máy tính (Windows/Mac) và Điện thoại Android (Tecno, Samsung...)</p>
                 </div>
               </div>
@@ -6022,7 +6022,7 @@ export default function UnifiedTeacherScheduleApp() {
                     type="text"
                     value={syncInput}
                     onChange={(e) => setSyncInput(e.target.value)}
-                    className="flex-1 bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 shadow-sm"
+                    className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 shadow-sm"
                   />
                   <button
                     onClick={() => {
@@ -6069,7 +6069,7 @@ export default function UnifiedTeacherScheduleApp() {
             </div>
 
             {/* Sound & Notifications */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-6 space-y-4 shadow-sm">
+            <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-6 space-y-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3.5">
                   <div className="w-11 h-11 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-center text-amber-600 shadow-sm">
@@ -6112,7 +6112,7 @@ export default function UnifiedTeacherScheduleApp() {
             </div>
 
             {/* Data Backup */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-6 space-y-3 shadow-sm">
+            <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-6 space-y-3 shadow-sm">
               <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 <Download className="w-4 h-4 text-blue-600" />
                 <span>Sao lưu & Xuất Dữ Liệu Máy Tính</span>
@@ -6142,7 +6142,7 @@ export default function UnifiedTeacherScheduleApp() {
       {/* ================= MODAL: THÊM CA DẠY MỚI TRÊN MÁY TÍNH ================= */}
       {showAddEventModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
-          <div className="bg-white border border-slate-200/80 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl text-slate-800">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl text-slate-800 dark:text-slate-100">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <Plus className="w-5 h-5 text-emerald-400" />
@@ -6163,7 +6163,7 @@ export default function UnifiedTeacherScheduleApp() {
                   placeholder="VD: Tiện CNC Cơ Bản, Công Nghệ 12..."
                   value={newSubject}
                   onChange={(e) => setNewSubject(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                 />
               </div>
 
@@ -6177,7 +6177,7 @@ export default function UnifiedTeacherScheduleApp() {
                     placeholder="VD: 12A2, CG24TC34..."
                     value={newClass}
                     onChange={(e) => setNewClass(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                   />
                 </div>
                 <div>
@@ -6187,7 +6187,7 @@ export default function UnifiedTeacherScheduleApp() {
                     placeholder="VD: S3.05/2, Xưởng Cơ khí..."
                     value={newRoom}
                     onChange={(e) => setNewRoom(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                   />
                 </div>
               </div>
@@ -6201,7 +6201,7 @@ export default function UnifiedTeacherScheduleApp() {
                     type="time"
                     value={newStartTime}
                     onChange={(e) => setNewStartTime(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 font-mono focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white font-mono focus:outline-none focus:border-emerald-500"
                   />
                 </div>
                 <div>
@@ -6212,7 +6212,7 @@ export default function UnifiedTeacherScheduleApp() {
                     type="time"
                     value={newEndTime}
                     onChange={(e) => setNewEndTime(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 font-mono focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white font-mono focus:outline-none focus:border-emerald-500"
                   />
                 </div>
               </div>
@@ -6301,7 +6301,7 @@ export default function UnifiedTeacherScheduleApp() {
                 </div>
 
                 {/* Chọn kiểu lặp */}
-                <div className="grid grid-cols-2 gap-2 p-1 bg-white rounded-xl border border-slate-200 text-xs">
+                <div className="grid grid-cols-2 gap-2 p-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
                   <button
                     type="button"
                     onClick={() => setNewCreateRecurring(true)}
@@ -6347,7 +6347,7 @@ export default function UnifiedTeacherScheduleApp() {
                           setNewEndDate(addMonthsToDate(val, 5));
                         }
                       }}
-                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                      className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                     />
                     <span className="text-[10px] text-emerald-400 font-medium mt-1 block">
                       🗓️ {getDayInfo(newStartDate || newDate).dayName}
@@ -6364,7 +6364,7 @@ export default function UnifiedTeacherScheduleApp() {
                       disabled={!newCreateRecurring}
                       value={newCreateRecurring ? (newEndDate || addMonthsToDate(newStartDate || newDate, 5)) : (newStartDate || newDate)}
                       onChange={(e) => setNewEndDate(e.target.value)}
-                      className={`w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 ${
+                      className={`w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 ${
                         !newCreateRecurring ? 'opacity-50 cursor-not-allowed' : ''
                       }`}
                     />
@@ -6434,7 +6434,7 @@ export default function UnifiedTeacherScheduleApp() {
                   value={newNotes}
                   onChange={(e) => setNewNotes(e.target.value)}
                   placeholder="Ghi chú bài học, phòng máy, dặn dò học sinh..."
-                  className="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                 />
               </div>
             </div>
@@ -6462,7 +6462,7 @@ export default function UnifiedTeacherScheduleApp() {
             {/* ================= MODAL: CHỈNH SỬA CA DẠY (UNIFIED EDIT MODAL) ================= */}
       {editingEvent && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
-          <div className="bg-white border border-slate-200/80 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl text-slate-800">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl text-slate-800 dark:text-slate-100">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <Edit3 className="w-5 h-5 text-blue-400" />
@@ -6480,7 +6480,7 @@ export default function UnifiedTeacherScheduleApp() {
                   type="text"
                   value={editSubject}
                   onChange={(e) => setEditSubject(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
 
@@ -6491,7 +6491,7 @@ export default function UnifiedTeacherScheduleApp() {
                     type="text"
                     value={editClass}
                     onChange={(e) => setEditClass(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
@@ -6500,7 +6500,7 @@ export default function UnifiedTeacherScheduleApp() {
                     type="text"
                     value={editRoom}
                     onChange={(e) => setEditRoom(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
@@ -6512,7 +6512,7 @@ export default function UnifiedTeacherScheduleApp() {
                     type="date"
                     value={editDate}
                     onChange={(e) => setEditDate(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 font-mono focus:outline-none focus:border-blue-500"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white font-mono focus:outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
@@ -6521,7 +6521,7 @@ export default function UnifiedTeacherScheduleApp() {
                     type="time"
                     value={editStartTime}
                     onChange={(e) => setEditStartTime(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 font-mono focus:outline-none focus:border-blue-500"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white font-mono focus:outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
@@ -6530,7 +6530,7 @@ export default function UnifiedTeacherScheduleApp() {
                     type="time"
                     value={editEndTime}
                     onChange={(e) => setEditEndTime(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 font-mono focus:outline-none focus:border-blue-500"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white font-mono focus:outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
@@ -6576,7 +6576,7 @@ export default function UnifiedTeacherScheduleApp() {
                       type="date"
                       value={editStartDate}
                       onChange={(e) => setEditStartDate(e.target.value)}
-                      className="w-full bg-white border border-slate-300 rounded-lg px-2 py-1 text-slate-800 font-mono text-xs"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-slate-800 font-mono text-xs"
                     />
                   </div>
                   <div>
@@ -6585,7 +6585,7 @@ export default function UnifiedTeacherScheduleApp() {
                       type="date"
                       value={editEndDate}
                       onChange={(e) => setEditEndDate(e.target.value)}
-                      className="w-full bg-white border border-slate-300 rounded-lg px-2 py-1 text-slate-800 font-mono text-xs"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-slate-800 font-mono text-xs"
                     />
                   </div>
                 </div>
@@ -6625,7 +6625,7 @@ export default function UnifiedTeacherScheduleApp() {
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
                   placeholder="Nội dung bài học, chuẩn bị phôi vật tư..."
-                  className="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                 />
               </div>
             </div>
@@ -6653,7 +6653,7 @@ export default function UnifiedTeacherScheduleApp() {
       {/* ================= MODAL: ĐÍNH KÈM TÀI LIỆU (ATTACH FILE) ================= */}
       {attachingEvent && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
-          <div className="bg-white border border-slate-200/80 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl text-slate-800">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl text-slate-800 dark:text-slate-100">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <Paperclip className="w-5 h-5 text-blue-400" />
@@ -6675,7 +6675,7 @@ export default function UnifiedTeacherScheduleApp() {
                   placeholder="VD: Giao_an_Module_Tien_CNC_Bai_1.pdf"
                   value={attachFileName}
                   onChange={(e) => setAttachFileName(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
               <div>
@@ -6685,7 +6685,7 @@ export default function UnifiedTeacherScheduleApp() {
                   placeholder="https://drive.google.com/file/..."
                   value={attachFileUrl}
                   onChange={(e) => setAttachFileUrl(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
             </div>
@@ -6714,9 +6714,9 @@ export default function UnifiedTeacherScheduleApp() {
       {/* ================= 1-TAP ATTENDANCE SESSION MODAL ================= */}
       {attendanceEvent && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white border border-slate-200/80 rounded-3xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-scale-in text-slate-800">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-scale-in text-slate-800 dark:text-slate-100">
             {/* Header */}
-            <div className="p-5 border-b border-slate-100 bg-white flex items-start justify-between gap-4">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-start justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold">
@@ -6859,7 +6859,7 @@ export default function UnifiedTeacherScheduleApp() {
             </div>
 
             {/* Footer Action Bar */}
-            <div className="p-4 border-t border-slate-100 bg-white flex flex-wrap items-center justify-between gap-3">
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -6914,7 +6914,7 @@ export default function UnifiedTeacherScheduleApp() {
       {/* ================= MODAL: THÊM HỌC SINH MỚI ================= */}
       {showAddStudentModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200/80 rounded-2xl max-w-md w-full p-5 shadow-2xl">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl max-w-md w-full p-5 shadow-2xl text-slate-800 dark:text-slate-100">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <h3 className="font-bold text-base text-white">Thêm Học Sinh Mới</h3>
               <button onClick={() => setShowAddStudentModal(false)} className="text-slate-400 hover:text-slate-700">
@@ -6927,7 +6927,7 @@ export default function UnifiedTeacherScheduleApp() {
                 <select
                   value={selectedRosterClass}
                   onChange={(e) => setSelectedRosterClass(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-xl p-2 text-slate-800"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2 text-slate-800 dark:text-white"
                 >
                   {classrooms.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                 </select>
@@ -6939,7 +6939,7 @@ export default function UnifiedTeacherScheduleApp() {
                   value={newStudentName}
                   onChange={(e) => setNewStudentName(e.target.value)}
                   placeholder="VD: Nguyễn Hoàng Nam"
-                  className="w-full bg-white border border-slate-300 rounded-xl p-2 text-slate-800"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2 text-slate-800 dark:text-white"
                 />
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -6950,7 +6950,7 @@ export default function UnifiedTeacherScheduleApp() {
                     value={newStudentCode}
                     onChange={(e) => setNewStudentCode(e.target.value)}
                     placeholder="VD: CG24-10"
-                    className="w-full bg-white border border-slate-300 rounded-xl p-2 text-slate-800"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2 text-slate-800 dark:text-white"
                   />
                 </div>
                 <div>
@@ -6958,7 +6958,7 @@ export default function UnifiedTeacherScheduleApp() {
                   <select
                     value={newStudentGender}
                     onChange={(e) => setNewStudentGender(e.target.value as any)}
-                    className="w-full bg-white border border-slate-300 rounded-xl p-2 text-slate-800"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2 text-slate-800 dark:text-white"
                   >
                     <option value="Nam">Nam</option>
                     <option value="Nữ">Nữ</option>
@@ -6972,7 +6972,7 @@ export default function UnifiedTeacherScheduleApp() {
                   value={newStudentPhone}
                   onChange={(e) => setNewStudentPhone(e.target.value)}
                   placeholder="VD: 0981234567"
-                  className="w-full bg-white border border-slate-300 rounded-xl p-2 text-slate-800"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2 text-slate-800 dark:text-white"
                 />
               </div>
               <div>
@@ -6982,7 +6982,7 @@ export default function UnifiedTeacherScheduleApp() {
                   value={newStudentNotes}
                   onChange={(e) => setNewStudentNotes(e.target.value)}
                   placeholder="VD: Tổ trưởng, khéo tay..."
-                  className="w-full bg-white border border-slate-300 rounded-xl p-2 text-slate-800"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2 text-slate-800 dark:text-white"
                 />
               </div>
             </div>
@@ -7032,7 +7032,7 @@ export default function UnifiedTeacherScheduleApp() {
       {/* ================= MODAL: DÁN DANH SÁCH HỌC SINH TỪ EXCEL/WORD ================= */}
       {showImportRosterModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200/80 rounded-2xl max-w-lg w-full p-5 shadow-2xl">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl max-w-lg w-full p-5 shadow-2xl text-slate-800 dark:text-slate-100">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
               <h3 className="font-bold text-base text-white flex items-center gap-2">
                 <Download className="w-4 h-4 text-cyan-400" />
@@ -7072,7 +7072,7 @@ export default function UnifiedTeacherScheduleApp() {
               placeholder="1. Nguyễn Văn An
 2. Trần Thị Bích
 3. Lê Hoàng Dũng..."
-              className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs text-slate-800 font-mono focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-800 font-mono focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
             />
             <div className="flex justify-end gap-2 mt-4">
               <button
@@ -7105,7 +7105,7 @@ export default function UnifiedTeacherScheduleApp() {
       {/* ================= MODAL: THÊM LỚP HỌC MỚI ================= */}
       {showAddClassModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200/80 rounded-2xl max-w-sm w-full p-5 shadow-2xl">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl text-slate-800 dark:text-slate-100">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <h3 className="font-bold text-base text-white">Thêm Lớp Học Mới</h3>
               <button onClick={() => setShowAddClassModal(false)} className="text-slate-400 hover:text-slate-700">
@@ -7120,7 +7120,7 @@ export default function UnifiedTeacherScheduleApp() {
                   value={newClassName}
                   onChange={(e) => setNewClassName(e.target.value)}
                   placeholder="VD: 11A2"
-                  className="w-full bg-white border border-slate-300 rounded-xl p-2 text-slate-800 font-bold"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2 text-slate-800 dark:text-white font-bold"
                 />
               </div>
               <div>
@@ -7130,7 +7130,7 @@ export default function UnifiedTeacherScheduleApp() {
                   value={newClassGrade}
                   onChange={(e) => setNewClassGrade(e.target.value)}
                   placeholder="VD: Khối 11 hoặc Cao đẳng K03"
-                  className="w-full bg-white border border-slate-300 rounded-xl p-2 text-slate-800"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2 text-slate-800 dark:text-white"
                 />
               </div>
             </div>
@@ -7175,7 +7175,7 @@ export default function UnifiedTeacherScheduleApp() {
       {/* Modal Xem Toàn Văn (Preview & Export Toolbar) */}
                 {kbViewingDoc && (
                   <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-                    <div className={`bg-white border border-slate-200/80 rounded-2xl flex flex-col shadow-2xl transition-all ${kbPreviewFullScreen ? 'fixed inset-2 z-50 max-w-none max-h-none h-[calc(100vh-16px)]' : 'max-w-4xl w-full max-h-[90vh]'}`}>
+                    <div className={`bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl flex flex-col shadow-2xl transition-all ${kbPreviewFullScreen ? 'fixed inset-2 z-50 max-w-none max-h-none h-[calc(100vh-16px)]' : 'max-w-4xl w-full max-h-[90vh]'}`}>
                       {/* Header */}
                       <div className="p-4 sm:p-5 border-b border-slate-100 flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
@@ -7330,7 +7330,7 @@ export default function UnifiedTeacherScheduleApp() {
                           </div>
                           <iframe
                             src={kbPreviewPdfUrl}
-                            className="w-full flex-1 rounded-xl border border-slate-200 bg-white"
+                            className="w-full flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-white"
                             style={{ minHeight: '520px' }}
                             title={kbViewingDoc.title}
                           />
@@ -7338,7 +7338,7 @@ export default function UnifiedTeacherScheduleApp() {
                       ) : (
                         <div className="p-5 overflow-y-auto flex-1 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap leading-relaxed font-sans bg-slate-50">
                           {/* Search inside doc bar */}
-                          <div className="mb-3 flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm">
+                          <div className="mb-3 flex items-center gap-2 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                             <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                             <input
                               type="text"
@@ -7432,7 +7432,7 @@ export default function UnifiedTeacherScheduleApp() {
                               </div>
                             ) : kbViewingDoc.content && (kbViewingDoc.content.includes('<table') || kbViewingDoc.content.includes('<html') || kbViewingDoc.content.includes('<div') || kbViewingDoc.content.includes('<!DOCTYPE')) ? (
                               <div
-                                className="bg-white text-slate-900 p-6 rounded-xl overflow-x-auto shadow-inner font-sans selection:bg-blue-100"
+                                className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-6 rounded-xl overflow-x-auto shadow-inner font-sans selection:bg-blue-100 border border-slate-200 dark:border-slate-800"
                                 dangerouslySetInnerHTML={{ __html: kbViewingDoc.content }}
                               />
                             ) : (
@@ -7443,7 +7443,7 @@ export default function UnifiedTeacherScheduleApp() {
                       )}
 
                       {/* Footer Toolbar: Download Original File (Tải đúng định dạng), Export Word, Export Text, Edit, Close */}
-                      <div className="p-3.5 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2.5 bg-white">
+                      <div className="p-3.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between flex-wrap gap-2.5 bg-white dark:bg-slate-900">
                         <div className="flex items-center gap-2 flex-wrap">
                           {kbViewingDoc.fileName ? (
                             <button
@@ -7523,11 +7523,11 @@ export default function UnifiedTeacherScheduleApp() {
       {/* MODAL TRÌNH GIẢNG DẠY & HỌC LIỆU 6-IN-1 (GIÁO ÁN, SLIDE, MINI GAME, MINDMAP, VIDEO, RUBRIC) */}
       {viewingLessonPackage && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 animate-fade-in">
-          <div className={`bg-white border border-slate-200/80 rounded-2xl flex flex-col shadow-2xl transition-all overflow-hidden ${
+          <div className={`bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl flex flex-col shadow-2xl transition-all overflow-hidden ${
             lessonPackageFullScreen ? 'fixed inset-2 z-50 max-w-none max-h-none h-[calc(100vh-16px)]' : 'max-w-5xl w-full max-h-[92vh]'
           }`}>
             {/* Header */}
-            <div className="p-4 sm:p-5 border-b border-slate-100 bg-white flex items-start justify-between gap-3 shrink-0">
+            <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-start justify-between gap-3 shrink-0">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap mb-1.5">
                   <span className="text-xs text-purple-300 font-bold px-2.5 py-0.5 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center gap-1">
@@ -7620,7 +7620,7 @@ export default function UnifiedTeacherScheduleApp() {
                 className={`px-3.5 py-2.5 rounded-t-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
                   lessonPackageActiveTab === 'plan'
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200/80'
+                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700'
                 }`}
               >
                 <FileText className="w-4 h-4" />
@@ -7633,7 +7633,7 @@ export default function UnifiedTeacherScheduleApp() {
                 className={`px-3.5 py-2.5 rounded-t-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
                   lessonPackageActiveTab === 'slides'
                     ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/30'
-                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200/80'
+                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700'
                 }`}
               >
                 <Monitor className="w-4 h-4" />
@@ -7646,7 +7646,7 @@ export default function UnifiedTeacherScheduleApp() {
                 className={`px-3.5 py-2.5 rounded-t-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
                   lessonPackageActiveTab === 'game'
                     ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
-                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200/80'
+                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700'
                 }`}
               >
                 <Gamepad2 className="w-4 h-4" />
@@ -7659,7 +7659,7 @@ export default function UnifiedTeacherScheduleApp() {
                 className={`px-3.5 py-2.5 rounded-t-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
                   lessonPackageActiveTab === 'mindmap'
                     ? 'bg-teal-600 text-white shadow-lg shadow-teal-600/30'
-                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200/80'
+                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700'
                 }`}
               >
                 <Network className="w-4 h-4" />
@@ -7672,7 +7672,7 @@ export default function UnifiedTeacherScheduleApp() {
                 className={`px-3.5 py-2.5 rounded-t-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
                   lessonPackageActiveTab === 'video'
                     ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
-                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200/80'
+                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700'
                 }`}
               >
                 <Video className="w-4 h-4" />
@@ -7685,7 +7685,7 @@ export default function UnifiedTeacherScheduleApp() {
                 className={`px-3.5 py-2.5 rounded-t-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
                   lessonPackageActiveTab === 'audit'
                     ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30'
-                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200/80'
+                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700'
                 }`}
               >
                 <Award className="w-4 h-4" />
@@ -7698,7 +7698,7 @@ export default function UnifiedTeacherScheduleApp() {
                 className={`px-3.5 py-2.5 rounded-t-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
                   lessonPackageActiveTab === 'all'
                     ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-600/30'
-                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200/80'
+                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700'
                 }`}
               >
                 <BookOpen className="w-4 h-4" />
@@ -7711,7 +7711,7 @@ export default function UnifiedTeacherScheduleApp() {
 
               {/* FORM CHỈNH SỬA GIÁO ÁN AI (KHI ĐANG Ở EDIT MODE) */}
               {isEditingLessonPackage && (
-                <div className="p-5 sm:p-6 bg-white border-2 border-purple-200 rounded-2xl shadow-sm space-y-5 animate-fade-in">
+                <div className="p-5 sm:p-6 bg-white dark:bg-slate-800/80 border-2 border-purple-200 dark:border-purple-800/60 rounded-2xl shadow-sm space-y-5 animate-fade-in">
                   <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                     <div className="flex items-center gap-2">
                       <Edit3 className="w-5 h-5 text-purple-400" />
@@ -7743,7 +7743,7 @@ export default function UnifiedTeacherScheduleApp() {
                         type="text"
                         value={editLessonTitle}
                         onChange={(e) => setEditLessonTitle(e.target.value)}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                        className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
                       />
                     </div>
                     <div>
@@ -7752,7 +7752,7 @@ export default function UnifiedTeacherScheduleApp() {
                         type="text"
                         value={editLessonSubject}
                         onChange={(e) => setEditLessonSubject(e.target.value)}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                        className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
                       />
                     </div>
                     <div>
@@ -7763,14 +7763,14 @@ export default function UnifiedTeacherScheduleApp() {
                           value={editLessonClass}
                           onChange={(e) => setEditLessonClass(e.target.value)}
                           placeholder="10A1"
-                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                          className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
                         />
                         <input
                           type="number"
                           value={editLessonDuration}
                           onChange={(e) => setEditLessonDuration(Number(e.target.value))}
                           placeholder="45"
-                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                          className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
                         />
                       </div>
                     </div>
@@ -7786,7 +7786,7 @@ export default function UnifiedTeacherScheduleApp() {
                           rows={2}
                           value={editKnowledgeObj}
                           onChange={(e) => setEditKnowledgeObj(e.target.value)}
-                          className="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                          className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-slate-800 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                         />
                       </div>
                       <div>
@@ -7795,7 +7795,7 @@ export default function UnifiedTeacherScheduleApp() {
                           rows={2}
                           value={editCompetenciesObj}
                           onChange={(e) => setEditCompetenciesObj(e.target.value)}
-                          className="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                          className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-slate-800 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                         />
                       </div>
                       <div>
@@ -7804,7 +7804,7 @@ export default function UnifiedTeacherScheduleApp() {
                           rows={2}
                           value={editQualitiesObj}
                           onChange={(e) => setEditQualitiesObj(e.target.value)}
-                          className="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                          className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-slate-800 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                         />
                       </div>
                     </div>
@@ -7820,7 +7820,7 @@ export default function UnifiedTeacherScheduleApp() {
                           rows={2}
                           value={editTeacherEquip}
                           onChange={(e) => setEditTeacherEquip(e.target.value)}
-                          className="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                          className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-slate-800 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                         />
                       </div>
                       <div>
@@ -7829,7 +7829,7 @@ export default function UnifiedTeacherScheduleApp() {
                           rows={2}
                           value={editStudentEquip}
                           onChange={(e) => setEditStudentEquip(e.target.value)}
-                          className="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                          className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-slate-800 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                         />
                       </div>
                     </div>
@@ -7847,14 +7847,14 @@ export default function UnifiedTeacherScheduleApp() {
                         value={editAct1Name}
                         onChange={(e) => setEditAct1Name(e.target.value)}
                         placeholder="Tên hoạt động"
-                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-800 text-xs mb-1"
+                        className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-800 dark:text-white text-xs mb-1"
                       />
                       <textarea
                         rows={2}
                         value={editAct1Content}
                         onChange={(e) => setEditAct1Content(e.target.value)}
                         placeholder="Nội dung hoạt động"
-                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-800 text-xs"
+                        className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-800 dark:text-white text-xs"
                       />
                     </div>
 
@@ -7866,14 +7866,14 @@ export default function UnifiedTeacherScheduleApp() {
                         value={editAct2Name}
                         onChange={(e) => setEditAct2Name(e.target.value)}
                         placeholder="Tên hoạt động"
-                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-800 text-xs mb-1"
+                        className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-800 dark:text-white text-xs mb-1"
                       />
                       <textarea
                         rows={2}
                         value={editAct2Content}
                         onChange={(e) => setEditAct2Content(e.target.value)}
                         placeholder="Nội dung hoạt động"
-                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-800 text-xs"
+                        className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-800 dark:text-white text-xs"
                       />
                     </div>
 
@@ -7885,14 +7885,14 @@ export default function UnifiedTeacherScheduleApp() {
                         value={editAct3Name}
                         onChange={(e) => setEditAct3Name(e.target.value)}
                         placeholder="Tên hoạt động"
-                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-800 text-xs mb-1"
+                        className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-800 dark:text-white text-xs mb-1"
                       />
                       <textarea
                         rows={2}
                         value={editAct3Content}
                         onChange={(e) => setEditAct3Content(e.target.value)}
                         placeholder="Nội dung hoạt động"
-                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-800 text-xs"
+                        className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-800 dark:text-white text-xs"
                       />
                     </div>
 
@@ -7904,14 +7904,14 @@ export default function UnifiedTeacherScheduleApp() {
                         value={editAct4Name}
                         onChange={(e) => setEditAct4Name(e.target.value)}
                         placeholder="Tên hoạt động"
-                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-800 text-xs mb-1"
+                        className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-800 dark:text-white text-xs mb-1"
                       />
                       <textarea
                         rows={2}
                         value={editAct4Content}
                         onChange={(e) => setEditAct4Content(e.target.value)}
                         placeholder="Nội dung hoạt động"
-                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-800 text-xs"
+                        className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-slate-800 dark:text-white text-xs"
                       />
                     </div>
                   </div>
@@ -7965,7 +7965,7 @@ export default function UnifiedTeacherScheduleApp() {
                     </div>
                   </div>
 
-                  <div className="bg-white text-slate-900 p-6 sm:p-10 rounded-2xl shadow-xl font-sans overflow-x-auto selection:bg-blue-100">
+                  <div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-6 sm:p-10 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 font-sans overflow-x-auto selection:bg-blue-100">
                     <div
                       dangerouslySetInnerHTML={{
                         __html: viewingLessonPackage.standard === 5512 && viewingLessonPackage.plan5512
@@ -8003,7 +8003,7 @@ export default function UnifiedTeacherScheduleApp() {
                     {viewingLessonPackage.slides.map((s) => (
                       <div
                         key={s.slideNumber}
-                        className="bg-white border-2 border-sky-200 rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-sm hover:border-sky-300 transition-all space-y-3"
+                        className="bg-white dark:bg-slate-800/80 border-2 border-sky-200 dark:border-sky-800/60 rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-sm hover:border-sky-300 transition-all space-y-3 text-slate-800 dark:text-slate-100"
                       >
                         <div>
                           <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-2.5">
@@ -8086,7 +8086,7 @@ export default function UnifiedTeacherScheduleApp() {
                     {viewingLessonPackage.miniGame.map((q) => (
                       <div
                         key={q.id}
-                        className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-3 shadow-sm"
+                        className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 sm:p-5 space-y-3 shadow-sm text-slate-800 dark:text-slate-100"
                       >
                         <div className="flex items-center justify-between flex-wrap gap-2">
                           <span className="text-xs font-bold text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-lg border border-purple-500/20">
@@ -8107,7 +8107,7 @@ export default function UnifiedTeacherScheduleApp() {
                                 className={`p-3 rounded-xl border flex items-center justify-between transition-all ${
                                   isCorrect
                                     ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-200 font-semibold'
-                                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
                                 }`}
                               >
                                 <span>{opt}</span>
@@ -8184,7 +8184,7 @@ export default function UnifiedTeacherScheduleApp() {
                   </div>
 
                   {/* Khung Mermaid Code */}
-                  <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-2">
+                  <div className="bg-white dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-2">
                     <div className="flex items-center justify-between text-xs text-slate-400">
                       <span className="font-semibold text-slate-700">📊 Mã nguồn Mermaid.js (Hỗ trợ nhúng vào Notion, Canva, Obsidian):</span>
                     </div>
@@ -8219,7 +8219,7 @@ export default function UnifiedTeacherScheduleApp() {
                     {viewingLessonPackage.videoScript.map((sc) => (
                       <div
                         key={sc.sceneNumber}
-                        className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-3 shadow-sm"
+                        className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 sm:p-5 space-y-3 shadow-sm text-slate-800 dark:text-slate-100"
                       >
                         <div className="flex items-center justify-between flex-wrap gap-2 border-b border-slate-100 pb-2">
                           <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
@@ -8299,7 +8299,7 @@ export default function UnifiedTeacherScheduleApp() {
                     {viewingLessonPackage.auditScore.criteria.map((c, i) => (
                       <div
                         key={i}
-                        className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm"
+                        className="bg-white dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm"
                       >
                         <div className="space-y-1 flex-1">
                           <div className="flex items-center gap-2">
@@ -8376,7 +8376,7 @@ export default function UnifiedTeacherScheduleApp() {
                     </button>
                   </div>
 
-                  <div className="bg-white text-slate-900 p-6 sm:p-10 rounded-2xl shadow-xl font-sans overflow-x-auto selection:bg-blue-100">
+                  <div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-6 sm:p-10 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 font-sans overflow-x-auto selection:bg-blue-100">
                     <div
                       dangerouslySetInnerHTML={{
                         __html: fullPackageToDocHtml(viewingLessonPackage)
@@ -8389,7 +8389,7 @@ export default function UnifiedTeacherScheduleApp() {
             </div>
 
             {/* FOOTER TOOLBAR */}
-            <div className="p-3.5 sm:p-4 border-t border-slate-100 bg-white flex items-center justify-between flex-wrap gap-3 shrink-0">
+            <div className="p-3.5 sm:p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between flex-wrap gap-3 shrink-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <button
                   type="button"

@@ -10,21 +10,29 @@ import {
   Award,
   ChevronRight,
   Search,
-  Share2,
   FileText,
   HelpCircle,
   Gamepad2,
-  Presentation,
   MapPin,
   CheckCircle2,
   AlertCircle,
-  ExternalLink,
   Users,
-  Smartphone,
   RefreshCw,
   Sun,
-  Moon
+  Moon,
+  Star,
+  Heart,
+  Smile,
+  Check,
+  ArrowRight,
+  ExternalLink,
+  Volume2,
+  Play,
+  RotateCcw,
+  Globe,
+  BellRing
 } from 'lucide-react';
+import { Language, t, getStoredLanguage, saveStoredLanguage } from '../app/i18n';
 
 interface EventItem {
   id: string | number;
@@ -39,6 +47,7 @@ interface EventItem {
   notes?: string;
   attachmentName?: string;
   attachmentUrl?: string;
+  teacherName?: string;
 }
 
 interface StudentKudos {
@@ -48,26 +57,136 @@ interface StudentKudos {
   className: string;
   gender: string;
   kudosPoints: number;
+  badge?: string;
 }
 
+interface HomeworkTask {
+  id: string;
+  subject: string;
+  title: string;
+  dueDate: string;
+  points: number;
+  isCompleted: boolean;
+  notes: string;
+}
+
+const KID_AVATARS = [
+  { id: 'cat', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=KidCat', name: 'Mèo Thông Thái' },
+  { id: 'bear', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=KidBear', name: 'Gấu Chăm Chỉ' },
+  { id: 'fox', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=KidFox', name: 'Cáo Nhanh Trí' },
+  { id: 'bunny', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=KidBunny', name: 'Thỏ Hoạt Bát' },
+  { id: 'astro', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=KidAstro', name: 'Phi Hành Gia' },
+  { id: 'owl', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=KidOwl', name: 'Cú Học Giỏi' }
+];
+
 export default function StudentPortalPage() {
+  const [lang, setLang] = useState<Language>('vi');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  // Student Info State
+  const [studentName, setStudentName] = useState<string>('Nguyễn Bảo An');
+  const [studentAvatar, setStudentAvatar] = useState<string>(KID_AVATARS[0].url);
+  const [studentStars, setStudentStars] = useState<number>(125);
+  const [isChangingAvatar, setIsChangingAvatar] = useState<boolean>(false);
+
+  // Connection & Class State
   const [syncCode, setSyncCode] = useState<string>('');
-  const [selectedClass, setSelectedClass] = useState<string>('');
-  const [availableClasses, setAvailableClasses] = useState<{ id: string; name: string; grade?: string }[]>([]);
+  const [selectedClass, setSelectedClass] = useState<string>('Lớp 3A1');
+  const [availableClasses, setAvailableClasses] = useState<{ id: string; name: string }[]>([
+    { id: '1', name: 'Lớp 1A' },
+    { id: '2', name: 'Lớp 2B' },
+    { id: '3', name: 'Lớp 3A1' },
+    { id: '4', name: 'Lớp 4A' },
+    { id: '5', name: 'Lớp 5A' }
+  ]);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [kudosList, setKudosList] = useState<StudentKudos[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [viewDate, setViewDate] = useState<string>('');
-  const [viewMode, setViewMode] = useState<'today' | 'week' | 'kudos'>('today');
-  const [selectedEventForDoc, setSelectedEventForDoc] = useState<EventItem | null>(null);
-  const [docModalTab, setDocModalTab] = useState<'mindmap' | 'slide' | 'game' | 'summary'>('mindmap');
+
+  // Active Main Tab: 'timetable' | 'homework' | 'materials' | 'kudos'
+  const [studentTab, setStudentTab] = useState<'timetable' | 'homework' | 'materials' | 'kudos'>('timetable');
+
+  // Completed Homework State (saved locally)
+  const [homeworkList, setHomeworkList] = useState<HomeworkTask[]>([
+    {
+      id: 'hw1',
+      subject: 'Toán học',
+      title: 'Luyện tập bảng nhân 7 và bài tập trang 24 SGK',
+      dueDate: 'Hôm nay',
+      points: 10,
+      isCompleted: false,
+      notes: 'Làm bài vào vở ô ly nộp cho cô vào sáng mai nhé!'
+    },
+    {
+      id: 'hw2',
+      subject: 'Tiếng Việt',
+      title: 'Luyện đọc diễn cảm bài "Mùa hoa phượng vĩ" và trả lời 3 câu hỏi',
+      dueDate: 'Ngày mai',
+      points: 15,
+      isCompleted: true,
+      notes: 'Đọc to, rõ ràng và truyền cảm cho bố mẹ cùng nghe.'
+    },
+    {
+      id: 'hw3',
+      subject: 'Tiếng Anh',
+      title: 'Học 5 từ mới chủ đề School Items & nghe phát âm audio bài 4',
+      dueDate: 'Thứ Năm',
+      points: 10,
+      isCompleted: false,
+      notes: 'Ôn luyện mẫu câu: "What is this? - It is a pencil."'
+    }
+  ]);
+
+  const [cheerMsg, setCheerMsg] = useState<string | null>(null);
 
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const isEn = lang === 'en';
 
-  // Đọc tham số từ URL khi nạp trang
+  // Toggle Theme & Language
   useEffect(() => {
-    setViewDate(todayStr);
+    try {
+      const savedTheme = localStorage.getItem('smart_teacher_theme') as 'light' | 'dark' | null;
+      if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        setTheme('dark');
+        document.documentElement.classList.add('dark');
+      } else {
+        setTheme('light');
+        document.documentElement.classList.remove('dark');
+      }
+
+      const savedLang = getStoredLanguage();
+      setLang(savedLang);
+
+      const savedName = localStorage.getItem('smart_student_name');
+      if (savedName) setStudentName(savedName);
+
+      const savedAvatar = localStorage.getItem('smart_student_avatar');
+      if (savedAvatar) setStudentAvatar(savedAvatar);
+
+      const savedStars = localStorage.getItem('smart_student_stars');
+      if (savedStars) setStudentStars(parseInt(savedStars, 10) || 125);
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === 'light' ? 'dark' : 'light';
+    setTheme(next);
+    localStorage.setItem('smart_teacher_theme', next);
+    if (next === 'dark') document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
+  };
+
+  const toggleLanguage = () => {
+    const next: Language = lang === 'vi' ? 'en' : 'vi';
+    setLang(next);
+    saveStoredLanguage(next);
+  };
+
+  // Load from URL / LocalStorage
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const codeFromUrl = params.get('code') || localStorage.getItem('smart_student_sync_code') || '';
@@ -77,11 +196,13 @@ export default function StudentPortalPage() {
         setSyncCode(codeFromUrl);
         if (classFromUrl) setSelectedClass(classFromUrl);
         fetchClassData(codeFromUrl, classFromUrl);
+      } else {
+        // Fallback default elementary mock events if no sync code provided
+        setEvents(getDefaultElementarySchedule(isEn));
       }
     }
-  }, [todayStr]);
+  }, [isEn]);
 
-  // Tải dữ liệu lớp học từ API Portal
   const fetchClassData = async (code: string, cName?: string) => {
     if (!code) return;
     setIsLoading(true);
@@ -92,513 +213,854 @@ export default function StudentPortalPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setErrorMessage(data.error || 'Không tìm thấy dữ liệu lớp học.');
+        setErrorMessage(data.error || (isEn ? 'Class timetable data not found.' : 'Không tìm thấy dữ liệu lớp học.'));
         setIsLoading(false);
         return;
       }
 
-      setAvailableClasses(data.availableClasses || []);
-      const matchedClass = data.currentClass || (data.availableClasses?.[0]?.name) || cName || '';
-      setSelectedClass(matchedClass);
-      setEvents(data.events || []);
-      setKudosList(data.kudosLeaderboard || []);
-
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('smart_student_sync_code', code);
-        if (matchedClass) localStorage.setItem('smart_student_class', matchedClass);
+      if (data.availableClasses && data.availableClasses.length > 0) {
+        setAvailableClasses(data.availableClasses);
       }
+      const matchedClass = data.currentClass || (data.availableClasses?.[0]?.name) || cName || 'Lớp 3A1';
+      setSelectedClass(matchedClass);
+      
+      if (data.events && data.events.length > 0) {
+        setEvents(data.events);
+      } else {
+        setEvents(getDefaultElementarySchedule(isEn));
+      }
+
+      if (data.kudosLeaderboard && data.kudosLeaderboard.length > 0) {
+        setKudosList(data.kudosLeaderboard);
+      }
+
+      localStorage.setItem('smart_student_sync_code', code);
+      if (matchedClass) localStorage.setItem('smart_student_class', matchedClass);
     } catch (err: any) {
-      setErrorMessage('Lỗi kết nối máy chủ: ' + (err?.message || String(err)));
+      setErrorMessage(isEn ? 'Server connection error: ' + err.message : 'Lỗi kết nối máy chủ: ' + err.message);
+      setEvents(getDefaultElementarySchedule(isEn));
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Đổi lớp học
   const handleSelectClass = (clsName: string) => {
     setSelectedClass(clsName);
     if (syncCode) fetchClassData(syncCode, clsName);
   };
 
-  // Ca học hôm nay
-  const todayEvents = useMemo(() => {
-    return events.filter(e => e.date === todayStr);
-  }, [events, todayStr]);
+  const handleToggleHomework = (hwId: string) => {
+    setHomeworkList(prev => prev.map(hw => {
+      if (hw.id === hwId) {
+        const nextState = !hw.isCompleted;
+        if (nextState) {
+          // Add stars
+          const added = hw.points || 10;
+          setStudentStars(s => {
+            const nextTotal = s + added;
+            localStorage.setItem('smart_student_stars', String(nextTotal));
+            return nextTotal;
+          });
+          setCheerMsg(isEn ? `🎉 Hooray! You earned +${added} stars!` : `🎉 Tuyệt vời! Bạn nhận được +${added} ngôi sao chăm chỉ! ⭐`);
+          setTimeout(() => setCheerMsg(null), 3500);
+        }
+        return { ...hw, isCompleted: nextState };
+      }
+      return hw;
+    }));
+  };
 
-  // Ca học theo ngày chọn
-  const filteredEvents = useMemo(() => {
-    if (viewMode === 'today') {
-      return events.filter(e => e.date === todayStr);
+  const handlePickAvatar = (avatarUrl: string) => {
+    setStudentAvatar(avatarUrl);
+    localStorage.setItem('smart_student_avatar', avatarUrl);
+    setIsChangingAvatar(false);
+  };
+
+  function getDefaultElementarySchedule(english: boolean): EventItem[] {
+    if (english) {
+      return [
+        {
+          id: 'e1',
+          title: 'Mathematics',
+          subject: 'Mathematics',
+          className: 'Class 3A1',
+          date: todayStr,
+          startTime: '07:30',
+          endTime: '08:15',
+          room: 'Room 204',
+          sessionType: 'Period 1',
+          notes: 'Multiplication table 7, practice arithmetic exercises in workbooks.',
+          teacherName: 'Ms. Tran Thi Mai'
+        },
+        {
+          id: 'e2',
+          title: 'Vietnamese Reading',
+          subject: 'Vietnamese',
+          className: 'Class 3A1',
+          date: todayStr,
+          startTime: '08:25',
+          endTime: '09:10',
+          room: 'Room 204',
+          sessionType: 'Period 2',
+          notes: 'Reading comprehension & vocabulary practice.',
+          teacherName: 'Mr. Le Minh Duc'
+        },
+        {
+          id: 'e3',
+          title: 'English Fun Time',
+          subject: 'English',
+          className: 'Class 3A1',
+          date: todayStr,
+          startTime: '09:30',
+          endTime: '10:15',
+          room: 'English Lab 1',
+          sessionType: 'Period 3',
+          notes: 'Unit 4: Our School Objects - Singing and interactive games.',
+          teacherName: 'Teacher Sarah'
+        },
+        {
+          id: 'e4',
+          title: 'Creative Arts',
+          subject: 'Arts & Crafts',
+          className: 'Class 3A1',
+          date: todayStr,
+          startTime: '10:25',
+          endTime: '11:10',
+          room: 'Art Room B',
+          sessionType: 'Period 4',
+          notes: 'Draw your favorite dream landscape with color pencils.',
+          teacherName: 'Ms. Pham Thu Ha'
+        }
+      ];
     }
-    return events;
-  }, [events, viewMode, todayStr]);
+
+    return [
+      {
+        id: 'e1',
+        title: 'Toán học',
+        subject: 'Toán học',
+        className: 'Lớp 3A1',
+        date: todayStr,
+        startTime: '07:30',
+        endTime: '08:15',
+        room: 'Phòng 204',
+        sessionType: 'Tiết 1',
+        notes: 'Học bảng nhân 7, làm các bài toán thực hành đố vui có thưởng.',
+        teacherName: 'Cô Trần Thị Mai'
+      },
+      {
+        id: 'e2',
+        title: 'Tiếng Việt',
+        subject: 'Tiếng Việt',
+        className: 'Lớp 3A1',
+        date: todayStr,
+        startTime: '08:25',
+        endTime: '09:10',
+        room: 'Phòng 204',
+        sessionType: 'Tiết 2',
+        notes: 'Tập đọc bài "Mùa hoa phượng", trả lời câu hỏi và thi đọc diễn cảm.',
+        teacherName: 'Thầy Lê Minh Đức'
+      },
+      {
+        id: 'e3',
+        title: 'Tiếng Anh (English)',
+        subject: 'Tiếng Anh',
+        className: 'Lớp 3A1',
+        date: todayStr,
+        startTime: '09:30',
+        endTime: '10:15',
+        room: 'Phòng Ngoại ngữ 1',
+        sessionType: 'Tiết 3',
+        notes: 'Chủ đề: Trường học thân thiện (Our School). Hát và chơi đố chữ.',
+        teacherName: 'Cô Sarah & Cô Thu Trang'
+      },
+      {
+        id: 'e4',
+        title: 'Mỹ thuật',
+        subject: 'Mỹ thuật',
+        className: 'Lớp 3A1',
+        date: todayStr,
+        startTime: '10:25',
+        endTime: '11:10',
+        room: 'Phòng Mỹ thuật',
+        sessionType: 'Tiết 4',
+        notes: 'Vẽ tranh phong cảnh trường em bằng sáp màu và đất nặn.',
+        teacherName: 'Cô Phạm Thu Hà'
+      }
+    ];
+  }
+
+  // Get color per subject
+  const getSubjectTheme = (sub: string) => {
+    const s = sub.toLowerCase();
+    if (s.includes('toán') || s.includes('math')) {
+      return {
+        bg: 'from-amber-400 to-orange-500',
+        lightBg: 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800',
+        text: 'text-amber-700 dark:text-amber-300',
+        icon: '📐'
+      };
+    }
+    if (s.includes('việt') || s.includes('văn') || s.includes('literat')) {
+      return {
+        bg: 'from-emerald-400 to-teal-600',
+        lightBg: 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800',
+        text: 'text-emerald-700 dark:text-emerald-300',
+        icon: '📖'
+      };
+    }
+    if (s.includes('anh') || s.includes('english')) {
+      return {
+        bg: 'from-blue-500 to-indigo-600',
+        lightBg: 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800',
+        text: 'text-blue-700 dark:text-blue-300',
+        icon: '🌍'
+      };
+    }
+    if (s.includes('mỹ thuật') || s.includes('art')) {
+      return {
+        bg: 'from-pink-400 to-rose-500',
+        lightBg: 'bg-pink-50 dark:bg-pink-950/40 border-pink-200 dark:border-pink-800',
+        text: 'text-pink-700 dark:text-pink-300',
+        icon: '🎨'
+      };
+    }
+    return {
+      bg: 'from-purple-400 to-indigo-600',
+      lightBg: 'bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800',
+      text: 'text-purple-700 dark:text-purple-300',
+      icon: '⭐'
+    };
+  };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased selection:bg-blue-600 selection:text-white">
-      {/* Top Navigation Bar */}
-      <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 sm:px-6">
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 p-2 shadow-md shadow-indigo-950/20 flex items-center justify-center border border-indigo-400/30">
-              <BookOpen className="w-5 h-5 text-emerald-400" />
+    <div className="min-h-screen bg-[#FFFDF8] dark:bg-[#0A0E1A] text-slate-900 dark:text-slate-100 font-sans selection:bg-amber-200 selection:text-amber-900 pb-16 transition-colors duration-200">
+      
+      {/* 1. Header thân thiện, rực rỡ */}
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#101726]/95 backdrop-blur-md border-b border-amber-100 dark:border-slate-800 px-3.5 sm:px-6 py-3 shadow-xs">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-2 sm:gap-3">
+          
+          {/* Logo EduViet Kid */}
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-amber-400 via-rose-400 to-pink-500 p-1.5 shadow-md shadow-orange-500/20 flex items-center justify-center text-white shrink-0 animate-bounce">
+              <Sparkles className="w-6 h-6" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center leading-none">
-                  <span className="text-lg font-black tracking-tight text-rose-500">Edu</span>
-                  <span className="text-lg font-black tracking-tight text-emerald-500">Viet</span>
-                </div>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">
-                  Cổng Học Sinh
+              <div className="flex items-center gap-1.5">
+                <span className="text-xl sm:text-2xl font-black text-rose-500 tracking-tight">Edu</span>
+                <span className="text-xl sm:text-2xl font-black text-emerald-500 tracking-tight">Viet</span>
+                <span className="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 text-[10px] sm:text-xs font-black border border-amber-300 dark:border-amber-700">
+                  {isEn ? 'Student Space 🎈' : 'Góc Học Sinh 🎈'}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 hidden sm:block">Không gian học tập số • Cùng tri thức – Vững tương lai</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium hidden sm:block">
+                {isEn ? 'Fun learning every day • Reaching for the stars' : 'Mỗi ngày đến trường là một ngày vui • Vươn tới ước mơ'}
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Right Tools: Language, Theme, Switch to Parent / Teacher */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            
+            {/* Language Toggle */}
+            <button
+              onClick={toggleLanguage}
+              className="h-9 sm:h-10 px-2.5 sm:px-3 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 flex items-center gap-1 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer"
+              title={isEn ? "Switch to Vietnamese" : "Chuyển sang Tiếng Anh"}
+            >
+              <Globe className="w-3.5 h-3.5 text-emerald-500" />
+              <span>{isEn ? '🇬🇧 EN' : '🇻🇳 VI'}</span>
+            </button>
+
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-amber-400 transition-all cursor-pointer shadow-xs"
+              title={theme === 'dark' ? "Chế độ Sáng" : "Chế độ Tối"}
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
+            </button>
+
+            {/* Link to Parent */}
             <Link
               href={syncCode ? `/parent?code=${syncCode}` : '/parent'}
-              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition-colors"
+              className="hidden md:flex items-center gap-1 px-3 py-2 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold hover:bg-emerald-100 transition-colors"
             >
-              <span>Dành cho Phụ huynh</span>
-              <ChevronRight className="w-3.5 h-3.5" />
+              <span>{isEn ? 'Parents' : 'Phụ huynh'}</span>
             </Link>
 
+            {/* Link to Teacher App */}
             <Link
               href="/app"
-              className="px-3 py-1.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 text-xs font-semibold hidden md:flex items-center gap-1"
+              className="px-3 py-2 rounded-full bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold shadow-xs transition-transform active:scale-95 flex items-center gap-1"
             >
-              <span>Giáo viên</span>
+              <span>{isEn ? 'Teacher App' : 'Giáo viên'}</span>
             </Link>
           </div>
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="max-w-5xl mx-auto px-4 py-6 sm:px-6 space-y-6">
-        {/* Class Selection & Link Code Bar */}
-        <section className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-blue-400" />
-              <span>Lớp của bạn:</span>
-            </span>
+      {/* Cheer Banner upon completing homework */}
+      {cheerMsg && (
+        <div className="bg-gradient-to-r from-amber-500 via-rose-500 to-pink-500 text-white text-center py-2.5 px-4 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg animate-fade-in sticky top-14 z-30">
+          <Star className="w-4 h-4 fill-white animate-spin" />
+          <span>{cheerMsg}</span>
+        </div>
+      )}
 
-            {availableClasses.length > 0 ? (
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {availableClasses.map(c => (
-                  <button
-                    key={c.id || c.name}
-                    onClick={() => handleSelectClass(c.name)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      selectedClass.toLowerCase() === c.name.toLowerCase()
-                        ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
-                        : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
-                    }`}
-                  >
-                    {c.name}
-                  </button>
-                ))}
+      {/* Main Content Area */}
+      <main className="max-w-4xl mx-auto px-3.5 sm:px-6 py-4 space-y-4 sm:space-y-5">
+        
+        {/* 2. Hero Student Profile Card: Avatar + Name + Class + Stars */}
+        <section className="relative rounded-3xl p-4 sm:p-6 bg-gradient-to-r from-amber-100/90 via-orange-50 to-pink-100/80 dark:from-slate-900 dark:via-[#161f36] dark:to-slate-900 border-2 border-amber-200/80 dark:border-slate-800 shadow-md flex flex-col sm:flex-row items-center justify-between gap-4 overflow-hidden">
+          
+          <div className="flex items-center gap-4 text-center sm:text-left">
+            {/* Avatar with click to change */}
+            <div className="relative group cursor-pointer" onClick={() => setIsChangingAvatar(!isChangingAvatar)}>
+              <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-tr from-amber-400 to-rose-400 p-1 shadow-lg shadow-amber-500/20 overflow-hidden group-hover:scale-105 transition-transform">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={studentAvatar}
+                  alt={studentName}
+                  className="w-full h-full object-cover rounded-2xl bg-white"
+                />
               </div>
-            ) : (
-              <span className="text-xs text-slate-300 font-bold bg-slate-800 px-3 py-1 rounded-xl">
-                {selectedClass || 'Chưa chọn lớp'}
+              <span className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black shadow-sm">
+                {isEn ? 'Change' : 'Đổi hình'}
               </span>
-            )}
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center justify-center sm:justify-start gap-2">
+                <h2 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                  {studentName}
+                </h2>
+                <span className="text-lg">⭐</span>
+              </div>
+
+              <p className="text-xs sm:text-sm font-bold text-emerald-700 dark:text-emerald-400 flex items-center justify-center sm:justify-start gap-1.5">
+                <span>{selectedClass}</span>
+                <span className="text-slate-300">•</span>
+                <span className="text-slate-600 dark:text-slate-300 font-medium">Trường TH Việt Nam</span>
+              </p>
+
+              <p className="text-xs text-slate-500 dark:text-slate-400 italic">
+                {isEn ? '"Curious learner, bright future!"' : '"Chăm ngoan, học giỏi, vâng lời thầy cô!"'}
+              </p>
+            </div>
           </div>
 
-          {/* Sync Code Input for direct lookup */}
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              placeholder="Nhập mã lớp / trường..."
-              value={syncCode}
-              onChange={(e) => setSyncCode(e.target.value.toUpperCase())}
-              className="px-3 py-1.5 text-xs rounded-xl bg-slate-950 border border-slate-700 text-white font-mono uppercase tracking-wider focus:outline-none focus:border-blue-500 w-36 sm:w-44"
-            />
-            <button
-              onClick={() => fetchClassData(syncCode, selectedClass)}
-              disabled={isLoading || !syncCode}
-              className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-blue-600/20 disabled:opacity-50 cursor-pointer"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-              <span>Xem TKB</span>
-            </button>
+          {/* Star Kudos Reward Box */}
+          <div className="flex sm:flex-col items-center justify-center gap-3 sm:gap-1 bg-white/90 dark:bg-slate-800/90 p-3 sm:p-4 rounded-2xl border border-amber-200 dark:border-slate-700 shadow-sm w-full sm:w-auto">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl bg-amber-400 text-white flex items-center justify-center shadow-md animate-bounce">
+                <Star className="w-5 h-5 fill-white text-white" />
+              </div>
+              <div className="text-left">
+                <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">
+                  {isEn ? "Stars Collected" : "Sao chăm chỉ"}
+                </p>
+                <p className="text-lg sm:text-xl font-black text-amber-600 dark:text-amber-400 leading-none">
+                  {studentStars} ⭐
+                </p>
+              </div>
+            </div>
+            <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-300 dark:border-emerald-800">
+              {isEn ? "Rank: Little Star 🏆" : "Hạng: Ngôi Sao Nhí 🏆"}
+            </span>
           </div>
         </section>
 
-        {/* Error Alert */}
-        {errorMessage && (
-          <div className="bg-red-950/40 border border-red-800/60 rounded-2xl p-4 flex items-start gap-3 text-xs text-red-200">
-            <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold text-red-300">Không tìm thấy dữ liệu thời khóa biểu</p>
-              <p className="mt-0.5 opacity-90">{errorMessage}</p>
-              <p className="mt-2 text-slate-400">Gợi ý: Thầy/Cô hãy bấm &ldquo;Đồng bộ Đám mây&rdquo; trên ứng dụng giáo viên để học sinh có thể tra cứu ngay.</p>
-            </div>
-          </div>
-        )}
-
-        {/* Navigation Tabs (Hôm nay / Cả tuần / Bảng vàng thi đua) */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setViewMode('today')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                viewMode === 'today'
-                  ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30 shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
-              }`}
-            >
-              <Clock className="w-3.5 h-3.5" />
-              <span>Tiết học Hôm nay ({todayEvents.length})</span>
-            </button>
-
-            <button
-              onClick={() => setViewMode('week')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                viewMode === 'week'
-                  ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30 shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
-              }`}
-            >
-              <Calendar className="w-3.5 h-3.5" />
-              <span>Cả tuần ({events.length})</span>
-            </button>
-
-            <button
-              onClick={() => setViewMode('kudos')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                viewMode === 'kudos'
-                  ? 'bg-amber-600/20 text-amber-300 border border-amber-500/30 shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
-              }`}
-            >
-              <Award className="w-3.5 h-3.5" />
-              <span>Bảng vàng thi đua Kudos</span>
-            </button>
-          </div>
-
-          <span className="text-xs text-slate-400 hidden sm:inline-block font-mono">
-            Hôm nay: {todayStr}
-          </span>
-        </div>
-
-        {/* TAB 1 & 2: TIẾT HỌC HÔM NAY / CẢ TUẦN */}
-        {(viewMode === 'today' || viewMode === 'week') && (
-          <div className="space-y-4">
-            {filteredEvents.length === 0 ? (
-              <div className="bg-slate-900/40 border border-slate-800 rounded-3xl p-12 text-center space-y-3">
-                <Calendar className="w-12 h-12 text-slate-600 mx-auto" />
-                <h3 className="font-bold text-slate-300 text-sm">
-                  {viewMode === 'today' ? 'Hôm nay lớp không có tiết học nào' : 'Chưa có lịch học nào cho lớp này'}
-                </h3>
-                <p className="text-xs text-slate-400 max-w-md mx-auto">
-                  Bạn có thể chọn xem tab &ldquo;Cả tuần&rdquo; hoặc liên hệ Giáo viên để cập nhật thời khóa biểu mới nhất nhé.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredEvents.map((ev, idx) => {
-                  const isToday = ev.date === todayStr;
-                  return (
-                    <div
-                      key={ev.id || idx}
-                      className={`bg-slate-900/80 border rounded-2xl p-4 shadow-lg transition-all hover:border-slate-600 flex flex-col justify-between gap-3 ${
-                        isToday ? 'border-blue-500/40 shadow-blue-950/20' : 'border-slate-800'
-                      }`}
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="px-2.5 py-1 rounded-lg bg-blue-600/20 text-blue-400 border border-blue-500/30 text-xs font-mono font-bold flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            <span>{ev.startTime} - {ev.endTime}</span>
-                          </span>
-
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                            ev.sessionType?.toLowerCase().includes('hành')
-                              ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                              : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
-                          }`}>
-                            {ev.sessionType || 'Lý thuyết'}
-                          </span>
-                        </div>
-
-                        <div>
-                          <h3 className="font-bold text-base text-white tracking-tight leading-snug">
-                            {ev.subject}
-                          </h3>
-                          <div className="flex items-center gap-3 text-xs text-slate-400 mt-1">
-                            <span className="flex items-center gap-1 font-mono text-slate-300">
-                              <MapPin className="w-3.5 h-3.5 text-cyan-400" />
-                              <span>{ev.room || 'Phòng học'}</span>
-                            </span>
-                            <span>•</span>
-                            <span className="text-slate-400 font-mono">
-                              Ngày {ev.date}
-                            </span>
-                          </div>
-                        </div>
-
-                        {ev.notes && (
-                          <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 text-xs text-slate-300 flex items-start gap-2">
-                            <BookOpen className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
-                            <span className="leading-relaxed">{ev.notes}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Action Bar for Study Materials */}
-                      <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
-                        {ev.attachmentName ? (
-                          <button
-                            onClick={() => {
-                              setSelectedEventForDoc(ev);
-                              setDocModalTab('mindmap');
-                            }}
-                            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600/30 to-cyan-600/30 hover:from-blue-600/50 hover:to-cyan-600/50 text-cyan-300 border border-cyan-500/30 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all shadow-sm"
-                          >
-                            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                            <span>Xem trước bài học (Slide / Mindmap)</span>
-                          </button>
-                        ) : (
-                          <span className="text-[11px] text-slate-400 italic">
-                            Chưa có tệp học liệu đính kèm
-                          </span>
-                        )}
-
-                        <span className="text-[11px] font-mono text-slate-400">
-                          Lớp {ev.className}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 3: BẢNG VÀNG THI ĐUA NỀ NẾP KUDOS */}
-        {viewMode === 'kudos' && (
-          <div className="space-y-6">
-            {/* Podium Top 3 */}
-            <div className="bg-gradient-to-b from-amber-500/10 via-slate-900/80 to-slate-900/60 border border-amber-500/20 rounded-3xl p-6 shadow-xl text-center space-y-4">
-              <div className="space-y-1">
-                <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold inline-flex items-center gap-1.5">
-                  <Award className="w-4 h-4" />
-                  <span>Bảng Vinh Danh Nề Nếp & 5S Tuần Này</span>
-                </span>
-                <h3 className="text-lg font-black text-white">Gương Mẫu Lớp {selectedClass}</h3>
-                <p className="text-xs text-slate-400">Điểm thi đua tích lũy từ tinh thần phát biểu, thực hành 5S xưởng và làm việc nhóm</p>
-              </div>
-
-              {kudosList.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 max-w-2xl mx-auto">
-                  {kudosList.slice(0, 3).map((st, i) => (
-                    <div
-                      key={st.id}
-                      className={`p-4 rounded-2xl border flex flex-col items-center gap-2 ${
-                        i === 0
-                          ? 'bg-amber-500/10 border-amber-500/40 shadow-lg shadow-amber-500/10 order-1 sm:order-2 sm:-translate-y-2'
-                          : i === 1
-                          ? 'bg-slate-800/80 border-slate-700 order-2 sm:order-1'
-                          : 'bg-slate-800/80 border-slate-700 order-3'
-                      }`}
-                    >
-                      <span className="text-2xl">{i === 0 ? '👑 🥇' : i === 1 ? '🥈' : '🥉'}</span>
-                      <p className="font-bold text-sm text-white text-center leading-tight">{st.fullName}</p>
-                      <span className="text-xs text-slate-400 font-mono">{st.studentCode || 'HS'}</span>
-                      <span className="px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 font-black text-sm border border-amber-500/30">
-                        +{st.kudosPoints}đ
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-slate-400 italic py-6">Chưa có dữ liệu khen thưởng nề nếp cho lớp này.</p>
-              )}
-            </div>
-
-            {/* Full Leaderboard Table */}
-            {kudosList.length > 3 && (
-              <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-lg">
-                <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-                  <h4 className="font-bold text-xs text-slate-300 uppercase tracking-wider">Danh Sách Thi Đua Chi Tiết</h4>
-                  <span className="text-xs font-mono text-slate-400">{kudosList.length} học sinh</span>
-                </div>
-                <div className="divide-y divide-slate-800 text-xs">
-                  {kudosList.slice(3).map((st, idx) => (
-                    <div key={st.id} className="p-3 px-4 flex items-center justify-between hover:bg-slate-800/40 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <span className="font-mono text-slate-400 font-bold w-6 text-center">{idx + 4}</span>
-                        <div>
-                          <p className="font-semibold text-white">{st.fullName}</p>
-                          <p className="text-[11px] text-slate-400 font-mono">{st.studentCode || 'HS'}</p>
-                        </div>
-                      </div>
-                      <span className="font-bold text-amber-400 font-mono">
-                        +{st.kudosPoints}đ
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </main>
-
-      {/* Modal Xem Trước Học Liệu Bài Dạy (Slide / Mindmap / Mini Game) */}
-      {selectedEventForDoc && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-            {/* Modal Header */}
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-[10px] font-bold">
-                    Học Liệu Số
-                  </span>
-                  <h3 className="font-bold text-sm text-white truncate max-w-md">
-                    {selectedEventForDoc.subject}
-                  </h3>
-                </div>
-                <p className="text-xs text-slate-400">
-                  {selectedEventForDoc.attachmentName || 'Kế hoạch bài học'}
-                </p>
-              </div>
+        {/* Avatar Picker Modal */}
+        {isChangingAvatar && (
+          <div className="bg-white dark:bg-[#111827] border border-amber-200 dark:border-slate-800 p-4 rounded-3xl shadow-xl space-y-3 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                <span>🎨</span>
+                <span>{isEn ? "Choose your favorite avatar:" : "Chọn hình đại diện em thích nhất:"}</span>
+              </h4>
               <button
-                onClick={() => setSelectedEventForDoc(null)}
-                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors"
+                onClick={() => setIsChangingAvatar(false)}
+                className="text-xs text-slate-400 hover:text-slate-600 font-bold"
               >
                 ✕
               </button>
             </div>
-
-            {/* Material Tabs */}
-            <div className="flex items-center gap-1 px-4 pt-3 border-b border-slate-800 bg-slate-950/30 overflow-x-auto">
-              <button
-                onClick={() => setDocModalTab('mindmap')}
-                className={`px-3 py-2 text-xs font-bold rounded-t-xl transition-all cursor-pointer flex items-center gap-1.5 border-b-2 ${
-                  docModalTab === 'mindmap'
-                    ? 'text-cyan-400 border-cyan-400 bg-cyan-500/10'
-                    : 'text-slate-400 border-transparent hover:text-white'
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Sơ đồ tư duy Mindmap</span>
-              </button>
-              <button
-                onClick={() => setDocModalTab('slide')}
-                className={`px-3 py-2 text-xs font-bold rounded-t-xl transition-all cursor-pointer flex items-center gap-1.5 border-b-2 ${
-                  docModalTab === 'slide'
-                    ? 'text-blue-400 border-blue-400 bg-blue-500/10'
-                    : 'text-slate-400 border-transparent hover:text-white'
-                }`}
-              >
-                <Presentation className="w-3.5 h-3.5" />
-                <span>Slide thuyết trình</span>
-              </button>
-              <button
-                onClick={() => setDocModalTab('game')}
-                className={`px-3 py-2 text-xs font-bold rounded-t-xl transition-all cursor-pointer flex items-center gap-1.5 border-b-2 ${
-                  docModalTab === 'game'
-                    ? 'text-emerald-400 border-emerald-400 bg-emerald-500/10'
-                    : 'text-slate-400 border-transparent hover:text-white'
-                }`}
-              >
-                <Gamepad2 className="w-3.5 h-3.5" />
-                <span>Mini Game ôn tập</span>
-              </button>
-            </div>
-
-            {/* Modal Content Body */}
-            <div className="p-6 overflow-y-auto space-y-4 text-xs leading-relaxed text-slate-300">
-              {docModalTab === 'mindmap' && (
-                <div className="space-y-3">
-                  <div className="p-4 rounded-2xl bg-cyan-950/20 border border-cyan-800/40 space-y-2">
-                    <p className="font-bold text-cyan-300 text-sm">🧠 Sơ đồ cấu trúc nội dung bài học</p>
-                    <p className="text-slate-400 text-xs">Hãy xem trước sơ đồ này để nắm chắc các nhánh kiến thức chính trước giờ vào lớp:</p>
-                    <div className="font-mono bg-slate-950 p-4 rounded-xl text-slate-200 whitespace-pre-wrap leading-relaxed border border-slate-800">
-{`📌 CHỦ ĐỀ: ${selectedEventForDoc.subject}
-├── 1. Khái niệm & Mục tiêu chuẩn đầu ra
-│   ├── Nắm vững nguyên lý và thuật ngữ
-│   └── Ứng dụng thực tiễn trong nghề nghiệp
-├── 2. Quy trình thực hành & Thao tác an toàn
-│   ├── Quy tắc an toàn BHLĐ & vệ sinh 5S xưởng
-│   └── Các bước vận hành chuẩn xác
-└── 3. Đánh giá kết quả & Bảng Rubric`}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {docModalTab === 'slide' && (
-                <div className="space-y-3">
-                  <p className="font-bold text-white text-sm">📊 Kịch bản Slide bài giảng chính:</p>
-                  <div className="space-y-2">
-                    <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
-                      <p className="font-bold text-blue-400">Slide 1: Khởi động & Đặt vấn đề</p>
-                      <p className="text-slate-400 mt-1">Quan sát tình huống thực tế và kích thích tư duy phát hiện vấn đề.</p>
-                    </div>
-                    <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
-                      <p className="font-bold text-blue-400">Slide 2: Hình thành kiến thức cốt lõi</p>
-                      <p className="text-slate-400 mt-1">Phân tích tài liệu đối chiếu, các bước kỹ thuật chính xác.</p>
-                    </div>
-                    <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
-                      <p className="font-bold text-blue-400">Slide 3: Luyện tập & Đánh giá Rubric</p>
-                      <p className="text-slate-400 mt-1">Làm bài tập nhóm, đối chiếu tiêu chí chất lượng và vệ sinh 5S.</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {docModalTab === 'game' && (
-                <div className="space-y-4 text-center py-4">
-                  <div className="w-16 h-16 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
-                    <Gamepad2 className="w-8 h-8" />
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="font-bold text-white text-base">Bộ câu hỏi trắc nghiệm thử thách</h4>
-                    <p className="text-slate-400 max-w-sm mx-auto text-xs">
-                      5 câu hỏi nhanh giúp bạn kiểm tra kiến thức trước giờ học để ghi điểm cộng Kudos!
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-left space-y-2">
-                    <p className="font-bold text-slate-200">Câu 1: Nguyên tắc nào là bắt buộc trước khi vận hành máy móc thiết bị xưởng?</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-xs">
-                      <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-emerald-500 cursor-pointer transition-colors text-slate-300">
-                        A. Đeo găng tay vải rộng
-                      </div>
-                      <div className="p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-600/50 text-emerald-300 font-semibold cursor-pointer">
-                        B. Kiểm tra che chắn an toàn & mang kính BHLĐ (Đúng)
-                      </div>
-                      <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-emerald-500 cursor-pointer transition-colors text-slate-300">
-                        C. Khởi động máy ở tốc độ tối đa
-                      </div>
-                      <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-emerald-500 cursor-pointer transition-colors text-slate-300">
-                        D. Vừa ăn uống vừa thao tác
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-end">
-              <button
-                onClick={() => setSelectedEventForDoc(null)}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold cursor-pointer"
-              >
-                Đóng cửa sổ
-              </button>
+            <div className="grid grid-cols-6 gap-2">
+              {KID_AVATARS.map((av) => (
+                <button
+                  key={av.id}
+                  onClick={() => handlePickAvatar(av.url)}
+                  className={`p-1 rounded-2xl border-2 transition-all hover:scale-110 cursor-pointer flex flex-col items-center gap-1 ${
+                    studentAvatar === av.url ? 'border-amber-500 bg-amber-50 dark:bg-amber-950' : 'border-slate-200 dark:border-slate-700'
+                  }`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={av.url} alt={av.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl object-cover bg-white" />
+                  <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400 truncate w-full text-center">
+                    {av.name}
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
+        )}
+
+        {/* 3. Class selector pill buttons (1-click to switch class) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 shrink-0 flex items-center gap-1">
+            <Users className="w-3.5 h-3.5 text-emerald-600" />
+            <span>{isEn ? "Class:" : "Chọn lớp:"}</span>
+          </span>
+          <div className="flex items-center gap-1.5">
+            {availableClasses.map(c => (
+              <button
+                key={c.id || c.name}
+                onClick={() => handleSelectClass(c.name)}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                  selectedClass.toLowerCase() === c.name.toLowerCase()
+                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-sm'
+                    : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-emerald-400'
+                }`}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Quick sync code lookup */}
+          <div className="ml-auto shrink-0 flex items-center gap-1">
+            <input
+              type="text"
+              placeholder={isEn ? "Class code..." : "Mã lớp..."}
+              value={syncCode}
+              onChange={e => setSyncCode(e.target.value.toUpperCase())}
+              className="px-2.5 py-1 text-xs rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white uppercase font-mono w-24 sm:w-28 focus:outline-none"
+            />
+            <button
+              onClick={() => fetchClassData(syncCode, selectedClass)}
+              disabled={isLoading || !syncCode}
+              className="p-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition-colors cursor-pointer disabled:opacity-40"
+              title={isEn ? "Fetch class timetable" : "Tải thời khóa biểu"}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
-      )}
+
+        {/* 4. Teacher's Friendly Note of the Day */}
+        <div className="bg-gradient-to-r from-teal-50 to-emerald-50 dark:from-teal-950/40 dark:to-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 rounded-3xl p-3.5 sm:p-4 flex items-start gap-3 shadow-xs">
+          <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm text-lg">
+            💌
+          </div>
+          <div className="space-y-0.5">
+            <h4 className="text-xs sm:text-sm font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-2">
+              <span>{isEn ? "Teacher's Daily Note" : "Lời Dặn Dò Của Cô Giáo Chủ Nhiệm"}</span>
+              <span className="text-[10px] px-2 py-0.2 rounded-full bg-emerald-200 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 font-bold">
+                {isEn ? "Important" : "Cần nhớ"}
+              </span>
+            </h4>
+            <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+              {isEn 
+                ? "🌟 You all did great in math today! Please remember to bring your 12-color crayons and safe scissors for tomorrow's Art class!"
+                : "🌟 Hôm nay cả lớp học rất ngoan và sôi nổi! Ngày mai có tiết Mỹ thuật, các con nhớ chuẩn bị sẵn hộp sáp màu 12 màu và kéo thủ công an toàn nhé!"}
+            </p>
+          </div>
+        </div>
+
+        {/* 5. 4 Primary Fun Action Tabs (Big icon cards) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+          
+          {/* Tab 1: Timetable */}
+          <button
+            onClick={() => setStudentTab('timetable')}
+            className={`p-3 sm:p-4 rounded-3xl border-2 flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+              studentTab === 'timetable'
+                ? 'bg-amber-500 text-white border-amber-600 shadow-md scale-102'
+                : 'bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:border-amber-400'
+            }`}
+          >
+            <span className="text-2xl">📅</span>
+            <span className="text-xs sm:text-sm font-black tracking-tight">
+              {isEn ? "Today's Lessons" : "Thời Khóa Biểu"}
+            </span>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${studentTab === 'timetable' ? 'bg-black/20 text-white' : 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300'}`}>
+              {events.length} {isEn ? "periods" : "tiết"}
+            </span>
+          </button>
+
+          {/* Tab 2: Homework */}
+          <button
+            onClick={() => setStudentTab('homework')}
+            className={`p-3 sm:p-4 rounded-3xl border-2 flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+              studentTab === 'homework'
+                ? 'bg-rose-500 text-white border-rose-600 shadow-md scale-102'
+                : 'bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:border-rose-400'
+            }`}
+          >
+            <span className="text-2xl">📝</span>
+            <span className="text-xs sm:text-sm font-black tracking-tight">
+              {isEn ? "Homework Tasks" : "Bài Tập Về Nhà"}
+            </span>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${studentTab === 'homework' ? 'bg-black/20 text-white' : 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300'}`}>
+              {homeworkList.filter(h => !h.isCompleted).length} {isEn ? "to-do" : "cần làm"}
+            </span>
+          </button>
+
+          {/* Tab 3: Materials & Games */}
+          <button
+            onClick={() => setStudentTab('materials')}
+            className={`p-3 sm:p-4 rounded-3xl border-2 flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+              studentTab === 'materials'
+                ? 'bg-blue-600 text-white border-blue-700 shadow-md scale-102'
+                : 'bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:border-blue-400'
+            }`}
+          >
+            <span className="text-2xl">🎮</span>
+            <span className="text-xs sm:text-sm font-black tracking-tight">
+              {isEn ? "Games & Books" : "Học Liệu & Game"}
+            </span>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${studentTab === 'materials' ? 'bg-black/20 text-white' : 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300'}`}>
+              {isEn ? "Fun reading" : "Đọc truyện"}
+            </span>
+          </button>
+
+          {/* Tab 4: Kudos Garden */}
+          <button
+            onClick={() => setStudentTab('kudos')}
+            className={`p-3 sm:p-4 rounded-3xl border-2 flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+              studentTab === 'kudos'
+                ? 'bg-emerald-600 text-white border-emerald-700 shadow-md scale-102'
+                : 'bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:border-emerald-400'
+            }`}
+          >
+            <span className="text-2xl">🌸</span>
+            <span className="text-xs sm:text-sm font-black tracking-tight">
+              {isEn ? "Star Garden" : "Vườn Sao Điểm 10"}
+            </span>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${studentTab === 'kudos' ? 'bg-black/20 text-white' : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'}`}>
+              {isEn ? "Leaderboard" : "Bảng vinh danh"}
+            </span>
+          </button>
+        </div>
+
+        {/* 6. TAB CONTENT */}
+
+        {/* ================= TAB 1: THỜI KHÓA BIỂU TRỰC QUAN ================= */}
+        {studentTab === 'timetable' && (
+          <div className="space-y-3 animate-fade-in">
+            <div className="flex items-center justify-between px-1">
+              <h3 className="text-sm sm:text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <span>📚</span>
+                <span>{isEn ? "Lessons for Today" : "Các Tiết Học Hôm Nay"}</span>
+              </h3>
+              <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
+                {todayStr}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {events.map((ev, idx) => {
+                const theme = getSubjectTheme(ev.subject);
+                const isFirst = idx === 0;
+                return (
+                  <div
+                    key={ev.id || idx}
+                    className="bg-white dark:bg-[#111827] border-2 border-slate-100 dark:border-slate-800 hover:border-amber-400 dark:hover:border-amber-600 rounded-3xl p-4 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-3 group"
+                  >
+                    <div>
+                      {/* Top bar with period & time */}
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-black text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-amber-500" />
+                          <span>{ev.startTime} - {ev.endTime}</span>
+                        </span>
+
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                          {ev.sessionType || (isEn ? `Period ${idx + 1}` : `Tiết ${idx + 1}`)}
+                        </span>
+                      </div>
+
+                      {/* Subject Name with big icon */}
+                      <div className="flex items-center gap-3 mt-2">
+                        <div className={`w-12 h-12 rounded-2xl bg-gradient-to-tr ${theme.bg} text-white flex items-center justify-center text-xl shadow-md shrink-0 group-hover:scale-110 transition-transform`}>
+                          {theme.icon}
+                        </div>
+                        <div>
+                          <h4 className="text-base sm:text-lg font-black text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                            {ev.subject}
+                          </h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1 mt-0.5">
+                            <MapPin className="w-3.5 h-3.5 text-rose-500" />
+                            <span>{ev.room || (isEn ? "Room 204" : "Phòng 204")}</span>
+                            <span className="text-slate-300">•</span>
+                            <span>{ev.teacherName || (isEn ? "Teacher" : "Cô giáo phụ trách")}</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Notes / Tips */}
+                      {ev.notes && (
+                        <div className={`mt-3 p-2.5 rounded-2xl ${theme.lightBg} text-xs ${theme.text} flex items-start gap-2 font-medium`}>
+                          <span className="text-sm shrink-0">💡</span>
+                          <span className="leading-relaxed">{ev.notes}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                      <span className="text-[11px] text-slate-400 font-semibold flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>{isFirst ? (isEn ? "Current Class" : "Tiết tiếp theo") : (isEn ? "Upcoming" : "Sắp tới")}</span>
+                      </span>
+                      <button className="px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 font-bold transition-colors cursor-pointer flex items-center gap-1">
+                        <span>{isEn ? "Open Book" : "Mở bài học"}</span>
+                        <ChevronRight className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ================= TAB 2: BÀI TẬP VỀ NHÀ VUI NHỘN ================= */}
+        {studentTab === 'homework' && (
+          <div className="space-y-3.5 animate-fade-in">
+            <div className="flex items-center justify-between px-1">
+              <div>
+                <h3 className="text-sm sm:text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                  <span>📝</span>
+                  <span>{isEn ? "Homework Quests for You" : "Nhiệm Vụ Bài Tập Về Nhà"}</span>
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {isEn ? "Complete tasks to earn golden stars!" : "Hoàn thành bài tập để nhận thêm sao chăm chỉ nhé!"}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {homeworkList.map((hw) => {
+                const theme = getSubjectTheme(hw.subject);
+                return (
+                  <div
+                    key={hw.id}
+                    className={`p-4 rounded-3xl border-2 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                      hw.isCompleted
+                        ? 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800 opacity-90'
+                        : 'bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 shadow-sm hover:border-rose-300'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-11 h-11 rounded-2xl bg-gradient-to-tr ${theme.bg} text-white flex items-center justify-center text-xl shrink-0 shadow-sm mt-0.5`}>
+                        {theme.icon}
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-700 dark:text-slate-300">
+                            {hw.subject}
+                          </span>
+                          <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            <span>{isEn ? `Due: ${hw.dueDate}` : `Hạn nộp: ${hw.dueDate}`}</span>
+                          </span>
+                          <span className="px-2 py-0.2 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 text-[10px] font-bold">
+                            +{hw.points} ⭐
+                          </span>
+                        </div>
+
+                        <h4 className={`text-sm sm:text-base font-bold text-slate-900 dark:text-white ${hw.isCompleted ? 'line-through text-slate-500 dark:text-slate-400' : ''}`}>
+                          {hw.title}
+                        </h4>
+
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          {hw.notes}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Checkbox button */}
+                    <button
+                      onClick={() => handleToggleHomework(hw.id)}
+                      className={`px-4 py-2.5 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm shrink-0 ${
+                        hw.isCompleted
+                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                          : 'bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/25 active:scale-95'
+                      }`}
+                    >
+                      {hw.isCompleted ? (
+                        <>
+                          <Check className="w-4 h-4" />
+                          <span>{isEn ? "Done! ⭐" : "Đã làm xong! ⭐"}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>{isEn ? "Mark Done" : "Bấm khi làm xong"}</span>
+                          <Sparkles className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ================= TAB 3: HỌC LIỆU & GAME ĐỌC SÁCH ================= */}
+        {studentTab === 'materials' && (
+          <div className="space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between px-1">
+              <div>
+                <h3 className="text-sm sm:text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                  <span>📖</span>
+                  <span>{isEn ? "Digital Bookshelf & Interactive Games" : "Tủ Sách Điện Tử & Trò Chơi Học Tập"}</span>
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {isEn ? "Read illustrated storybooks and play quiz challenges!" : "Đọc truyện tranh giáo dục và ôn tập qua các trò chơi thú vị!"}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+              
+              {/* Card 1: Math Quiz Game */}
+              <div className="bg-gradient-to-br from-amber-50 to-orange-100 dark:from-slate-900 dark:to-amber-950/40 border-2 border-amber-200 dark:border-amber-800/80 rounded-3xl p-4 shadow-sm flex flex-col justify-between gap-3">
+                <div className="space-y-2">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-2xl shadow-md">
+                    🎯
+                  </div>
+                  <h4 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
+                    {isEn ? "Quick Math Duel" : "Đố Vui Toán Học"}
+                  </h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">
+                    {isEn ? "Speed arithmetic mini-game to sharpen multiplication!" : "Trò chơi tính nhanh vượt chướng ngại vật bảng cửu chương!"}
+                  </p>
+                </div>
+                <button
+                  onClick={() => alert(isEn ? "Game starting! Get ready to calculate fast!" : "Trò chơi đang khởi động! Hãy sẵn sàng tính nhẩm nhanh nhé!")}
+                  className="w-full py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Play className="w-3.5 h-3.5 fill-white" />
+                  <span>{isEn ? "Play Game" : "Chơi Ngay"}</span>
+                </button>
+              </div>
+
+              {/* Card 2: Interactive Storybook */}
+              <div className="bg-gradient-to-br from-emerald-50 to-teal-100 dark:from-slate-900 dark:to-emerald-950/40 border-2 border-emerald-200 dark:border-emerald-800/80 rounded-3xl p-4 shadow-sm flex flex-col justify-between gap-3">
+                <div className="space-y-2">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-2xl shadow-md">
+                    📚
+                  </div>
+                  <h4 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
+                    {isEn ? "Storybook: Brave Animals" : "Truyện Tranh: Muông Thú"}
+                  </h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">
+                    {isEn ? "Animated bilingual story with friendly voiceover." : "Truyện cổ tích song ngữ có giọng đọc truyền cảm và tranh vẽ."}
+                  </p>
+                </div>
+                <button
+                  onClick={() => alert(isEn ? "Opening illustrated book..." : "Đang mở sách tranh hoạt họa...")}
+                  className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>{isEn ? "Read Story" : "Đọc Truyện"}</span>
+                </button>
+              </div>
+
+              {/* Card 3: English Song & Vocabulary */}
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-900 dark:to-indigo-950/40 border-2 border-blue-200 dark:border-blue-800/80 rounded-3xl p-4 shadow-sm flex flex-col justify-between gap-3">
+                <div className="space-y-2">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-2xl shadow-md">
+                    🎵
+                  </div>
+                  <h4 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
+                    {isEn ? "English ABC Song" : "Góc Hát Tiếng Anh"}
+                  </h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">
+                    {isEn ? "Sing along to learn school objects and cheerful words!" : "Hát và học phát âm chuẩn bản xứ các đồ dùng học tập."}
+                  </p>
+                </div>
+                <button
+                  onClick={() => alert(isEn ? "Playing English song..." : "Đang phát bài hát tiếng Anh...")}
+                  className="w-full py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Volume2 className="w-3.5 h-3.5" />
+                  <span>{isEn ? "Listen & Sing" : "Nghe & Hát"}</span>
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* ================= TAB 4: VƯỜN HOA ĐIỂM MƯỜI & BẢNG THI ĐUA ================= */}
+        {studentTab === 'kudos' && (
+          <div className="space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between px-1">
+              <div>
+                <h3 className="text-sm sm:text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                  <span>🏆</span>
+                  <span>{isEn ? "Classroom Star Leaderboard" : "Bảng Vàng Thi Đua Lớp 3A1"}</span>
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {isEn ? "Honoring hardworking and kind friends in class!" : "Tuyên dương những bạn nhỏ chăm ngoan, tiến bộ và tích cực nhất!"}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-[#111827] border-2 border-slate-100 dark:border-slate-800 rounded-3xl p-4 sm:p-5 shadow-sm space-y-3">
+              {[
+                { rank: 1, name: 'Nguyễn Bảo An (Bạn)', stars: studentStars, badge: '⭐ Kiện Tướng Chăm Chỉ', icon: '👑' },
+                { rank: 2, name: 'Trần Minh Khang', stars: 118, badge: '🌟 Búp Sen Xanh', icon: '🥈' },
+                { rank: 3, name: 'Lê Thùy Chi', stars: 112, badge: '🌸 Hoa Điểm Mười', icon: '🥉' },
+                { rank: 4, name: 'Phạm Tuấn Hưng', stars: 105, badge: '🚀 Thần Đồng Tính Nhanh', icon: '4' },
+                { rank: 5, name: 'Vũ Ngọc Hân', stars: 98, badge: '📖 Bạn Nhỏ Yêu Sách', icon: '5' }
+              ].map((item) => (
+                <div
+                  key={item.rank}
+                  className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${
+                    item.rank === 1
+                      ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200/80 dark:border-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-xl font-black text-sm flex items-center justify-center shrink-0 ${
+                      item.rank === 1 ? 'bg-amber-400 text-white text-base shadow-sm' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                    }`}>
+                      {item.icon}
+                    </div>
+
+                    <div>
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                        <span>{item.name}</span>
+                        {item.rank === 1 && (
+                          <span className="px-2 py-0.2 rounded-full bg-rose-500 text-white text-[9px] font-bold">
+                            {isEn ? "You" : "Bạn"}
+                          </span>
+                        )}
+                      </h4>
+                      <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                        {item.badge}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <span className="text-sm sm:text-base font-black text-amber-600 dark:text-amber-400">
+                      {item.stars} ⭐
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+      </main>
     </div>
   );
 }

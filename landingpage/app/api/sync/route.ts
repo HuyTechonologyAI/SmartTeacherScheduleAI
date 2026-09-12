@@ -97,6 +97,24 @@ export interface AttendanceRecordPayload {
   updatedAt?: number;
 }
 
+
+export interface LeaveRequestPayload {
+  id: string;
+  studentId: string;
+  studentCode?: string;
+  studentName: string;
+  className: string;
+  parentName: string;
+  parentPhone: string;
+  date: string; // YYYY-MM-DD
+  reason: string;
+  type: 'SICK' | 'FAMILY' | 'OTHER';
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  createdAt: number;
+  reviewedAt?: number;
+  teacherNote?: string;
+}
+
 export interface SyncPayload {
   pin?: string;
   pinHash?: string;
@@ -114,6 +132,7 @@ export interface SyncPayload {
   classrooms?: ClassroomPayload[];
   students?: StudentPayload[];
   attendanceRecords?: AttendanceRecordPayload[];
+  leaveRequests?: LeaveRequestPayload[];
 }
 
 const memoryCache = new Map<string, { data: SyncPayload; timestamp: number }>();
@@ -332,6 +351,7 @@ async function getFromGist(syncCode: string): Promise<SyncPayload | null> {
       .filter((s: any) => !isTestStudent(s) && !isTestSyncData(s) && !deletedStudents.has(s.id) && !deletedClasses.has((s.className || '').toLowerCase().trim()));
     const attendanceRecords: AttendanceRecordPayload[] = (Array.isArray(parsed.attendanceRecords) ? parsed.attendanceRecords : [])
       .filter((a: any) => !isTestSyncData(a));
+    const leaveRequests: LeaveRequestPayload[] = Array.isArray(parsed.leaveRequests) ? parsed.leaveRequests : [];
     const syncPayload: SyncPayload = {
       syncCode: cleanCode,
       deviceName: parsed.deviceName || 'Smart Device',
@@ -342,7 +362,8 @@ async function getFromGist(syncCode: string): Promise<SyncPayload | null> {
       knowledgeDocs,
       classrooms,
       students,
-      attendanceRecords
+      attendanceRecords,
+      leaveRequests
     };
 
     memoryCache.set(cleanCode, { data: syncPayload, timestamp: Date.now() });
@@ -732,6 +753,20 @@ function mergeStudents(
   return Array.from(map.values());
 }
 
+
+function mergeLeaveRequests(existing: LeaveRequestPayload[], incoming: LeaveRequestPayload[]): LeaveRequestPayload[] {
+  const map = new Map<string, LeaveRequestPayload>();
+  for (const r of existing) if (r && r.id) map.set(r.id, r);
+  for (const inc of incoming) {
+    if (!inc || !inc.id) continue;
+    const prev = map.get(inc.id);
+    if (!prev || (Number(inc.reviewedAt || inc.createdAt) || 0) >= (Number(prev.reviewedAt || prev.createdAt) || 0)) {
+      map.set(inc.id, inc);
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+}
+
 function mergeAttendance(existing: AttendanceRecordPayload[], incoming: AttendanceRecordPayload[]): AttendanceRecordPayload[] {
   const map = new Map<string, AttendanceRecordPayload>();
   const getKey = (a: AttendanceRecordPayload) => `${a.date}_${a.studentId}_${a.eventId || 'noev'}`;
@@ -822,6 +857,7 @@ export async function POST(req: NextRequest) {
     const incomingClassrooms: ClassroomPayload[] = Array.isArray(body.classrooms) ? body.classrooms : [];
     const incomingStudents: StudentPayload[] = Array.isArray(body.students) ? body.students : [];
     const incomingAttendance: AttendanceRecordPayload[] = Array.isArray(body.attendanceRecords) ? body.attendanceRecords : [];
+    const incomingLeaveRequests: LeaveRequestPayload[] = Array.isArray(body.leaveRequests) ? body.leaveRequests : [];
 
     if (incomingEvents.length === 0 && incomingSchedules.length > 0) {
       incomingEvents = generateEventsFromSchedules(incomingSchedules);
@@ -859,6 +895,7 @@ export async function POST(req: NextRequest) {
     let finalClassrooms = incomingClassrooms;
     let finalStudents = incomingStudents;
     let finalAttendance = incomingAttendance;
+    let finalLeaveRequests = incomingLeaveRequests;
 
     const shouldPurgeTest = Boolean(body.purgeTestData);
     if (shouldPurgeTest) {
@@ -868,6 +905,7 @@ export async function POST(req: NextRequest) {
       finalClassrooms = incomingClassrooms.filter(c => !isTestSyncItem(c));
       finalStudents = incomingStudents.filter(st => !isTestSyncItem(st));
       finalAttendance = incomingAttendance.filter(a => !isTestSyncItem(a));
+      finalLeaveRequests = incomingLeaveRequests;
     } else if (existing && !body.forceOverwrite) {
       // Hợp nhất ca dạy, lịch mẫu và tài liệu theo mốc thời gian sửa đổi (Last-Write-Wins per item)
       finalSchedules = mergeSchedules(existing.schedules || [], incomingSchedules);
@@ -888,6 +926,7 @@ export async function POST(req: NextRequest) {
       finalClassrooms = mergeClassrooms(existing.classrooms || [], incomingClassrooms, combinedDeletedClassroomIds);
       finalStudents = mergeStudents(existing.students || [], incomingStudents, combinedDeletedStudentIds, combinedDeletedClassroomIds);
       finalAttendance = mergeAttendance(existing.attendanceRecords || [], incomingAttendance);
+      finalLeaveRequests = mergeLeaveRequests(existing.leaveRequests || [], incomingLeaveRequests);
     } else {
       finalKnowledgeDocs = mergeKnowledgeDocs([], incomingKnowledgeDocs, combinedDeletedKeys);
     }
@@ -912,7 +951,8 @@ export async function POST(req: NextRequest) {
       deletedClassroomIds: Array.from(new Set([...incomingDeletedClassroomIds, ...((existing as any)?.deletedClassroomIds || [])])),
       classrooms: finalClassrooms,
       students: finalStudents,
-      attendanceRecords: finalAttendance
+      attendanceRecords: finalAttendance,
+      leaveRequests: finalLeaveRequests
     };
 
     const saved = await saveSyncStore(payload, body.pin);
@@ -935,6 +975,7 @@ export async function POST(req: NextRequest) {
       classrooms: payload.classrooms || [],
       students: payload.students || [],
       attendanceRecords: payload.attendanceRecords || [],
+      leaveRequests: payload.leaveRequests || [],
       totalEvents: payload.events.length,
       totalSchedules: payload.schedules.length,
       totalKnowledgeDocs: (payload.knowledgeDocs || []).length,

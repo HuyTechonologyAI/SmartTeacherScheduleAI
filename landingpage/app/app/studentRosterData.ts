@@ -704,3 +704,40 @@ export async function parseStudentFile(
     };
   }
 }
+
+// ================= ONLINE LEAVE REQUESTS (ĐƠN XIN NGHỈ HỌC TRỰC TUYẾN) =================
+export interface LeaveRequest {
+  id: string;
+  studentId: string;
+  studentName: string;
+  studentCode?: string;
+  className: string;
+  parentName: string;
+  parentPhone: string;
+  fromDate: string;
+  toDate: string;
+  reason: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  teacherNote?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export const STORAGE_LEAVE_REQUESTS_KEY = 'smart_teacher_leave_requests_v1';
+
+export function getStoredLeaveRequests(): LeaveRequest[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_LEAVE_REQUESTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+export function saveLeaveRequests(requests: LeaveRequest[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(STORAGE_LEAVE_REQUESTS_KEY, JSON.stringify(requests));
+  } catch (_) {}
+}

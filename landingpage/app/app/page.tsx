@@ -30,6 +30,8 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import TodayCommandCenter from '@/components/dashboard/TodayCommandCenter';
 import SyncSecurityModal from '@/components/dashboard/SyncSecurityModal';
+import PortalShareModal from '@/components/dashboard/PortalShareModal';
+import LeaveRequestsModal from '@/components/dashboard/LeaveRequestsModal';
 import {
   LessonPlan5512Data,
   LessonPlan2634Data,
@@ -100,7 +102,10 @@ import {
   getDeletedStudentIds,
   getDeletedClassroomIds,
   recordDeletedStudentId,
-  recordDeletedClassroomId
+  recordDeletedClassroomId,
+  LeaveRequest,
+  getStoredLeaveRequests,
+  saveLeaveRequests
 } from './studentRosterData';
 import { isTestStudent, isTestClassroom, isTestSyncData } from './testDataSanitizer';
 
@@ -445,6 +450,9 @@ export default function UnifiedTeacherScheduleApp() {
   const [syncStatus, setSyncStatus] = useState<'idle' | 'synced' | 'syncing' | 'error'>('synced');
   const [lastSyncTime, setLastSyncTime] = useState<string>('Vừa xong');
   const [alertBanner, setAlertBanner] = useState<string | null>(null);
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [showPortalShareModal, setShowPortalShareModal] = useState<boolean>(false);
+  const [showLeaveRequestsModal, setShowLeaveRequestsModal] = useState<boolean>(false);
 
   // Edit Event Modal States
   const [editingEvent, setEditingEvent] = useState<CalendarEventItem | null>(null);
@@ -1174,7 +1182,8 @@ export default function UnifiedTeacherScheduleApp() {
           deletedEventIds: getDeletedEventIds(),
           deletedStudentIds: getDeletedStudentIds(),
           deletedClassroomIds: getDeletedClassroomIds(),
-          purgeTestData: purgeTestData
+          purgeTestData: purgeTestData,
+          leaveRequests: getStoredLeaveRequests()
         })
       });
       if (res.ok) {
@@ -1206,6 +1215,10 @@ export default function UnifiedTeacherScheduleApp() {
           const cleanStudents = result.students.filter((s: any) => !isTestStudent(s) && !deletedIds.has(s.id) && !deletedClasses.has((s.className || '').toLowerCase()));
           setStudents(cleanStudents);
           localStorage.setItem('smart_teacher_students_v1', JSON.stringify(cleanStudents));
+        }
+        if (Array.isArray(result.leaveRequests)) {
+          setLeaveRequests(result.leaveRequests);
+          saveLeaveRequests(result.leaveRequests);
         }
         if (Array.isArray(result.attendanceRecords) && result.attendanceRecords.length > 0) {
           setAttendanceRecords(result.attendanceRecords);
@@ -1285,6 +1298,10 @@ export default function UnifiedTeacherScheduleApp() {
           setStudents(cleanStudents);
           localStorage.setItem('smart_teacher_students_v1', JSON.stringify(cleanStudents));
         }
+        if (Array.isArray(data.leaveRequests)) {
+          setLeaveRequests(data.leaveRequests);
+          saveLeaveRequests(data.leaveRequests);
+        }
         if (Array.isArray(data.attendanceRecords) && data.attendanceRecords.length > 0) {
           setAttendanceRecords(data.attendanceRecords);
           localStorage.setItem('smart_teacher_attendance_v1', JSON.stringify(data.attendanceRecords));
@@ -1351,6 +1368,100 @@ export default function UnifiedTeacherScheduleApp() {
   };
 
   // Đồng bộ 2 chiều toàn diện (Two-Way Cloud Sync)
+  
+  // Phê duyệt đơn xin nghỉ học trực tuyến
+  const handleApproveLeaveRequest = async (request: LeaveRequest, teacherNote?: string) => {
+    const nowTs = Date.now();
+    const updatedRequests = leaveRequests.map(r => {
+      if (r.id === request.id) {
+        return {
+          ...r,
+          status: 'APPROVED' as const,
+          teacherNote: teacherNote !== undefined && teacherNote.trim() ? teacherNote.trim() : (r.teacherNote || 'Đã duyệt có phép'),
+          updatedAt: nowTs
+        };
+      }
+      return r;
+    });
+    setLeaveRequests(updatedRequests);
+    saveLeaveRequests(updatedRequests);
+
+    // Tự động cập nhật điểm danh Nghỉ có phép (ABSENT_EXCUSED)
+    const dates: string[] = [];
+    try {
+      const start = new Date(request.fromDate);
+      const end = new Date(request.toDate);
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        dates.push(d.toISOString().split('T')[0]);
+      }
+    } catch (_) {
+      dates.push(request.fromDate);
+    }
+
+    const curAttendance = getStoredAttendance();
+    const newAttendance = [...curAttendance];
+    dates.forEach(dStr => {
+      const existingIdx = newAttendance.findIndex(a => a.studentId === request.studentId && a.date === dStr);
+      const noteText = request.reason ? `Nghỉ có phép (Đơn PH: ${request.reason})` : 'Nghỉ có phép (Đơn trực tuyến)';
+      if (existingIdx >= 0) {
+        newAttendance[existingIdx] = {
+          ...newAttendance[existingIdx],
+          status: 'ABSENT_EXCUSED',
+          note: noteText,
+          updatedAt: nowTs
+        };
+      } else {
+        newAttendance.push({
+          id: `att_${nowTs}_${Math.random().toString(36).substring(2, 7)}`,
+          className: request.className,
+          studentId: request.studentId,
+          studentName: request.studentName,
+          studentCode: request.studentCode,
+          date: dStr,
+          status: 'ABSENT_EXCUSED',
+          note: noteText,
+          updatedAt: nowTs
+        });
+      }
+    });
+
+    saveAttendanceRecords(newAttendance);
+    setAttendanceRecords(newAttendance);
+
+    setAlertBanner(`🟢 Đã duyệt đơn xin nghỉ học của học sinh ${request.studentName} và tự động cập nhật điểm danh Nghỉ có phép!`);
+    setTimeout(() => setAlertBanner(null), 5000);
+
+    // Đẩy ngay lên Cloud để phụ huynh xem được kết quả tức thì
+    await pushToCloud(events, schedules, syncCode, false);
+  };
+
+  const handleRejectLeaveRequest = async (request: LeaveRequest, teacherNote?: string) => {
+    const nowTs = Date.now();
+    const updatedRequests = leaveRequests.map(r => {
+      if (r.id === request.id) {
+        return {
+          ...r,
+          status: 'REJECTED' as const,
+          teacherNote: teacherNote !== undefined && teacherNote.trim() ? teacherNote.trim() : (r.teacherNote || 'Không duyệt'),
+          updatedAt: nowTs
+        };
+      }
+      return r;
+    });
+    setLeaveRequests(updatedRequests);
+    saveLeaveRequests(updatedRequests);
+    setAlertBanner(`ℹ️ Đã từ chối đơn xin nghỉ học của học sinh ${request.studentName}`);
+    setTimeout(() => setAlertBanner(null), 4000);
+    await pushToCloud(events, schedules, syncCode, false);
+  };
+
+  const handleDeleteLeaveRequest = async (requestId: string) => {
+    const updatedRequests = leaveRequests.filter(r => r.id !== requestId);
+    setLeaveRequests(updatedRequests);
+    saveLeaveRequests(updatedRequests);
+    await pushToCloud(events, schedules, syncCode, false);
+  };
+
   const syncBothWays = async (code = syncCode, isManual = true) => {
     if (!code) return;
     setIsSyncing(true);
@@ -1391,6 +1502,8 @@ export default function UnifiedTeacherScheduleApp() {
     const rosterPurge = purgeTestRosterData();
     const storedCls = getStoredClassrooms();
     const storedSts = getStoredStudents();
+    const storedLeaves = getStoredLeaveRequests();
+    setLeaveRequests(storedLeaves);
     setClassrooms(storedCls);
     setStudents(storedSts);
     if (storedCls.length > 0) {
@@ -2273,6 +2386,38 @@ export default function UnifiedTeacherScheduleApp() {
               <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
               <span>{isSyncing ? 'Đang đồng bộ...' : 'Đồng bộ 2 chiều'}</span>
             </button>
+
+            <button
+              onClick={() => setShowPortalShareModal(true)}
+              className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
+              title="Chia sẻ link & mã QR Cổng Học sinh & Phụ huynh vào nhóm Zalo"
+            >
+              <Share2 className="w-3.5 h-3.5 text-white" />
+              <span>Cổng HS & PH</span>
+            </button>
+
+            {(() => {
+              const pendingCount = leaveRequests.filter(r => r.status === 'PENDING').length;
+              return (
+                <button
+                  onClick={() => setShowLeaveRequestsModal(true)}
+                  className={`relative px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md cursor-pointer ${
+                    pendingCount > 0 
+                      ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-600/30 animate-pulse' 
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                  }`}
+                  title="Xem và xét duyệt đơn xin nghỉ học trực tuyến từ phụ huynh"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Đơn xin nghỉ</span>
+                  {pendingCount > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-500 text-white font-bold">
+                      {pendingCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })()}
           </div>
         </div>
       </header>
@@ -8157,6 +8302,25 @@ export default function UnifiedTeacherScheduleApp() {
         onPerformSync={() => {
           syncBothWays(syncCode, true);
         }}
+      />
+
+      {/* Student & Parent Portal Sharing Modal */}
+      <PortalShareModal
+        isOpen={showPortalShareModal}
+        onClose={() => setShowPortalShareModal(false)}
+        syncCode={syncCode}
+        className={selectedRosterClass || ''}
+      />
+
+      {/* Online Absence Leave Requests Modal */}
+      <LeaveRequestsModal
+        isOpen={showLeaveRequestsModal}
+        onClose={() => setShowLeaveRequestsModal(false)}
+        leaveRequests={leaveRequests}
+        onApprove={handleApproveLeaveRequest}
+        onReject={handleRejectLeaveRequest}
+        onDelete={handleDeleteLeaveRequest}
+        onTriggerSync={() => syncBothWays(syncCode, true)}
       />
     </div>
   );

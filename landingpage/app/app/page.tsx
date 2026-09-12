@@ -2984,7 +2984,7 @@ export default function UnifiedTeacherScheduleApp() {
                     <button
                       onClick={() => setCalendarViewMode('day')}
                       className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                        calendarViewMode === 'day' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        calendarViewMode === 'day' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white font-bold'
                       }`}
                     >
                       Xem theo ngày
@@ -3713,7 +3713,7 @@ export default function UnifiedTeacherScheduleApp() {
                     className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                       aiSubTab === 'exam'
                         ? 'bg-purple-600 text-white shadow-md'
-                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                        : 'text-slate-600 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white font-bold'
                     }`}
                   >
                     <Award className="w-3.5 h-3.5" />
@@ -3724,7 +3724,7 @@ export default function UnifiedTeacherScheduleApp() {
                     className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                       aiSubTab === 'chat'
                         ? 'bg-emerald-600 text-white shadow-md'
-                        : 'text-slate-600 hover:text-slate-900'
+                        : 'text-slate-600 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white font-bold'
                     }`}
                   >
                     <Sparkles className="w-3.5 h-3.5" />
@@ -3735,7 +3735,7 @@ export default function UnifiedTeacherScheduleApp() {
                     className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                       aiSubTab === 'knowledge'
                         ? 'bg-emerald-600 text-white shadow-md'
-                        : 'text-slate-600 hover:text-slate-900'
+                        : 'text-slate-600 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white font-bold'
                     }`}
                   >
                     <ShieldCheck className="w-3.5 h-3.5" />
@@ -3754,24 +3754,24 @@ export default function UnifiedTeacherScheduleApp() {
                 {/* Grounding Banner */}
                 <div
                   onClick={() => setAiSubTab('knowledge')}
-                  className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between cursor-pointer hover:border-emerald-300 transition-all shadow-sm"
+                  className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-between cursor-pointer hover:border-emerald-300 dark:hover:border-emerald-700 transition-all shadow-sm"
                 >
                   <div className="flex items-center gap-3">
                     <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
                     <div>
-                      <div className="text-xs sm:text-sm font-bold text-emerald-800">
+                      <div className="text-xs sm:text-sm font-bold text-emerald-800 dark:text-emerald-300">
                         🛡️ Chế độ đối chiếu chuẩn (Chống ảo giác & bịa đặt)
                       </div>
-                      <div className="text-[11px] text-emerald-700">
+                      <div className="text-[11px] text-emerald-700 dark:text-emerald-400">
                         AI bắt buộc đối chiếu với {knowledgeDocs.filter(d => d.isActive).length} văn bản trong Kho dữ liệu (CV 5512/2634 & tài liệu của Thầy/Cô). Nhấn để xem & quản lý.
                       </div>
                     </div>
                   </div>
-                  <span className="text-xs font-semibold text-emerald-700 underline shrink-0 ml-2">Kho tư liệu →</span>
+                  <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 underline shrink-0 ml-2">Kho tư liệu →</span>
                 </div>
 
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-2">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-200 dark:text-slate-200 block mb-2">
                       1. Chọn khung pháp quy chuẩn của bài giảng:
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -3784,11 +3784,11 @@ export default function UnifiedTeacherScheduleApp() {
                         className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
                           plannerStandard === 5512
                             ? 'bg-blue-600/20 border-blue-500 shadow-md ring-1 ring-blue-500/50'
-                            : 'bg-slate-50 border-slate-200 hover:border-slate-300 text-slate-700'
+                            : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300'
                         }`}
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm font-bold text-slate-800">Công Văn 5512/BGDĐT-GDTrH</span>
+                          <span className="text-sm font-bold text-slate-800 dark:text-white">Công Văn 5512/BGDĐT-GDTrH</span>
                           {plannerStandard === 5512 && <CheckCircle2 className="w-4 h-4 text-blue-400" />}
                         </div>
                         <p className="text-xs text-slate-500">
@@ -3805,11 +3805,11 @@ export default function UnifiedTeacherScheduleApp() {
                         className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
                           plannerStandard === 2634
                             ? 'bg-amber-600/20 border-amber-500 shadow-md ring-1 ring-amber-500/50'
-                            : 'bg-slate-50 border-slate-200 hover:border-slate-300 text-slate-700'
+                            : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300'
                         }`}
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm font-bold text-slate-800">Công Văn 2634/GDNN</span>
+                          <span className="text-sm font-bold text-slate-800 dark:text-white">Công Văn 2634/GDNN</span>
                           {plannerStandard === 2634 && <CheckCircle2 className="w-4 h-4 text-amber-400" />}
                         </div>
                         <p className="text-xs text-slate-500">
@@ -3822,7 +3822,7 @@ export default function UnifiedTeacherScheduleApp() {
                   {/* ================= 2. BỘ LỌC LỚP HỌC & CHỌN CA DẠY ĐÃ LÊN LỊCH ================= */}
                   <div className="pt-2 space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <label className="text-xs font-bold text-slate-700 block">
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block">
                         2. Chọn Lớp học & Ca dạy đã lên lịch trước:
                       </label>
                       <div className="flex items-center gap-2 text-xs">
@@ -3830,7 +3830,7 @@ export default function UnifiedTeacherScheduleApp() {
                         <select
                           value={plannerClassFilter}
                           onChange={(e) => setPlannerClassFilter(e.target.value)}
-                          className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-800 focus:outline-none focus:border-rose-500 cursor-pointer"
+                          className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-rose-500 cursor-pointer"
                         >
                           <option value="ALL">Tất cả các lớp ({events.length} ca dạy)</option>
                           {Array.from(new Set(events.map(ev => ev.className).filter(Boolean))).sort().map(cls => (
@@ -3854,7 +3854,7 @@ export default function UnifiedTeacherScheduleApp() {
                                 className={`px-3.5 py-2 rounded-xl border text-left transition-all shrink-0 cursor-pointer ${
                                   isSel
                                     ? 'bg-blue-600 text-white border-blue-400 font-semibold shadow-lg shadow-blue-500/25 ring-1 ring-white/30'
-                                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-rose-300 hover:bg-rose-50/20'
+                                    : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-rose-300 hover:bg-rose-50/20'
                                 }`}
                                 style={{ minWidth: '170px' }}
                               >
@@ -3937,7 +3937,7 @@ export default function UnifiedTeacherScheduleApp() {
 
                   {/* Inputs */}
                   <div className="pt-2 space-y-3">
-                    <label className="text-xs font-bold text-slate-700 block">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block">
                       3. Nhập thông tin & Yêu cầu bài giảng:
                     </label>
 
@@ -4038,7 +4038,7 @@ export default function UnifiedTeacherScheduleApp() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <BookOpen className="w-4 h-4 text-rose-600" />
-                          <span className="text-xs font-bold text-slate-800">
+                          <span className="text-xs font-bold text-slate-800 dark:text-white">
                             Tài liệu đối chiếu AI (Kho tư liệu chuẩn):
                           </span>
                         </div>
@@ -4159,7 +4159,7 @@ export default function UnifiedTeacherScheduleApp() {
                           <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-bold border border-blue-500/30">
                             {plannerStandard === 5512 ? 'Công Văn 5512' : 'Công Văn 2634'}
                           </span>
-                          <span className="text-xs font-semibold text-slate-800">
+                          <span className="text-xs font-semibold text-slate-800 dark:text-white">
                             {plannerFullPackage?.lessonTitle || plannerLessonTitle}
                           </span>
                           <span className="text-xs text-slate-400">
@@ -4333,7 +4333,7 @@ export default function UnifiedTeacherScheduleApp() {
                         className={`px-3.5 py-2 rounded-t-xl font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                           plannerActiveResultTab === 'plan'
                             ? 'bg-blue-600 text-white shadow'
-                            : 'bg-slate-100 text-slate-600 hover:text-slate-900'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                         }`}
                       >
                         <FileText className="w-3.5 h-3.5" />
@@ -4346,7 +4346,7 @@ export default function UnifiedTeacherScheduleApp() {
                         className={`px-3.5 py-2 rounded-t-xl font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                           plannerActiveResultTab === 'slides'
                             ? 'bg-sky-600 text-white shadow'
-                            : 'bg-slate-100 text-slate-600 hover:text-slate-900'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                         }`}
                       >
                         <Monitor className="w-3.5 h-3.5" />
@@ -4359,7 +4359,7 @@ export default function UnifiedTeacherScheduleApp() {
                         className={`px-3.5 py-2 rounded-t-xl font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                           plannerActiveResultTab === 'game'
                             ? 'bg-purple-600 text-white shadow'
-                            : 'bg-slate-100 text-slate-600 hover:text-slate-900'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                         }`}
                       >
                         <Gamepad2 className="w-3.5 h-3.5" />
@@ -4372,7 +4372,7 @@ export default function UnifiedTeacherScheduleApp() {
                         className={`px-3.5 py-2 rounded-t-xl font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                           plannerActiveResultTab === 'video'
                             ? 'bg-amber-600 text-white shadow'
-                            : 'bg-slate-100 text-slate-600 hover:text-slate-900'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                         }`}
                       >
                         <Video className="w-3.5 h-3.5" />
@@ -4385,7 +4385,7 @@ export default function UnifiedTeacherScheduleApp() {
                         className={`px-3.5 py-2 rounded-t-xl font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                           plannerActiveResultTab === 'mindmap'
                             ? 'bg-teal-600 text-white shadow'
-                            : 'bg-slate-100 text-slate-600 hover:text-slate-900'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                         }`}
                       >
                         <Network className="w-3.5 h-3.5" />
@@ -4398,7 +4398,7 @@ export default function UnifiedTeacherScheduleApp() {
                         className={`px-3.5 py-2 rounded-t-xl font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                           plannerActiveResultTab === 'audit'
                             ? 'bg-emerald-600 text-white shadow'
-                            : 'bg-slate-100 text-slate-600 hover:text-slate-900'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                         }`}
                       >
                         <Award className="w-3.5 h-3.5" />
@@ -4410,12 +4410,12 @@ export default function UnifiedTeacherScheduleApp() {
                     {plannerActiveResultTab === 'plan' && (
                       <div className="space-y-4">
                         {plannerResult5512 && (
-                          <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-4 text-xs sm:text-sm text-slate-800">
+                          <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl p-5 space-y-4 text-xs sm:text-sm text-slate-800 dark:text-slate-100">
                             <div className="text-center pb-3 border-b border-slate-200">
                               <span className="text-xs uppercase tracking-widest text-slate-400 font-semibold block">
                                 KẾ HOẠCH BÀI DẠY (CHUẨN CÔNG VĂN 5512/BGDĐT-GDTrH)
                               </span>
-                              <h4 className="text-base font-bold text-slate-900 mt-1">{plannerResult5512.lessonTitle}</h4>
+                              <h4 className="text-base font-bold text-slate-900 dark:text-white mt-1">{plannerResult5512.lessonTitle}</h4>
                               <p className="text-xs text-slate-400 mt-0.5">
                                 Môn: {plannerResult5512.subject} • Khối: {plannerResult5512.grade} • Thời lượng: {plannerResult5512.durationMinutes} tiết
                               </p>
@@ -4428,21 +4428,21 @@ export default function UnifiedTeacherScheduleApp() {
 
                             <div className="space-y-2">
                               <h5 className="font-bold text-blue-400 uppercase text-xs">I. Mục tiêu bài học:</h5>
-                              <p><strong className="text-slate-700">1. Kiến thức:</strong> {plannerResult5512.objectives.knowledge}</p>
-                              <p><strong className="text-slate-700">2. Năng lực:</strong> {plannerResult5512.objectives.competencies}</p>
-                              <p><strong className="text-slate-700">3. Phẩm chất:</strong> {plannerResult5512.objectives.qualities}</p>
+                              <p><strong className="text-slate-700 dark:text-slate-200">1. Kiến thức:</strong> {plannerResult5512.objectives.knowledge}</p>
+                              <p><strong className="text-slate-700 dark:text-slate-200">2. Năng lực:</strong> {plannerResult5512.objectives.competencies}</p>
+                              <p><strong className="text-slate-700 dark:text-slate-200">3. Phẩm chất:</strong> {plannerResult5512.objectives.qualities}</p>
                             </div>
 
                             <div className="space-y-2">
                               <h5 className="font-bold text-blue-400 uppercase text-xs">II. Thiết bị dạy học và học liệu số:</h5>
-                              <p><strong className="text-slate-700">• Giáo viên:</strong> {plannerResult5512.equipment.teacherEquipment}</p>
-                              <p><strong className="text-slate-700">• Học sinh:</strong> {plannerResult5512.equipment.studentEquipment}</p>
+                              <p><strong className="text-slate-700 dark:text-slate-200">• Giáo viên:</strong> {plannerResult5512.equipment.teacherEquipment}</p>
+                              <p><strong className="text-slate-700 dark:text-slate-200">• Học sinh:</strong> {plannerResult5512.equipment.studentEquipment}</p>
                             </div>
 
                             <div className="space-y-3 pt-2">
                               <h5 className="font-bold text-blue-400 uppercase text-xs">III. Tiến trình dạy học (4 Hoạt động bắt buộc):</h5>
                               {[plannerResult5512.activity1Opening, plannerResult5512.activity2Knowledge, plannerResult5512.activity3Practice, plannerResult5512.activity4Application].map((act, idx) => (
-                                <div key={idx} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 text-xs text-slate-800">
+                                <div key={idx} className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 space-y-1.5 text-xs text-slate-800 dark:text-slate-200">
                                   <span className="font-bold text-white text-xs block">{act.name}</span>
                                   <p><strong className="text-slate-400">• Mục tiêu:</strong> {act.objective}</p>
                                   <p><strong className="text-slate-400">• Nội dung:</strong> {act.content}</p>
@@ -4455,12 +4455,12 @@ export default function UnifiedTeacherScheduleApp() {
                         )}
 
                         {plannerResult2634 && (
-                          <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-5 space-y-4 text-xs sm:text-sm text-slate-800">
+                          <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-700 rounded-xl p-5 space-y-4 text-xs sm:text-sm text-slate-800 dark:text-slate-100">
                             <div className="text-center pb-3 border-b border-slate-200">
                               <span className="text-xs uppercase tracking-widest text-amber-700 font-semibold block">
                                 GIÁO ÁN BÀI DẠY THỰC HÀNH NGHỀ (CHUẨN CÔNG VĂN 2634/GDNN)
                               </span>
-                              <h4 className="text-base font-bold text-slate-900 mt-1">{plannerResult2634.moduleTitle}</h4>
+                              <h4 className="text-base font-bold text-slate-900 dark:text-white mt-1">{plannerResult2634.moduleTitle}</h4>
                               <p className="text-xs text-slate-400 mt-0.5">
                                 Nghề: {plannerResult2634.occupation} • Trình độ: {plannerResult2634.level} • Thời lượng: {plannerResult2634.durationMinutes} giờ
                               </p>
@@ -4468,22 +4468,22 @@ export default function UnifiedTeacherScheduleApp() {
 
                             <div className="space-y-2">
                               <h5 className="font-bold text-amber-800 uppercase text-xs">I. Mục tiêu đào tạo nghề:</h5>
-                              <p><strong className="text-slate-700">1. Kiến thức nghề:</strong> {plannerResult2634.objectives.knowledge}</p>
-                              <p><strong className="text-slate-700">2. Kỹ năng thực hành:</strong> {plannerResult2634.objectives.skills}</p>
-                              <p><strong className="text-slate-700">3. An toàn lao động & 5S:</strong> {plannerResult2634.objectives.autonomyAndSafety}</p>
+                              <p><strong className="text-slate-700 dark:text-slate-200">1. Kiến thức nghề:</strong> {plannerResult2634.objectives.knowledge}</p>
+                              <p><strong className="text-slate-700 dark:text-slate-200">2. Kỹ năng thực hành:</strong> {plannerResult2634.objectives.skills}</p>
+                              <p><strong className="text-slate-700 dark:text-slate-200">3. An toàn lao động & 5S:</strong> {plannerResult2634.objectives.autonomyAndSafety}</p>
                             </div>
 
                             <div className="space-y-2">
                               <h5 className="font-bold text-amber-400 uppercase text-xs">II. Điều kiện thực hiện (Xưởng thực hành):</h5>
-                              <p><strong className="text-slate-700">• Máy móc thiết bị:</strong> {plannerResult2634.conditions.equipmentAndMachines}</p>
-                              <p><strong className="text-slate-700">• Vật tư phôi mẫu:</strong> {plannerResult2634.conditions.materialsAndWorkpieces}</p>
-                              <p><strong className="text-slate-700">• Trang bị BHLĐ & 5S:</strong> {plannerResult2634.conditions.safetyAnd5S}</p>
+                              <p><strong className="text-slate-700 dark:text-slate-200">• Máy móc thiết bị:</strong> {plannerResult2634.conditions.equipmentAndMachines}</p>
+                              <p><strong className="text-slate-700 dark:text-slate-200">• Vật tư phôi mẫu:</strong> {plannerResult2634.conditions.materialsAndWorkpieces}</p>
+                              <p><strong className="text-slate-700 dark:text-slate-200">• Trang bị BHLĐ & 5S:</strong> {plannerResult2634.conditions.safetyAnd5S}</p>
                             </div>
 
                             <div className="space-y-3 pt-2">
                               <h5 className="font-bold text-amber-400 uppercase text-xs">III. Tiến trình thực hiện tại xưởng (4 Bước thực hành):</h5>
                               {[plannerResult2634.step1Orientation, plannerResult2634.step2Demonstration, plannerResult2634.step3Practice, plannerResult2634.step4Evaluation].map((st, idx) => (
-                                <div key={idx} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 text-xs text-slate-800">
+                                <div key={idx} className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 space-y-1.5 text-xs text-slate-800 dark:text-slate-200">
                                   <span className="font-bold text-white text-xs block">{st.name}</span>
                                   <p><strong className="text-slate-400">• Hoạt động GV:</strong> {st.teacherActivity}</p>
                                   <p><strong className="text-slate-400">• Hoạt động HS:</strong> {st.studentActivity}</p>
@@ -4518,12 +4518,12 @@ export default function UnifiedTeacherScheduleApp() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                           {plannerFullPackage.slides.map((s) => (
-                            <div key={s.slideNumber} className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5 text-xs text-slate-800">
+                            <div key={s.slideNumber} className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 space-y-2.5 text-xs text-slate-800 dark:text-slate-200">
                               <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                                 <span className="font-bold text-sky-400">SLIDE {s.slideNumber}: {s.title}</span>
                               </div>
                               <div>
-                                <strong className="text-slate-700 block mb-1">📌 Nội dung trình chiếu:</strong>
+                                <strong className="text-slate-700 dark:text-slate-200 block mb-1">📌 Nội dung trình chiếu:</strong>
                                 <ul className="list-disc pl-4 space-y-1 text-slate-600">
                                   {s.bulletPoints.map((bp, i) => (
                                     <li key={i}>{bp}</li>
@@ -4573,7 +4573,7 @@ export default function UnifiedTeacherScheduleApp() {
 
                         <div className="space-y-3">
                           {plannerFullPackage.miniGame.map((q) => (
-                            <div key={q.id} className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5 text-xs text-slate-800">
+                            <div key={q.id} className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 space-y-2.5 text-xs text-slate-800 dark:text-slate-200">
                               <div className="flex items-center justify-between">
                                 <span className="font-bold text-white text-sm">Câu {q.id}: {q.question}</span>
                                 <div className="flex items-center gap-1.5">
@@ -4637,7 +4637,7 @@ export default function UnifiedTeacherScheduleApp() {
 
                         <div className="space-y-3">
                           {plannerFullPackage.videoScript.map((sc) => (
-                            <div key={sc.sceneNumber} className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5 text-xs text-slate-800">
+                            <div key={sc.sceneNumber} className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 space-y-2.5 text-xs text-slate-800 dark:text-slate-200">
                               <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                                 <span className="font-bold text-amber-800 text-sm">
                                   Phân cảnh {sc.sceneNumber}: {sc.title}
@@ -4649,7 +4649,7 @@ export default function UnifiedTeacherScheduleApp() {
 
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div>
-                                  <strong className="text-slate-700 block mb-1">🖼️ Mô tả hình ảnh (Visual):</strong>
+                                  <strong className="text-slate-700 dark:text-slate-200 block mb-1">🖼️ Mô tả hình ảnh (Visual):</strong>
                                   <p className="text-slate-600">{sc.visualDescription}</p>
                                   <div className="mt-2 text-xs text-amber-950 font-medium">
                                     <strong>Chữ trên màn hình:</strong> {sc.onScreenText}
@@ -4705,7 +4705,7 @@ export default function UnifiedTeacherScheduleApp() {
                         {/* Mindmap Tree Cards */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                           {plannerFullPackage.mindmap.branches.map((b, idx) => (
-                            <div key={idx} className="p-4 rounded-xl bg-teal-50/50 border border-teal-200 space-y-2 text-xs text-slate-800">
+                            <div key={idx} className="p-4 rounded-xl bg-teal-50/50 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800/60 space-y-2 text-xs text-slate-800 dark:text-slate-200">
                               <h5 className="font-bold text-teal-300 text-sm flex items-center gap-1.5">
                                 <Network className="w-4 h-4 text-teal-400" />
                                 <span>{b.title}</span>
@@ -4771,7 +4771,7 @@ export default function UnifiedTeacherScheduleApp() {
                         {/* Bảng Chi Tiết 4 Tiêu Chí */}
                         <div className="bg-white dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
                           <table className="w-full text-xs text-left">
-                            <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 text-[11px] uppercase">
+                            <thead className="bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 font-bold border-b border-slate-200 dark:border-slate-700 text-[11px] uppercase">
                               <tr>
                                 <th className="p-3">Tiêu Chí Đánh Giá</th>
                                 <th className="p-3 w-24 text-center">Điểm Số</th>
@@ -4790,7 +4790,7 @@ export default function UnifiedTeacherScheduleApp() {
                                   <td className="p-3 text-center font-bold text-emerald-400 text-sm">
                                     {c.actualScore} / {c.maxScore}
                                   </td>
-                                  <td className="p-3 text-slate-700">
+                                  <td className="p-3 text-slate-700 dark:text-slate-200">
                                     {c.feedback}
                                   </td>
                                 </tr>
@@ -4989,7 +4989,7 @@ export default function UnifiedTeacherScheduleApp() {
                     <div className="space-y-3">
                       <h5 className="font-bold text-purple-400 text-xs uppercase">Danh Sách Câu Hỏi & Lời Giải:</h5>
                       {examResult.questions.map((q, idx) => (
-                        <div key={idx} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs text-slate-800">
+                        <div key={idx} className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 space-y-2 text-xs text-slate-800 dark:text-slate-200">
                           <div className="flex items-center justify-between">
                             <span className="font-bold text-white">Câu {idx + 1}:</span>
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-900/60 text-purple-300 border border-purple-700/50">
@@ -5018,7 +5018,7 @@ export default function UnifiedTeacherScheduleApp() {
             {aiSubTab === 'chat' && (
               <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-4 sm:p-5 h-[620px] flex flex-col justify-between shadow-sm">
                 {/* 7 Mode Selector Bar */}
-                <div className="pb-3 mb-2 border-b border-slate-100 flex items-center gap-1.5 overflow-x-auto text-xs scrollbar-thin">
+                <div className="pb-3 mb-2 border-b border-slate-100 dark:border-slate-700 flex items-center gap-1.5 overflow-x-auto text-xs scrollbar-thin">
                   {[
                     { id: 'ALL', label: 'Tất cả' },
                     { id: 'KNOWLEDGE', label: '📚 Kho tư liệu' },
@@ -5038,7 +5038,7 @@ export default function UnifiedTeacherScheduleApp() {
                         className={`px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all cursor-pointer ${
                           isSel
                             ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-600/30'
-                            : 'bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200'
+                            : 'bg-slate-100 dark:bg-slate-900/80 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700'
                         }`}
                       >
                         {tab.label}
@@ -5063,7 +5063,7 @@ export default function UnifiedTeacherScheduleApp() {
                         className={`p-3.5 rounded-2xl text-xs sm:text-sm max-w-[90%] whitespace-pre-line leading-relaxed shadow ${
                           msg.role === 'user'
                             ? 'bg-blue-600 text-white rounded-tr-none'
-                            : 'bg-slate-50 text-slate-800 border border-slate-200 rounded-tl-none'
+                            : 'bg-slate-50 dark:bg-slate-900/90 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-tl-none'
                         }`}
                       >
                         {msg.text}
@@ -5080,7 +5080,7 @@ export default function UnifiedTeacherScheduleApp() {
 
                         {/* Mermaid Mindmap Code */}
                         {msg.mermaidCode && (
-                          <div className="mt-3 rounded-xl bg-slate-50 border border-indigo-200 p-2.5 space-y-1.5 text-slate-800">
+                          <div className="mt-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-indigo-200 dark:border-indigo-900/60 p-2.5 space-y-1.5 text-slate-800 dark:text-slate-200">
                             <div className="flex items-center justify-between text-[11px] text-cyan-300 font-mono">
                               <span>MÃ NGUỒN MERMAID MINDMAP:</span>
                               <button
@@ -5092,7 +5092,7 @@ export default function UnifiedTeacherScheduleApp() {
                                 <span>{chatCopiedId === 'm-' + i ? 'Đã chép' : 'Chép mã'}</span>
                               </button>
                             </div>
-                            <pre className="text-[11px] text-slate-800 font-mono overflow-x-auto p-1.5 bg-slate-100 rounded border border-slate-200">
+                            <pre className="text-[11px] text-slate-800 dark:text-slate-200 font-mono overflow-x-auto p-1.5 bg-slate-100 dark:bg-slate-950 rounded border border-slate-200 dark:border-slate-800">
                               {msg.mermaidCode}
                             </pre>
                           </div>
@@ -5165,49 +5165,49 @@ export default function UnifiedTeacherScheduleApp() {
                     <button
                       type="button"
                       onClick={() => handleSendAiMessage('Soạn giáo án Công nghệ theo Công văn 5512', 'KNOWLEDGE')}
-                      className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-200 whitespace-nowrap cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 whitespace-nowrap cursor-pointer"
                     >
                       📜 4 hoạt động CV 5512
                     </button>
                     <button
                       type="button"
                       onClick={() => handleSendAiMessage('Tạo đề thi và ma trận 10 câu theo Thông tư 22', 'EXAM_MATRIX')}
-                      className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-200 whitespace-nowrap cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 whitespace-nowrap cursor-pointer"
                     >
                       📝 Ma trận đề chuẩn TT 22
                     </button>
                     <button
                       type="button"
                       onClick={() => handleSendAiMessage('Tạo bộ slide 10 trang cho bài học này', 'SLIDES')}
-                      className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-200 whitespace-nowrap cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 whitespace-nowrap cursor-pointer"
                     >
                       📊 Tạo Slide thuyết trình
                     </button>
                     <button
                       type="button"
                       onClick={() => handleSendAiMessage('Tạo mini game tương tác Kahoot 4 câu', 'MINI_GAME')}
-                      className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-200 whitespace-nowrap cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 whitespace-nowrap cursor-pointer"
                     >
                       🎮 Mini game Kahoot
                     </button>
                     <button
                       type="button"
                       onClick={() => handleSendAiMessage('Tạo sơ đồ tư duy Mermaid bài học', 'MINDMAP')}
-                      className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-200 whitespace-nowrap cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 whitespace-nowrap cursor-pointer"
                     >
                       🧠 Sơ đồ Mermaid
                     </button>
                     <button
                       type="button"
                       onClick={() => handleSendAiMessage('Vẽ hình minh họa SVG nguyên lý máy gia công', 'ILLUSTRATION')}
-                      className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-200 whitespace-nowrap cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 whitespace-nowrap cursor-pointer"
                     >
                       🎨 Hình minh họa SVG
                     </button>
                     <button
                       type="button"
                       onClick={() => handleSendAiMessage('Tra cứu định mức giờ dạy theo Thông tư 28 và 15', 'OFFICIAL_VN')}
-                      className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-200 whitespace-nowrap cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 whitespace-nowrap cursor-pointer"
                     >
                       🇻🇳 Định mức giờ dạy
                     </button>
@@ -5247,13 +5247,13 @@ export default function UnifiedTeacherScheduleApp() {
                         <ShieldCheck className="w-7 h-7 text-emerald-600" />
                       </div>
                       <div>
-                        <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2.5">
+                        <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
                           <span>Kho Tư Liệu Đối Chiếu Chuẩn</span>
-                          <span className="px-2.5 py-0.5 rounded-full text-[11px] bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">
+                          <span className="px-2.5 py-0.5 rounded-full text-[11px] bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800/60">
                             {knowledgeDocs.filter(d => d.isActive).length} / {knowledgeDocs.length} Đang kích hoạt
                           </span>
                         </h2>
-                        <p className="text-xs text-slate-500 mt-1 max-w-2xl">
+                        <p className="text-xs text-slate-500 dark:text-slate-300 mt-1 max-w-2xl">
                           AI bắt buộc đối chiếu các tài liệu đang BẬT dưới đây khi sinh Kế hoạch bài dạy & Đề thi. Tuyệt đối không tự bịa đặt điều luật, thông số kỹ thuật hoặc quy chuẩn ngoài nguồn chuẩn.
                         </p>
                       </div>
@@ -5298,7 +5298,7 @@ export default function UnifiedTeacherScheduleApp() {
                           className={`px-3 py-1.5 rounded-xl border whitespace-nowrap transition-all cursor-pointer ${
                             isSel
                               ? 'bg-emerald-600 text-white border-emerald-500 font-bold shadow'
-                              : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                              : 'bg-slate-100 dark:bg-slate-900/80 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800'
                           }`}
                         >
                           {labels[cat]}
@@ -5314,7 +5314,7 @@ export default function UnifiedTeacherScheduleApp() {
                       value={kbSearch}
                       onChange={(e) => setKbSearch(e.target.value)}
                       placeholder="Tìm theo tên, mã số, môn học..."
-                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500"
                     />
                   </div>
                 </div>
@@ -5344,7 +5344,7 @@ export default function UnifiedTeacherScheduleApp() {
                         className={`p-4 rounded-2xl border transition-all space-y-3.5 ${
                           doc.isActive
                             ? 'bg-white dark:bg-slate-800/80 border-slate-200/90 dark:border-slate-700 shadow-sm'
-                            : 'bg-slate-50 border-slate-200 opacity-60'
+                            : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 opacity-60'
                         }`}
                       >
                         <div className="flex items-start justify-between gap-3">
@@ -5363,7 +5363,7 @@ export default function UnifiedTeacherScheduleApp() {
                                 {doc.code}
                               </span>
                             </div>
-                            <h3 className="text-sm font-bold text-slate-900 leading-snug">
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
                               {doc.title}
                             </h3>
                           </div>
@@ -5393,10 +5393,10 @@ export default function UnifiedTeacherScheduleApp() {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3 text-[11px] text-slate-500 pt-2 border-t border-slate-100">
-                          <span>Môn: <strong className="text-slate-700">{doc.subject}</strong></span>
+                        <div className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-700/60">
+                          <span>Môn: <strong className="text-slate-700 dark:text-slate-200">{doc.subject}</strong></span>
                           <span>•</span>
-                          <span>Cấp: <strong className="text-slate-700">{doc.targetLevel}</strong></span>
+                          <span>Cấp: <strong className="text-slate-700 dark:text-slate-200">{doc.targetLevel}</strong></span>
                           <span>•</span>
                           <span>{doc.content.length.toLocaleString()} ký tự</span>
                         </div>
@@ -5414,7 +5414,7 @@ export default function UnifiedTeacherScheduleApp() {
                         )}
 
                         {/* Actions: Xem trước, Tải đúng định dạng tệp gốc, Xuất Word/Text, Sửa, Xóa */}
-                        <div className="flex items-center justify-between pt-2 border-t border-slate-100 flex-wrap gap-2">
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-700/60 flex-wrap gap-2">
                           <div className="flex items-center gap-2 flex-wrap">
                             <button
                               type="button"
@@ -5451,7 +5451,7 @@ export default function UnifiedTeacherScheduleApp() {
                             <button
                               type="button"
                               onClick={() => exportKnowledgeDocToTxt(doc)}
-                              className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
+                              className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-600 text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
                               title="Tải về file văn bản thuần (.txt)"
                             >
                               <FileText className="w-3.5 h-3.5" />
@@ -5463,7 +5463,7 @@ export default function UnifiedTeacherScheduleApp() {
                             <button
                               type="button"
                               onClick={() => openKbEditModal(doc)}
-                              className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
+                              className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-600 text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
                               title="Chỉnh sửa hoặc bổ sung tệp đính kèm mới"
                             >
                               <Edit3 className="w-3.5 h-3.5 text-amber-400" />
@@ -5496,9 +5496,9 @@ export default function UnifiedTeacherScheduleApp() {
                 {kbEditingDoc && (
                   <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
                     <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-2xl">
-                      <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+                      <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
                         <div>
-                          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                          <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                             <Edit3 className="w-5 h-5 text-amber-400" />
                             <span>Cập Nhật / Bổ Sung Tư Liệu</span>
                           </h3>
@@ -5511,7 +5511,7 @@ export default function UnifiedTeacherScheduleApp() {
                         <button
                           type="button"
                           onClick={() => setKbEditingDoc(null)}
-                          className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-800 cursor-pointer"
+                          className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white cursor-pointer"
                         >
                           <X className="w-5 h-5" />
                         </button>
@@ -5519,7 +5519,7 @@ export default function UnifiedTeacherScheduleApp() {
 
                       <div className="p-5 overflow-y-auto flex-1 space-y-4">
                         <div>
-                          <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                          <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1.5">
                             Tên tài liệu / Văn bản / Giáo trình <span className="text-rose-400">*</span>
                           </label>
                           <input
@@ -5533,7 +5533,7 @@ export default function UnifiedTeacherScheduleApp() {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
-                            <label className="text-xs font-bold text-slate-700 block mb-1.5">Mã ký hiệu</label>
+                            <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1.5">Mã ký hiệu</label>
                             <input
                               type="text"
                               value={kbEditCode}
@@ -5543,7 +5543,7 @@ export default function UnifiedTeacherScheduleApp() {
                             />
                           </div>
                           <div>
-                            <label className="text-xs font-bold text-slate-700 block mb-1.5">Môn học áp dụng</label>
+                            <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1.5">Môn học áp dụng</label>
                             <input
                               type="text"
                               value={kbEditSubject}
@@ -5556,7 +5556,7 @@ export default function UnifiedTeacherScheduleApp() {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
-                            <label className="text-xs font-bold text-slate-700 block mb-1.5">Cấp học / Trình độ</label>
+                            <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1.5">Cấp học / Trình độ</label>
                             <input
                               type="text"
                               value={kbEditLevel}
@@ -5566,7 +5566,7 @@ export default function UnifiedTeacherScheduleApp() {
                             />
                           </div>
                           <div>
-                            <label className="text-xs font-bold text-slate-700 block mb-1.5">Phân loại</label>
+                            <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1.5">Phân loại</label>
                             <select
                               value={kbEditCategory}
                               onChange={(e) => setKbEditCategory(e.target.value as any)}
@@ -5582,7 +5582,7 @@ export default function UnifiedTeacherScheduleApp() {
 
                         {/* Đính kèm / Đổi tệp tài liệu mới */}
                         <div className="space-y-2">
-                          <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                          <label className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center justify-between">
                             <span className="flex items-center gap-1.5 text-amber-400">
                               <Paperclip className="w-4 h-4" />
                               <span>ĐÍNH KÈM HOẶC THAY THẾ TỆP TÀI LIỆU</span>
@@ -5655,23 +5655,23 @@ export default function UnifiedTeacherScheduleApp() {
                         </div>
 
                         <div>
-                          <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                          <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1.5">
                             Nội dung chi tiết (Dành cho AI đối chiếu và xuất văn bản)
                           </label>
                           <textarea
                             rows={8}
                             value={kbEditContent}
                             onChange={(e) => setKbEditContent(e.target.value)}
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-800 focus:outline-none focus:border-amber-500 font-mono leading-relaxed"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-amber-500 font-mono leading-relaxed"
                           />
                         </div>
                       </div>
 
-                      <div className="p-4 border-t border-slate-100 flex justify-end gap-2.5">
+                      <div className="p-4 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-2.5">
                         <button
                           type="button"
                           onClick={() => setKbEditingDoc(null)}
-                          className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold cursor-pointer"
+                          className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-600 text-xs font-semibold cursor-pointer"
                         >
                           Hủy
                         </button>
@@ -5693,21 +5693,21 @@ export default function UnifiedTeacherScheduleApp() {
                   <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
                     <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-2xl">
                       <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
-                        <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                           <Plus className="w-5 h-5 text-emerald-400" />
                           <span>Thêm Tư Liệu Đối Chiếu AI Mới</span>
                         </h3>
                         <button
                           type="button"
                           onClick={() => setKbShowAddModal(false)}
-                          className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-800 cursor-pointer"
+                          className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white cursor-pointer"
                         >
                           <X className="w-5 h-5" />
                         </button>
                       </div>
                       <div className="p-5 overflow-y-auto flex-1 space-y-4">
                         <div>
-                          <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                          <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1.5">
                             Tên tài liệu / Văn bản / Giáo trình <span className="text-rose-400">*</span>
                           </label>
                           <input
@@ -5721,7 +5721,7 @@ export default function UnifiedTeacherScheduleApp() {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
-                            <label className="text-xs font-bold text-slate-700 block mb-1.5">Mã ký hiệu (tùy chọn)</label>
+                            <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1.5">Mã ký hiệu (tùy chọn)</label>
                             <input
                               type="text"
                               value={kbNewCode}
@@ -5731,7 +5731,7 @@ export default function UnifiedTeacherScheduleApp() {
                             />
                           </div>
                           <div>
-                            <label className="text-xs font-bold text-slate-700 block mb-1.5">Môn học áp dụng</label>
+                            <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1.5">Môn học áp dụng</label>
                             <input
                               type="text"
                               value={kbNewSubject}
@@ -5744,7 +5744,7 @@ export default function UnifiedTeacherScheduleApp() {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
-                            <label className="text-xs font-bold text-slate-700 block mb-1.5">Cấp học / Trình độ</label>
+                            <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1.5">Cấp học / Trình độ</label>
                             <input
                               type="text"
                               value={kbNewLevel}
@@ -5754,7 +5754,7 @@ export default function UnifiedTeacherScheduleApp() {
                             />
                           </div>
                           <div>
-                            <label className="text-xs font-bold text-slate-700 block mb-1.5">Phân loại</label>
+                            <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1.5">Phân loại</label>
                             <select
                               value={kbNewCategory}
                               onChange={(e) => setKbNewCategory(e.target.value as any)}
@@ -5770,7 +5770,7 @@ export default function UnifiedTeacherScheduleApp() {
 
                         {/* Khu vực đính kèm file tài liệu thông minh */}
                         <div className="space-y-2">
-                          <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                          <label className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center justify-between">
                             <span className="flex items-center gap-1.5 text-emerald-400">
                               <Paperclip className="w-4 h-4" />
                               <span>ĐÍNH KÈM TỆP TÀI LIỆU (Word, PDF, Text...)</span>
@@ -5793,7 +5793,7 @@ export default function UnifiedTeacherScheduleApp() {
                                 <div className="w-11 h-11 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
                                   {kbIsExtracting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
                                 </div>
-                                <div className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">
+                                <div className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                                   {kbIsExtracting ? 'Đang đọc và trích xuất nội dung văn bản...' : 'BẤM ĐỂ CHỌN HOẶC KÉO THẢ TỆP TÀI LIỆU VÀO ĐÂY'}
                                 </div>
                                 <p className="text-[11px] text-slate-500 max-w-md">
@@ -5847,7 +5847,7 @@ export default function UnifiedTeacherScheduleApp() {
                         </div>
 
                         <div>
-                          <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                          <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1.5">
                             {kbAttachedFileName ? 'Nội dung trích xuất từ tệp (Sẵn sàng cho AI đối chiếu)' : 'Nội dung văn bản (hoặc đính kèm file ở trên)'}
                           </label>
                           <textarea
@@ -5855,12 +5855,12 @@ export default function UnifiedTeacherScheduleApp() {
                             value={kbNewContent}
                             onChange={(e) => setKbNewContent(e.target.value)}
                             placeholder="Nội dung được tự động điền khi Thầy/Cô đính kèm file ở trên, hoặc có thể dán/chỉnh sửa trực tiếp tại đây..."
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 font-mono leading-relaxed"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500 font-mono leading-relaxed"
                           />
                         </div>
                       </div>
-                      <div className="p-4 border-t border-slate-100 flex justify-end gap-2.5">
-                        <button type="button" onClick={() => setKbShowAddModal(false)} className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold cursor-pointer">
+                      <div className="p-4 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-2.5">
+                        <button type="button" onClick={() => setKbShowAddModal(false)} className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-600 text-xs font-semibold cursor-pointer">
                           Hủy
                         </button>
                         <button
@@ -7186,14 +7186,14 @@ export default function UnifiedTeacherScheduleApp() {
                             <span className="text-xs text-slate-400">
                               Môn: <strong className="text-slate-200">{kbViewingDoc.subject}</strong> • Cấp: <strong className="text-slate-200">{kbViewingDoc.targetLevel}</strong>
                             </span>
-                            <span className="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-medium border border-slate-200">
+                            <span className="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700/80 text-slate-700 dark:text-slate-200 font-medium border border-slate-200 dark:border-slate-600">
                               {kbViewingDoc.category === 'GIAO_TRINH' ? '📘 Giáo trình nghề' :
                                kbViewingDoc.category === 'DE_CUONG' ? '📋 Đề cương môn học' :
                                kbViewingDoc.category === 'PHAP_QUY' ? '🏛️ Văn bản pháp quy' :
                                kbViewingDoc.category === 'ATLD_5S' ? '🛡️ Tiêu chuẩn ATLĐ & 5S' : '📄 Tư liệu'}
                             </span>
                           </div>
-                          <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
+                          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-snug">
                             {kbViewingDoc.title}
                           </h3>
                           {kbViewingDoc.fileName && (
@@ -7212,11 +7212,11 @@ export default function UnifiedTeacherScheduleApp() {
                         {/* Actions: Zoom, Copy, Print, Fullscreen, Close */}
                         <div className="flex items-center gap-1.5 shrink-0">
                           {/* Zoom Controls */}
-                          <div className="hidden sm:flex items-center bg-slate-100 rounded-xl p-0.5 border border-slate-200">
+                          <div className="hidden sm:flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-0.5 border border-slate-200 dark:border-slate-700">
                             <button
                               type="button"
                               onClick={() => setKbPreviewZoom(z => Math.max(70, z - 15))}
-                              className="p-1 rounded-lg hover:bg-slate-200 text-slate-600 hover:text-slate-900 cursor-pointer"
+                              className="p-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white cursor-pointer"
                               title="Thu nhỏ (-)"
                             >
                               <ZoomOut className="w-3.5 h-3.5" />
@@ -7224,7 +7224,7 @@ export default function UnifiedTeacherScheduleApp() {
                             <button
                               type="button"
                               onClick={() => setKbPreviewZoom(100)}
-                              className="text-[11px] text-slate-700 font-mono px-1.5 hover:text-slate-900 cursor-pointer"
+                              className="text-[11px] text-slate-700 dark:text-slate-300 font-mono px-1.5 hover:text-slate-900 dark:hover:text-white cursor-pointer"
                               title="Tỷ lệ 100%"
                             >
                               {kbPreviewZoom}%
@@ -7232,7 +7232,7 @@ export default function UnifiedTeacherScheduleApp() {
                             <button
                               type="button"
                               onClick={() => setKbPreviewZoom(z => Math.min(180, z + 15))}
-                              className="p-1 rounded-lg hover:bg-slate-200 text-slate-600 hover:text-slate-900 cursor-pointer"
+                              className="p-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white cursor-pointer"
                               title="Phóng to (+)"
                             >
                               <ZoomIn className="w-3.5 h-3.5" />
@@ -7247,7 +7247,7 @@ export default function UnifiedTeacherScheduleApp() {
                               setKbCopied(true);
                               setTimeout(() => setKbCopied(false), 2000);
                             }}
-                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-900 cursor-pointer flex items-center gap-1 text-xs"
+                            className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white cursor-pointer flex items-center gap-1 text-xs"
                             title="Sao chép toàn bộ văn bản"
                           >
                             {kbCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -7258,7 +7258,7 @@ export default function UnifiedTeacherScheduleApp() {
                           <button
                             type="button"
                             onClick={() => window.print()}
-                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-900 cursor-pointer"
+                            className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white cursor-pointer"
                             title="In / Xuất PDF"
                           >
                             <Printer className="w-3.5 h-3.5" />
@@ -7268,7 +7268,7 @@ export default function UnifiedTeacherScheduleApp() {
                           <button
                             type="button"
                             onClick={() => setKbPreviewFullScreen(f => !f)}
-                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-900 cursor-pointer"
+                            className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white cursor-pointer"
                             title={kbPreviewFullScreen ? "Thu nhỏ cửa sổ" : "Phóng to toàn màn hình"}
                           >
                             {kbPreviewFullScreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
@@ -7282,7 +7282,7 @@ export default function UnifiedTeacherScheduleApp() {
                               setKbPreviewFullScreen(false);
                               setKbPreviewSearchTerm('');
                             }}
-                            className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-800 cursor-pointer ml-0.5"
+                            className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white cursor-pointer ml-0.5"
                           >
                             <X className="w-5 h-5" />
                           </button>
@@ -7336,7 +7336,7 @@ export default function UnifiedTeacherScheduleApp() {
                           />
                         </div>
                       ) : (
-                        <div className="p-5 overflow-y-auto flex-1 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap leading-relaxed font-sans bg-slate-50">
+                        <div className="p-5 overflow-y-auto flex-1 text-xs sm:text-sm text-slate-800 dark:text-slate-100 whitespace-pre-wrap leading-relaxed font-sans bg-slate-50 dark:bg-[#0b1120]">
                           {/* Search inside doc bar */}
                           <div className="mb-3 flex items-center gap-2 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                             <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -7482,7 +7482,7 @@ export default function UnifiedTeacherScheduleApp() {
                           <button
                             type="button"
                             onClick={() => exportKnowledgeDocToTxt(kbViewingDoc)}
-                            className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+                            className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-600 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
                             title="Tải bản văn bản thô (.txt)"
                           >
                             <FileText className="w-4 h-4" />
@@ -7506,7 +7506,7 @@ export default function UnifiedTeacherScheduleApp() {
                           <button
                             type="button"
                             onClick={() => setKbViewingDoc(null)}
-                            className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold cursor-pointer"
+                            className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-600 text-xs font-semibold cursor-pointer"
                           >
                             Đóng
                           </button>

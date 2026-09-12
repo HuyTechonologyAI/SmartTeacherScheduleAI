@@ -20,19 +20,22 @@ import {
   AVATAR_PRESETS, 
   POPULAR_SUBJECTS 
 } from '@/app/app/teacherProfileData';
+import { Language, t } from '@/app/app/i18n';
 
 interface TeacherProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   profile: TeacherProfile;
   onSaveProfile: (updated: TeacherProfile) => void;
+  lang?: Language;
 }
 
 export default function TeacherProfileModal({
   isOpen,
   onClose,
   profile,
-  onSaveProfile
+  onSaveProfile,
+  lang = 'vi'
 }: TeacherProfileModalProps) {
   const [formData, setFormData] = useState<TeacherProfile>(profile);
   const [newSchoolInput, setNewSchoolInput] = useState('');
@@ -50,11 +53,13 @@ export default function TeacherProfileModal({
 
   if (!isOpen) return null;
 
+  const isEn = lang === 'en';
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
-      alert("Kích thước ảnh tối đa là 2MB");
+      alert(isEn ? "Maximum image size is 2MB" : "Kích thước ảnh tối đa là 2MB");
       return;
     }
     const reader = new FileReader();
@@ -79,7 +84,7 @@ export default function TeacherProfileModal({
 
   const handleRemoveSchool = (schoolToRemove: string) => {
     if (formData.schools.length <= 1) {
-      alert("Hồ sơ giáo viên cần có ít nhất một trường giảng dạy.");
+      alert(isEn ? "Teacher profile must have at least one teaching school." : "Hồ sơ giáo viên cần có ít nhất một trường giảng dạy.");
       return;
     }
     setFormData(prev => ({
@@ -101,7 +106,7 @@ export default function TeacherProfileModal({
 
   const handleRemoveSubject = (subjectToRemove: string) => {
     if (formData.subjects.length <= 1) {
-      alert("Hồ sơ giáo viên cần có ít nhất một môn giảng dạy.");
+      alert(isEn ? "Teacher profile must have at least one teaching subject." : "Hồ sơ giáo viên cần có ít nhất một môn giảng dạy.");
       return;
     }
     setFormData(prev => ({
@@ -113,15 +118,15 @@ export default function TeacherProfileModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.fullName.trim()) {
-      alert("Vui lòng nhập họ và tên giáo viên");
+      alert(isEn ? "Please enter teacher full name" : "Vui lòng nhập họ và tên giáo viên");
       return;
     }
     if (!formData.phone.trim()) {
-      alert("Vui lòng nhập số điện thoại liên hệ");
+      alert(isEn ? "Please enter contact phone number" : "Vui lòng nhập số điện thoại liên hệ");
       return;
     }
     if (!formData.email.trim()) {
-      alert("Vui lòng nhập địa chỉ email");
+      alert(isEn ? "Please enter email address" : "Vui lòng nhập địa chỉ email");
       return;
     }
 
@@ -145,13 +150,13 @@ export default function TeacherProfileModal({
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                Hồ Sơ Cá Nhân Giáo Viên
+                <span>{t('profile_modal_title', lang)}</span>
                 <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-medium">
                   {formData.id}
                 </span>
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Thông tin sư phạm cá nhân, số liên hệ, trường và môn đang đảm nhiệm
+                {t('profile_modal_subtitle', lang)}
               </p>
             </div>
           </div>
@@ -169,7 +174,7 @@ export default function TeacherProfileModal({
           {/* 1. Avatar Section */}
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 space-y-3">
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
-              Ảnh Đại Diện Giáo Viên (Avatar)
+              {t('avatar_label', lang)}
             </label>
             
             <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -186,7 +191,7 @@ export default function TeacherProfileModal({
                 <label 
                   htmlFor="avatar-upload"
                   className="absolute -bottom-1 -right-1 p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md cursor-pointer transition-transform hover:scale-105"
-                  title="Tải ảnh từ máy tính"
+                  title={isEn ? "Upload photo from device" : "Tải ảnh từ máy tính"}
                 >
                   <Camera className="w-3.5 h-3.5" />
                 </label>
@@ -202,7 +207,7 @@ export default function TeacherProfileModal({
               {/* Avatar Presets */}
               <div className="flex-1 space-y-2 text-center sm:text-left">
                 <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                  Chọn nhanh từ bộ sưu tập Avatar sư phạm thân thiện hoặc tải ảnh lên:
+                  {t('avatar_hint', lang)}
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
                   {AVATAR_PRESETS.map((p) => {
@@ -236,14 +241,14 @@ export default function TeacherProfileModal({
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <User className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                Họ và tên giáo viên <span className="text-rose-500">*</span>
+                <span>{t('full_name', lang)}</span> <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
                 required
                 value={formData.fullName}
                 onChange={e => setFormData({ ...formData, fullName: e.target.value })}
-                placeholder="Ví dụ: Nguyễn Minh Anh"
+                placeholder={isEn ? "e.g., John Smith" : "Ví dụ: Nguyễn Minh Anh"}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
               />
             </div>
@@ -252,7 +257,7 @@ export default function TeacherProfileModal({
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <Phone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                Số điện thoại liên hệ <span className="text-rose-500">*</span>
+                <span>{t('phone_number', lang)}</span> <span className="text-rose-500">*</span>
               </label>
               <input
                 type="tel"
@@ -268,14 +273,14 @@ export default function TeacherProfileModal({
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <Mail className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                Địa chỉ Email / Gmail <span className="text-rose-500">*</span>
+                <span>{t('email_address', lang)}</span> <span className="text-rose-500">*</span>
               </label>
               <input
                 type="email"
                 required
                 value={formData.email}
                 onChange={e => setFormData({ ...formData, email: e.target.value })}
-                placeholder="Ví dụ: minhanh.edu@gmail.com"
+                placeholder="Ví dụ: teacher.edu@gmail.com"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
               />
             </div>
@@ -284,7 +289,7 @@ export default function TeacherProfileModal({
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                Ngày tháng năm sinh
+                <span>{t('birth_date', lang)}</span>
               </label>
               <input
                 type="date"
@@ -297,20 +302,24 @@ export default function TeacherProfileModal({
             {/* Giới tính */}
             <div className="space-y-1.5 sm:col-span-2">
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                Giới tính
+                <span>{t('gender', lang)}</span>
               </label>
               <div className="flex items-center gap-5">
-                {(['Nam', 'Nữ', 'Khác'] as const).map(g => (
-                  <label key={g} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200 cursor-pointer">
+                {[
+                  { value: 'Nam', label: t('gender_male', lang) },
+                  { value: 'Nữ', label: t('gender_female', lang) },
+                  { value: 'Khác', label: t('gender_other', lang) }
+                ].map(g => (
+                  <label key={g.value} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200 cursor-pointer">
                     <input
                       type="radio"
                       name="gender"
-                      value={g}
-                      checked={formData.gender === g}
-                      onChange={() => setFormData({ ...formData, gender: g })}
+                      value={g.value}
+                      checked={formData.gender === g.value}
+                      onChange={() => setFormData({ ...formData, gender: g.value as any })}
                       className="text-emerald-600 focus:ring-emerald-500"
                     />
-                    <span>{g}</span>
+                    <span>{g.label}</span>
                   </label>
                 ))}
               </div>
@@ -323,13 +332,13 @@ export default function TeacherProfileModal({
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                 <School className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>Trường đang giảng dạy</span>
+                <span>{t('schools_title', lang)}</span>
                 <span className="text-[11px] font-normal text-slate-500 dark:text-slate-400 hidden sm:inline">
-                  (Có thể dạy tại nhiều trường)
+                  {t('schools_subtitle', lang)}
                 </span>
               </label>
               <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
-                {formData.schools.length} trường
+                {formData.schools.length} {t('schools_count', lang)}
               </span>
             </div>
 
@@ -344,14 +353,14 @@ export default function TeacherProfileModal({
                   <span>{sch}</span>
                   {idx === 0 && (
                     <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 font-bold">
-                      Chính
+                      {t('main_school_badge', lang)}
                     </span>
                   )}
                   <button
                     type="button"
                     onClick={() => handleRemoveSchool(sch)}
                     className="p-0.5 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 rounded cursor-pointer transition-colors"
-                    title="Xóa trường này"
+                    title={isEn ? "Remove this school" : "Xóa trường này"}
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -363,7 +372,7 @@ export default function TeacherProfileModal({
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="Nhập thêm tên trường (Ví dụ: THPT Chuyên Sư Phạm)..."
+                placeholder={t('add_school_placeholder', lang)}
                 value={newSchoolInput}
                 onChange={e => setNewSchoolInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddSchool(); } }}
@@ -375,7 +384,7 @@ export default function TeacherProfileModal({
                 className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm shadow-emerald-600/20 active:scale-95 shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Thêm trường</span>
+                <span>{t('add_school_button', lang)}</span>
               </button>
             </div>
           </div>
@@ -385,13 +394,13 @@ export default function TeacherProfileModal({
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                 <BookOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>Môn đang giảng dạy</span>
+                <span>{t('subjects_title', lang)}</span>
                 <span className="text-[11px] font-normal text-slate-500 dark:text-slate-400 hidden sm:inline">
-                  (Có thể đảm nhiệm nhiều môn)
+                  {t('subjects_subtitle', lang)}
                 </span>
               </label>
               <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
-                {formData.subjects.length} môn
+                {formData.subjects.length} {t('subjects_count', lang)}
               </span>
             </div>
 
@@ -408,7 +417,7 @@ export default function TeacherProfileModal({
                     type="button"
                     onClick={() => handleRemoveSubject(sub)}
                     className="p-0.5 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 rounded cursor-pointer transition-colors"
-                    title="Xóa môn này"
+                    title={isEn ? "Remove this subject" : "Xóa môn này"}
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -419,7 +428,7 @@ export default function TeacherProfileModal({
             {/* Quick Pick Popular Subjects */}
             <div className="space-y-1.5 pt-1">
               <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                Gợi ý nhanh môn học theo chương trình GDPT 2018:
+                {t('popular_subjects_hint', lang)}
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {POPULAR_SUBJECTS.map((ps) => {
@@ -447,7 +456,7 @@ export default function TeacherProfileModal({
             <div className="flex gap-2 pt-1">
               <input
                 type="text"
-                placeholder="Hoặc nhập tên môn học khác..."
+                placeholder={t('custom_subject_placeholder', lang)}
                 value={newSubjectInput}
                 onChange={e => setNewSubjectInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddSubject(newSubjectInput); } }}
@@ -459,7 +468,7 @@ export default function TeacherProfileModal({
                 className="px-3.5 py-2 rounded-xl bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm active:scale-95 shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Thêm</span>
+                <span>{t('add_subject_button', lang)}</span>
               </button>
             </div>
           </div>
@@ -468,13 +477,13 @@ export default function TeacherProfileModal({
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
               <Quote className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              Châm ngôn sư phạm / Lời nhắn tâm huyết
+              <span>{t('pedagogical_quote', lang)}</span>
             </label>
             <textarea
               rows={2}
               value={formData.bioQuote || ''}
               onChange={e => setFormData({ ...formData, bioQuote: e.target.value })}
-              placeholder="Ví dụ: Mỗi giờ lên lớp là một hành trình gieo hạt yêu thương!"
+              placeholder={isEn ? "e.g., Inspiring future leaders every single day!" : "Ví dụ: Mỗi giờ lên lớp là một hành trình gieo hạt yêu thương!"}
               className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
             />
           </div>
@@ -485,7 +494,7 @@ export default function TeacherProfileModal({
               <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
               <div>
                 <p className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
-                  Tài khoản đăng nhập: {formData.loginType === 'phone' ? 'Số điện thoại' : formData.loginType === 'email' ? 'Gmail' : 'Tài khoản nhà trường cấp'}
+                  {t('auth_status', lang)}: {formData.loginType === 'phone' ? t('method_phone', lang) : formData.loginType === 'email' ? t('method_email', lang) : t('method_school_code', lang)}
                 </p>
                 <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-mono">
                   {formData.loginIdentifier || formData.phone || formData.email}
@@ -493,7 +502,7 @@ export default function TeacherProfileModal({
               </div>
             </div>
             <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-600 text-white font-bold shrink-0">
-              Đã xác thực
+              {t('authenticated_badge', lang)}
             </span>
           </div>
 
@@ -504,7 +513,7 @@ export default function TeacherProfileModal({
               onClick={onClose}
               className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
             >
-              Hủy bỏ
+              {t('cancel_button', lang)}
             </button>
 
             <button
@@ -514,12 +523,12 @@ export default function TeacherProfileModal({
               {savedSuccess ? (
                 <>
                   <Check className="w-4 h-4 text-white animate-bounce" />
-                  <span>Đã lưu thành công!</span>
+                  <span>{t('save_success', lang)}</span>
                 </>
               ) : (
                 <>
                   <Check className="w-4 h-4 text-white" />
-                  <span>Lưu Hồ Sơ Giáo Viên</span>
+                  <span>{t('save_profile_button', lang)}</span>
                 </>
               )}
             </button>

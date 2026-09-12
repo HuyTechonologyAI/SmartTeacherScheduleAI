@@ -8,24 +8,29 @@ import {
   BarChart2, 
   User 
 } from 'lucide-react';
+import { Language } from '@/app/app/i18n';
 
 export type EduVietNavTab = 'home' | 'classes' | 'knowledge' | 'stats' | 'profile';
 
 interface EduVietBottomNavProps {
   activeTab: EduVietNavTab;
   onChangeTab: (tab: EduVietNavTab) => void;
+  lang?: Language;
 }
 
 export default function EduVietBottomNav({
   activeTab,
-  onChangeTab
+  onChangeTab,
+  lang = 'vi'
 }: EduVietBottomNavProps) {
+  const isEn = lang === 'en';
+
   const navItems = [
-    { id: 'home' as EduVietNavTab, label: 'Trang chủ', icon: Home },
-    { id: 'classes' as EduVietNavTab, label: 'Lớp học', icon: GraduationCap },
-    { id: 'knowledge' as EduVietNavTab, label: 'Học liệu', icon: BookOpen },
-    { id: 'stats' as EduVietNavTab, label: 'Thống kê', icon: BarChart2 },
-    { id: 'profile' as EduVietNavTab, label: 'Cá nhân', icon: User }
+    { id: 'home' as EduVietNavTab, label: isEn ? 'Home' : 'Trang chủ', icon: Home },
+    { id: 'classes' as EduVietNavTab, label: isEn ? 'Schedule' : 'Lịch dạy', icon: GraduationCap },
+    { id: 'knowledge' as EduVietNavTab, label: isEn ? 'Resources' : 'Kho tư liệu', icon: BookOpen },
+    { id: 'stats' as EduVietNavTab, label: isEn ? 'Reports' : 'Báo cáo', icon: BarChart2 },
+    { id: 'profile' as EduVietNavTab, label: isEn ? 'Profile' : 'Cá nhân', icon: User }
   ];
 
   return (

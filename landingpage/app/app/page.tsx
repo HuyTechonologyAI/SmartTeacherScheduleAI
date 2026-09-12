@@ -35,6 +35,7 @@ import LeaveRequestsModal from '@/components/dashboard/LeaveRequestsModal';
 import EduVietHomeView from '@/components/eduviet/EduVietHomeView';
 import TeacherProfileModal from '@/components/profile/TeacherProfileModal';
 import TeacherAuthModal from '@/components/profile/TeacherAuthModal';
+import { Language, getStoredLanguage, saveStoredLanguage, t } from './i18n';
 import {
   TeacherProfile,
   DEFAULT_TEACHER_PROFILE,
@@ -158,6 +159,7 @@ import {
   VolumeX,
   Play,
   Settings,
+  Globe,
   ShieldCheck,
   AlertTriangle,
   Cloud,
@@ -412,6 +414,7 @@ export default function UnifiedTeacherScheduleApp() {
   const [activeTab, setActiveTab] = useState<'eduviet' | 'today' | 'calendar' | 'roster' | 'report' | 'ai' | 'settings'>('eduviet');
   const [isClient, setIsClient] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [lang, setLang] = useState<Language>('vi');
 
   useEffect(() => {
     try {
@@ -425,6 +428,8 @@ export default function UnifiedTeacherScheduleApp() {
       }
       const storedProfile = getStoredTeacherProfile();
       setTeacherProfile(storedProfile);
+      const storedLang = getStoredLanguage();
+      setLang(storedLang);
     } catch (e) {
       console.error(e);
     }
@@ -441,6 +446,12 @@ export default function UnifiedTeacherScheduleApp() {
     } else {
       document.documentElement.classList.remove('dark');
     }
+  };
+
+  const toggleLanguage = () => {
+    const next: Language = lang === 'vi' ? 'en' : 'vi';
+    setLang(next);
+    saveStoredLanguage(next);
   };
 
 
@@ -2478,6 +2489,16 @@ export default function UnifiedTeacherScheduleApp() {
                 );
               })()}
 
+              {/* Language Toggle Button */}
+              <button
+                onClick={toggleLanguage}
+                className="px-2.5 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer shadow-xs flex items-center gap-1"
+                title={lang === 'vi' ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
+              >
+                <Globe className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>{lang === 'vi' ? '🇻🇳 VI' : '🇬🇧 EN'}</span>
+              </button>
+
               {/* Theme Toggle Button (Light / Dark) */}
               <button
                 onClick={toggleTheme}
@@ -2513,7 +2534,7 @@ export default function UnifiedTeacherScheduleApp() {
               className="px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-900/60 cursor-pointer"
             >
               <Home className="w-3.5 h-3.5 text-rose-600" />
-              <span>Trang chủ EduViet</span>
+              <span>{lang === 'en' ? 'EduViet Home' : 'Trang chủ EduViet'}</span>
             </button>
 
             <button
@@ -2525,7 +2546,7 @@ export default function UnifiedTeacherScheduleApp() {
               }`}
             >
               <Clock className="w-3.5 h-3.5" />
-              <span>Hôm nay</span>
+              <span>{lang === 'en' ? 'Today' : 'Hôm nay'}</span>
               <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${activeTab === 'today' ? 'bg-rose-700 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
                 {todayEvents.length}
               </span>
@@ -2540,7 +2561,7 @@ export default function UnifiedTeacherScheduleApp() {
               }`}
             >
               <Calendar className="w-3.5 h-3.5" />
-              <span>Lịch dạy</span>
+              <span>{lang === 'en' ? 'Schedule' : 'Lịch dạy'}</span>
               <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${activeTab === 'calendar' ? 'bg-rose-700 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
                 {events.length}
               </span>
@@ -2555,7 +2576,7 @@ export default function UnifiedTeacherScheduleApp() {
               }`}
             >
               <Users className="w-3.5 h-3.5" />
-              <span>Lớp & Học Sinh</span>
+              <span>{lang === 'en' ? 'Classes & Students' : 'Lớp & Học Sinh'}</span>
               <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${activeTab === 'roster' ? 'bg-rose-700 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
                 {students.length}
               </span>
@@ -2570,7 +2591,7 @@ export default function UnifiedTeacherScheduleApp() {
               }`}
             >
               <FileSpreadsheet className="w-3.5 h-3.5" />
-              <span>Sổ Báo Giảng</span>
+              <span>{lang === 'en' ? 'Teaching Log' : 'Sổ Báo Giảng'}</span>
             </button>
 
             <button
@@ -2582,7 +2603,7 @@ export default function UnifiedTeacherScheduleApp() {
               }`}
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              <span>Soạn Giáo Án AI</span>
+              <span>{lang === 'en' ? 'AI Lesson Plan' : 'Soạn Giáo Án AI'}</span>
             </button>
 
             <button
@@ -2594,7 +2615,7 @@ export default function UnifiedTeacherScheduleApp() {
               }`}
             >
               <Settings className="w-3.5 h-3.5" />
-              <span>Cài đặt</span>
+              <span>{lang === 'en' ? 'Settings' : 'Cài đặt'}</span>
             </button>
           </div>
         </nav>
@@ -2608,6 +2629,8 @@ export default function UnifiedTeacherScheduleApp() {
           <EduVietHomeView
             theme={theme}
             onToggleTheme={toggleTheme}
+            lang={lang}
+            onToggleLanguage={toggleLanguage}
             teacherName={teacherProfile.fullName}
             teacherAvatar={teacherProfile.avatar}
             schoolName={teacherProfile.schools?.[0] || "Trường THPT Việt Nam"}
@@ -6001,6 +6024,62 @@ export default function UnifiedTeacherScheduleApp() {
                 💡 Cài đặt giao diện được lưu tự động trên thiết bị này. Khi chuyển đổi, toàn bộ văn bản, thẻ tính năng, lịch giảng dạy và trợ lý AI sẽ tự động đồng bộ tone màu tương phản cao sắc nét.
               </p>
             </div>
+
+            {/* Language Selector Card */}
+            <div className="bg-white dark:bg-[#111827] border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 space-y-4 shadow-sm transition-colors">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-sm">
+                    <Globe className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                      {lang === 'en' ? 'App Language / Ngôn ngữ ứng dụng' : 'Ngôn Ngữ Ứng Dụng (Song Ngữ VI / EN)'}
+                      <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        {lang === 'en' ? 'English (🇬🇧)' : 'Tiếng Việt (🇻🇳)'}
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {lang === 'en' 
+                        ? 'Optimized for international and foreign teachers teaching at schools in Vietnam' 
+                        : 'Hỗ trợ tối ưu cho giáo viên nước ngoài và giáo viên bộ môn giảng dạy song ngữ tại Việt Nam'}
+                    </p>
+                  </div>
+                </div>
+                <div className="inline-flex p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <button
+                    onClick={() => {
+                      if (lang !== 'vi') toggleLanguage();
+                    }}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                      lang === 'vi'
+                        ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-300 shadow-xs border border-slate-200 dark:border-slate-600'
+                        : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    <span>🇻🇳 Tiếng Việt</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (lang !== 'en') toggleLanguage();
+                    }}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                      lang === 'en'
+                        ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-300 shadow-xs border border-slate-200 dark:border-slate-600'
+                        : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    <span>🇬🇧 English</span>
+                  </button>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                {lang === 'en'
+                  ? '🌐 Language preference is saved automatically on this device. The navigation, timetable, quick actions, lesson planner, and teacher profile will update seamlessly.'
+                  : '🌐 Tùy chọn ngôn ngữ được lưu tự động trên thiết bị. Toàn bộ thanh tiêu đề, menu điều hướng, lịch dạy, trợ lý soạn bài và hồ sơ sẽ tức thì chuyển đổi sang ngôn ngữ đã chọn.'}
+              </p>
+            </div>
+
             {/* Version Badge & Info */}
             <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-6 space-y-4 shadow-sm">
               <div className="flex items-center justify-between flex-wrap gap-3">
@@ -8529,6 +8608,7 @@ export default function UnifiedTeacherScheduleApp() {
         isOpen={showTeacherProfileModal}
         onClose={() => setShowTeacherProfileModal(false)}
         profile={teacherProfile}
+        lang={lang}
         onSaveProfile={(updated) => {
           setTeacherProfile(updated);
           saveTeacherProfile(updated);
@@ -8542,6 +8622,7 @@ export default function UnifiedTeacherScheduleApp() {
         isOpen={showTeacherAuthModal}
         onClose={() => setShowTeacherAuthModal(false)}
         currentProfile={teacherProfile}
+        lang={lang}
         onAuthSuccess={(profile) => {
           setTeacherProfile(profile);
           saveTeacherProfile(profile);

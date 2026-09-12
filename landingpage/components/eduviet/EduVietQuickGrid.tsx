@@ -9,9 +9,9 @@ import {
   Bell, 
   BookOpen, 
   UserCheck, 
-  MessageSquare,
-  Sparkles
+  MessageSquare
 } from 'lucide-react';
+import { Language } from '@/app/app/i18n';
 
 interface QuickActionItem {
   id: string;
@@ -25,66 +25,70 @@ interface QuickActionItem {
 interface EduVietQuickGridProps {
   onSelectAction: (actionId: string) => void;
   leaveRequestCount?: number;
+  lang?: Language;
 }
 
 export default function EduVietQuickGrid({
   onSelectAction,
-  leaveRequestCount = 0
+  leaveRequestCount = 0,
+  lang = 'vi'
 }: EduVietQuickGridProps) {
+  const isEn = lang === 'en';
+
   const actions: QuickActionItem[] = [
     {
       id: 'calendar',
-      label: 'Thời khóa biểu',
+      label: isEn ? 'Timetable' : 'Thời khóa biểu',
       icon: <Calendar className="w-5 h-5 text-white" />,
       bgColor: 'bg-rose-500 shadow-rose-500/25',
       onClick: () => onSelectAction('calendar')
     },
     {
       id: 'lesson_package',
-      label: 'Bài giảng',
+      label: isEn ? 'Lessons' : 'Bài giảng',
       icon: <Play className="w-5 h-5 text-white fill-white ml-0.5" />,
       bgColor: 'bg-amber-500 shadow-amber-500/25',
       onClick: () => onSelectAction('lesson_package')
     },
     {
       id: 'ai_plan',
-      label: 'Bài tập',
+      label: isEn ? 'Exercises' : 'Bài tập',
       icon: <FileEdit className="w-5 h-5 text-white" />,
       bgColor: 'bg-emerald-500 shadow-emerald-500/25',
       onClick: () => onSelectAction('ai_plan')
     },
     {
       id: 'stats',
-      label: 'Điểm số',
+      label: isEn ? 'Grades' : 'Điểm số',
       icon: <BarChart3 className="w-5 h-5 text-white" />,
       bgColor: 'bg-blue-500 shadow-blue-500/25',
       onClick: () => onSelectAction('stats')
     },
     {
       id: 'leave_requests',
-      label: 'Thông báo',
+      label: isEn ? 'Notices' : 'Thông báo',
       icon: <Bell className="w-5 h-5 text-white" />,
       bgColor: 'bg-rose-500 shadow-rose-500/25',
-      badge: leaveRequestCount > 0 ? leaveRequestCount : 3,
+      badge: leaveRequestCount > 0 ? leaveRequestCount : undefined,
       onClick: () => onSelectAction('leave_requests')
     },
     {
       id: 'knowledge',
-      label: 'Học liệu',
+      label: isEn ? 'Materials' : 'Học liệu',
       icon: <BookOpen className="w-5 h-5 text-white" />,
       bgColor: 'bg-teal-600 shadow-teal-600/25',
       onClick: () => onSelectAction('knowledge')
     },
     {
       id: 'attendance',
-      label: 'Điểm danh',
+      label: isEn ? 'Attendance' : 'Điểm danh',
       icon: <UserCheck className="w-5 h-5 text-white" />,
       bgColor: 'bg-amber-500 shadow-amber-500/25',
       onClick: () => onSelectAction('attendance')
     },
     {
       id: 'share_portal',
-      label: 'Trao đổi',
+      label: isEn ? 'Connect' : 'Trao đổi',
       icon: <MessageSquare className="w-5 h-5 text-white" />,
       bgColor: 'bg-pink-500 shadow-pink-500/25',
       onClick: () => onSelectAction('share_portal')
@@ -104,7 +108,7 @@ export default function EduVietQuickGrid({
               {item.icon}
             </div>
             {item.badge !== undefined && (
-              <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-rose-600 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-sm">
+              <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-rose-600 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-sm animate-pulse">
                 {item.badge}
               </span>
             )}

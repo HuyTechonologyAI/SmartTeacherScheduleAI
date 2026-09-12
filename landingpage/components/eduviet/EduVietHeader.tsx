@@ -8,18 +8,20 @@ import {
   ChevronDown, 
   GraduationCap, 
   User, 
-  ShieldCheck,
-  Share2,
-  CalendarDays,
-  RefreshCw,
-  Sun,
-  Moon,
-  School,
-  BookOpen,
-  LogIn,
-  LogOut,
-  Edit3
+  ShieldCheck, 
+  Share2, 
+  CalendarDays, 
+  RefreshCw, 
+  Sun, 
+  Moon, 
+  School, 
+  BookOpen, 
+  LogIn, 
+  LogOut, 
+  Edit3,
+  Globe
 } from 'lucide-react';
+import { Language, t } from '@/app/app/i18n';
 
 interface EduVietHeaderProps {
   userName?: string;
@@ -41,6 +43,8 @@ interface EduVietHeaderProps {
   unreadCount?: number;
   theme?: 'light' | 'dark';
   onToggleTheme?: () => void;
+  lang?: Language;
+  onToggleLanguage?: () => void;
   onOpenProfile?: () => void;
   onOpenLogin?: () => void;
   onLogout?: () => void;
@@ -66,6 +70,8 @@ export default function EduVietHeader({
   unreadCount = 0,
   theme = 'light',
   onToggleTheme,
+  lang = 'vi',
+  onToggleLanguage,
   onOpenProfile,
   onOpenLogin,
   onLogout
@@ -85,7 +91,7 @@ export default function EduVietHeader({
         <div className="flex items-center justify-between gap-2">
           {/* Logo & Slogan */}
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 p-2 shadow-md shadow-indigo-950/20 flex items-center justify-center border border-indigo-400/30">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 p-2 shadow-md shadow-indigo-950/20 flex items-center justify-center border border-indigo-400/30 shrink-0">
               <div className="relative">
                 <GraduationCap className="w-6 h-6 text-indigo-400 animate-pulse" />
                 <span className="absolute -top-1 -right-1 flex h-2 w-2">
@@ -100,20 +106,34 @@ export default function EduVietHeader({
                 <span className="text-2xl font-black tracking-tight text-emerald-600">Viet</span>
               </div>
               <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 tracking-tight mt-0.5">
-                Cùng tri thức – Vững tương lai
+                {t('brand_slogan', lang)}
               </p>
             </div>
           </div>
 
-          {/* Right Action Icons: Theme Toggle, Notification, Share, User Profile */}
-          <div className="flex items-center gap-2 sm:gap-2.5">
+          {/* Right Action Icons: Language Toggle, Theme Toggle, Notification, Share, User Profile */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            
+            {/* Language Toggle VI / EN */}
+            {onToggleLanguage && (
+              <button
+                type="button"
+                onClick={onToggleLanguage}
+                className="h-10 px-3 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 shadow-xs flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer"
+                title={t('lang_switch', lang)}
+              >
+                <Globe className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>{lang === 'vi' ? '🇻🇳 VI' : '🇬🇧 EN'}</span>
+              </button>
+            )}
+
             {/* Theme Toggle Sun / Moon button */}
             {onToggleTheme && (
               <button
                 type="button"
                 onClick={onToggleTheme}
                 className="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 shadow-xs flex items-center justify-center text-slate-700 dark:text-amber-400 transition-colors cursor-pointer"
-                title={theme === 'dark' ? 'Chuyển sang Chế độ Sáng' : 'Chuyển sang Chế độ Tối'}
+                title={theme === 'dark' ? t('theme_light', lang) : t('theme_dark', lang)}
               >
                 {theme === 'dark' ? (
                   <Sun className="w-4 h-4 text-amber-400" />
@@ -127,8 +147,8 @@ export default function EduVietHeader({
             {syncCode && (
               <button
                 onClick={onOpenSync}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-xs font-mono font-bold text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
-                title="Mã đồng bộ đám mây"
+                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-xs font-mono font-bold text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+                title={t('sync_code_title', lang)}
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>{syncCode}</span>
@@ -141,10 +161,10 @@ export default function EduVietHeader({
                 onClick={onSyncBothWays}
                 disabled={isSyncing}
                 className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 text-xs font-semibold text-blue-700 dark:text-blue-300 transition-colors cursor-pointer disabled:opacity-50"
-                title="Đồng bộ hai chiều với điện thoại"
+                title={t('qa_cloud_sync_title', lang)}
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-                <span>{isSyncing ? 'Đang đồng bộ...' : (totalEventsCount ? `${totalEventsCount} ca dạy` : 'Đồng bộ')}</span>
+                <span>{isSyncing ? t('syncing', lang) : (totalEventsCount ? `${totalEventsCount} ${t('teaching_sessions', lang)}` : t('sync_button', lang))}</span>
               </button>
             )}
 
@@ -153,10 +173,10 @@ export default function EduVietHeader({
               <button
                 onClick={onOpenPortalShare}
                 className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800 text-xs font-semibold text-indigo-700 dark:text-indigo-300 transition-colors cursor-pointer"
-                title="Chia sẻ link vào nhóm Zalo Học sinh & Phụ huynh"
+                title={t('share_zalo', lang)}
               >
                 <Share2 className="w-3.5 h-3.5" />
-                <span>Gửi Zalo</span>
+                <span>{t('share_zalo', lang)}</span>
               </button>
             )}
 
@@ -164,7 +184,7 @@ export default function EduVietHeader({
             <button
               onClick={onOpenNotifications}
               className="relative w-10 h-10 rounded-full bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 shadow-xs flex items-center justify-center text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
-              title={unreadCount > 0 ? `${unreadCount} đơn yêu cầu từ phụ huynh cần xử lý` : "Đơn yêu cầu từ phụ huynh (Không có đơn mới)"}
+              title={unreadCount > 0 ? `${unreadCount} ${t('notification_parent', lang)}` : t('no_notifications', lang)}
             >
               <Bell className="w-4 h-4 text-slate-600 dark:text-slate-300" />
               {unreadCount > 0 && (
@@ -180,7 +200,7 @@ export default function EduVietHeader({
                 type="button"
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 className="flex items-center gap-1 pl-1 cursor-pointer group focus:outline-none"
-                title={`Tài khoản: ${userName}`}
+                title={`${t('logged_in_as', lang)}: ${userName}`}
               >
                 <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-100 to-teal-100 dark:from-emerald-950/60 dark:to-teal-900/60 border-2 border-emerald-500/70 p-0.5 overflow-hidden shadow-sm flex items-center justify-center">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -216,11 +236,11 @@ export default function EduVietHeader({
                           {userName}
                         </h4>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                          {teacherEmail || teacherPhone || "Giáo viên"}
+                          {teacherEmail || teacherPhone || t('teacher_role', lang)}
                         </p>
                         <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                           <GraduationCap className="w-3 h-3" />
-                          <span>{userRole}</span>
+                          <span>{t('teacher_role', lang)}</span>
                         </span>
                       </div>
                     </div>
@@ -236,13 +256,33 @@ export default function EduVietHeader({
                       {teacherSubjects && teacherSubjects.length > 0 && (
                         <div className="flex items-start gap-1.5">
                           <BookOpen className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                          <span className="truncate">Môn: {teacherSubjects.join(', ')}</span>
+                          <span className="truncate">{t('subject_label', lang)}: {teacherSubjects.join(', ')}</span>
                         </div>
                       )}
                     </div>
 
                     {/* Action Menu Items */}
                     <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1">
+                      
+                      {/* Language switch inside menu */}
+                      {onToggleLanguage && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onToggleLanguage();
+                          }}
+                          className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer text-left"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Globe className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                            <span>{lang === 'vi' ? 'Ngôn ngữ (Language)' : 'Language (Ngôn ngữ)'}</span>
+                          </div>
+                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800">
+                            {lang === 'vi' ? '🇻🇳 Tiếng Việt' : '🇬🇧 English'}
+                          </span>
+                        </button>
+                      )}
+
                       <button
                         type="button"
                         onClick={() => {
@@ -252,7 +292,7 @@ export default function EduVietHeader({
                         className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer text-left"
                       >
                         <Edit3 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                        <span>Chỉnh sửa thông tin hồ sơ</span>
+                        <span>{t('edit_profile', lang)}</span>
                       </button>
 
                       <button
@@ -264,7 +304,7 @@ export default function EduVietHeader({
                         className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer text-left"
                       >
                         <LogIn className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                        <span>Đổi tài khoản / Đăng nhập</span>
+                        <span>{t('switch_account', lang)}</span>
                       </button>
 
                       <button
@@ -276,7 +316,7 @@ export default function EduVietHeader({
                         className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer text-left"
                       >
                         <LogOut className="w-4 h-4" />
-                        <span>Đăng xuất tài khoản</span>
+                        <span>{t('logout', lang)}</span>
                       </button>
                     </div>
                   </div>
@@ -292,7 +332,7 @@ export default function EduVietHeader({
             <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 mr-2.5 flex-shrink-0" />
             <input
               type="text"
-              placeholder="Tìm kiếm bài giảng, tài liệu, lớp học, giáo án..."
+              placeholder={t('search_placeholder', lang)}
               value={searchVal}
               onChange={handleSearchChange}
               className="w-full bg-transparent text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"

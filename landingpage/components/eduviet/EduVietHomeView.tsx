@@ -10,6 +10,7 @@ import EduVietProgressCard from './EduVietProgressCard';
 import EduVietFeaturedCards from './EduVietFeaturedCards';
 import EduVietFooterDecoration from './EduVietFooterDecoration';
 import EduVietBottomNav, { EduVietNavTab } from './EduVietBottomNav';
+import { Language } from '@/app/app/i18n';
 
 interface EduVietHomeViewProps {
   teacherName?: string;
@@ -44,6 +45,8 @@ interface EduVietHomeViewProps {
   onSelectSession?: (session: TimelineSessionItem) => void;
   theme?: 'light' | 'dark';
   onToggleTheme?: () => void;
+  lang?: Language;
+  onToggleLanguage?: () => void;
 }
 
 export default function EduVietHomeView({
@@ -78,7 +81,9 @@ export default function EduVietHomeView({
   onViewAllSessions,
   onSelectSession,
   theme = 'light',
-  onToggleTheme
+  onToggleTheme,
+  lang = 'vi',
+  onToggleLanguage
 }: EduVietHomeViewProps) {
   const [activeNavTab, setActiveNavTab] = useState<EduVietNavTab>('home');
 
@@ -117,16 +122,19 @@ export default function EduVietHomeView({
         totalEventsCount={totalEventsCount}
         theme={theme}
         onToggleTheme={onToggleTheme}
+        lang={lang}
+        onToggleLanguage={onToggleLanguage}
       />
 
       {/* Main Container */}
       <main className="max-w-4xl mx-auto w-full px-3.5 sm:px-6 py-4 space-y-4 sm:space-y-5 flex-1">
-        {/* 2. Hero Banner: Tri thức hôm nay - Tương lai ngày mai */}
+        {/* 2. Hero Banner */}
         <EduVietHeroBanner
           onActionClick={() => onSelectAction('lesson_package')}
+          lang={lang}
         />
 
-        {/* 3. Identity Card: Nguyễn Minh Anh - Lớp 10A1 */}
+        {/* 3. Identity Card */}
         <EduVietIdentityCard
           name={teacherName}
           avatar={teacherAvatar}
@@ -135,7 +143,8 @@ export default function EduVietHomeView({
           classNameOrSubject={classNameOrSubject}
           schoolName={schoolName}
           role="teacher"
-          quote={teacherQuote || "Mỗi giờ lên lớp là một hành trình gieo hạt yêu thương!"}
+          quote={teacherQuote}
+          lang={lang}
           onCardClick={() => {
             if (onOpenProfile) onOpenProfile();
             else onSelectAction('profile');
@@ -146,24 +155,25 @@ export default function EduVietHomeView({
         <EduVietQuickGrid
           onSelectAction={onSelectAction}
           leaveRequestCount={leaveRequestCount}
+          lang={lang}
         />
 
         {/* 5. Core 2 Columns Dashboard: Lịch học hôm nay (Timeline) & Tiến độ học tập (Progress Gauge) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 w-full">
           {/* Left Column: Timeline */}
           <EduVietTimelineToday
-            title="Lịch học hôm nay"
             sessions={todaySessions}
             onViewAll={onViewAllSessions}
             onSelectSession={onSelectSession}
+            lang={lang}
           />
 
           {/* Right Column: Circular Progress */}
           <EduVietProgressCard
-            title="Tiến độ học tập"
+            title={lang === 'en' ? "Academic Progress" : "Tiến độ học tập"}
             percent={progressPercent}
-            encouragementTitle="Bạn đang học rất tốt!"
-            encouragementSubtitle="Tiếp tục cố gắng để đạt mục tiêu nhé!"
+            encouragementTitle={lang === 'en' ? "Great teaching progress!" : "Bạn đang dạy và học rất tốt!"}
+            encouragementSubtitle={lang === 'en' ? "Keep inspiring your classroom today!" : "Tiếp tục cố gắng để đạt mục tiêu nhé!"}
             lessonCount={stats.lessons}
             exerciseCount={stats.exercises}
             topicCount={stats.topics}
@@ -175,10 +185,10 @@ export default function EduVietHomeView({
         <EduVietFeaturedCards
           onViewAllClasses={() => onSelectAction('calendar')}
           onViewAllAnnouncements={onOpenNotifications}
-          onSelectClass={(cls) => onSelectAction('calendar')}
+          onSelectClass={() => onSelectAction('calendar')}
         />
 
-        {/* 7. Footer Cultural Decoration: Cờ đỏ sao vàng + Chữ ký thư pháp */}
+        {/* 7. Footer Cultural Decoration */}
         <EduVietFooterDecoration />
       </main>
 
@@ -186,6 +196,7 @@ export default function EduVietHomeView({
       <EduVietBottomNav
         activeTab={activeNavTab}
         onChangeTab={handleNavTabChange}
+        lang={lang}
       />
     </div>
   );

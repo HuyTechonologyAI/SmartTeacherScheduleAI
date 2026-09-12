@@ -11,32 +11,32 @@ import {
   Check, 
   LogIn, 
   UserPlus, 
-  ShieldCheck, 
-  KeyRound, 
   ArrowRight,
-  GraduationCap,
-  Sparkles
+  GraduationCap
 } from 'lucide-react';
 import { 
   TeacherProfile, 
-  DEFAULT_TEACHER_PROFILE, 
   getStoredTeacherAccounts, 
   saveTeacherProfile 
 } from '@/app/app/teacherProfileData';
+import { Language, t } from '@/app/app/i18n';
 
 interface TeacherAuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentProfile: TeacherProfile;
   onAuthSuccess: (profile: TeacherProfile) => void;
+  lang?: Language;
 }
 
 export default function TeacherAuthModal({
   isOpen,
   onClose,
   currentProfile,
-  onAuthSuccess
+  onAuthSuccess,
+  lang = 'vi'
 }: TeacherAuthModalProps) {
+  const isEn = lang === 'en';
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   const [loginMethod, setLoginMethod] = useState<'phone' | 'email' | 'school_code'>('phone');
   
@@ -60,7 +60,7 @@ export default function TeacherAuthModal({
     e.preventDefault();
     const cleanId = loginIdentifier.trim();
     if (!cleanId) {
-      alert("Vui lòng nhập số điện thoại, Gmail hoặc mã trường cấp");
+      alert(isEn ? "Please enter phone number, Gmail, or school teacher code" : "Vui lòng nhập số điện thoại, Gmail hoặc mã trường cấp");
       return;
     }
 
@@ -96,7 +96,7 @@ export default function TeacherAuthModal({
     }
 
     saveTeacherProfile(loggedProfile);
-    setSuccessMsg('Đăng nhập thành công! Chào mừng thầy/cô ' + loggedProfile.fullName);
+    setSuccessMsg(isEn ? `Signed in successfully! Welcome Teacher ${loggedProfile.fullName}` : `Đăng nhập thành công! Chào mừng thầy/cô ${loggedProfile.fullName}`);
     setTimeout(() => {
       setSuccessMsg(null);
       onAuthSuccess(loggedProfile);
@@ -107,11 +107,11 @@ export default function TeacherAuthModal({
   const handleRegisterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!regFullName.trim()) {
-      alert("Vui lòng nhập họ tên giáo viên");
+      alert(isEn ? "Please enter teacher full name" : "Vui lòng nhập họ tên giáo viên");
       return;
     }
     if (!regIdentifier.trim()) {
-      alert("Vui lòng nhập số điện thoại, email hoặc mã trường cấp");
+      alert(isEn ? "Please enter phone number, email, or school code" : "Vui lòng nhập số điện thoại, email hoặc mã trường cấp");
       return;
     }
 
@@ -127,17 +127,17 @@ export default function TeacherAuthModal({
       birthDate: "1990-01-01",
       gender: "Nữ",
       email: loginMethod === 'email' ? regIdentifier.trim() : (newId.toLowerCase() + "@edu.vn"),
-      schools: [regSchool.trim() || "Trường THPT Việt Nam"],
-      subjects: [regSubject.trim() || "Toán học"],
+      schools: [regSchool.trim() || (isEn ? "Vietnam High School" : "Trường THPT Việt Nam")],
+      subjects: [regSubject.trim() || (isEn ? "Mathematics" : "Toán học")],
       loginType: loginMethod,
       loginIdentifier: regIdentifier.trim(),
-      bioQuote: "Mỗi giờ lên lớp là một hành trình gieo hạt yêu thương!",
+      bioQuote: isEn ? "Every teaching hour is a journey of inspiring young minds!" : "Mỗi giờ lên lớp là một hành trình gieo hạt yêu thương!",
       isLoggedIn: true,
       lastLoginAt: new Date().toISOString()
     };
 
     saveTeacherProfile(newProfile);
-    setSuccessMsg('Đăng ký tài khoản giáo viên thành công! Chào mừng thầy/cô ' + newProfile.fullName);
+    setSuccessMsg(isEn ? `Teacher account registered successfully! Welcome ${newProfile.fullName}` : `Đăng ký tài khoản giáo viên thành công! Chào mừng thầy/cô ${newProfile.fullName}`);
     setTimeout(() => {
       setSuccessMsg(null);
       onAuthSuccess(newProfile);
@@ -147,7 +147,7 @@ export default function TeacherAuthModal({
 
   const handleQuickSelectAccount = (acc: TeacherProfile) => {
     saveTeacherProfile({ ...acc, isLoggedIn: true, lastLoginAt: new Date().toISOString() });
-    setSuccessMsg('Đã chuyển sang tài khoản ' + acc.fullName + '!');
+    setSuccessMsg(isEn ? `Switched to account ${acc.fullName}!` : `Đã chuyển sang tài khoản ${acc.fullName}!`);
     setTimeout(() => {
       setSuccessMsg(null);
       onAuthSuccess(acc);
@@ -167,10 +167,10 @@ export default function TeacherAuthModal({
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                Tài Khoản Giáo Viên
+                {t('auth_modal_title', lang)}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Đăng nhập hoặc đăng ký tài khoản đồng bộ giảng dạy
+                {t('auth_modal_subtitle', lang)}
               </p>
             </div>
           </div>
@@ -194,7 +194,7 @@ export default function TeacherAuthModal({
             }`}
           >
             <LogIn className="w-4 h-4" />
-            <span>Đăng Nhập</span>
+            <span>{t('tab_login', lang)}</span>
           </button>
           <button
             type="button"
@@ -206,14 +206,14 @@ export default function TeacherAuthModal({
             }`}
           >
             <UserPlus className="w-4 h-4" />
-            <span>Đăng Ký Mới</span>
+            <span>{t('tab_register', lang)}</span>
           </button>
         </div>
 
         {/* Method Switcher: 1. Phone | 2. Gmail | 3. School ID */}
         <div className="px-6 pt-4 space-y-2">
           <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            Chọn phương thức {activeTab === 'login' ? 'đăng nhập' : 'đăng ký'}:
+            {t('choose_method', lang)} ({activeTab === 'login' ? t('tab_login', lang) : t('tab_register', lang)}):
           </label>
           <div className="grid grid-cols-3 gap-2">
             
@@ -228,7 +228,7 @@ export default function TeacherAuthModal({
               }`}
             >
               <Phone className="w-4 h-4" />
-              <span className="text-[11px] font-bold">Số điện thoại</span>
+              <span className="text-[11px] font-bold">{t('method_phone', lang)}</span>
             </button>
 
             {/* Gmail */}
@@ -242,7 +242,7 @@ export default function TeacherAuthModal({
               }`}
             >
               <Mail className="w-4 h-4" />
-              <span className="text-[11px] font-bold">Gmail / Email</span>
+              <span className="text-[11px] font-bold">{t('method_email', lang)}</span>
             </button>
 
             {/* School Code */}
@@ -256,7 +256,7 @@ export default function TeacherAuthModal({
               }`}
             >
               <School className="w-4 h-4" />
-              <span className="text-[11px] font-bold">Trường cấp</span>
+              <span className="text-[11px] font-bold">{t('method_school_code', lang)}</span>
             </button>
 
           </div>
@@ -283,7 +283,7 @@ export default function TeacherAuthModal({
                   {loginMethod === 'email' && <Mail className="w-3.5 h-3.5 text-emerald-600" />}
                   {loginMethod === 'school_code' && <School className="w-3.5 h-3.5 text-emerald-600" />}
                   <span>
-                    {loginMethod === 'phone' ? 'Số điện thoại giáo viên' : loginMethod === 'email' ? 'Địa chỉ Gmail / Email' : 'Mã tài khoản nhà trường cấp'}
+                    {loginMethod === 'phone' ? t('login_id_phone', lang) : loginMethod === 'email' ? t('login_id_email', lang) : t('login_id_school', lang)}
                   </span>
                 </label>
                 <input
@@ -293,10 +293,10 @@ export default function TeacherAuthModal({
                   onChange={e => setLoginIdentifier(e.target.value)}
                   placeholder={
                     loginMethod === 'phone' 
-                      ? 'Ví dụ: 0961364600' 
+                      ? '0961364600' 
                       : loginMethod === 'email' 
-                      ? 'Ví dụ: minhanh.edu@gmail.com' 
-                      : 'Ví dụ: GV-THPT-01'
+                      ? 'minhanh.edu@gmail.com' 
+                      : 'GV-THPT-01'
                   }
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                 />
@@ -307,17 +307,17 @@ export default function TeacherAuthModal({
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                     <Lock className="w-3.5 h-3.5 text-emerald-600" />
-                    Mật khẩu
+                    <span>{t('password', lang)}</span>
                   </label>
                   <span className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer">
-                    Quên mật khẩu?
+                    {t('forgot_password', lang)}
                   </span>
                 </div>
                 <input
                   type="password"
                   value={loginPassword}
                   onChange={e => setLoginPassword(e.target.value)}
-                  placeholder="Nhập mật khẩu..."
+                  placeholder="******"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                 />
               </div>
@@ -328,14 +328,14 @@ export default function TeacherAuthModal({
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-md shadow-emerald-600/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <LogIn className="w-4 h-4" />
-                <span>Đăng Nhập Vào Hệ Thống</span>
+                <span>{t('login_submit', lang)}</span>
               </button>
 
               {/* Quick Saved Accounts */}
               {savedAccounts.length > 0 && (
                 <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
                   <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                    Tài khoản giáo viên đã lưu trên máy:
+                    {t('saved_accounts_title', lang)}
                   </p>
                   <div className="space-y-1.5 max-h-32 overflow-y-auto">
                     {savedAccounts.map((acc, idx) => (
@@ -356,12 +356,12 @@ export default function TeacherAuthModal({
                               {acc.fullName}
                             </p>
                             <p className="text-[10px] text-slate-400">
-                              {acc.schools?.[0] || 'Trường THPT'} • {acc.subjects?.join(', ') || 'Giáo viên'}
+                              {acc.schools?.[0] || 'Trường THPT'} • {acc.subjects?.join(', ') || t('teacher_role', lang)}
                             </p>
                           </div>
                         </div>
                         <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                          <span>Chọn</span>
+                          <span>{t('select_account', lang)}</span>
                           <ArrowRight className="w-3 h-3" />
                         </span>
                       </div>
@@ -379,14 +379,14 @@ export default function TeacherAuthModal({
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                   <User className="w-3.5 h-3.5 text-emerald-600" />
-                  Họ và tên giáo viên <span className="text-rose-500">*</span>
+                  <span>{t('full_name', lang)}</span> <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={regFullName}
                   onChange={e => setRegFullName(e.target.value)}
-                  placeholder="Ví dụ: Nguyễn Minh Anh"
+                  placeholder={isEn ? "e.g., John Smith" : "Ví dụ: Nguyễn Minh Anh"}
                   className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                 />
               </div>
@@ -398,7 +398,7 @@ export default function TeacherAuthModal({
                   {loginMethod === 'email' && <Mail className="w-3.5 h-3.5 text-emerald-600" />}
                   {loginMethod === 'school_code' && <School className="w-3.5 h-3.5 text-emerald-600" />}
                   <span>
-                    {loginMethod === 'phone' ? 'Số điện thoại đăng ký' : loginMethod === 'email' ? 'Địa chỉ Gmail / Email' : 'Mã giáo viên trường cấp'} <span className="text-rose-500">*</span>
+                    {loginMethod === 'phone' ? t('login_id_phone', lang) : loginMethod === 'email' ? t('login_id_email', lang) : t('login_id_school', lang)} <span className="text-rose-500">*</span>
                   </span>
                 </label>
                 <input
@@ -408,10 +408,10 @@ export default function TeacherAuthModal({
                   onChange={e => setRegIdentifier(e.target.value)}
                   placeholder={
                     loginMethod === 'phone' 
-                      ? 'Ví dụ: 0961364600' 
+                      ? '0961364600' 
                       : loginMethod === 'email' 
-                      ? 'Ví dụ: minhanh.edu@gmail.com' 
-                      : 'Ví dụ: GV-THPT-01'
+                      ? 'minhanh.edu@gmail.com' 
+                      : 'GV-THPT-01'
                   }
                   className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                 />
@@ -421,13 +421,13 @@ export default function TeacherAuthModal({
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                   <School className="w-3.5 h-3.5 text-emerald-600" />
-                  Trường đang giảng dạy
+                  <span>{t('register_school', lang)}</span>
                 </label>
                 <input
                   type="text"
                   value={regSchool}
                   onChange={e => setRegSchool(e.target.value)}
-                  placeholder="Ví dụ: Trường THPT Việt Nam"
+                  placeholder={isEn ? "e.g., Vietnam International School" : "Ví dụ: Trường THPT Việt Nam"}
                   className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                 />
               </div>
@@ -436,13 +436,13 @@ export default function TeacherAuthModal({
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                   <GraduationCap className="w-3.5 h-3.5 text-emerald-600" />
-                  Môn học phụ trách
+                  <span>{t('register_subject', lang)}</span>
                 </label>
                 <input
                   type="text"
                   value={regSubject}
                   onChange={e => setRegSubject(e.target.value)}
-                  placeholder="Ví dụ: Toán học, Tin học"
+                  placeholder={isEn ? "e.g., Mathematics, Computer Science" : "Ví dụ: Toán học, Tin học"}
                   className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                 />
               </div>
@@ -451,13 +451,13 @@ export default function TeacherAuthModal({
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-emerald-600" />
-                  Mật khẩu đăng nhập
+                  <span>{t('register_password', lang)}</span>
                 </label>
                 <input
                   type="password"
                   value={regPassword}
                   onChange={e => setRegPassword(e.target.value)}
-                  placeholder="Tạo mật khẩu an toàn..."
+                  placeholder="******"
                   className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                 />
               </div>
@@ -468,7 +468,7 @@ export default function TeacherAuthModal({
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-md shadow-emerald-600/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer pt-2"
               >
                 <UserPlus className="w-4 h-4" />
-                <span>Đăng Ký & Bắt Đầu Sử Dụng Ngay</span>
+                <span>{t('register_submit', lang)}</span>
               </button>
 
             </form>

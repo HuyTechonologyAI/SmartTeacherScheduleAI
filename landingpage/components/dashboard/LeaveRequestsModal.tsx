@@ -72,75 +72,75 @@ export default function LeaveRequestsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-3xl w-full max-w-3xl max-h-[92vh] overflow-y-auto shadow-2xl flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white border border-slate-200/80 rounded-3xl w-full max-w-3xl max-h-[92vh] overflow-y-auto shadow-2xl flex flex-col text-slate-800">
         {/* Header */}
-        <div className="p-6 border-b border-slate-800 flex items-center justify-between sticky top-0 bg-slate-900/95 backdrop-blur z-10">
+        <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center shadow-xs">
               <FileText className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                 Đơn xin nghỉ học trực tuyến
                 {pendingCount > 0 && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse">
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-bold animate-pulse">
                     {pendingCount} đơn chờ duyệt
                   </span>
                 )}
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 Phụ huynh gửi đơn từ Sổ liên lạc điện tử. Duyệt đơn sẽ tự động cập nhật Điểm danh Nghỉ có phép.
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Filter Pills */}
-        <div className="p-4 border-b border-slate-800/80 bg-slate-950/60 flex flex-wrap gap-2 items-center justify-between">
+        <div className="p-4 border-b border-slate-100 bg-slate-50/80 flex flex-wrap gap-2 items-center justify-between">
           <div className="flex items-center gap-1.5 overflow-x-auto">
             <button
               onClick={() => setFilter('ALL')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 filter === 'ALL'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
               }`}
             >
               Tất cả ({leaveRequests.length})
             </button>
             <button
               onClick={() => setFilter('PENDING')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 filter === 'PENDING'
-                  ? 'bg-amber-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
               }`}
             >
               Chờ duyệt ({pendingCount})
             </button>
             <button
               onClick={() => setFilter('APPROVED')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 filter === 'APPROVED'
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
               }`}
             >
               Đã duyệt ({approvedCount})
             </button>
             <button
               onClick={() => setFilter('REJECTED')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 filter === 'REJECTED'
-                  ? 'bg-rose-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
               }`}
             >
               Từ chối ({rejectedCount})
@@ -150,7 +150,7 @@ export default function LeaveRequestsModal({
           {onTriggerSync && (
             <button
               onClick={onTriggerSync}
-              className="text-xs text-indigo-400 hover:text-indigo-300 font-medium underline cursor-pointer"
+              className="text-xs text-rose-600 hover:text-rose-700 font-semibold underline cursor-pointer"
             >
               Đồng bộ dữ liệu mới nhất
             </button>
@@ -160,10 +160,10 @@ export default function LeaveRequestsModal({
         {/* Request List */}
         <div className="p-6 space-y-4 flex-1">
           {filteredRequests.length === 0 ? (
-            <div className="py-12 text-center text-slate-500">
+            <div className="py-12 text-center text-slate-400">
               <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="text-sm font-medium">Không có đơn xin nghỉ học nào {filter !== 'ALL' ? 'trong mục này' : ''}</p>
-              <p className="text-xs mt-1 text-slate-600">
+              <p className="text-sm font-medium text-slate-600">Không có đơn xin nghỉ học nào {filter !== 'ALL' ? 'trong mục này' : ''}</p>
+              <p className="text-xs mt-1 text-slate-500">
                 Khi phụ huynh nộp đơn từ Cổng Phụ huynh, đơn sẽ hiển thị tại đây để Thầy/Cô xét duyệt.
               </p>
             </div>
@@ -179,38 +179,38 @@ export default function LeaveRequestsModal({
                   key={req.id}
                   className={`p-5 rounded-2xl border transition-all ${
                     isPending
-                      ? 'bg-amber-950/10 border-amber-600/40 shadow-sm shadow-amber-900/10'
+                      ? 'bg-amber-50/50 border-amber-200 shadow-xs'
                       : isApproved
-                      ? 'bg-emerald-950/10 border-emerald-600/30'
-                      : 'bg-slate-800/40 border-slate-700'
+                      ? 'bg-emerald-50/50 border-emerald-200'
+                      : 'bg-slate-50 border-slate-200'
                   }`}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-base font-bold text-white">{req.studentName}</span>
+                        <span className="text-base font-bold text-slate-900">{req.studentName}</span>
                         {req.studentCode && (
-                          <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                          <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-bold">
                             {req.studentCode}
                           </span>
                         )}
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
                           {req.className}
                         </span>
                       </div>
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-slate-400">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-slate-500">
                         <span className="flex items-center gap-1">
-                          <User className="w-3.5 h-3.5 text-slate-500" />
-                          PH: <strong className="text-slate-300">{req.parentName}</strong>
+                          <User className="w-3.5 h-3.5 text-slate-400" />
+                          PH: <strong className="text-slate-700">{req.parentName}</strong>
                         </span>
                         <a
                           href={`tel:${req.parentPhone}`}
-                          className="flex items-center gap-1 text-indigo-400 hover:underline"
+                          className="flex items-center gap-1 text-rose-600 hover:underline font-semibold"
                         >
                           <Phone className="w-3.5 h-3.5" />
                           {req.parentPhone}
                         </a>
-                        <span className="text-slate-500">
+                        <span className="text-slate-400">
                           Gửi lúc: {new Date(req.createdAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })}
                         </span>
                       </div>
@@ -218,19 +218,19 @@ export default function LeaveRequestsModal({
 
                     <div className="flex items-center gap-2 self-start">
                       {isPending && (
-                        <span className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center gap-1.5">
+                        <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300 text-xs font-bold flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5" />
                           Chờ Thầy/Cô duyệt
                         </span>
                       )}
                       {isApproved && (
-                        <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5">
+                        <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold flex items-center gap-1.5">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           Đã duyệt có phép
                         </span>
                       )}
                       {isRejected && (
-                        <span className="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-semibold flex items-center gap-1.5">
+                        <span className="px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 border border-rose-300 text-xs font-bold flex items-center gap-1.5">
                           <XCircle className="w-3.5 h-3.5" />
                           Không duyệt
                         </span>
@@ -239,7 +239,7 @@ export default function LeaveRequestsModal({
                       <button
                         onClick={() => onDelete(req.id)}
                         title="Xóa đơn này"
-                        className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors cursor-pointer"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -247,21 +247,21 @@ export default function LeaveRequestsModal({
                   </div>
 
                   {/* Date & Reason Box */}
-                  <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 text-xs space-y-2">
-                    <div className="flex items-center gap-2 text-slate-300 font-medium">
-                      <Calendar className="w-4 h-4 text-amber-400" />
+                  <div className="p-3.5 rounded-xl bg-white border border-slate-200/80 text-xs space-y-2 shadow-xs">
+                    <div className="flex items-center gap-2 text-slate-800 font-medium">
+                      <Calendar className="w-4 h-4 text-amber-600" />
                       <span>
-                        Thời gian nghỉ: Từ <strong>{req.fromDate}</strong> đến <strong>{req.toDate}</strong>
-                        {req.fromDate === req.toDate && <span className="text-slate-400 ml-1">(1 ngày)</span>}
+                        Thời gian nghỉ: Từ <strong className="text-slate-900">{req.fromDate}</strong> đến <strong className="text-slate-900">{req.toDate}</strong>
+                        {req.fromDate === req.toDate && <span className="text-slate-500 ml-1 font-normal">(1 ngày)</span>}
                       </span>
                     </div>
                     <div>
-                      <span className="text-slate-400 font-medium">Lý do từ Phụ huynh: </span>
-                      <span className="text-slate-200 italic">"{req.reason}"</span>
+                      <span className="text-slate-500 font-medium">Lý do từ Phụ huynh: </span>
+                      <span className="text-slate-800 italic">"{req.reason}"</span>
                     </div>
                     {req.teacherNote && (
-                      <div className="pt-1 text-slate-400 border-t border-slate-800/80">
-                        <span className="text-indigo-400 font-medium">Ghi chú của Thầy/Cô: </span>
+                      <div className="pt-1 text-slate-600 border-t border-slate-100">
+                        <span className="text-rose-600 font-semibold">Ghi chú của Thầy/Cô: </span>
                         <span>{req.teacherNote}</span>
                       </div>
                     )}
@@ -269,19 +269,19 @@ export default function LeaveRequestsModal({
 
                   {/* Actions for Pending Requests */}
                   {isPending && (
-                    <div className="mt-3.5 pt-3 border-t border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                    <div className="mt-3.5 pt-3 border-t border-amber-200/60 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                       <input
                         type="text"
                         placeholder="Ghi chú phản hồi cho phụ huynh (tuỳ chọn)..."
                         value={teacherNoteInput[req.id] || ''}
                         onChange={(e) => setTeacherNoteInput({ ...teacherNoteInput, [req.id]: e.target.value })}
-                        className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                        className="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                       />
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleReject(req)}
                           disabled={isBusy}
-                          className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-950/60 hover:text-rose-300 border border-slate-700 text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
+                          className="px-3.5 py-2 rounded-xl bg-white hover:bg-rose-50 text-rose-700 border border-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
                         >
                           <XCircle className="w-4 h-4" />
                           <span>Từ chối</span>
@@ -289,7 +289,7 @@ export default function LeaveRequestsModal({
                         <button
                           onClick={() => handleApprove(req)}
                           disabled={isBusy}
-                          className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-600/20 disabled:opacity-50 cursor-pointer"
+                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
                         >
                           <Check className="w-4 h-4" />
                           <span>✓ Duyệt có phép</span>
@@ -304,13 +304,13 @@ export default function LeaveRequestsModal({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-800 bg-slate-950 flex items-center justify-between rounded-b-3xl">
-          <p className="text-xs text-slate-500">
+        <div className="p-4 border-t border-slate-100 bg-slate-50 text-slate-500 flex items-center justify-between rounded-b-3xl">
+          <p className="text-xs">
             Duyệt đơn sẽ tự động đồng bộ lên Đám mây để phụ huynh theo dõi được ngay kết quả.
           </p>
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition-colors cursor-pointer"
+            className="px-5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold transition-colors cursor-pointer shadow-xs"
           >
             Đóng
           </button>

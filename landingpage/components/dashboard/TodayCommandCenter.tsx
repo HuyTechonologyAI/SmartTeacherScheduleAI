@@ -88,105 +88,105 @@ export default function TodayCommandCenter({
 
   return (
     <div className="space-y-4 mb-6 animate-fadeIn">
-      <div className="relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-indigo-950/80 via-slate-900 to-slate-950 border border-indigo-500/30 shadow-xl">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-rose-50/80 via-white to-amber-50/60 border border-rose-200/80 shadow-sm">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-rose-500/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-5">
           <div className="space-y-3 max-w-xl">
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-extrabold uppercase tracking-wider flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
                 Trung Tâm Điều Hành Giảng Dạy
               </span>
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-slate-500 font-medium">
                 {now.toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })}
               </span>
             </div>
 
             {currentClass ? (
               <div>
-                <div className="text-xs text-amber-400 font-bold uppercase tracking-wide flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+                <div className="text-xs text-amber-700 font-bold uppercase tracking-wide flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
                   Đang trong giờ giảng:
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
-                  {currentClass.title || currentClass.subject} • <span className="text-cyan-400">Lớp {currentClass.className}</span>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">
+                  {currentClass.title || currentClass.subject} • <span className="text-rose-600">Lớp {currentClass.className}</span>
                 </h2>
-                <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-slate-300 mt-2">
-                  <span className="flex items-center gap-1 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/50">
-                    <Clock className="w-3.5 h-3.5 text-indigo-400" />
+                <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-slate-700 mt-2">
+                  <span className="flex items-center gap-1.5 bg-white px-3 py-1 rounded-xl border border-slate-200 shadow-xs font-semibold">
+                    <Clock className="w-3.5 h-3.5 text-rose-500" />
                     {currentClass.startTime} - {currentClass.endTime}
                   </span>
-                  <span className="flex items-center gap-1 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/50">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="flex items-center gap-1.5 bg-white px-3 py-1 rounded-xl border border-slate-200 shadow-xs font-semibold">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-600" />
                     Phòng: {currentClass.room || "Phòng học chính"}
                   </span>
-                  <span className="flex items-center gap-1 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/50 text-indigo-300">
-                    <BookOpen className="w-3.5 h-3.5" />
+                  <span className="flex items-center gap-1.5 bg-white px-3 py-1 rounded-xl border border-slate-200 shadow-xs text-rose-700 font-semibold">
+                    <BookOpen className="w-3.5 h-3.5 text-rose-500" />
                     {currentClass.sessionType || "Lý thuyết"}
                   </span>
                 </div>
               </div>
             ) : nextClass ? (
               <div>
-                <div className="text-xs text-cyan-400 font-bold uppercase tracking-wide flex items-center gap-1.5">
+                <div className="text-xs text-rose-600 font-bold uppercase tracking-wide flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5" />
                   Tiết dạy kế tiếp (còn {minutesUntilNext} phút nữa):
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
-                  {nextClass.title || nextClass.subject} • <span className="text-indigo-400">Lớp {nextClass.className}</span>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">
+                  {nextClass.title || nextClass.subject} • <span className="text-rose-600">Lớp {nextClass.className}</span>
                 </h2>
-                <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-slate-300 mt-2">
-                  <span className="flex items-center gap-1 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/50">
-                    <Clock className="w-3.5 h-3.5 text-indigo-400" />
+                <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-slate-700 mt-2">
+                  <span className="flex items-center gap-1.5 bg-white px-3 py-1 rounded-xl border border-slate-200 shadow-xs font-semibold">
+                    <Clock className="w-3.5 h-3.5 text-rose-500" />
                     Bắt đầu lúc: <strong>{nextClass.startTime}</strong>
                   </span>
-                  <span className="flex items-center gap-1 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/50">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="flex items-center gap-1.5 bg-white px-3 py-1 rounded-xl border border-slate-200 shadow-xs font-semibold">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-600" />
                     Phòng: {nextClass.room || "Chưa xếp phòng"}
                   </span>
                 </div>
               </div>
             ) : (
               <div>
-                <h2 className="text-2xl font-bold text-white">Hôm Nay Đã Hoàn Thành Toàn Bộ Ca Dạy!</h2>
-                <p className="text-xs sm:text-sm text-slate-300 mt-1">
+                <h2 className="text-2xl font-bold text-slate-900">Hôm Nay Đã Hoàn Thành Toàn Bộ Ca Dạy!</h2>
+                <p className="text-xs sm:text-sm text-slate-600 mt-1">
                   Thầy/Cô đã kết thúc các tiết dạy trong ngày an toàn và trọn vẹn. Chúc Thầy/Cô có buổi tối thư thái!
                 </p>
               </div>
             )}
           </div>
 
-          <div className="grid grid-cols-3 gap-2.5 shrink-0 bg-slate-950/60 p-3 rounded-2xl border border-slate-800">
+          <div className="grid grid-cols-3 gap-2.5 shrink-0 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm">
             <div className="text-center px-3 py-1.5">
-              <div className="text-xl sm:text-2xl font-black text-white">{allTodayCount}</div>
-              <div className="text-[10px] text-slate-400 font-medium">Tổng Tiết</div>
+              <div className="text-xl sm:text-2xl font-black text-slate-900">{allTodayCount}</div>
+              <div className="text-[10px] text-slate-500 font-medium">Tổng Tiết</div>
             </div>
-            <div className="text-center px-3 py-1.5 border-x border-slate-800">
-              <div className="text-xl sm:text-2xl font-black text-emerald-400">{completedCount}</div>
-              <div className="text-[10px] text-slate-400 font-medium">Đã Dạy</div>
+            <div className="text-center px-3 py-1.5 border-x border-slate-100">
+              <div className="text-xl sm:text-2xl font-black text-emerald-600">{completedCount}</div>
+              <div className="text-[10px] text-slate-500 font-medium">Đã Dạy</div>
             </div>
             <div className="text-center px-3 py-1.5">
-              <div className="text-xl sm:text-2xl font-black text-cyan-400">{remainingClasses}</div>
-              <div className="text-[10px] text-slate-400 font-medium">Còn Lại</div>
+              <div className="text-xl sm:text-2xl font-black text-rose-600">{remainingClasses}</div>
+              <div className="text-[10px] text-slate-500 font-medium">Còn Lại</div>
             </div>
           </div>
         </div>
 
         {(currentClass || nextClass) && (
-          <div className="mt-5 pt-4 border-t border-slate-800/80 grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="bg-slate-900/90 rounded-2xl p-3.5 border border-slate-800 space-y-2">
-              <div className="flex items-center justify-between text-xs text-slate-300 font-bold">
-                <span className="flex items-center gap-1.5 text-indigo-300">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />
+          <div className="mt-5 pt-4 border-t border-rose-100/80 grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs space-y-2">
+              <div className="flex items-center justify-between text-xs text-slate-700 font-bold">
+                <span className="flex items-center gap-1.5 text-rose-700">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-rose-600" />
                   Nhiệm vụ chuẩn bị lên lớp:
                 </span>
-                <span className="text-[10px] text-slate-400">Chuẩn hóa CV 5512</span>
+                <span className="text-[10px] text-slate-500 font-medium">Chuẩn hóa CV 5512</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 {prepList.map((item) => (
-                  <div key={item.id} className="flex items-center gap-2 text-slate-300 bg-slate-950/50 p-2 rounded-xl border border-slate-800/60">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
+                  <div key={item.id} className="flex items-center gap-2 text-slate-700 bg-slate-50 p-2 rounded-xl border border-slate-200/60 font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
                     <span className="truncate">{item.title}</span>
                   </div>
                 ))}
@@ -199,9 +199,9 @@ export default function TodayCommandCenter({
                   const target = currentClass || nextClass;
                   if (target && onQuickAttendance) onQuickAttendance(target);
                 }}
-                className="flex-1 p-3 rounded-2xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 text-xs font-bold transition-all flex items-center justify-center gap-2 group"
+                className="flex-1 p-3 rounded-2xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-bold transition-all flex items-center justify-center gap-2 group cursor-pointer shadow-xs"
               >
-                <Users className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
+                <Users className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
                 <span>Mở Điểm Danh Lớp Nhanh</span>
               </button>
 
@@ -210,9 +210,9 @@ export default function TodayCommandCenter({
                   const target = currentClass || nextClass;
                   if (target && onOpenPedagogyAI) onOpenPedagogyAI(target.subject, target.title);
                 }}
-                className="flex-1 p-3 rounded-2xl bg-gradient-to-r from-cyan-600/20 to-blue-600/20 hover:from-cyan-600/30 hover:to-blue-600/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold transition-all flex items-center justify-center gap-2 group"
+                className="flex-1 p-3 rounded-2xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-800 text-xs font-bold transition-all flex items-center justify-center gap-2 group cursor-pointer shadow-xs"
               >
-                <Sparkles className="w-4 h-4 text-cyan-400 group-hover:rotate-12 transition-transform" />
+                <Sparkles className="w-4 h-4 text-rose-600 group-hover:rotate-12 transition-transform" />
                 <span>AI Soạn Giáo Án / Khởi Động</span>
               </button>
             </div>

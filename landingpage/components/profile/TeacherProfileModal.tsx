@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from 'react';
 import { 
@@ -10,11 +10,8 @@ import {
   School, 
   BookOpen, 
   Plus, 
-  Trash2, 
   Check, 
   Camera, 
-  Sparkles, 
-  Upload, 
   ShieldCheck, 
   Quote
 } from 'lucide-react';
@@ -137,7 +134,7 @@ export default function TeacherProfileModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
       <div className="bg-white dark:bg-[#111827] border border-slate-200/80 dark:border-slate-800 rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl flex flex-col text-slate-800 dark:text-slate-100">
         
         {/* Header */}
@@ -170,8 +167,8 @@ export default function TeacherProfileModal({
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-6">
           
           {/* 1. Avatar Section */}
-          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850/60 border border-slate-200/80 dark:border-slate-750 space-y-3">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 space-y-3">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
               Ảnh Đại Diện Giáo Viên (Avatar)
             </label>
             
@@ -218,7 +215,7 @@ export default function TeacherProfileModal({
                         className={`w-9 h-9 rounded-xl p-0.5 border transition-all cursor-pointer overflow-hidden ${
                           isSelected 
                             ? 'border-emerald-600 ring-2 ring-emerald-500/30 scale-105' 
-                            : 'border-slate-200 dark:border-slate-700 hover:border-slate-400'
+                            : 'border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500'
                         }`}
                         title={p.label}
                       >
@@ -247,7 +244,7 @@ export default function TeacherProfileModal({
                 value={formData.fullName}
                 onChange={e => setFormData({ ...formData, fullName: e.target.value })}
                 placeholder="Ví dụ: Nguyễn Minh Anh"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
               />
             </div>
 
@@ -263,7 +260,7 @@ export default function TeacherProfileModal({
                 value={formData.phone}
                 onChange={e => setFormData({ ...formData, phone: e.target.value })}
                 placeholder="Ví dụ: 0961364600"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
               />
             </div>
 
@@ -279,7 +276,7 @@ export default function TeacherProfileModal({
                 value={formData.email}
                 onChange={e => setFormData({ ...formData, email: e.target.value })}
                 placeholder="Ví dụ: minhanh.edu@gmail.com"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
               />
             </div>
 
@@ -293,7 +290,7 @@ export default function TeacherProfileModal({
                 type="date"
                 value={formData.birthDate}
                 onChange={e => setFormData({ ...formData, birthDate: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white dark:[color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
               />
             </div>
 
@@ -302,7 +299,7 @@ export default function TeacherProfileModal({
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 Giới tính
               </label>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-5">
                 {(['Nam', 'Nữ', 'Khác'] as const).map(g => (
                   <label key={g} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200 cursor-pointer">
                     <input
@@ -322,16 +319,16 @@ export default function TeacherProfileModal({
           </div>
 
           {/* 3. Trường đang dạy (Multi-school support) */}
-          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850/60 border border-slate-200/80 dark:border-slate-750 space-y-3">
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 space-y-3">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                <School className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                Trường đang giảng dạy
-                <span className="text-[11px] font-normal text-slate-500 dark:text-slate-400">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <School className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>Trường đang giảng dạy</span>
+                <span className="text-[11px] font-normal text-slate-500 dark:text-slate-400 hidden sm:inline">
                   (Có thể dạy tại nhiều trường)
                 </span>
               </label>
-              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
                 {formData.schools.length} trường
               </span>
             </div>
@@ -343,20 +340,20 @@ export default function TeacherProfileModal({
                   key={idx}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200 shadow-xs"
                 >
-                  <School className="w-3 h-3 text-slate-400" />
+                  <School className="w-3.5 h-3.5 text-slate-400 dark:text-slate-400" />
                   <span>{sch}</span>
                   {idx === 0 && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold">
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 font-bold">
                       Chính
                     </span>
                   )}
                   <button
                     type="button"
                     onClick={() => handleRemoveSchool(sch)}
-                    className="p-0.5 text-slate-400 hover:text-rose-500 rounded cursor-pointer"
+                    className="p-0.5 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 rounded cursor-pointer transition-colors"
                     title="Xóa trường này"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               ))}
@@ -370,12 +367,12 @@ export default function TeacherProfileModal({
                 value={newSchoolInput}
                 onChange={e => setNewSchoolInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddSchool(); } }}
-                className="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
               />
               <button
                 type="button"
                 onClick={handleAddSchool}
-                className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer shadow-xs"
+                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm shadow-emerald-600/20 active:scale-95 shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Thêm trường</span>
@@ -384,16 +381,16 @@ export default function TeacherProfileModal({
           </div>
 
           {/* 4. Môn đang dạy (Multi-subject support) */}
-          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850/60 border border-slate-200/80 dark:border-slate-750 space-y-3">
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 space-y-3">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                <BookOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                Môn đang giảng dạy
-                <span className="text-[11px] font-normal text-slate-500 dark:text-slate-400">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <BookOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>Môn đang giảng dạy</span>
+                <span className="text-[11px] font-normal text-slate-500 dark:text-slate-400 hidden sm:inline">
                   (Có thể đảm nhiệm nhiều môn)
                 </span>
               </label>
-              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
                 {formData.subjects.length} môn
               </span>
             </div>
@@ -405,15 +402,15 @@ export default function TeacherProfileModal({
                   key={idx}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200 shadow-xs"
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                   <span>{sub}</span>
                   <button
                     type="button"
                     onClick={() => handleRemoveSubject(sub)}
-                    className="p-0.5 text-slate-400 hover:text-rose-500 rounded cursor-pointer"
+                    className="p-0.5 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 rounded cursor-pointer transition-colors"
                     title="Xóa môn này"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               ))}
@@ -435,8 +432,8 @@ export default function TeacherProfileModal({
                       onClick={() => handleAddSubject(ps)}
                       className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
                         isAlreadyAdded
-                          ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 opacity-60'
-                          : 'bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                          ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 font-semibold cursor-default'
+                          : 'bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
                       }`}
                     >
                       {isAlreadyAdded ? `✓ ${ps}` : `+ ${ps}`}
@@ -454,12 +451,12 @@ export default function TeacherProfileModal({
                 value={newSubjectInput}
                 onChange={e => setNewSubjectInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddSubject(newSubjectInput); } }}
-                className="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
               />
               <button
                 type="button"
                 onClick={() => handleAddSubject(newSubjectInput)}
-                className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer shadow-xs"
+                className="px-3.5 py-2 rounded-xl bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm active:scale-95 shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Thêm</span>
@@ -478,14 +475,14 @@ export default function TeacherProfileModal({
               value={formData.bioQuote || ''}
               onChange={e => setFormData({ ...formData, bioQuote: e.target.value })}
               placeholder="Ví dụ: Mỗi giờ lên lớp là một hành trình gieo hạt yêu thương!"
-              className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+              className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
             />
           </div>
 
           {/* 6. Account Status Card */}
-          <div className="p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/60 flex items-center justify-between">
+          <div className="p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/80 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
               <div>
                 <p className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
                   Tài khoản đăng nhập: {formData.loginType === 'phone' ? 'Số điện thoại' : formData.loginType === 'email' ? 'Gmail' : 'Tài khoản nhà trường cấp'}
@@ -495,7 +492,7 @@ export default function TeacherProfileModal({
                 </p>
               </div>
             </div>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-600 text-white font-bold">
+            <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-600 text-white font-bold shrink-0">
               Đã xác thực
             </span>
           </div>

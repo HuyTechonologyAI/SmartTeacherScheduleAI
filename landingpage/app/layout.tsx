@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://gvcncdsai.io.vn"),
-  title: "Smart Teacher Schedule AI - Dạy Đúng Giờ, Làm Đúng Việc, Không Bỏ Sót",
+  title: "EduViet - Cùng tri thức, Vững tương lai | Smart Teacher Schedule AI",
   description:
     "Hệ sinh thái Đa Nền Tảng (Android, Web, Desktop, iOS) cho giáo viên: Báo thức ca dạy kép 60m & 15m, tối ưu hóa đa tầng chống tắt ngầm, Sổ lớp & Điểm danh 1 chạm, Đồng bộ đám mây và Trợ lý AI Sư phạm CV 5512.",
   keywords: [

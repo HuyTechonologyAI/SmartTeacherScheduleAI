@@ -99,6 +99,35 @@ function createMenu() {
       ]
     },
     {
+      label: 'Cổng Hệ Thống',
+      submenu: [
+        {
+          label: '🏛️ Cổng Quản Lý Nhà Trường (/school)',
+          click: () => {
+            if (mainWindow) mainWindow.loadURL('https://www.gvcncdsai.io.vn/school');
+          }
+        },
+        {
+          label: '👨‍🏫 Cổng Nghiệp Vụ Giáo Viên (/app)',
+          click: () => {
+            if (mainWindow) mainWindow.loadURL('https://www.gvcncdsai.io.vn/app');
+          }
+        },
+        {
+          label: '🎓 Cổng Học Sinh & Gia Sư AI (/student)',
+          click: () => {
+            if (mainWindow) mainWindow.loadURL('https://www.gvcncdsai.io.vn/student');
+          }
+        },
+        {
+          label: '👨‍👩‍👧 Sổ Liên Lạc Phụ Huynh (/parent)',
+          click: () => {
+            if (mainWindow) mainWindow.loadURL('https://www.gvcncdsai.io.vn/parent');
+          }
+        }
+      ]
+    },
+    {
       label: 'Trợ Giúp',
       submenu: [
         {
@@ -106,7 +135,7 @@ function createMenu() {
           click: () => shell.openExternal('https://gvcncdsai.io.vn')
         },
         {
-          label: '📱 Tải bản Android APK v1.6.0',
+          label: '📱 Tải bản Android APK v1.7.0',
           click: () => shell.openExternal('https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases')
         },
         {
@@ -115,12 +144,12 @@ function createMenu() {
         },
         { type: 'separator' },
         {
-          label: 'Về ứng dụng Smart Teacher Schedule AI v1.6.0',
+          label: 'Về ứng dụng Smart Teacher Schedule AI v1.7.0',
           click: () => {
             if (Notification.isSupported()) {
               new Notification({
                 title: 'Smart Teacher Schedule AI Desktop',
-                body: 'Phiên bản v1.6.0 - Hệ sinh thái đồng bộ đám mây đa nền tảng, giao diện sáng/tối toàn diện và trợ lý giáo viên AI.'
+                body: 'Phiên bản v1.7.0 - Hệ sinh thái đồng bộ đám mây đa nền tảng, giao diện sáng/tối toàn diện và trợ lý giáo viên AI.'
               }).show();
             }
           }

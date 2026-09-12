@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/Language-Kotlin_2.0-7F52FF?logo=kotlin&logoColor=white" alt="Language">
   <img src="https://img.shields.io/badge/UI-Jetpack_Compose_Material_3-4285F4?logo=jetpackcompose&logoColor=white" alt="UI">
   <img src="https://img.shields.io/badge/AI-Google_Gemini_Grounded-blue?logo=google" alt="AI">
-  <img src="https://img.shields.io/badge/Version-v1.6.0-brightgreen" alt="Version">
+  <img src="https://img.shields.io/badge/Version-v1.7.0-brightgreen" alt="Version">
   <img src="https://img.shields.io/badge/License-MIT-orange" alt="License">
 </p>
 
@@ -33,12 +33,12 @@
 > 💡 **Thầy/Cô có thể bấm trực tiếp vào các nút bên dưới để tải về điện thoại hoặc máy tính:**
 
 <p align="center">
-  <a href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.6.0/SmartTeacherSchedule_v1.6.0_Release.apk">
-    <img src="https://img.shields.io/badge/📲%20TẢI%20VỀ%20APK%20v1.6.0-15.7%20MB-success?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" height="42">
+  <a href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.7.0/SmartTeacherSchedule_v1.7.0_Release.apk">
+    <img src="https://img.shields.io/badge/📲%20TẢI%20VỀ%20APK%20v1.7.0-15.7%20MB-success?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" height="42">
   </a>
   &nbsp;
-  <a href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.6.0/SmartTeacherSchedule_v1.6.0_Release.aab">
-    <img src="https://img.shields.io/badge/📦%20TẢI%20VỀ%20AAB%20v1.6.0-15.3%20MB-informational?style=for-the-badge&logo=googleplay&logoColor=white" alt="Download AAB" height="42">
+  <a href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.7.0/SmartTeacherSchedule_v1.7.0_Release.aab">
+    <img src="https://img.shields.io/badge/📦%20TẢI%20VỀ%20AAB%20v1.7.0-15.3%20MB-informational?style=for-the-badge&logo=googleplay&logoColor=white" alt="Download AAB" height="42">
   </a>
   &nbsp;
   <a href="https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases">
@@ -50,13 +50,13 @@
 
 | Phiên bản | Ngày phát hành | Định dạng | Dung lượng | Tải nhanh | Nội dung nâng cấp nổi bật |
 | :---: | :---: | :---: | :---: | :---: | :--- |
-| 🟢 **v1.6.0** *(Mới nhất)* | 12/09/2026 | `.apk` | **15.7 MB** | [⬇️ **Tải APK v1.6.0**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.6.0/SmartTeacherSchedule_v1.6.0_Release.apk) | • **Chế độ Sáng / Tối Toàn Diện (Light & Dark Mode)**: Chuyển đổi giao diện sáng tối đồng bộ sắc nét 100% tất cả các màn hình, khắc phục hoàn toàn chói mắt và chữ mờ.<br>• **Trợ lý Soạn giáo án AI chuẩn Bộ GD&ĐT & Năng lực số**: CV 5512/2634, Slide, Sơ đồ tư duy, Mini game, Kịch bản video.<br>• **Kho Tư Liệu Đối Chiếu Chuẩn**: Nạp file, xem trước PDF/Word, tải về nguyên bản, chống ảo tưởng thông tin.<br>• **Đồng bộ Đám mây 2 chiều thông suốt**: Đồng bộ lịch dạy và toàn bộ Kho giáo trình giữa Máy tính và Điện thoại. |
-| 📦 **v1.6.0 (Play Store)** | 12/09/2026 | `.aab` | **15.3 MB** | [⬇️ **Tải AAB v1.6.0**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.6.0/SmartTeacherSchedule_v1.6.0_Release.aab) | Gói Android App Bundle đã ký số sẵn sàng đăng lên Google Play Console |
+| 🟢 **v1.7.0** *(Mới nhất)* | 12/09/2026 | `.apk` | **15.7 MB** | [⬇️ **Tải APK v1.7.0**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.7.0/SmartTeacherSchedule_v1.7.0_Release.apk) | • **Cổng Quản Lý Toàn Trường (/school)**: 8 Tab quản lý điều hành giáo án CV 5512, nhân sự 4 khối, văn bản 4 nguồn, AI cảnh báo rủi ro giáo dục sớm.<br>• **Cổng Học Sinh & Gia Sư AI (/student)**: Tra cứu CCCD 12 số, đồng bộ lớp 1-12, Gia sư AI chuẩn GDPT 2018 không làm hộ bài.<br>• **Cổng Phụ Huynh (/parent)**: Tra cứu chuyên cần, đơn xin nghỉ trực tuyến, cổng đóng học phí, kiến nghị.<br>• **Hệ sinh thái liên thông 4 cổng & Song ngữ VI/EN toàn diện**. |
+| 📦 **v1.7.0 (Play Store)** | 12/09/2026 | `.aab` | **15.3 MB** | [⬇️ **Tải AAB v1.7.0**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.7.0/SmartTeacherSchedule_v1.7.0_Release.aab) | Gói Android App Bundle đã ký số sẵn sàng đăng lên Google Play Console |
 | ⚪ **v1.5.0** | 09/09/2026 | `.apk` | 15.2 MB | [⬇️ **Tải APK v1.5.0**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.5.0/SmartTeacherSchedule_v1.5.0_Release.apk) | Hệ sinh thái Đa Nền Tảng: Đồng bộ đám mây và Web App |
 
 ### 📲 Hướng dẫn 3 bước cài đặt APK trên điện thoại Android:
 
-1. **Bước 1: Tải về**: Bấm vào nút màu xanh **[📲 TẢI VỀ APK v1.6.0]** ở trên. Trình duyệt sẽ tải tệp tin `SmartTeacherSchedule_v1.6.0_Release.apk`.
+1. **Bước 1: Tải về**: Bấm vào nút màu xanh **[📲 TẢI VỀ APK v1.7.0]** ở trên. Trình duyệt sẽ tải tệp tin `SmartTeacherSchedule_v1.7.0_Release.apk`.
 2. **Bước 2: Mở và Cho phép cài đặt**: 
    - Khi có thông báo *"Tệp có thể gây hại"* (đây là cảnh báo tiêu chuẩn của Android đối với mọi file APK tải ngoài CH Play), Thầy/Cô hãy chọn **"Vẫn tải xuống"** (Download anyway).
    - Tải xong, bấm **"Mở"** ➔ Chọn **"Cài đặt"** (Install). Nếu máy hỏi *"Cho phép cài đặt từ nguồn này"*, hãy gạt bật Cho phép.

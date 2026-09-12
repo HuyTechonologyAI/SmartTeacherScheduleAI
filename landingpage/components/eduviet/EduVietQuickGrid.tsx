@@ -97,7 +97,7 @@ export default function EduVietQuickGrid({
         <button
           key={item.id}
           onClick={item.onClick}
-          className="eduviet-action-btn p-2.5 sm:p-4 flex flex-col items-center justify-center text-center cursor-pointer group"
+          className="eduviet-action-btn bg-white dark:bg-[#111827] border border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 dark:hover:bg-slate-800/90 p-2.5 sm:p-4 flex flex-col items-center justify-center text-center cursor-pointer group shadow-xs hover:shadow-md transition-all"
         >
           <div className="relative mb-2">
             <div className={`w-11 h-11 sm:w-13 sm:h-13 rounded-2xl flex items-center justify-center shadow-md ${item.bgColor} transition-transform group-hover:scale-110`}>
@@ -109,7 +109,7 @@ export default function EduVietQuickGrid({
               </span>
             )}
           </div>
-          <span className="text-[11px] sm:text-xs font-bold text-slate-800 dark:text-slate-200 tracking-tight line-clamp-1 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
+          <span className="text-[11px] sm:text-xs font-bold text-slate-800 dark:text-slate-100 tracking-tight line-clamp-1 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
             {item.label}
           </span>
         </button>

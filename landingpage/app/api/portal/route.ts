@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
     const className = searchParams.get('class')?.trim();
     const phone = searchParams.get('phone')?.replace(/[^0-9]/g, '');
     const studentCode = searchParams.get('studentCode')?.trim().toLowerCase();
+    const role = searchParams.get('role')?.trim().toLowerCase(); // 'student' | 'parent'
 
     if (!syncCode) {
       return NextResponse.json({ error: 'Thiếu mã lớp / mã liên kết trường (code)' }, { status: 400 });
@@ -59,7 +60,7 @@ export async function GET(req: NextRequest) {
     const leaveRequests: LeaveRequestItem[] = rawPayload.leaveRequests || [];
 
     // 1. TRƯỜNG HỢP TRA CỨU CỦA PHỤ HUYNH
-    if (phone || studentCode) {
+    if (phone || (studentCode && role === 'parent')) {
       const matchedStudent = allStudents.find((st: any) => {
         const cleanStPhone = (st.parentPhone || '').replace(/[^0-9]/g, '');
         const matchPhone = phone && cleanStPhone && (cleanStPhone === phone || cleanStPhone.endsWith(phone) || phone.endsWith(cleanStPhone));
@@ -110,8 +111,17 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // 2. TRƯỜNG HỢP TRA CỨU CỦA HỌC SINH (THEO LỚP)
-    const targetClass = className || (classrooms.length > 0 ? classrooms[0].name : '');
+    // 2. TRƯỜNG HỢP TRA CỨU CỦA HỌC SINH (THEO LỚP & CCCD)
+    let matchedStudentForStudent: any = null;
+    if (studentCode) {
+      matchedStudentForStudent = allStudents.find((st: any) => 
+        (st.studentCode && st.studentCode.toLowerCase().trim() === studentCode) ||
+        (st.id && st.id.toLowerCase().trim() === studentCode)
+      );
+    }
+
+    const targetClass = (matchedStudentForStudent ? matchedStudentForStudent.className : className) || (classrooms.length > 0 ? classrooms[0].name : '');
+    
     const classEvents = allEvents
       .filter((e: any) => !targetClass || (e.className || '').toLowerCase().trim() === targetClass.toLowerCase().trim())
       .sort((a: any, b: any) => {
@@ -131,11 +141,32 @@ export async function GET(req: NextRequest) {
       }))
       .sort((a: any, b: any) => (b.kudosPoints || 0) - (a.kudosPoints || 0));
 
+    // Điểm danh của học sinh nếu có mã định danh
+    let studentAttendanceSummary = null;
+    if (matchedStudentForStudent) {
+      const myAttendance = allAttendance.filter((a: any) => a.studentId === matchedStudentForStudent.id || a.studentCode === matchedStudentForStudent.studentCode);
+      const present = myAttendance.filter((a: any) => a.status === 'PRESENT').length;
+      const absent = myAttendance.filter((a: any) => a.status?.startsWith('ABSENT')).length;
+      const late = myAttendance.filter((a: any) => a.status === 'LATE').length;
+      studentAttendanceSummary = { present, absent, late };
+    }
+
     return NextResponse.json({
       type: 'student',
       syncCode,
       currentClass: targetClass,
-      availableClasses: classrooms.map(c => ({ id: c.id, name: c.name, grade: c.grade })),
+      officialAssignedClass: matchedStudentForStudent ? matchedStudentForStudent.className : null,
+      matchedStudent: matchedStudentForStudent ? {
+        id: matchedStudentForStudent.id,
+        studentCode: matchedStudentForStudent.studentCode,
+        fullName: matchedStudentForStudent.fullName,
+        className: matchedStudentForStudent.className,
+        gender: matchedStudentForStudent.gender,
+        kudosPoints: matchedStudentForStudent.kudosPoints || 0,
+        notes: matchedStudentForStudent.notes || '',
+        attendanceSummary: studentAttendanceSummary
+      } : null,
+      availableClasses: classrooms.map(c => ({ id: c.id, name: c.name, grade: c.grade, homeroomTeacher: c.homeroomTeacher || '' })),
       events: classEvents,
       kudosLeaderboard: classStudents
     });

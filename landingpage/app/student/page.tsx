@@ -37,7 +37,8 @@ import {
   ShieldCheck,
   GraduationCap,
   Layers,
-  IdCard
+  IdCard,
+  Lock
 } from 'lucide-react';
 import { Language, t, getStoredLanguage, saveStoredLanguage } from '../app/i18n';
 import StudentAuthModal from '@/components/student/StudentAuthModal';
@@ -48,7 +49,9 @@ import {
   EDUCATION_LEVELS,
   EducationLevel,
   getStoredStudentProfile,
-  saveStudentProfile
+  saveStudentProfile,
+  getSchoolApprovedClassrooms,
+  syncStudentWithTeacherRoster
 } from './studentProfileData';
 
 interface EventItem {
@@ -106,6 +109,9 @@ export default function StudentPortalPage() {
   const [isProfileEditOpen, setIsProfileEditOpen] = useState<boolean>(false);
   const [selectedLevel, setSelectedLevel] = useState<EducationLevel>('primary');
   const [collegeCustomClass, setCollegeCustomClass] = useState<string>('CNTT-K24');
+
+  // School Approved Classes (Proposal 1 & 2: Quản lý bởi Nhà trường)
+  const [approvedSchoolClasses, setApprovedSchoolClasses] = useState<{ id: string; name: string; grade?: string; homeroomTeacher?: string }[]>(() => getSchoolApprovedClassrooms());
 
   // Student Info State
   const [studentName, setStudentName] = useState<string>('Nguyễn Bảo An');
@@ -182,46 +188,54 @@ export default function StudentPortalPage() {
       const savedLang = getStoredLanguage();
       setLang(savedLang);
 
-      // Load stored student profile
+      // Load stored student profile and sync with teacher roster
       const storedProf = getStoredStudentProfile();
       setStudentProfile(storedProf);
       setStudentName(storedProf.fullName);
       setStudentAvatar(storedProf.avatar);
       setSelectedClass(storedProf.className);
       setSelectedLevel(storedProf.educationLevel);
+      setApprovedSchoolClasses(getSchoolApprovedClassrooms());
       if (storedProf.educationLevel === 'college') {
         setCollegeCustomClass(storedProf.className);
       }
 
       const savedStars = localStorage.getItem('smart_student_stars');
-      if (savedStars) setStudentStars(parseInt(savedStars, 10) || 125);
+      if (savedStars) setStudentStars(parseInt(savedStars, 10) || storedProf.kudosPoints || 125);
     } catch (e) {
       console.error(e);
     }
   }, []);
 
   const handleAuthSuccess = (newProfile: StudentProfile) => {
-    setStudentProfile(newProfile);
-    setStudentName(newProfile.fullName);
-    setStudentAvatar(newProfile.avatar);
-    setSelectedClass(newProfile.className);
-    setSelectedLevel(newProfile.educationLevel);
-    if (newProfile.educationLevel === 'college') {
-      setCollegeCustomClass(newProfile.className);
+    const synced = syncStudentWithTeacherRoster(newProfile);
+    setStudentProfile(synced);
+    setStudentName(synced.fullName);
+    setStudentAvatar(synced.avatar);
+    setSelectedClass(synced.className);
+    setSelectedLevel(synced.educationLevel);
+    setStudentStars(synced.kudosPoints || 125);
+    if (synced.educationLevel === 'college') {
+      setCollegeCustomClass(synced.className);
     }
-    if (syncCode) fetchClassData(syncCode, newProfile.className);
+    if (syncCode) fetchClassData(syncCode, synced.className);
+    setCheerMsg(isEn ? `🔗 Connected with School Roster: ${synced.className}` : `🔗 Đã kết nối Sổ lớp Nhà trường: ${synced.className}`);
+    setTimeout(() => setCheerMsg(null), 4000);
   };
 
   const handleSaveProfile = (updatedProfile: StudentProfile) => {
-    setStudentProfile(updatedProfile);
-    setStudentName(updatedProfile.fullName);
-    setStudentAvatar(updatedProfile.avatar);
-    setSelectedClass(updatedProfile.className);
-    setSelectedLevel(updatedProfile.educationLevel);
-    if (updatedProfile.educationLevel === 'college') {
-      setCollegeCustomClass(updatedProfile.className);
+    const synced = syncStudentWithTeacherRoster(updatedProfile);
+    setStudentProfile(synced);
+    setStudentName(synced.fullName);
+    setStudentAvatar(synced.avatar);
+    setSelectedClass(synced.className);
+    setSelectedLevel(synced.educationLevel);
+    setStudentStars(synced.kudosPoints || 125);
+    if (synced.educationLevel === 'college') {
+      setCollegeCustomClass(synced.className);
     }
-    if (syncCode) fetchClassData(syncCode, updatedProfile.className);
+    if (syncCode) fetchClassData(syncCode, synced.className);
+    setApprovedSchoolClasses(getSchoolApprovedClassrooms());
   };
 
   const toggleTheme = () => {
@@ -261,7 +275,7 @@ export default function StudentPortalPage() {
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const url = `/api/portal?code=${encodeURIComponent(code)}${cName ? `&class=${encodeURIComponent(cName)}` : ''}`;
+      const url = `/api/portal?code=${encodeURIComponent(code)}&role=student${studentProfile.studentCode ? `&studentCode=${encodeURIComponent(studentProfile.studentCode)}` : ''}${cName ? `&class=${encodeURIComponent(cName)}` : ''}`;
       const res = await fetch(url);
       const data = await res.json();
 
@@ -271,10 +285,25 @@ export default function StudentPortalPage() {
         return;
       }
 
+      if (data.matchedStudent) {
+        setStudentProfile(prev => ({
+          ...prev,
+          kudosPoints: data.matchedStudent.kudosPoints ?? prev.kudosPoints,
+          attendanceSummary: data.matchedStudent.attendanceSummary || prev.attendanceSummary,
+          teacherNotes: data.matchedStudent.notes || prev.teacherNotes,
+          isSchoolVerified: true,
+          schoolAssignedClass: data.matchedStudent.className || prev.className
+        }));
+        if (typeof data.matchedStudent.kudosPoints === 'number') {
+          setStudentStars(data.matchedStudent.kudosPoints);
+        }
+      }
+
       if (data.availableClasses && data.availableClasses.length > 0) {
         setAvailableClasses(data.availableClasses);
+        setApprovedSchoolClasses(data.availableClasses);
       }
-      const matchedClass = data.currentClass || (data.availableClasses?.[0]?.name) || cName || 'Lớp 3A1';
+      const matchedClass = data.officialAssignedClass || data.currentClass || (data.availableClasses?.[0]?.name) || cName || 'Lớp 3A1';
       setSelectedClass(matchedClass);
       
       if (data.events && data.events.length > 0) {
@@ -579,142 +608,162 @@ export default function StudentPortalPage() {
       {/* Main Content Area */}
       <main className="max-w-4xl mx-auto px-3.5 sm:px-6 py-4 space-y-4 sm:space-y-5">
         
-        {/* 2. Hero Student Profile Card: Avatar + Name + CCCD + Class + Edit Profile */}
-        <section className="relative rounded-3xl p-4 sm:p-6 bg-gradient-to-r from-amber-100/90 via-orange-50 to-pink-100/80 dark:from-slate-900 dark:via-[#161f36] dark:to-slate-900 border-2 border-amber-200/80 dark:border-slate-800 shadow-md flex flex-col sm:flex-row items-center justify-between gap-4 overflow-hidden">
+        {/* 2. Hero Student Profile Card: Avatar + Name + CCCD + School-Verified Class + Learning Journey */}
+        <section className="relative rounded-3xl p-4 sm:p-6 bg-gradient-to-r from-amber-100/90 via-orange-50 to-pink-100/80 dark:from-slate-900 dark:via-[#161f36] dark:to-slate-900 border-2 border-amber-200/80 dark:border-slate-800 shadow-md flex flex-col gap-4 overflow-hidden">
           
-          <div className="flex items-center gap-4 text-center sm:text-left flex-1">
-            {/* Avatar with click to change or edit */}
-            <div className="relative group cursor-pointer" onClick={() => setIsProfileEditOpen(true)} title={isEn ? "Click to update profile & avatar" : "Nhấp để chỉnh sửa hồ sơ & ảnh đại diện"}>
-              <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-tr from-amber-400 to-rose-400 p-1 shadow-lg shadow-amber-500/20 overflow-hidden group-hover:scale-105 transition-transform">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={studentAvatar}
-                  alt={studentName}
-                  className="w-full h-full object-cover rounded-2xl bg-white"
-                />
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4 text-center sm:text-left flex-1">
+              {/* Avatar with click to change or edit */}
+              <div className="relative group cursor-pointer" onClick={() => setIsProfileEditOpen(true)} title={isEn ? "Click to update profile & avatar" : "Nhấp để chỉnh sửa hồ sơ & ảnh đại diện"}>
+                <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-tr from-amber-400 to-rose-400 p-1 shadow-lg shadow-amber-500/20 overflow-hidden group-hover:scale-105 transition-transform">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={studentAvatar}
+                    alt={studentName}
+                    className="w-full h-full object-cover rounded-2xl bg-white"
+                  />
+                </div>
+                <span className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black shadow-sm flex items-center gap-0.5">
+                  <Edit3 className="w-2.5 h-2.5" />
+                  <span>{isEn ? 'Edit' : 'Sửa'}</span>
+                </span>
               </div>
-              <span className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black shadow-sm flex items-center gap-0.5">
-                <Edit3 className="w-2.5 h-2.5" />
-                <span>{isEn ? 'Edit' : 'Sửa'}</span>
-              </span>
+
+              <div className="space-y-1.5 flex-1">
+                <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                  <h2 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                    {studentName}
+                  </h2>
+                  <span className="text-lg">⭐</span>
+
+                  {/* CCCD / Mã định danh badge (Khóa duy nhất) */}
+                  <span 
+                    className="px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 text-[10px] sm:text-xs font-mono font-bold border border-emerald-300 dark:border-emerald-700 flex items-center gap-1 shadow-2xs"
+                    title={isEn ? "National Citizen ID / Unique Student Key" : "Mã số định danh CCCD liên kết sổ lớp giáo viên"}
+                  >
+                    <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                    <span>CCCD: {studentProfile.studentCode}</span>
+                  </span>
+
+                  {/* Edit profile button */}
+                  <button
+                    onClick={() => setIsProfileEditOpen(true)}
+                    className="px-2.5 py-1 rounded-xl bg-white/90 hover:bg-white dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-300 dark:border-slate-700 shadow-xs flex items-center gap-1 cursor-pointer transition-colors"
+                    title={isEn ? "Edit profile & personal info" : "Chỉnh sửa thông tin cá nhân"}
+                  >
+                    <Edit3 className="w-3 h-3 text-amber-500" />
+                    <span>{isEn ? "Edit Info" : "Sửa thông tin"}</span>
+                  </button>
+                </div>
+
+                {/* Official School Class & Teacher Badge (Proposal 1 & 2) */}
+                <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                  <span className="px-2.5 py-0.5 rounded-lg bg-emerald-600 text-white shadow-xs flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3" />
+                    <span>{isEn ? "Official Class:" : "Lớp chính thức:"} {studentProfile.className}</span>
+                  </span>
+                  <span className="text-slate-300">•</span>
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">
+                    {studentProfile.schoolName || (isEn ? "Vietnam School" : "Trường Tiểu Học Việt Nam")}
+                  </span>
+                  <span className="text-slate-300 hidden sm:inline">•</span>
+                  <span className="text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">
+                    GVCN: {studentProfile.homeroomTeacher || 'Cô Trần Thị Mai'}
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-500 dark:text-slate-400 italic">
+                  &ldquo;{studentProfile.bioQuote || (isEn ? "Curious learner, bright future!" : "Chăm ngoan, học giỏi, vâng lời thầy cô!")}&rdquo;
+                </p>
+              </div>
             </div>
 
-            <div className="space-y-1.5 flex-1">
-              <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
-                <h2 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                  {studentName}
-                </h2>
-                <span className="text-lg">⭐</span>
-
-                {/* CCCD / Mã định danh badge */}
-                <span 
-                  className="px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 text-[10px] sm:text-xs font-mono font-bold border border-emerald-300 dark:border-emerald-700 flex items-center gap-1 shadow-2xs"
-                  title={isEn ? "National Citizen ID / Unique Student ID" : "Số CCCD / Mã số định danh không trùng lặp"}
-                >
-                  <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                  <span>CCCD: {studentProfile.studentCode}</span>
+            {/* Star Kudos Reward Box & Account Switcher */}
+            <div className="flex sm:flex-col items-center justify-center gap-3 sm:gap-1.5 bg-white/90 dark:bg-slate-800/90 p-3 sm:p-4 rounded-2xl border border-amber-200 dark:border-slate-700 shadow-sm w-full sm:w-auto shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-amber-400 text-white flex items-center justify-center shadow-md animate-bounce">
+                  <Star className="w-5 h-5 fill-white text-white" />
+                </div>
+                <div className="text-left">
+                  <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">
+                    {isEn ? "Kudos Stars" : "Sao rèn luyện"}
+                  </p>
+                  <p className="text-lg sm:text-xl font-black text-amber-600 dark:text-amber-400 leading-none">
+                    {studentStars} ⭐
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 w-full justify-center">
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-300 dark:border-emerald-800">
+                  {isEn ? "Rank: Little Star 🏆" : "Hạng: Ngôi Sao Nhí 🏆"}
                 </span>
-
-                {/* Edit profile button */}
                 <button
-                  onClick={() => setIsProfileEditOpen(true)}
-                  className="px-2.5 py-1 rounded-xl bg-white/90 hover:bg-white dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-300 dark:border-slate-700 shadow-xs flex items-center gap-1 cursor-pointer transition-colors"
-                  title={isEn ? "Edit profile & personal info" : "Chỉnh sửa thông tin cá nhân"}
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold transition-colors cursor-pointer flex items-center gap-0.5"
+                  title={isEn ? "Switch or login with student ID" : "Đổi tài khoản học sinh hoặc đăng nhập mã mới"}
                 >
-                  <Edit3 className="w-3 h-3 text-amber-500" />
-                  <span>{isEn ? "Edit Info" : "Sửa thông tin"}</span>
+                  <LogIn className="w-2.5 h-2.5 text-amber-500" />
+                  <span>{isEn ? "Switch" : "Đổi TK"}</span>
                 </button>
               </div>
-
-              <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap text-xs font-bold text-emerald-700 dark:text-emerald-400">
-                <span className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                  {selectedClass}
-                </span>
-                <span className="text-slate-300">•</span>
-                <span className="text-slate-600 dark:text-slate-300 font-medium">
-                  {studentProfile.schoolName || (isEn ? "Vietnam School" : "Trường Tiểu Học Việt Nam")}
-                </span>
-                <span className="text-slate-300 hidden sm:inline">•</span>
-                <span className="text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">
-                  {EDUCATION_LEVELS.find(l => l.id === studentProfile.educationLevel)?.shortLabel || 'Tiểu học'}
-                </span>
-              </div>
-
-              <p className="text-xs text-slate-500 dark:text-slate-400 italic">
-                &ldquo;{studentProfile.bioQuote || (isEn ? "Curious learner, bright future!" : "Chăm ngoan, học giỏi, vâng lời thầy cô!")}&rdquo;
-              </p>
             </div>
           </div>
 
-          {/* Star Kudos Reward Box & Account Switcher */}
-          <div className="flex sm:flex-col items-center justify-center gap-3 sm:gap-1.5 bg-white/90 dark:bg-slate-800/90 p-3 sm:p-4 rounded-2xl border border-amber-200 dark:border-slate-700 shadow-sm w-full sm:w-auto shrink-0">
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-xl bg-amber-400 text-white flex items-center justify-center shadow-md animate-bounce">
-                <Star className="w-5 h-5 fill-white text-white" />
-              </div>
-              <div className="text-left">
-                <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">
-                  {isEn ? "Stars Collected" : "Sao chăm chỉ"}
-                </p>
-                <p className="text-lg sm:text-xl font-black text-amber-600 dark:text-amber-400 leading-none">
-                  {studentStars} ⭐
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5 w-full justify-center">
-              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-300 dark:border-emerald-800">
-                {isEn ? "Rank: Little Star 🏆" : "Hạng: Ngôi Sao Nhí 🏆"}
+          {/* Learning Journey & Attendance Tracking Strip (Proposal 2: Đồng bộ & Quản lý xuyên suốt) */}
+          <div className="pt-2 border-t border-amber-200/60 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>{isEn ? "Attendance Tracking:" : "Theo dõi Chuyên cần:"}</span>
               </span>
-              <button
-                onClick={() => setIsAuthModalOpen(true)}
-                className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold transition-colors cursor-pointer flex items-center gap-0.5"
-                title={isEn ? "Switch or login with student ID" : "Đổi tài khoản học sinh hoặc đăng nhập mã mới"}
-              >
-                <LogIn className="w-2.5 h-2.5 text-amber-500" />
-                <span>{isEn ? "Switch" : "Đổi TK"}</span>
-              </button>
+              <span className="px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold text-[11px]">
+                {studentProfile.attendanceSummary?.present ?? 36} {isEn ? "Present" : "Có mặt"}
+              </span>
+              <span className="px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-bold text-[11px]">
+                {studentProfile.attendanceSummary?.absent ?? 1} {isEn ? "Excused" : "Nghỉ phép"}
+              </span>
+              <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-[11px]">
+                {studentProfile.attendanceSummary?.late ?? 0} {isEn ? "Late" : "Đi trễ"}
+              </span>
             </div>
+
+            {studentProfile.teacherNotes && (
+              <div className="text-[11px] text-emerald-800 dark:text-emerald-300 font-medium italic flex items-center gap-1">
+                <span>💬 {isEn ? "Teacher Note:" : "Nhận xét của cô:"} {studentProfile.teacherNotes}</span>
+              </div>
+            )}
           </div>
         </section>
 
-        {/* 3. Multi-tier Grade/Class Selector (Requirement 3: Grade 1 - 12 + Vocational/College Class Code) */}
-        <div className="bg-white dark:bg-[#111827] border border-amber-200 dark:border-slate-800 p-3 sm:p-4 rounded-3xl shadow-xs space-y-2.5">
+        {/* 3. Official School-Approved Class Roster & Schedule Tracking (Proposal 1 & 2) */}
+        <div className="bg-white dark:bg-[#111827] border border-amber-200 dark:border-slate-800 p-3 sm:p-4 rounded-3xl shadow-xs space-y-3">
           
-          {/* Top Bar: Level Pills & Quick Sync Code */}
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
-            <div className="flex items-center gap-1.5 overflow-x-auto">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 shrink-0 flex items-center gap-1">
-                <GraduationCap className="w-3.5 h-3.5 text-emerald-600" />
-                <span>{isEn ? "Level:" : "Cấp học:"}</span>
-              </span>
-              {EDUCATION_LEVELS.map(lvl => (
-                <button
-                  key={lvl.id}
-                  onClick={() => {
-                    setSelectedLevel(lvl.id);
-                    const first = lvl.grades[0];
-                    if (lvl.id === 'college') {
-                      handleSelectClass(collegeCustomClass || first);
-                    } else {
-                      handleSelectClass(first);
-                    }
-                  }}
-                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                    selectedLevel === lvl.id
-                      ? 'bg-amber-500 text-white shadow-xs'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                  }`}
-                >
-                  {lvl.shortLabel}
-                </button>
-              ))}
+          {/* Header Bar: School Management Badge & Quick Sync Code */}
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2.5">
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-1.5">
+                <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs shadow-2xs">
+                  <Lock className="w-3.5 h-3.5" />
+                </div>
+                <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <span>{isEn ? "School-Approved Class Roster" : "Danh Mục Lớp Học Do Nhà Trường Xếp Duyệt"}</span>
+                  <span className="px-2 py-0.2 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">
+                    {isEn ? "Verified" : "Chính thức"}
+                  </span>
+                </h4>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                {isEn 
+                  ? "Configured by School Administration to ensure students track authorized classes and verified timetables." 
+                  : "Bộ phận quản lý nhà trường đã thiết lập danh sách lớp chính thức để các em theo dõi đúng thời khóa biểu, tránh việc thêm khối lớp không chính xác."}
+              </p>
             </div>
 
             {/* Quick sync code lookup */}
             <div className="flex items-center gap-1 shrink-0 ml-auto">
               <input
                 type="text"
-                placeholder={isEn ? "Sync code..." : "Mã đồng bộ..."}
+                placeholder={isEn ? "School code..." : "Mã trường/lớp..."}
                 value={syncCode}
                 onChange={e => setSyncCode(e.target.value.toUpperCase())}
                 className="px-2.5 py-1 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white uppercase font-mono w-24 sm:w-28 focus:outline-none"
@@ -723,105 +772,68 @@ export default function StudentPortalPage() {
                 onClick={() => fetchClassData(syncCode, selectedClass)}
                 disabled={isLoading || !syncCode}
                 className="p-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition-colors cursor-pointer disabled:opacity-40"
-                title={isEn ? "Fetch class timetable" : "Tải thời khóa biểu"}
+                title={isEn ? "Fetch official class timetable" : "Tải thời khóa biểu chính thức"}
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
               </button>
             </div>
           </div>
 
-          {/* Bottom Bar: Grade/Class Selection */}
-          {selectedLevel !== 'college' ? (
-            <div className="flex items-center gap-2 overflow-x-auto pt-0.5">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 shrink-0 flex items-center gap-1">
+          {/* Official Approved Classes Pills */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1">
                 <Users className="w-3.5 h-3.5 text-emerald-600" />
-                <span>{isEn ? "Grade / Class:" : "Khối / Lớp:"}</span>
+                <span>{isEn ? "Select Approved Class to View Schedule:" : "Chọn Lớp chính thức để xem Thời khóa biểu:"}</span>
               </span>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {(EDUCATION_LEVELS.find(l => l.id === selectedLevel)?.grades || []).map(grade => {
-                  const isSelected = selectedClass.startsWith(grade);
-                  return (
-                    <button
-                      key={grade}
-                      onClick={() => handleSelectClass(grade)}
-                      className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                        isSelected
-                          ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-xs'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-emerald-400 border border-transparent'
-                      }`}
-                    >
-                      {grade}
-                    </button>
-                  );
-                })}
+              <span className="text-[10px] text-slate-400 font-medium">
+                {isEn ? "Click to view class schedule" : "Bấm để xem lịch học của lớp"}
+              </span>
+            </div>
 
-                {/* Sub-classes or synced classes */}
-                {availableClasses.filter(c => !EDUCATION_LEVELS.find(l => l.id === selectedLevel)?.grades.includes(c.name)).map(c => (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {approvedSchoolClasses.map(c => {
+                const isSelected = selectedClass.toLowerCase() === c.name.toLowerCase();
+                const isMyOfficialClass = (studentProfile.className || '').toLowerCase() === c.name.toLowerCase();
+                return (
                   <button
                     key={c.id || c.name}
                     onClick={() => handleSelectClass(c.name)}
-                    className={`px-2.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                      selectedClass.toLowerCase() === c.name.toLowerCase()
-                        ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-xs'
-                        : 'bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-emerald-400'
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                      isSelected
+                        ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-xs ring-2 ring-emerald-400'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-emerald-400 border border-slate-200 dark:border-slate-700'
                     }`}
                   >
-                    {c.name}
+                    <span>{c.name}</span>
+                    {isMyOfficialClass && (
+                      <span className="px-1.5 py-0.2 rounded bg-amber-400 text-slate-900 text-[9px] font-black">
+                        {isEn ? "My Class 🛡️" : "Lớp của em 🛡️"}
+                      </span>
+                    )}
+                    {c.homeroomTeacher && !isMyOfficialClass && (
+                      <span className="text-[9px] opacity-75 hidden sm:inline">({c.homeroomTeacher.split(' ').pop()})</span>
+                    )}
                   </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            /* College / Vocational Class Code Input & Suggestions */
-            <div className="flex flex-wrap items-center gap-2 pt-0.5">
-              <span className="text-xs font-bold text-slate-600 dark:text-slate-300 shrink-0 flex items-center gap-1">
-                <Layers className="w-3.5 h-3.5 text-amber-500" />
-                <span>{isEn ? "College Class Code:" : "Mã lớp chuyên ngành:"}</span>
-              </span>
-              <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
-                <input
-                  type="text"
-                  placeholder="CNTT-K24, QTKD-01..."
-                  value={collegeCustomClass}
-                  onChange={e => {
-                    const val = e.target.value.toUpperCase();
-                    setCollegeCustomClass(val);
-                    setSelectedClass(val);
-                  }}
-                  className="px-3 py-1 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono font-bold uppercase w-36 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleSelectClass(collegeCustomClass)}
-                  className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors cursor-pointer"
-                >
-                  {isEn ? "Load" : "Áp dụng"}
-                </button>
-              </div>
+                );
+              })}
 
-              {/* Sample College Codes */}
-              <div className="flex items-center gap-1 flex-wrap">
-                <span className="text-[10px] text-slate-400 font-semibold">{isEn ? "Samples:" : "Gợi ý:"}</span>
-                {['CNTT-K24', 'QTKD-01', 'DTVT-A', 'DL-K22', 'KT-02'].map(sample => (
-                  <button
-                    key={sample}
-                    type="button"
-                    onClick={() => {
-                      setCollegeCustomClass(sample);
-                      handleSelectClass(sample);
-                    }}
-                    className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold cursor-pointer transition-colors ${
-                      selectedClass === sample
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-emerald-50'
-                    }`}
-                  >
-                    {sample}
-                  </button>
-                ))}
-              </div>
+              {/* Also show any teacher-synced classes if different */}
+              {availableClasses.filter(c => !approvedSchoolClasses.some(a => a.name.toLowerCase() === c.name.toLowerCase())).map(c => (
+                <button
+                  key={c.id || c.name}
+                  onClick={() => handleSelectClass(c.name)}
+                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                    selectedClass.toLowerCase() === c.name.toLowerCase()
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-emerald-400'
+                  }`}
+                >
+                  {c.name}
+                </button>
+              ))}
             </div>
-          )}
+          </div>
         </div>
 
         {/* 4. Teacher's Friendly Note of the Day */}

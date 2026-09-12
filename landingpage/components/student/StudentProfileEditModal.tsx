@@ -14,13 +14,17 @@ import {
   Check,
   GraduationCap,
   Layers,
-  UploadCloud
+  UploadCloud,
+  ShieldCheck,
+  Lock,
+  AlertCircle
 } from 'lucide-react';
 import {
   StudentProfile,
   EDUCATION_LEVELS,
   EducationLevel,
-  saveStudentProfile
+  saveStudentProfile,
+  getSchoolApprovedClassrooms
 } from '@/app/student/studentProfileData';
 import { Language } from '@/app/app/i18n';
 
@@ -56,9 +60,11 @@ export default function StudentProfileEditModal({
   const [customAvatarUrl, setCustomAvatarUrl] = useState('');
   const [showCustomUrlInput, setShowCustomUrlInput] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [approvedClasses, setApprovedClasses] = useState<{ id: string; name: string; grade?: string; homeroomTeacher?: string }[]>([]);
 
   useEffect(() => {
     setFormData(profile);
+    setApprovedClasses(getSchoolApprovedClassrooms());
   }, [profile, isOpen]);
 
   if (!isOpen) return null;
@@ -67,11 +73,22 @@ export default function StudentProfileEditModal({
 
   const handleLevelChange = (level: EducationLevel) => {
     const config = EDUCATION_LEVELS.find(l => l.id === level);
-    const defaultGrade = config?.grades[0] || 'Lớp 1';
+    // Find matching school approved class for this level if any
+    const matchedApproved = approvedClasses.find(c => (c.grade && c.grade.toLowerCase().includes(level)) || c.name.toLowerCase().includes(level));
+    const defaultGrade = matchedApproved ? matchedApproved.name : (config?.grades[0] || 'Lớp 1');
     setFormData(prev => ({
       ...prev,
       educationLevel: level,
       className: defaultGrade
+    }));
+  };
+
+  const handleSelectApprovedClass = (cls: { id: string; name: string; grade?: string; homeroomTeacher?: string }) => {
+    setFormData(prev => ({
+      ...prev,
+      className: cls.name,
+      homeroomTeacher: cls.homeroomTeacher || prev.homeroomTeacher,
+      isSchoolVerified: true
     }));
   };
 
@@ -121,7 +138,7 @@ export default function StudentProfileEditModal({
                 {isEn ? "Update Student Profile" : "Cập Nhật Hồ Sơ Học Sinh"}
               </h3>
               <p className="text-xs text-white/90 font-medium">
-                {isEn ? "Keep your information and class code up to date" : "Chỉnh sửa thông tin định danh, cấp học và lớp học"}
+                {isEn ? "Synchronized with School Administration & Teacher Roster" : "Đồng bộ hóa với Ban Giám Hiệu & Giáo viên phụ trách"}
               </p>
             </div>
           </div>
@@ -135,6 +152,28 @@ export default function StudentProfileEditModal({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+
+          {/* School Verification Banner (Proposal 1 & 2) */}
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 dark:from-emerald-950/50 dark:via-teal-950/40 dark:to-emerald-950/50 border border-emerald-300 dark:border-emerald-800 flex items-start gap-3">
+            <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+            <div className="space-y-0.5 text-xs">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-black text-emerald-900 dark:text-emerald-200">
+                  {isEn ? "Official Class Assigned by School Administration" : "Lớp học chính thức do Nhà trường xếp duyệt"}
+                </span>
+                <span className="px-2 py-0.2 rounded-full bg-emerald-200 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold">
+                  {formData.className}
+                </span>
+              </div>
+              <p className="text-emerald-800/90 dark:text-emerald-300/80 text-[11px] leading-relaxed">
+                {isEn
+                  ? `Class: ${formData.className} • Homeroom: ${formData.homeroomTeacher || 'Assigned by School'} • Academic Year: ${formData.academicYear || '2025 - 2026'}. Managed by School Administration to prevent incorrect grade enrollments.`
+                  : `Lớp: ${formData.className} • GVCN: ${formData.homeroomTeacher || 'Nhà trường phân công'} • Niên khóa: ${formData.academicYear || '2025 - 2026'}. Được Ban Giám Hiệu quản lý nhằm đảm bảo học sinh theo dõi đúng lịch học và lộ trình đào tạo.`}
+              </p>
+            </div>
+          </div>
 
           {/* 1. Avatar Selector */}
           <div className="space-y-2">
@@ -233,8 +272,8 @@ export default function StudentProfileEditModal({
               />
               <p className="text-[10px] text-slate-500 dark:text-slate-400">
                 {isEn 
-                  ? "Unique 12-digit Citizen ID or School ID prevents duplicate accounts across Vietnam" 
-                  : "Dãy 12 số CCCD / Mã định danh đảm bảo mã duy nhất không trùng lặp toàn quốc"}
+                  ? "Unique 12-digit Citizen ID links directly to the teacher's roster throughout your schooling" 
+                  : "Mã 12 số CCCD liên kết trực tiếp với sổ lớp của giáo viên để theo dõi xuyên suốt"}
               </p>
             </div>
 
@@ -276,11 +315,11 @@ export default function StudentProfileEditModal({
             </div>
           </div>
 
-          {/* 6. Education Level Selector (Tiểu học / THCS / THPT / Trung cấp & Đại học) */}
+          {/* 6. Education Level Selector */}
           <div className="space-y-2 pt-1 border-t border-slate-100 dark:border-slate-800">
             <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
               <GraduationCap className="w-4 h-4 text-emerald-600" />
-              <span>{isEn ? "Education Level (From Grade 1 to 12 & Vocational/College)" : "Cấp học (Từ lớp 1 đến lớp 12 & Trung cấp trở lên)"}</span>
+              <span>{isEn ? "Education Level" : "Cấp học"}</span>
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {EDUCATION_LEVELS.map(lvl => (
@@ -308,85 +347,79 @@ export default function StudentProfileEditModal({
             </div>
           </div>
 
-          {/* 7. Class Selection: K-12 Grade Pills or College Class Code */}
-          <div className="space-y-2 bg-amber-50/60 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-amber-200 dark:border-slate-700">
+          {/* 7. Official School Class Selector (Proposal 1: School-approved Classes Only) */}
+          <div className="space-y-2.5 bg-amber-50/60 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-amber-200 dark:border-slate-700">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-amber-600" />
+                <Lock className="w-3.5 h-3.5 text-emerald-600" />
                 <span>
-                  {formData.educationLevel === 'college' 
-                    ? (isEn ? "Specialized Class Code (Vocational / College / University)" : "Mã lớp chuyên ngành (Trung cấp / CĐ / ĐH)")
-                    : (isEn ? "Select Grade & Class (Grade 1 - 12)" : "Chọn Khối lớp & Tên lớp (Lớp 1 đến Lớp 12)")}
+                  {isEn ? "School-Approved Class Roster (Official List):" : "Danh mục Lớp học do Nhà trường xếp duyệt (Chính thức):"}
                 </span>
               </label>
+              <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3" />
+                <span>{isEn ? "Standardized" : "Đã kiểm duyệt"}</span>
+              </span>
             </div>
 
-            {formData.educationLevel !== 'college' ? (
-              <div className="space-y-2">
-                {/* Standard Grades Pills for this level */}
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {currentLevelConfig.grades.map(grade => (
-                    <button
-                      type="button"
-                      key={grade}
-                      onClick={() => setFormData(prev => ({ ...prev, className: grade }))}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                        formData.className.startsWith(grade)
-                          ? 'bg-emerald-600 text-white shadow-xs'
-                          : 'bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-emerald-400'
-                      }`}
-                    >
-                      {grade}
-                    </button>
-                  ))}
-                </div>
+            {/* School Approved Classes Pills */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              {approvedClasses.map(cls => (
+                <button
+                  type="button"
+                  key={cls.id || cls.name}
+                  onClick={() => handleSelectApprovedClass(cls)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    formData.className.toLowerCase() === cls.name.toLowerCase()
+                      ? 'bg-emerald-600 text-white shadow-xs ring-2 ring-emerald-400'
+                      : 'bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-emerald-400'
+                  }`}
+                >
+                  <span>{cls.name}</span>
+                  {cls.homeroomTeacher && (
+                    <span className="text-[9px] opacity-80 hidden sm:inline">({cls.homeroomTeacher.split(' ').pop()})</span>
+                  )}
+                </button>
+              ))}
+            </div>
 
-                {/* Specific Class Name Input (e.g., Lớp 3A1, Lớp 10 Chuyên Tin) */}
-                <div className="flex items-center gap-2 pt-1">
-                  <span className="text-xs font-bold text-slate-600 dark:text-slate-300 shrink-0">
-                    {isEn ? "Precise Class Name:" : "Tên lớp cụ thể:"}
-                  </span>
-                  <input
-                    type="text"
-                    value={formData.className}
-                    onChange={e => setFormData(prev => ({ ...prev, className: e.target.value }))}
-                    placeholder={isEn ? "e.g. Class 3A1, Class 10A2" : "Ví dụ: Lớp 3A1, Lớp 10 Chuyên Tin"}
-                    className="flex-1 px-3 py-1.5 text-xs sm:text-sm rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  />
-                </div>
+            {/* K-12 Standard Grade Pills as fallback if school operates many grades */}
+            <div className="pt-1 space-y-1">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                {isEn ? "Or choose standard school grade:" : "Hoặc chọn khối lớp quy chuẩn theo chương trình:"}
+              </p>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {currentLevelConfig.grades.map(grade => (
+                  <button
+                    type="button"
+                    key={grade}
+                    onClick={() => setFormData(prev => ({ ...prev, className: grade }))}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                      formData.className === grade
+                        ? 'bg-amber-500 text-white font-bold'
+                        : 'bg-white/80 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-amber-50'
+                    }`}
+                  >
+                    {grade}
+                  </button>
+                ))}
               </div>
-            ) : (
-              /* College / Vocational Class Code */
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-600 dark:text-slate-300 shrink-0">
-                    {isEn ? "Class Code:" : "Mã lớp:"}
-                  </span>
-                  <input
-                    type="text"
-                    value={formData.className}
-                    onChange={e => setFormData(prev => ({ ...prev, className: e.target.value.toUpperCase() }))}
-                    placeholder="CNTT-K24, QTKD-01, DTVT-A..."
-                    className="flex-1 px-3 py-1.5 text-xs sm:text-sm rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white font-mono font-bold uppercase focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  />
-                </div>
-                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">
-                    {isEn ? "Common samples:" : "Mã gợi ý phổ biến:"}
-                  </span>
-                  {currentLevelConfig.grades.map(sampleCode => (
-                    <button
-                      type="button"
-                      key={sampleCode}
-                      onClick={() => setFormData(prev => ({ ...prev, className: sampleCode }))}
-                      className="px-2 py-0.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 hover:border-emerald-500 cursor-pointer"
-                    >
-                      {sampleCode}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            </div>
+
+            {/* Current Selected Class Badge */}
+            <div className="flex items-center gap-2 pt-1 border-t border-amber-200/60 dark:border-slate-700">
+              <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                {isEn ? "Selected Class:" : "Lớp đang theo học:"}
+              </span>
+              <span className="px-3 py-1 rounded-xl bg-white dark:bg-slate-700 border border-emerald-400 text-xs font-black text-emerald-800 dark:text-emerald-300">
+                {formData.className}
+              </span>
+              {formData.homeroomTeacher && (
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  ({isEn ? "Homeroom:" : "GVCN:"} {formData.homeroomTeacher})
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -441,7 +474,7 @@ export default function StudentProfileEditModal({
           {saveSuccess && (
             <div className="p-3 rounded-2xl bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center justify-center gap-2">
               <Check className="w-4 h-4 text-emerald-600" />
-              <span>{isEn ? "Profile updated successfully!" : "Đã cập nhật thông tin học sinh thành công!"}</span>
+              <span>{isEn ? "Profile synchronized successfully!" : "Đã đồng bộ thông tin với danh sách lớp của nhà trường!"}</span>
             </div>
           )}
 
@@ -459,7 +492,7 @@ export default function StudentProfileEditModal({
               className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white text-xs font-bold shadow-md shadow-orange-500/20 flex items-center gap-1.5 transition-transform active:scale-95 cursor-pointer"
             >
               <Save className="w-4 h-4" />
-              <span>{isEn ? "Save Profile" : "Lưu Thông Tin"}</span>
+              <span>{isEn ? "Save & Sync Roster" : "Lưu & Đồng Bộ Sổ Lớp"}</span>
             </button>
           </div>
         </form>

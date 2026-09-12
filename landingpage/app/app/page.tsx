@@ -2758,8 +2758,9 @@ export default function UnifiedTeacherScheduleApp() {
                               </div>
 
                               {ev.notes && (
-                                <p className="text-xs text-slate-600 italic bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
-                                  Ghi chú: {ev.notes}
+                                <p className="text-xs text-amber-950 font-medium bg-amber-50 px-2.5 py-1.5 rounded-xl border border-amber-200 flex items-start gap-1.5 shadow-xs">
+                                  <span className="font-bold text-amber-800 shrink-0">📝 Ghi chú:</span>
+                                  <span className="text-slate-800 font-medium">{ev.notes}</span>
                                 </p>
                               )}
 
@@ -3093,8 +3094,9 @@ export default function UnifiedTeacherScheduleApp() {
                           </div>
 
                           {ev.notes && (
-                            <p className="text-xs text-slate-600 italic bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
-                              {ev.notes}
+                            <p className="text-xs text-amber-950 font-medium bg-amber-50 px-2.5 py-1.5 rounded-xl border border-amber-200 flex items-start gap-1.5 shadow-xs">
+                              <span className="font-bold text-amber-800 shrink-0">📝</span>
+                              <span className="text-slate-800 font-medium line-clamp-2">{ev.notes}</span>
                             </p>
                           )}
                         </div>
@@ -3418,7 +3420,7 @@ export default function UnifiedTeacherScheduleApp() {
                               </div>
                               <div>
                                 <p className="font-semibold text-slate-900">{st.fullName}</p>
-                                {st.notes && <p className="text-[10px] text-slate-500 italic">{st.notes}</p>}
+                                {st.notes && <p className="text-[10.5px] text-amber-950 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 inline-flex items-center gap-1 font-medium shadow-xs"><span>📝</span> <span>{st.notes}</span></p>}
                               </div>
                             </div>
                           </td>
@@ -3819,12 +3821,17 @@ export default function UnifiedTeacherScheduleApp() {
                                   {ev.className} • {ev.date}
                                 </div>
                                 {ev.notes ? (
-                                  <div className="text-[10px] text-amber-300/90 truncate max-w-[150px] mt-0.5 font-mono">
-                                    📝 {ev.notes}
+                                  <div className={`text-[10.5px] truncate max-w-[160px] mt-1 font-semibold px-2 py-0.5 rounded-lg flex items-center gap-1 ${
+                                    isSel
+                                      ? 'bg-white/25 text-white'
+                                      : 'bg-amber-100 text-amber-950 border border-amber-300 shadow-xs'
+                                  }`}>
+                                    <span className="shrink-0">📝</span>
+                                    <span className="truncate">{ev.notes}</span>
                                   </div>
                                 ) : (
-                                  <div className="text-[10px] opacity-60 mt-0.5">
-                                    {ev.startTime} - {ev.endTime}
+                                  <div className={`text-[10px] mt-1 ${isSel ? 'text-white/80' : 'text-slate-500'}`}>
+                                    🕒 {ev.startTime} - {ev.endTime}
                                   </div>
                                 )}
                               </button>
@@ -4405,7 +4412,7 @@ export default function UnifiedTeacherScheduleApp() {
                         {plannerResult2634 && (
                           <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-5 space-y-4 text-xs sm:text-sm text-slate-800">
                             <div className="text-center pb-3 border-b border-slate-200">
-                              <span className="text-xs uppercase tracking-widest text-amber-400 font-semibold block">
+                              <span className="text-xs uppercase tracking-widest text-amber-700 font-semibold block">
                                 GIÁO ÁN BÀI DẠY THỰC HÀNH NGHỀ (CHUẨN CÔNG VĂN 2634/GDNN)
                               </span>
                               <h4 className="text-base font-bold text-slate-900 mt-1">{plannerResult2634.moduleTitle}</h4>
@@ -4415,7 +4422,7 @@ export default function UnifiedTeacherScheduleApp() {
                             </div>
 
                             <div className="space-y-2">
-                              <h5 className="font-bold text-amber-400 uppercase text-xs">I. Mục tiêu đào tạo nghề:</h5>
+                              <h5 className="font-bold text-amber-800 uppercase text-xs">I. Mục tiêu đào tạo nghề:</h5>
                               <p><strong className="text-slate-700">1. Kiến thức nghề:</strong> {plannerResult2634.objectives.knowledge}</p>
                               <p><strong className="text-slate-700">2. Kỹ năng thực hành:</strong> {plannerResult2634.objectives.skills}</p>
                               <p><strong className="text-slate-700">3. An toàn lao động & 5S:</strong> {plannerResult2634.objectives.autonomyAndSafety}</p>
@@ -4482,7 +4489,7 @@ export default function UnifiedTeacherScheduleApp() {
                                 <span className="font-bold block mb-0.5">🗣️ Lời giảng của Giáo viên:</span>
                                 <p className="italic text-slate-600">{s.speakerNotes}</p>
                               </div>
-                              <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px]">
+                              <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-950 font-medium text-xs">
                                 <strong>🖼️ Gợi ý hình ảnh:</strong> {s.visualSuggestion}
                               </div>
                             </div>
@@ -4528,7 +4535,7 @@ export default function UnifiedTeacherScheduleApp() {
                                   <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-semibold text-[10px]">
                                     {q.bloomLevel}
                                   </span>
-                                  <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[10px]">
+                                  <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-950 font-mono text-[10px] font-bold border border-amber-200">
                                     ⏱️ {q.timeLimitSeconds}s • {q.points}đ
                                   </span>
                                 </div>
@@ -4567,7 +4574,7 @@ export default function UnifiedTeacherScheduleApp() {
                     {plannerActiveResultTab === 'video' && plannerFullPackage && (
                       <div className="space-y-4 animate-fade-in">
                         <div className="flex items-center justify-between p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs">
-                          <span className="text-amber-300 font-semibold">
+                          <span className="text-amber-800 font-bold">
                             🎬 Kịch bản Video vi mô (Microlearning) gồm {plannerFullPackage.videoScript.length} phân cảnh chi tiết (3-5 phút).
                           </span>
                           <button
@@ -4587,7 +4594,7 @@ export default function UnifiedTeacherScheduleApp() {
                           {plannerFullPackage.videoScript.map((sc) => (
                             <div key={sc.sceneNumber} className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5 text-xs text-slate-800">
                               <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                                <span className="font-bold text-amber-400 text-sm">
+                                <span className="font-bold text-amber-800 text-sm">
                                   Phân cảnh {sc.sceneNumber}: {sc.title}
                                 </span>
                                 <span className="text-[11px] font-mono text-slate-600 bg-slate-200/80 px-2 py-0.5 rounded">
@@ -4599,7 +4606,7 @@ export default function UnifiedTeacherScheduleApp() {
                                 <div>
                                   <strong className="text-slate-700 block mb-1">🖼️ Mô tả hình ảnh (Visual):</strong>
                                   <p className="text-slate-600">{sc.visualDescription}</p>
-                                  <div className="mt-2 text-[11px] text-amber-300">
+                                  <div className="mt-2 text-xs text-amber-950 font-medium">
                                     <strong>Chữ trên màn hình:</strong> {sc.onScreenText}
                                   </div>
                                 </div>
@@ -4762,7 +4769,7 @@ export default function UnifiedTeacherScheduleApp() {
                           </div>
 
                           <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 space-y-2">
-                            <strong className="text-amber-400 flex items-center gap-1.5 font-bold">
+                            <strong className="text-amber-800 flex items-center gap-1.5 font-bold">
                               <Sparkles className="w-4 h-4" />
                               <span>Khuyến Nghị Tối Ưu Sư Phạm:</span>
                             </strong>
@@ -5565,7 +5572,7 @@ export default function UnifiedTeacherScheduleApp() {
                                   <Paperclip className="w-4 h-4" />
                                 </div>
                                 <div className="min-w-0">
-                                  <div className="text-xs font-bold text-amber-300 truncate">{kbEditFileName}</div>
+                                  <div className="text-xs font-bold text-amber-950 truncate">{kbEditFileName}</div>
                                   <div className="text-[10px] text-slate-400">
                                     {(kbEditFileSize / 1024).toFixed(1)} KB • {kbEditContent.length.toLocaleString()} ký tự
                                   </div>
@@ -6655,8 +6662,8 @@ export default function UnifiedTeacherScheduleApp() {
                     <p className="text-xl font-black text-emerald-300">{presentCount}/{recs.length}</p>
                   </div>
                   <div className="bg-amber-950/30 border border-amber-500/30 rounded-xl p-2.5 text-center">
-                    <p className="text-[11px] text-amber-400 font-semibold">🟡 Vắng có phép</p>
-                    <p className="text-xl font-black text-amber-300">{excusedCount}</p>
+                    <p className="text-[11px] text-amber-700 font-semibold">🟡 Vắng có phép</p>
+                    <p className="text-xl font-black text-amber-800">{excusedCount}</p>
                   </div>
                   <div className="bg-rose-950/30 border border-rose-500/30 rounded-xl p-2.5 text-center">
                     <p className="text-[11px] text-rose-400 font-semibold">🔴 Vắng không phép</p>
@@ -6748,7 +6755,7 @@ export default function UnifiedTeacherScheduleApp() {
                       </div>
 
                       {(rec.kudosDelta || 0) > 0 && (
-                        <span className="text-[11px] text-amber-400 font-bold">+{rec.kudosDelta}đ</span>
+                        <span className="text-[11px] text-amber-700 font-bold">+{rec.kudosDelta}đ</span>
                       )}
                     </div>
                   </div>
@@ -7264,7 +7271,7 @@ export default function UnifiedTeacherScheduleApp() {
                                   <Upload className="w-5 h-5" />
                                 </div>
                                 <div>
-                                  <div className="text-xs font-bold text-amber-300">
+                                  <div className="text-xs font-bold text-amber-950">
                                     Kích hoạt xem trực quan & Trích xuất toàn văn cho tài liệu này
                                   </div>
                                   <div className="text-[11px] text-slate-600">
@@ -7926,8 +7933,8 @@ export default function UnifiedTeacherScheduleApp() {
                             <strong className="block text-emerald-400 font-semibold mb-0.5">🗣️ Lời giảng của Giáo viên (Speaker Notes):</strong>
                             <p className="italic leading-relaxed">{s.speakerNotes}</p>
                           </div>
-                          <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
-                            <strong className="block text-amber-400 font-semibold mb-0.5">🖼️ Gợi ý Đồ họa / Video:</strong>
+                          <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-950 font-medium">
+                            <strong className="block text-amber-800 font-semibold mb-0.5">🖼️ Gợi ý Đồ họa / Video:</strong>
                             <p className="leading-relaxed">{s.visualSuggestion}</p>
                           </div>
                         </div>
@@ -8097,7 +8104,7 @@ export default function UnifiedTeacherScheduleApp() {
               {lessonPackageActiveTab === 'video' && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-100">
-                    <p className="text-xs sm:text-sm text-amber-300 font-medium">
+                    <p className="text-xs sm:text-sm text-amber-950 font-medium">
                       🎬 Kịch bản Video vi mô (Microlearning) gồm <strong>{viewingLessonPackage.videoScript.length} phân cảnh</strong> chi tiết (3-5 phút).
                     </p>
                     <button
@@ -8137,7 +8144,7 @@ export default function UnifiedTeacherScheduleApp() {
 
                           <div className="space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col justify-between">
                             <div>
-                              <strong className="text-amber-400 block mb-1">🎙️ Lời bình thuyết minh (Voiceover):</strong>
+                              <strong className="text-amber-800 block mb-1">🎙️ Lời bình thuyết minh (Voiceover):</strong>
                               <p className="italic text-slate-800 leading-relaxed">&quot;{sc.voiceover}&quot;</p>
                             </div>
                             <div className="pt-2 border-t border-slate-200 text-[11px] text-amber-700 font-semibold">
@@ -8236,7 +8243,7 @@ export default function UnifiedTeacherScheduleApp() {
                     </div>
 
                     <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-2">
-                      <h4 className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                      <h4 className="text-xs font-bold text-amber-800 flex items-center gap-1.5">
                         <Sparkles className="w-4 h-4" />
                         Khuyến Nghị Sư Phạm:
                       </h4>

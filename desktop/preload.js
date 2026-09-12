@@ -3,7 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('desktopAPI', {
   platform: process.platform,
-  version: '1.5.0',
+  version: '1.6.0',
   sendNotification: (title, body) => {
     ipcRenderer.send('desktop-notification', { title, body });
   },

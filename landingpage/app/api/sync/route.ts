@@ -255,7 +255,7 @@ async function saveSyncStore(payload: SyncPayload, pinToSet?: string): Promise<b
         sync_code: cleanCode,
         pin_hash: computedPinHash || null,
         payload: { ...payload, pinHash: computedPinHash },
-        version: '1.5.0',
+        version: '1.6.0',
         device_name: payload.deviceName || 'Smart Device',
         platform: payload.platform || 'web',
         updated_at: payload.updatedAt

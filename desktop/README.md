@@ -1,5 +1,5 @@
 # Smart Teacher Schedule AI - Desktop (Windows, macOS, Linux)
-Phiên bản: v1.5.0
+Phiên bản: v1.6.0
 Tác giả: Huy Technology AI (Hotline: 0961364600)
 
 ## Hướng dẫn sử dụng trên Máy tính (PC / Laptop):

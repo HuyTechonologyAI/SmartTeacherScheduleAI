@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS public.teacher_sync_stores (
     sync_code TEXT PRIMARY KEY,
     pin_hash TEXT, -- Mã băm SHA-256 của PIN bảo vệ (null nếu chưa bật PIN)
     payload JSONB NOT NULL,
-    version TEXT DEFAULT '1.5.0',
+    version TEXT DEFAULT '1.6.0',
     device_name TEXT,
     platform TEXT,
     updated_at BIGINT NOT NULL, -- Unix timestamp (ms)

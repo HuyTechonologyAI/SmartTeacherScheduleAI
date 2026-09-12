@@ -1,5 +1,5 @@
 // Service Worker for Smart Teacher Schedule AI (iOS PWA & Web Push)
-const CACHE_NAME = 'smart-teacher-v1.5.0';
+const CACHE_NAME = 'smart-teacher-v1.6.0';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

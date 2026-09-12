@@ -5983,21 +5983,21 @@ export default function UnifiedTeacherScheduleApp() {
                     <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                       Smart Teacher Schedule AI
                       <span className="px-2.5 py-0.5 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 text-xs font-mono font-bold">
-                        v1.5.0
+                        v1.6.0
                       </span>
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400">Đơn vị phát triển: Huy Technology AI • Hotline/Zalo: 0961364600</p>
                   </div>
                 </div>
                 <span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 text-xs font-semibold">
-                  ✓ Phiên bản chính thức v1.5.0
+                  ✓ Phiên bản chính thức v1.6.0
                 </span>
               </div>
               <div className="text-xs text-slate-600 dark:text-slate-300 grid sm:grid-cols-2 gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800 dark:border-slate-700/60">
                 <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Nền tảng: <strong className="text-slate-800 dark:text-slate-100">Desktop (PC/Laptop), Android & Web App</strong></div>
                 <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Cơ sở dữ liệu: <strong className="text-slate-800 dark:text-slate-100">Supabase Cloud Sync & Local Offline</strong></div>
-                <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Trợ lý AI: <strong className="text-slate-800 dark:text-slate-100">Soạn giáo án CV 5512, Đề thi TT 22, Slide, Mindmap</strong></div>
-                <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Tính năng v1.5.0: <strong className="text-emerald-700 dark:text-emerald-400 font-semibold">Sổ lớp, Điểm danh 1 chạm, Command Center & Khóa PIN</strong></div>
+                <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Trợ lý AI: <strong className="text-slate-800 dark:text-slate-100">Soạn giáo án CV 5512/2634, Đề thi TT 22, Slide, Mindmap</strong></div>
+                <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Tính năng v1.6.0: <strong className="text-emerald-700 dark:text-emerald-400 font-semibold">Giao diện Sáng/Tối toàn diện, Soạn giáo án AI 5512/2634 & Sổ Báo Giảng đồng bộ</strong></div>
               </div>
             </div>
 

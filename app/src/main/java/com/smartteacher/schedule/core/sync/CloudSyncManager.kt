@@ -887,4 +887,15 @@ object CloudSyncManager {
             Result.failure(res.exceptionOrNull() ?: Exception("Lỗi khi gửi lịch lên Đám mây"))
         }
     }
+
+    private fun isTestSyncItem(id: String?, name: String?): Boolean {
+        val safeId = id?.lowercase() ?: ""
+        if (safeId.startsWith("test_") || safeId.startsWith("mock_") || safeId.startsWith("dummy_") ||
+            safeId.startsWith("sample_") || safeId.startsWith("demo_") || safeId.startsWith("temp_")
+        ) return true
+        if (safeId.contains("_test_") || safeId.contains("_mock_") || safeId.contains("_dummy_")) return true
+        val safeName = name?.lowercase() ?: ""
+        val regex = Regex("\\[test\\]|\\(test\\)|\\[thử\\s*nghiệm\\]|\\bdữ liệu test\\b|\\bca dạy thử\\b|\\bmock data\\b|\\bkiểm thử\\b", RegexOption.IGNORE_CASE)
+        return regex.containsMatchIn(safeName)
+    }
 }

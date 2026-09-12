@@ -99,7 +99,7 @@ Thầy/Cô hãy chọn nhanh chức năng bên dưới hoặc đặt câu hỏi 
         { label: "🎨 Tạo hình ảnh minh họa bài dạy", action: "tao_anh_mau", mode: "ILLUSTRATION" },
         { label: "🇻🇳 Định mức giờ dạy (TT 28 & TT 15)", action: "dinh_muc_gio_day", mode: "OFFICIAL_VN" },
         { label: "💻 Khung năng lực số CV 3456", action: "nang_luc_so_3456", mode: "KNOWLEDGE" },
-        { label: "📱 Hướng dẫn cài app v1.5.0", action: "huong_dan_cai_dat", mode: "SCHEDULE" }
+        { label: "📱 Hướng dẫn cài app v1.6.0", action: "huong_dan_cai_dat", mode: "SCHEDULE" }
       ],
     },
   ]);
@@ -155,14 +155,14 @@ Thầy/Cô hãy chọn nhanh chức năng bên dưới hoặc đặt câu hỏi 
           text: "Dạ, với máy **Tecno Spark Go (HiOS Android 15)**:\n1️⃣ Vào **Cài đặt ➔ Trung tâm thông báo ➔ Màn hình khóa** ➔ Chọn **'Hiển thị thông báo và nội dung'**.\n2️⃣ Vào Cài đặt ➔ Ứng dụng ➔ Smart Teacher ➔ Thông báo ➔ Bật **'Hiển thị trên màn hình khóa'**.\n3️⃣ Bấm nút **'Đồng hồ bục giảng'** trong app để xem ca dạy đếm ngược to rõ ngay khi khóa máy!",
           quickActions: [
             { label: "📱 Màn hình khóa Tecno", action: "tecno_spark_go", mode: "SCHEDULE" },
-            { label: "📥 Tải APK v1.5.0", action: "huong_dan_cai_dat", mode: "SCHEDULE" }
+            { label: "📥 Tải APK v1.6.0", action: "huong_dan_cai_dat", mode: "SCHEDULE" }
           ]
         };
       }
       if (query.includes("cài") || query.includes("tải") || query.includes("apk")) {
         return {
           mode: "SCHEDULE",
-          text: "Dạ, để cài đặt bản v1.5.0:\n• **Android**: Bấm [TẢI APK v1.5.0] ở đầu trang hoặc quét mã QR ➔ Mở tệp vừa tải ➔ Cài đặt.\n• **Máy tính PC**: Dùng trực tiếp bản Web App v1.5.0 có đầy đủ tính năng soạn giáo án AI và đồng bộ 2 chiều qua mã đồng bộ!",
+          text: "Dạ, để cài đặt bản v1.6.0:\n• **Android**: Bấm [TẢI APK v1.6.0] ở đầu trang hoặc quét mã QR ➔ Mở tệp vừa tải ➔ Cài đặt.\n• **Máy tính PC**: Dùng trực tiếp bản Web App v1.6.0 có đầy đủ tính năng soạn giáo án AI và đồng bộ 2 chiều qua mã đồng bộ!",
           quickActions: [
             { label: "🔋 Chống tắt ngầm Android", action: "chong_tat_ngam", mode: "SCHEDULE" },
             { label: "🖼️ Cách bật Widget", action: "bat_widget", mode: "SCHEDULE" }

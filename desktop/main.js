@@ -106,7 +106,7 @@ function createMenu() {
           click: () => shell.openExternal('https://gvcncdsai.io.vn')
         },
         {
-          label: '📱 Tải bản Android APK v1.5.0',
+          label: '📱 Tải bản Android APK v1.6.0',
           click: () => shell.openExternal('https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases')
         },
         {
@@ -115,12 +115,12 @@ function createMenu() {
         },
         { type: 'separator' },
         {
-          label: 'Về ứng dụng Smart Teacher Schedule AI v1.5.0',
+          label: 'Về ứng dụng Smart Teacher Schedule AI v1.6.0',
           click: () => {
             if (Notification.isSupported()) {
               new Notification({
                 title: 'Smart Teacher Schedule AI Desktop',
-                body: 'Phiên bản v1.5.0 - Hệ sinh thái đồng bộ đám mây đa nền tảng và trợ lý giáo viên AI.'
+                body: 'Phiên bản v1.6.0 - Hệ sinh thái đồng bộ đám mây đa nền tảng, giao diện sáng/tối toàn diện và trợ lý giáo viên AI.'
               }).show();
             }
           }

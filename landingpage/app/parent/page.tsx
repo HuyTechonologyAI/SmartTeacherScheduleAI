@@ -198,17 +198,20 @@ export default function ParentPortalPage() {
       <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 sm:px-6">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
-              <Heart className="w-5 h-5 fill-white/20" />
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 p-2 shadow-md shadow-indigo-950/20 flex items-center justify-center border border-indigo-400/30">
+              <Heart className="w-5 h-5 text-rose-400 fill-rose-500/30" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-bold text-sm sm:text-base text-white tracking-tight">Parent Link</h1>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-semibold">
-                  Sổ Liên Lạc Điện Tử
+                <div className="flex items-center leading-none">
+                  <span className="text-lg font-black tracking-tight text-rose-500">Edu</span>
+                  <span className="text-lg font-black tracking-tight text-emerald-500">Viet</span>
+                </div>
+                <span className="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-bold">
+                  Cổng Phụ Huynh
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 hidden sm:block">Đồng hành cùng nhà trường - Nắm bắt chuyên cần & nề nếp của con</p>
+              <p className="text-[11px] text-slate-400 hidden sm:block">Sổ liên lạc điện tử gia đình • Cùng tri thức – Vững tương lai</p>
             </div>
           </div>
 

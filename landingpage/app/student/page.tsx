@@ -139,17 +139,20 @@ export default function StudentPortalPage() {
       <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 sm:px-6">
         <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-              <BookOpen className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 p-2 shadow-md shadow-indigo-950/20 flex items-center justify-center border border-indigo-400/30">
+              <BookOpen className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-bold text-sm sm:text-base text-white tracking-tight">Student Space</h1>
-                <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] font-semibold">
+                <div className="flex items-center leading-none">
+                  <span className="text-lg font-black tracking-tight text-rose-500">Edu</span>
+                  <span className="text-lg font-black tracking-tight text-emerald-500">Viet</span>
+                </div>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">
                   Cổng Học Sinh
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 hidden sm:block">Xem thời khóa biểu, tài liệu bài học & thi đua rèn luyện</p>
+              <p className="text-[11px] text-slate-400 hidden sm:block">Không gian học tập số • Cùng tri thức – Vững tương lai</p>
             </div>
           </div>
 

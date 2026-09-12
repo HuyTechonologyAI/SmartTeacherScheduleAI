@@ -85,3 +85,62 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #4F46E5;
 }
+
+/* ================= EDUVIET - VIETNAMESE EDUCATIONAL THEME ================= */
+.theme-eduviet {
+  --eduviet-bg: #F8FAFC;
+  --eduviet-card: #FFFFFF;
+  --eduviet-border: #E2E8F0;
+  --eduviet-text-main: #0F172A;
+  --eduviet-text-muted: #64748B;
+  --eduviet-primary: #DC2626; /* Cờ đỏ Tổ quốc */
+  --eduviet-gold: #F59E0B; /* Ngôi sao vàng */
+  --eduviet-green: #10B981; /* Mầm xanh giáo dục */
+  --eduviet-blue: #2563EB; /* Tri thức số */
+}
+
+/* EduViet Card styles */
+.eduviet-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 1.5rem;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.eduviet-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -3px rgba(15, 23, 42, 0.08);
+  border-color: #CBD5E1;
+}
+
+/* EduViet Calligraphy typography for inspirational signatures */
+.font-calligraphy {
+  font-family: 'Dancing Script', 'Caveat', 'Segoe Script', 'Brush Script MT', cursive;
+  letter-spacing: 0.02em;
+}
+
+/* Quick Action Button with soft hover */
+.eduviet-action-btn {
+  background: #FFFFFF;
+  border: 1px solid #F1F5F9;
+  border-radius: 1.25rem;
+  box-shadow: 0 2px 8px -1px rgba(15, 23, 42, 0.04);
+  transition: all 0.2s ease-in-out;
+}
+
+.eduviet-action-btn:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 16px -2px rgba(15, 23, 42, 0.08);
+}
+
+/* Flag wave animation */
+@keyframes flagWave {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(1.5deg) scale(1.02); }
+}
+
+.animate-flag {
+  animation: flagWave 6s ease-in-out infinite;
+  transform-origin: bottom left;
+}

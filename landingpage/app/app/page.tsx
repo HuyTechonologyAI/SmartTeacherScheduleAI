@@ -32,6 +32,7 @@ import TodayCommandCenter from '@/components/dashboard/TodayCommandCenter';
 import SyncSecurityModal from '@/components/dashboard/SyncSecurityModal';
 import PortalShareModal from '@/components/dashboard/PortalShareModal';
 import LeaveRequestsModal from '@/components/dashboard/LeaveRequestsModal';
+import EduVietHomeView from '@/components/eduviet/EduVietHomeView';
 import {
   LessonPlan5512Data,
   LessonPlan2634Data,
@@ -398,7 +399,7 @@ export function mergeEventsDesktop(
 }
 
 export default function UnifiedTeacherScheduleApp() {
-  const [activeTab, setActiveTab] = useState<'today' | 'calendar' | 'roster' | 'report' | 'ai' | 'settings'>('today');
+  const [activeTab, setActiveTab] = useState<'eduviet' | 'today' | 'calendar' | 'roster' | 'report' | 'ai' | 'settings'>('eduviet');
   const [isClient, setIsClient] = useState(false);
 
 
@@ -1603,6 +1604,24 @@ export default function UnifiedTeacherScheduleApp() {
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
   }, [events, todayStr, excludeTestData]);
 
+  const todaySessionItems = useMemo(() => {
+    if (!todayEvents || todayEvents.length === 0) return undefined;
+    const now = new Date();
+    const curHM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    return todayEvents.map(e => {
+      const isNow = curHM >= e.startTime && curHM <= e.endTime;
+      return {
+        id: String(e.id),
+        timeRange: `${e.startTime} – ${e.endTime}`,
+        subject: e.subject,
+        room: e.room || 'Phòng học',
+        className: e.className,
+        isActive: isNow,
+        statusText: isNow ? 'Đang diễn ra' : undefined
+      };
+    });
+  }, [todayEvents]);
+
   // Selected Date Events
   const selectedDateEvents = useMemo(() => {
     if (!selectedDate) return todayEvents;
@@ -2434,6 +2453,18 @@ export default function UnifiedTeacherScheduleApp() {
       <nav className="border-b border-slate-800 bg-slate-900/90 sticky top-15 z-30 px-4">
         <div className="max-w-7xl mx-auto flex space-x-1 sm:space-x-4 overflow-x-auto py-2">
           <button
+            onClick={() => setActiveTab('eduviet')}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all whitespace-nowrap ${
+              activeTab === 'eduviet'
+                ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <Star className="w-4 h-4 text-amber-300 fill-amber-300" />
+            <span>EduViet Trang chủ</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('today')}
             className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all whitespace-nowrap ${
               activeTab === 'today'
@@ -2521,6 +2552,54 @@ export default function UnifiedTeacherScheduleApp() {
 
       {/* 3. MAIN CONTENT AREA */}
       <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 space-y-6">
+
+        {/* ================= TAB 0: EDUVIET TRANG CHỦ (VIETNAMESE DESIGN) ================= */}
+        {activeTab === 'eduviet' && (
+          <EduVietHomeView
+            teacherName={selectedRosterClass ? `GVCN Lớp ${selectedRosterClass}` : "Nguyễn Minh Anh"}
+            schoolName="Trường THPT Việt Nam"
+            classNameOrSubject={selectedRosterClass ? `Lớp ${selectedRosterClass}` : "Lớp 10A1"}
+            syncCode={syncCode}
+            leaveRequestCount={leaveRequests.filter(r => r.status === 'PENDING').length}
+            todaySessions={todaySessionItems}
+            progressPercent={(() => {
+              if (todayEvents.length === 0) return 75;
+              const now = new Date();
+              const curHM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+              const done = todayEvents.filter(e => e.endTime < curHM).length;
+              return Math.round((done / todayEvents.length) * 100) || 75;
+            })()}
+            stats={(() => {
+              const now = new Date();
+              const curHM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+              const done = todayEvents.filter(e => e.endTime < curHM).length;
+              return {
+                lessons: `${done}/${todayEvents.length || 10}`,
+                exercises: `${Math.min(6, todayEvents.length || 6)}/8`,
+                topics: '4/5'
+              };
+            })()}
+            onSelectAction={(actionId) => {
+              if (actionId === 'calendar') setActiveTab('calendar');
+              else if (actionId === 'lesson_package') { setActiveTab('ai'); setAiSubTab('planner'); }
+              else if (actionId === 'ai_plan') { setActiveTab('ai'); setAiSubTab('planner'); }
+              else if (actionId === 'stats') setActiveTab('report');
+              else if (actionId === 'leave_requests') setShowLeaveRequestsModal(true);
+              else if (actionId === 'knowledge') { setActiveTab('ai'); setAiSubTab('knowledge'); }
+              else if (actionId === 'attendance') setActiveTab('roster');
+              else if (actionId === 'share_portal') setShowPortalShareModal(true);
+              else if (actionId === 'profile') setActiveTab('settings');
+            }}
+            onOpenSync={() => setShowSyncModal(true)}
+            onOpenPortalShare={() => setShowPortalShareModal(true)}
+            onOpenNotifications={() => setShowLeaveRequestsModal(true)}
+            onViewAllSessions={() => setActiveTab('today')}
+            onSelectSession={(session) => {
+              const found = events.find(e => String(e.id) === session.id);
+              if (found) setEditingEvent(found);
+            }}
+          />
+        )}
 
         {/* ================= TAB 1: HÔM NAY (TODAY SCREEN) ================= */}
         {activeTab === 'today' && (

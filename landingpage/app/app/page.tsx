@@ -188,7 +188,8 @@ import {
   Maximize2,
   Minimize2,
   ZoomIn,
-  ZoomOut
+  ZoomOut,
+  School
 } from 'lucide-react';
 
 export interface CalendarEventItem {
@@ -2456,6 +2457,15 @@ export default function UnifiedTeacherScheduleApp() {
                 <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
                 <span>{isSyncing ? 'Đang đồng bộ...' : 'Đồng bộ 2 chiều'}</span>
               </button>
+
+              <Link
+                href="/school"
+                className="hidden md:flex px-3 py-1.5 rounded-full bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/70 dark:hover:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold items-center gap-1.5 transition-all shadow-xs"
+                title="Cổng Quản lý Nhà trường (Ban Giám Hiệu & Tổ Chuyên Môn)"
+              >
+                <School className="w-3.5 h-3.5" />
+                <span>Nhà trường</span>
+              </Link>
 
               <button
                 onClick={() => setShowPortalShareModal(true)}

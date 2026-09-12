@@ -732,6 +732,14 @@ export default function ParentPortalPage() {
               {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
             </button>
 
+            {/* Link to School */}
+            <Link
+              href="/school"
+              className="hidden sm:flex items-center gap-1 px-3 py-2 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold hover:bg-indigo-100 transition-colors"
+            >
+              <span>{isEn ? 'School' : 'Nhà trường'}</span>
+            </Link>
+
             {/* Link to Student */}
             <Link
               href={syncCode ? `/student?code=${syncCode}` : '/student'}

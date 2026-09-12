@@ -186,6 +186,7 @@ export default function EduVietHomeView({
           onViewAllClasses={() => onSelectAction('calendar')}
           onViewAllAnnouncements={onOpenNotifications}
           onSelectClass={() => onSelectAction('calendar')}
+          lang={lang}
         />
 
         {/* 7. Footer Cultural Decoration */}

@@ -1361,9 +1361,11 @@ export default function UnifiedTeacherScheduleApp() {
 
       // 2. Sau đó lưu & đẩy dữ liệu đã hợp nhất lên Đám mây
       const savedEventsStr = localStorage.getItem('smart_teacher_events');
-      const curEvs: CalendarEventItem[] = savedEventsStr ? JSON.parse(savedEventsStr) : events;
+      let curEvs: CalendarEventItem[] = events;
+      try { if (savedEventsStr) curEvs = JSON.parse(savedEventsStr); } catch (_) {}
       const savedSchsStr = localStorage.getItem('smart_teacher_schedules');
-      const curSchs: ScheduleItem[] = savedSchsStr ? JSON.parse(savedSchsStr) : schedules;
+      let curSchs: ScheduleItem[] = schedules;
+      try { if (savedSchsStr) curSchs = JSON.parse(savedSchsStr); } catch (_) {}
 
       await pushToCloud(curEvs, curSchs, code, false);
 
@@ -1990,15 +1992,18 @@ export default function UnifiedTeacherScheduleApp() {
 
     // Cập nhật lại state trong bộ nhớ
     const rawEv = localStorage.getItem('smart_teacher_events');
-    const cleanEvents: CalendarEventItem[] = rawEv ? JSON.parse(rawEv) : [];
+    let cleanEvents: CalendarEventItem[] = [];
+    try { if (rawEv) cleanEvents = JSON.parse(rawEv); } catch (_) {}
     setEvents(cleanEvents);
 
     const rawSch = localStorage.getItem('smart_teacher_schedules');
-    const cleanSchedules: ScheduleItem[] = rawSch ? JSON.parse(rawSch) : [];
+    let cleanSchedules: ScheduleItem[] = [];
+    try { if (rawSch) cleanSchedules = JSON.parse(rawSch); } catch (_) {}
     setSchedules(cleanSchedules);
 
     const rawTasks = localStorage.getItem('smart_teacher_tasks');
-    const cleanTasks: TaskItem[] = rawTasks ? JSON.parse(rawTasks) : [];
+    let cleanTasks: TaskItem[] = [];
+    try { if (rawTasks) cleanTasks = JSON.parse(rawTasks); } catch (_) {}
     setTasks(cleanTasks);
 
     setTestDataCount(0);

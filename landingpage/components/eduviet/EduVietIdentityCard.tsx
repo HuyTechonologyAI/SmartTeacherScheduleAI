@@ -7,6 +7,9 @@ interface EduVietIdentityCardProps {
   name?: string;
   classNameOrSubject?: string;
   schoolName?: string;
+  avatar?: string;
+  subjects?: string[];
+  schools?: string[];
   role?: 'teacher' | 'student';
   quote?: string;
   onCardClick?: () => void;
@@ -16,41 +19,55 @@ export default function EduVietIdentityCard({
   name = "Nguyễn Minh Anh",
   classNameOrSubject = "Lớp 10A1",
   schoolName = "Trường THPT Việt Nam",
+  avatar,
+  subjects,
+  schools,
   role = 'teacher',
   quote = "Nỗ lực hôm nay để chạm tới ước mơ!",
   onCardClick
 }: EduVietIdentityCardProps) {
+  const displaySubject = subjects && subjects.length > 0 ? subjects.join(', ') : classNameOrSubject;
+  const displaySchool = schools && schools.length > 0 
+    ? (schools.length > 1 ? `${schools[0]} (+${schools.length - 1} trường)` : schools[0])
+    : schoolName;
+
   return (
     <div 
       onClick={onCardClick}
+      title="Bấm để xem và chỉnh sửa thông tin hồ sơ giáo viên"
       className="w-full bg-white dark:bg-[#111827] border border-slate-100 dark:border-slate-800 rounded-2xl p-3.5 sm:p-4 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer group"
     >
       {/* Left: Avatar & Personal Info */}
       <div className="flex items-center gap-3.5">
         <div className="relative">
-          <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-emerald-100 to-teal-50 border-2 border-emerald-400 p-0.5 overflow-hidden shadow-sm flex items-center justify-center">
+          <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-emerald-100 to-teal-50 dark:from-emerald-950 dark:to-teal-900 border-2 border-emerald-400 p-0.5 overflow-hidden shadow-sm flex items-center justify-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://api.dicebear.com/7.x/bottts/svg?seed=VietnameseTeacher"
+              src={avatar || "https://api.dicebear.com/7.x/bottts/svg?seed=VietnameseTeacher"}
               alt={name}
               className="w-full h-full object-cover rounded-xl"
             />
           </div>
-          <span className="absolute -bottom-1 -right-1 p-0.5 bg-white rounded-full shadow-sm">
+          <span className="absolute -bottom-1 -right-1 p-0.5 bg-white dark:bg-slate-800 rounded-full shadow-sm">
             <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full block"></span>
           </span>
         </div>
 
         <div className="space-y-1">
-          <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
-            {name}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
+              {name}
+            </h3>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium group-hover:bg-emerald-50 dark:group-hover:bg-emerald-950 group-hover:text-emerald-600 transition-colors">
+              Chỉnh sửa
+            </span>
+          </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-medium">
-            <span>{classNameOrSubject}</span>
+            <span className="font-semibold text-emerald-700 dark:text-emerald-400">{displaySubject}</span>
             <span className="text-slate-300">|</span>
             <span className="flex items-center gap-1">
               <School className="w-3 h-3 text-slate-400" />
-              {schoolName}
+              <span>{displaySchool}</span>
             </span>
           </p>
           <div>

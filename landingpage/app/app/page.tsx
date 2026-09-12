@@ -33,6 +33,14 @@ import SyncSecurityModal from '@/components/dashboard/SyncSecurityModal';
 import PortalShareModal from '@/components/dashboard/PortalShareModal';
 import LeaveRequestsModal from '@/components/dashboard/LeaveRequestsModal';
 import EduVietHomeView from '@/components/eduviet/EduVietHomeView';
+import TeacherProfileModal from '@/components/profile/TeacherProfileModal';
+import TeacherAuthModal from '@/components/profile/TeacherAuthModal';
+import {
+  TeacherProfile,
+  DEFAULT_TEACHER_PROFILE,
+  getStoredTeacherProfile,
+  saveTeacherProfile
+} from './teacherProfileData';
 import {
   LessonPlan5512Data,
   LessonPlan2634Data,
@@ -415,6 +423,8 @@ export default function UnifiedTeacherScheduleApp() {
         setTheme('light');
         document.documentElement.classList.remove('dark');
       }
+      const storedProfile = getStoredTeacherProfile();
+      setTeacherProfile(storedProfile);
     } catch (e) {
       console.error(e);
     }
@@ -485,6 +495,11 @@ export default function UnifiedTeacherScheduleApp() {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [showPortalShareModal, setShowPortalShareModal] = useState<boolean>(false);
   const [showLeaveRequestsModal, setShowLeaveRequestsModal] = useState<boolean>(false);
+
+  // Teacher Profile & Authentication States
+  const [teacherProfile, setTeacherProfile] = useState<TeacherProfile>(DEFAULT_TEACHER_PROFILE);
+  const [showTeacherProfileModal, setShowTeacherProfileModal] = useState<boolean>(false);
+  const [showTeacherAuthModal, setShowTeacherAuthModal] = useState<boolean>(false);
 
   // Edit Event Modal States
   const [editingEvent, setEditingEvent] = useState<CalendarEventItem | null>(null);
@@ -2593,9 +2608,15 @@ export default function UnifiedTeacherScheduleApp() {
           <EduVietHomeView
             theme={theme}
             onToggleTheme={toggleTheme}
-            teacherName={selectedRosterClass ? `GVCN Lớp ${selectedRosterClass}` : "Nguyễn Minh Anh"}
-            schoolName="Trường THPT Việt Nam"
-            classNameOrSubject={selectedRosterClass ? `Lớp ${selectedRosterClass}` : "Lớp 10A1"}
+            teacherName={teacherProfile.fullName}
+            teacherAvatar={teacherProfile.avatar}
+            schoolName={teacherProfile.schools?.[0] || "Trường THPT Việt Nam"}
+            teacherSchools={teacherProfile.schools}
+            teacherSubjects={teacherProfile.subjects}
+            teacherPhone={teacherProfile.phone}
+            teacherEmail={teacherProfile.email}
+            teacherQuote={teacherProfile.bioQuote}
+            classNameOrSubject={teacherProfile.subjects && teacherProfile.subjects.length > 0 ? teacherProfile.subjects.join(', ') : (selectedRosterClass ? `Lớp ${selectedRosterClass}` : "Lớp 10A1")}
             syncCode={syncCode}
             leaveRequestCount={leaveRequests.filter(r => r.status === 'PENDING').length}
             todaySessions={todaySessionItems}
@@ -2625,11 +2646,19 @@ export default function UnifiedTeacherScheduleApp() {
               else if (actionId === 'knowledge') { setActiveTab('ai'); setAiSubTab('knowledge'); }
               else if (actionId === 'attendance') setActiveTab('roster');
               else if (actionId === 'share_portal') setShowPortalShareModal(true);
-              else if (actionId === 'profile') setActiveTab('settings');
+              else if (actionId === 'profile') setShowTeacherProfileModal(true);
             }}
             onOpenSync={() => setShowSyncModal(true)}
             onOpenPortalShare={() => setShowPortalShareModal(true)}
             onOpenNotifications={() => setShowLeaveRequestsModal(true)}
+            onOpenProfile={() => setShowTeacherProfileModal(true)}
+            onOpenLogin={() => setShowTeacherAuthModal(true)}
+            onLogout={() => {
+              const updated = { ...teacherProfile, isLoggedIn: false };
+              setTeacherProfile(updated);
+              saveTeacherProfile(updated);
+              setShowTeacherAuthModal(true);
+            }}
             onSyncBothWays={() => syncBothWays(syncCode, true)}
             isSyncing={isSyncing}
             totalEventsCount={events.length}
@@ -8493,6 +8522,32 @@ export default function UnifiedTeacherScheduleApp() {
         onReject={handleRejectLeaveRequest}
         onDelete={handleDeleteLeaveRequest}
         onTriggerSync={() => syncBothWays(syncCode, true)}
+      />
+
+      {/* Teacher Profile Edit Modal */}
+      <TeacherProfileModal
+        isOpen={showTeacherProfileModal}
+        onClose={() => setShowTeacherProfileModal(false)}
+        profile={teacherProfile}
+        onSaveProfile={(updated) => {
+          setTeacherProfile(updated);
+          saveTeacherProfile(updated);
+          setAlertBanner(`Đã cập nhật hồ sơ giáo viên: ${updated.fullName}!`);
+          setTimeout(() => setAlertBanner(null), 3500);
+        }}
+      />
+
+      {/* Teacher Authentication Modal (Login / Register / Switch Account) */}
+      <TeacherAuthModal
+        isOpen={showTeacherAuthModal}
+        onClose={() => setShowTeacherAuthModal(false)}
+        currentProfile={teacherProfile}
+        onAuthSuccess={(profile) => {
+          setTeacherProfile(profile);
+          saveTeacherProfile(profile);
+          setAlertBanner(`Chào mừng thầy/cô ${profile.fullName} đã đăng nhập!`);
+          setTimeout(() => setAlertBanner(null), 3500);
+        }}
       />
     </div>
   );

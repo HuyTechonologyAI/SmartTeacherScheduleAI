@@ -13,13 +13,23 @@ import {
   CalendarDays,
   RefreshCw,
   Sun,
-  Moon
+  Moon,
+  School,
+  BookOpen,
+  LogIn,
+  LogOut,
+  Edit3
 } from 'lucide-react';
 
 interface EduVietHeaderProps {
   userName?: string;
   userRole?: string;
   schoolName?: string;
+  userAvatar?: string;
+  teacherPhone?: string;
+  teacherEmail?: string;
+  teacherSchools?: string[];
+  teacherSubjects?: string[];
   onSearch?: (query: string) => void;
   onOpenNotifications?: () => void;
   onOpenPortalShare?: () => void;
@@ -31,12 +41,20 @@ interface EduVietHeaderProps {
   unreadCount?: number;
   theme?: 'light' | 'dark';
   onToggleTheme?: () => void;
+  onOpenProfile?: () => void;
+  onOpenLogin?: () => void;
+  onLogout?: () => void;
 }
 
 export default function EduVietHeader({
   userName = "Nguyễn Minh Anh",
   userRole = "Giáo viên",
   schoolName = "Trường THPT Việt Nam",
+  userAvatar,
+  teacherPhone,
+  teacherEmail,
+  teacherSchools,
+  teacherSubjects,
   onSearch,
   onOpenNotifications,
   onOpenPortalShare,
@@ -45,11 +63,15 @@ export default function EduVietHeader({
   isSyncing = false,
   totalEventsCount,
   syncCode = "",
-  unreadCount = 3,
+  unreadCount = 0,
   theme = 'light',
-  onToggleTheme
+  onToggleTheme,
+  onOpenProfile,
+  onOpenLogin,
+  onLogout
 }: EduVietHeaderProps) {
   const [searchVal, setSearchVal] = useState('');
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchVal(e.target.value);
@@ -138,31 +160,128 @@ export default function EduVietHeader({
               </button>
             )}
 
-            {/* Notification Bell */}
+            {/* Notification Bell: CHỈ BÁO KHI CÓ ĐƠN YÊU CẦU TỪ PHỤ HUYNH */}
             <button
               onClick={onOpenNotifications}
               className="relative w-10 h-10 rounded-full bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 shadow-xs flex items-center justify-center text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
-              title="Thông báo"
+              title={unreadCount > 0 ? `${unreadCount} đơn yêu cầu từ phụ huynh cần xử lý` : "Đơn yêu cầu từ phụ huynh (Không có đơn mới)"}
             >
               <Bell className="w-4 h-4 text-slate-600 dark:text-slate-300" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-slate-800 shadow-sm">
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-slate-800 shadow-sm animate-pulse">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
             </button>
 
-            {/* User Profile Avatar */}
-            <div className="flex items-center gap-1 pl-1 cursor-pointer group">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-100 to-teal-100 border-2 border-emerald-500/70 p-0.5 overflow-hidden shadow-sm flex items-center justify-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="https://api.dicebear.com/7.x/bottts/svg?seed=EduVietTeacher"
-                  alt={userName}
-                  className="w-full h-full object-cover rounded-full"
-                />
-              </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 transition-colors" />
+            {/* User Profile Avatar with Dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="flex items-center gap-1 pl-1 cursor-pointer group focus:outline-none"
+                title={`Tài khoản: ${userName}`}
+              >
+                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-100 to-teal-100 dark:from-emerald-950/60 dark:to-teal-900/60 border-2 border-emerald-500/70 p-0.5 overflow-hidden shadow-sm flex items-center justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={userAvatar || "https://api.dicebear.com/7.x/bottts/svg?seed=EduVietTeacher"}
+                    alt={userName}
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                </div>
+                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Dropdown Menu Popup */}
+              {isUserMenuOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setIsUserMenuOpen(false)} 
+                  />
+                  <div className="absolute right-0 mt-2 w-72 sm:w-80 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200/80 dark:border-slate-800 shadow-2xl p-4 z-50 space-y-3 animate-fade-in text-left">
+                    {/* User Card */}
+                    <div className="flex items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+                      <div className="w-12 h-12 rounded-full border-2 border-emerald-500 overflow-hidden shrink-0 bg-emerald-50 dark:bg-emerald-950">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={userAvatar || "https://api.dicebear.com/7.x/bottts/svg?seed=EduVietTeacher"}
+                          alt={userName}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                          {userName}
+                        </h4>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                          {teacherEmail || teacherPhone || "Giáo viên"}
+                        </p>
+                        <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                          <GraduationCap className="w-3 h-3" />
+                          <span>{userRole}</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Schools & Subjects Summary */}
+                    <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
+                      {teacherSchools && teacherSchools.length > 0 && (
+                        <div className="flex items-start gap-1.5">
+                          <School className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                          <span className="truncate">{teacherSchools.join(', ')}</span>
+                        </div>
+                      )}
+                      {teacherSubjects && teacherSubjects.length > 0 && (
+                        <div className="flex items-start gap-1.5">
+                          <BookOpen className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                          <span className="truncate">Môn: {teacherSubjects.join(', ')}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action Menu Items */}
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          if (onOpenProfile) onOpenProfile();
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer text-left"
+                      >
+                        <Edit3 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        <span>Chỉnh sửa thông tin hồ sơ</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          if (onOpenLogin) onOpenLogin();
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer text-left"
+                      >
+                        <LogIn className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        <span>Đổi tài khoản / Đăng nhập</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          if (onLogout) onLogout();
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer text-left"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>Đăng xuất tài khoản</span>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

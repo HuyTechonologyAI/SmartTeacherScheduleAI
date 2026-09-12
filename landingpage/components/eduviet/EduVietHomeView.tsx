@@ -13,7 +13,13 @@ import EduVietBottomNav, { EduVietNavTab } from './EduVietBottomNav';
 
 interface EduVietHomeViewProps {
   teacherName?: string;
+  teacherAvatar?: string;
   schoolName?: string;
+  teacherSchools?: string[];
+  teacherSubjects?: string[];
+  teacherPhone?: string;
+  teacherEmail?: string;
+  teacherQuote?: string;
   classNameOrSubject?: string;
   syncCode?: string;
   todaySessions?: TimelineSessionItem[];
@@ -28,6 +34,9 @@ interface EduVietHomeViewProps {
   onOpenSync?: () => void;
   onOpenPortalShare?: () => void;
   onOpenNotifications?: () => void;
+  onOpenProfile?: () => void;
+  onOpenLogin?: () => void;
+  onLogout?: () => void;
   onSyncBothWays?: () => void;
   isSyncing?: boolean;
   totalEventsCount?: number;
@@ -39,7 +48,13 @@ interface EduVietHomeViewProps {
 
 export default function EduVietHomeView({
   teacherName = "Nguyễn Minh Anh",
+  teacherAvatar,
   schoolName = "Trường THPT Việt Nam",
+  teacherSchools,
+  teacherSubjects,
+  teacherPhone,
+  teacherEmail,
+  teacherQuote,
   classNameOrSubject = "Lớp 10A1",
   syncCode = "",
   todaySessions,
@@ -54,6 +69,9 @@ export default function EduVietHomeView({
   onOpenSync,
   onOpenPortalShare,
   onOpenNotifications,
+  onOpenProfile,
+  onOpenLogin,
+  onLogout,
   onSyncBothWays,
   isSyncing,
   totalEventsCount,
@@ -69,7 +87,10 @@ export default function EduVietHomeView({
     if (tab === 'classes') onSelectAction('calendar');
     if (tab === 'knowledge') onSelectAction('knowledge');
     if (tab === 'stats') onSelectAction('stats');
-    if (tab === 'profile') onSelectAction('profile');
+    if (tab === 'profile') {
+      if (onOpenProfile) onOpenProfile();
+      else onSelectAction('profile');
+    }
   };
 
   return (
@@ -77,12 +98,20 @@ export default function EduVietHomeView({
       {/* 1. Header (Brand EduViet + Slogan + Search bar + Actions) */}
       <EduVietHeader
         userName={teacherName}
+        userAvatar={teacherAvatar}
         schoolName={schoolName}
+        teacherSchools={teacherSchools}
+        teacherSubjects={teacherSubjects}
+        teacherPhone={teacherPhone}
+        teacherEmail={teacherEmail}
         syncCode={syncCode}
-        unreadCount={leaveRequestCount > 0 ? leaveRequestCount : 3}
+        unreadCount={leaveRequestCount}
         onOpenSync={onOpenSync}
         onOpenPortalShare={onOpenPortalShare}
         onOpenNotifications={onOpenNotifications}
+        onOpenProfile={onOpenProfile}
+        onOpenLogin={onOpenLogin}
+        onLogout={onLogout}
         onSyncBothWays={onSyncBothWays}
         isSyncing={isSyncing}
         totalEventsCount={totalEventsCount}
@@ -100,11 +129,17 @@ export default function EduVietHomeView({
         {/* 3. Identity Card: Nguyễn Minh Anh - Lớp 10A1 */}
         <EduVietIdentityCard
           name={teacherName}
+          avatar={teacherAvatar}
+          schools={teacherSchools}
+          subjects={teacherSubjects}
           classNameOrSubject={classNameOrSubject}
           schoolName={schoolName}
           role="teacher"
-          quote="Nỗ lực hôm nay để chạm tới ước mơ!"
-          onCardClick={() => onSelectAction('profile')}
+          quote={teacherQuote || "Mỗi giờ lên lớp là một hành trình gieo hạt yêu thương!"}
+          onCardClick={() => {
+            if (onOpenProfile) onOpenProfile();
+            else onSelectAction('profile');
+          }}
         />
 
         {/* 4. 8 Quick Action Cards Grid (4x2) */}

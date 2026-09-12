@@ -73,15 +73,15 @@ export default function LeaveRequestsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white border border-slate-200/80 rounded-3xl w-full max-w-3xl max-h-[92vh] overflow-y-auto shadow-2xl flex flex-col text-slate-800">
+      <div className="bg-white dark:bg-[#111827] border border-slate-200/80 dark:border-slate-800 rounded-3xl w-full max-w-3xl max-h-[92vh] overflow-y-auto shadow-2xl flex flex-col text-slate-800 dark:text-slate-100">
         {/* Header */}
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-10">
+        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white/95 dark:bg-[#111827]/95 border-b border-slate-100 dark:border-slate-800 backdrop-blur z-10">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center shadow-xs">
               <FileText className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 Đơn xin nghỉ học trực tuyến
                 {pendingCount > 0 && (
                   <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-bold animate-pulse">
@@ -89,28 +89,28 @@ export default function LeaveRequestsModal({
                   </span>
                 )}
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Phụ huynh gửi đơn từ Sổ liên lạc điện tử. Duyệt đơn sẽ tự động cập nhật Điểm danh Nghỉ có phép.
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+            className="p-2 rounded-xl text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Filter Pills */}
-        <div className="p-4 border-b border-slate-100 bg-slate-50/80 flex flex-wrap gap-2 items-center justify-between">
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50/80 dark:bg-slate-900/60 flex flex-wrap gap-2 items-center justify-between">
           <div className="flex items-center gap-1.5 overflow-x-auto">
             <button
               onClick={() => setFilter('ALL')}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 filter === 'ALL'
                   ? 'bg-rose-600 text-white shadow-xs'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                  : 'bg-white text-slate-600 dark:text-slate-300 border border-slate-200 hover:bg-slate-100'
               }`}
             >
               Tất cả ({leaveRequests.length})
@@ -120,7 +120,7 @@ export default function LeaveRequestsModal({
               className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 filter === 'PENDING'
                   ? 'bg-amber-600 text-white shadow-xs'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                  : 'bg-white text-slate-600 dark:text-slate-300 border border-slate-200 hover:bg-slate-100'
               }`}
             >
               Chờ duyệt ({pendingCount})
@@ -130,7 +130,7 @@ export default function LeaveRequestsModal({
               className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 filter === 'APPROVED'
                   ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                  : 'bg-white text-slate-600 dark:text-slate-300 border border-slate-200 hover:bg-slate-100'
               }`}
             >
               Đã duyệt ({approvedCount})
@@ -140,7 +140,7 @@ export default function LeaveRequestsModal({
               className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 filter === 'REJECTED'
                   ? 'bg-rose-600 text-white shadow-xs'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                  : 'bg-white text-slate-600 dark:text-slate-300 border border-slate-200 hover:bg-slate-100'
               }`}
             >
               Từ chối ({rejectedCount})
@@ -162,8 +162,8 @@ export default function LeaveRequestsModal({
           {filteredRequests.length === 0 ? (
             <div className="py-12 text-center text-slate-400">
               <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="text-sm font-medium text-slate-600">Không có đơn xin nghỉ học nào {filter !== 'ALL' ? 'trong mục này' : ''}</p>
-              <p className="text-xs mt-1 text-slate-500">
+              <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Không có đơn xin nghỉ học nào {filter !== 'ALL' ? 'trong mục này' : ''}</p>
+              <p className="text-xs mt-1 text-slate-500 dark:text-slate-400">
                 Khi phụ huynh nộp đơn từ Cổng Phụ huynh, đơn sẽ hiển thị tại đây để Thầy/Cô xét duyệt.
               </p>
             </div>
@@ -182,15 +182,15 @@ export default function LeaveRequestsModal({
                       ? 'bg-amber-50/50 border-amber-200 shadow-xs'
                       : isApproved
                       ? 'bg-emerald-50/50 border-emerald-200'
-                      : 'bg-slate-50 border-slate-200'
+                      : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200'
                   }`}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-base font-bold text-slate-900">{req.studentName}</span>
+                        <span className="text-base font-bold text-slate-900 dark:text-slate-100">{req.studentName}</span>
                         {req.studentCode && (
-                          <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-bold">
+                          <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 dark:text-slate-300 border border-slate-200 font-bold">
                             {req.studentCode}
                           </span>
                         )}
@@ -198,7 +198,7 @@ export default function LeaveRequestsModal({
                           {req.className}
                         </span>
                       </div>
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-slate-500">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-slate-500 dark:text-slate-400">
                         <span className="flex items-center gap-1">
                           <User className="w-3.5 h-3.5 text-slate-400" />
                           PH: <strong className="text-slate-700">{req.parentName}</strong>
@@ -247,20 +247,20 @@ export default function LeaveRequestsModal({
                   </div>
 
                   {/* Date & Reason Box */}
-                  <div className="p-3.5 rounded-xl bg-white border border-slate-200/80 text-xs space-y-2 shadow-xs">
+                  <div className="p-3.5 rounded-xl bg-white border border-slate-200/80 dark:border-slate-700/60 text-xs space-y-2 shadow-xs">
                     <div className="flex items-center gap-2 text-slate-800 font-medium">
                       <Calendar className="w-4 h-4 text-amber-600" />
                       <span>
-                        Thời gian nghỉ: Từ <strong className="text-slate-900">{req.fromDate}</strong> đến <strong className="text-slate-900">{req.toDate}</strong>
-                        {req.fromDate === req.toDate && <span className="text-slate-500 ml-1 font-normal">(1 ngày)</span>}
+                        Thời gian nghỉ: Từ <strong className="text-slate-900 dark:text-slate-100">{req.fromDate}</strong> đến <strong className="text-slate-900 dark:text-slate-100">{req.toDate}</strong>
+                        {req.fromDate === req.toDate && <span className="text-slate-500 dark:text-slate-400 ml-1 font-normal">(1 ngày)</span>}
                       </span>
                     </div>
                     <div>
-                      <span className="text-slate-500 font-medium">Lý do từ Phụ huynh: </span>
+                      <span className="text-slate-500 dark:text-slate-400 font-medium">Lý do từ Phụ huynh: </span>
                       <span className="text-slate-800 italic">"{req.reason}"</span>
                     </div>
                     {req.teacherNote && (
-                      <div className="pt-1 text-slate-600 border-t border-slate-100">
+                      <div className="pt-1 text-slate-600 dark:text-slate-300 border-t border-slate-100 dark:border-slate-800">
                         <span className="text-rose-600 font-semibold">Ghi chú của Thầy/Cô: </span>
                         <span>{req.teacherNote}</span>
                       </div>
@@ -304,7 +304,7 @@ export default function LeaveRequestsModal({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50 text-slate-500 flex items-center justify-between rounded-b-3xl">
+        <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 flex items-center justify-between rounded-b-3xl">
           <p className="text-xs">
             Duyệt đơn sẽ tự động đồng bộ lên Đám mây để phụ huynh theo dõi được ngay kết quả.
           </p>

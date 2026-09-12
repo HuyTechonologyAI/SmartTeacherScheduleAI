@@ -39,7 +39,7 @@ export default function EduVietHeroBanner({ onActionClick }: EduVietHeroBannerPr
   const slide = slides[currentSlide];
 
   return (
-    <div className="relative w-full rounded-3xl overflow-hidden shadow-lg border border-amber-200/60 bg-gradient-to-r from-amber-50 via-orange-50/70 to-rose-50/80 p-5 sm:p-7 transition-all">
+    <div className="relative w-full rounded-3xl overflow-hidden shadow-lg border border-amber-200/60 dark:border-slate-800 bg-gradient-to-r from-amber-50 via-orange-50/70 to-rose-50/80 dark:from-slate-900 dark:via-slate-900/95 dark:to-rose-950/40 p-5 sm:p-7 transition-all">
       {/* Background Vietnamese Cultural Motifs (Cờ đỏ sao vàng & Tia nắng học đường) */}
       <div className="absolute -top-10 -right-10 w-48 h-48 bg-rose-500/10 rounded-full blur-2xl pointer-events-none"></div>
       <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-amber-400/15 rounded-full blur-2xl pointer-events-none"></div>
@@ -66,11 +66,11 @@ export default function EduVietHeroBanner({ onActionClick }: EduVietHeroBannerPr
           </div>
 
           <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight">
-            <span className="text-rose-600 block sm:inline">{slide.titleRed} </span>
-            <span className="text-emerald-700 block sm:inline">{slide.titleGreen}</span>
+            <span className="text-rose-600 dark:text-rose-400 block sm:inline">{slide.titleRed} </span>
+            <span className="text-emerald-700 dark:text-emerald-400 block sm:inline">{slide.titleGreen}</span>
           </h2>
 
-          <p className="text-xs sm:text-sm text-slate-700 font-medium italic">
+          <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-medium italic">
             &ldquo;{slide.quote}&rdquo;
           </p>
 
@@ -86,7 +86,7 @@ export default function EduVietHeroBanner({ onActionClick }: EduVietHeroBannerPr
         </div>
 
         {/* Right Stamp/Badge (Phù hiệu bản sắc học đường Việt Nam) */}
-        <div className="hidden md:flex flex-col items-center justify-center p-3 rounded-2xl bg-white/90 border border-amber-200 shadow-sm text-center max-w-[210px]">
+        <div className="hidden md:flex flex-col items-center justify-center p-3 rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-amber-200 dark:border-slate-700 shadow-sm text-center max-w-[210px]">
           <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-rose-500 to-amber-500 text-white flex items-center justify-center mb-1.5 shadow-sm">
             <Award className="w-5 h-5" />
           </div>

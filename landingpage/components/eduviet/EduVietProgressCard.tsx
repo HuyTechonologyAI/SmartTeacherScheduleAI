@@ -30,12 +30,12 @@ export default function EduVietProgressCard({
   const strokeDashoffset = circumference - (percent / 100) * circumference;
 
   return (
-    <div className="bg-white border border-slate-100 rounded-3xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+    <div className="bg-white dark:bg-[#111827] border border-slate-100 dark:border-slate-800 rounded-3xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <BarChart2 className="w-5 h-5 text-emerald-600" />
-          <h3 className="text-sm sm:text-base font-bold text-slate-900">
+          <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
             {title}
           </h3>
         </div>
@@ -56,7 +56,7 @@ export default function EduVietProgressCard({
               cx="50"
               cy="50"
               r={radius}
-              className="text-slate-100"
+              className="text-slate-100 dark:text-slate-800"
               strokeWidth="8"
               stroke="currentColor"
               fill="transparent"
@@ -75,7 +75,7 @@ export default function EduVietProgressCard({
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-xl font-extrabold text-slate-900">{percent}%</span>
+            <span className="text-xl font-extrabold text-slate-900 dark:text-slate-100">{percent}%</span>
           </div>
         </div>
 
@@ -84,23 +84,23 @@ export default function EduVietProgressCard({
             <CheckCircle2 className="w-3.5 h-3.5" />
             <span>{encouragementTitle}</span>
           </p>
-          <p className="text-[11px] text-slate-400 font-medium">
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
             {encouragementSubtitle}
           </p>
         </div>
       </div>
 
       {/* 3 Metric Pills matching design */}
-      <div className="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100/80">
-        <div className="bg-emerald-50/70 border border-emerald-100 rounded-2xl p-2 text-center">
+      <div className="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100/80 dark:border-slate-800">
+        <div className="bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800/60 rounded-2xl p-2 text-center">
           <p className="text-xs sm:text-sm font-black text-emerald-700">{lessonCount}</p>
           <p className="text-[10px] font-semibold text-emerald-600/80">Bài giảng</p>
         </div>
-        <div className="bg-amber-50/70 border border-amber-100 rounded-2xl p-2 text-center">
+        <div className="bg-amber-50/70 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-800/60 rounded-2xl p-2 text-center">
           <p className="text-xs sm:text-sm font-black text-amber-700">{exerciseCount}</p>
           <p className="text-[10px] font-semibold text-amber-600/80">Bài tập</p>
         </div>
-        <div className="bg-rose-50/70 border border-rose-100 rounded-2xl p-2 text-center">
+        <div className="bg-rose-50/70 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-800/60 rounded-2xl p-2 text-center">
           <p className="text-xs sm:text-sm font-black text-rose-700">{topicCount}</p>
           <p className="text-[10px] font-semibold text-rose-600/80">Chủ đề</p>
         </div>

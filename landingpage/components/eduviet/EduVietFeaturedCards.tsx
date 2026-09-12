@@ -88,11 +88,11 @@ export default function EduVietFeaturedCards({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 w-full">
       {/* 1. Left Card: Lớp học nổi bật */}
-      <div className="bg-white border border-slate-100 rounded-3xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+      <div className="bg-white dark:bg-[#111827] border border-slate-100 dark:border-slate-800 rounded-3xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
         <div className="flex items-center justify-between mb-3.5">
           <div className="flex items-center gap-2">
             <GraduationCap className="w-5 h-5 text-emerald-600" />
-            <h3 className="text-sm sm:text-base font-bold text-slate-900">
+            <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
               Lớp học nổi bật
             </h3>
           </div>
@@ -124,8 +124,8 @@ export default function EduVietFeaturedCards({
               </div>
 
               {/* Info */}
-              <div className="p-2 bg-white flex-1 flex flex-col justify-between">
-                <p className="text-[11px] font-semibold text-slate-800 truncate">
+              <div className="p-2 bg-white dark:bg-[#1E293B] flex-1 flex flex-col justify-between">
+                <p className="text-[11px] font-semibold text-slate-800 dark:text-slate-200 truncate">
                   {cls.teacher}
                 </p>
                 <p className="text-[10px] text-slate-400 font-medium flex items-center gap-1 mt-0.5">
@@ -139,11 +139,11 @@ export default function EduVietFeaturedCards({
       </div>
 
       {/* 2. Right Card: Thông báo mới */}
-      <div className="bg-white border border-slate-100 rounded-3xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+      <div className="bg-white dark:bg-[#111827] border border-slate-100 dark:border-slate-800 rounded-3xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
         <div className="flex items-center justify-between mb-3.5">
           <div className="flex items-center gap-2">
             <Bell className="w-5 h-5 text-amber-500" />
-            <h3 className="text-sm sm:text-base font-bold text-slate-900">
+            <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
               Thông báo mới
             </h3>
           </div>
@@ -161,14 +161,14 @@ export default function EduVietFeaturedCards({
           {announcements.map((ann) => (
             <div
               key={ann.id}
-              className="flex items-center justify-between p-2 rounded-2xl hover:bg-slate-50 transition-colors cursor-pointer group"
+              className="flex items-center justify-between p-2 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group"
             >
               <div className="flex items-center gap-2.5">
                 <div className={`w-9 h-9 rounded-xl border flex items-center justify-center ${ann.iconBg}`}>
                   {ann.icon}
                 </div>
                 <div>
-                  <p className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-emerald-700 transition-colors line-clamp-1">
+                  <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors line-clamp-1">
                     {ann.title}
                   </p>
                   <p className="text-[10px] text-slate-400 font-medium">

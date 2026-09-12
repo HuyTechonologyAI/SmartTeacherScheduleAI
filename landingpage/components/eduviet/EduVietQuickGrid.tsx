@@ -104,12 +104,12 @@ export default function EduVietQuickGrid({
               {item.icon}
             </div>
             {item.badge !== undefined && (
-              <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-rose-600 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+              <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-rose-600 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-sm">
                 {item.badge}
               </span>
             )}
           </div>
-          <span className="text-[11px] sm:text-xs font-bold text-slate-800 tracking-tight line-clamp-1 group-hover:text-emerald-700 transition-colors">
+          <span className="text-[11px] sm:text-xs font-bold text-slate-800 dark:text-slate-200 tracking-tight line-clamp-1 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
             {item.label}
           </span>
         </button>

@@ -403,6 +403,35 @@ export function mergeEventsDesktop(
 export default function UnifiedTeacherScheduleApp() {
   const [activeTab, setActiveTab] = useState<'eduviet' | 'today' | 'calendar' | 'roster' | 'report' | 'ai' | 'settings'>('eduviet');
   const [isClient, setIsClient] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    try {
+      const savedTheme = localStorage.getItem('smart_teacher_theme') as 'light' | 'dark' | null;
+      if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        setTheme('dark');
+        document.documentElement.classList.add('dark');
+      } else {
+        setTheme('light');
+        document.documentElement.classList.remove('dark');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === 'light' ? 'dark' : 'light';
+    setTheme(next);
+    try {
+      localStorage.setItem('smart_teacher_theme', next);
+    } catch (e) {}
+    if (next === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
 
 
   // ================= PHASE 1: CLASS ROSTER & ATTENDANCE STATES =================
@@ -2349,10 +2378,10 @@ export default function UnifiedTeacherScheduleApp() {
   const selectedDayInfo = getDayInfo(selectedDate);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#090D16] text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
       {/* 1. TOP HEADER (CHỈ HIỂN THỊ KHI Ở CÁC TAB CON ĐỂ ĐIỀU HƯỚNG MƯỢT MÀ) */}
       {activeTab !== 'eduviet' && (
-        <header className="border-b border-slate-200 bg-white/95 backdrop-blur-md sticky top-0 z-40 px-4 py-2.5 shadow-xs">
+        <header className="border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-[#0F172A]/95 backdrop-blur-md sticky top-0 z-40 px-4 py-2.5 shadow-xs transition-colors">
           <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
             {/* Brand Logo & Back to EduViet Home */}
             <div className="flex items-center space-x-3">
@@ -2380,7 +2409,7 @@ export default function UnifiedTeacherScheduleApp() {
 
             {/* Actions: Sync, Zalo Share, Leave Requests */}
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-              <div className="bg-slate-50 border border-slate-200 rounded-full px-3 py-1.5 flex items-center gap-2 text-xs">
+              <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-full px-3 py-1.5 flex items-center gap-2 text-xs">
                 <span className="relative flex h-2 w-2">
                   <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${syncStatus === 'synced' ? 'bg-emerald-400 opacity-75' : 'bg-amber-400 opacity-75'}`}></span>
                   <span className={`relative inline-flex rounded-full h-2 w-2 ${syncStatus === 'synced' ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
@@ -2433,6 +2462,20 @@ export default function UnifiedTeacherScheduleApp() {
                   </button>
                 );
               })()}
+
+              {/* Theme Toggle Button (Light / Dark) */}
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-amber-400 transition-all cursor-pointer shadow-xs"
+                title={theme === 'dark' ? 'Chuyển sang giao diện Sáng' : 'Chuyển sang giao diện Tối'}
+                aria-label="Chuyển chế độ sáng/tối"
+              >
+                {theme === 'dark' ? (
+                  <Sun className="w-4 h-4 text-amber-400" />
+                ) : (
+                  <Moon className="w-4 h-4 text-slate-600" />
+                )}
+              </button>
             </div>
           </div>
         </header>
@@ -2448,7 +2491,7 @@ export default function UnifiedTeacherScheduleApp() {
 
       {/* 2. NAVIGATION BAR (EDUVIET UNIFIED LIGHT TABS - CHỈ HIỆN KHI Ở TAB CON) */}
       {activeTab !== 'eduviet' && (
-        <nav className="border-b border-slate-200 bg-white/95 sticky top-14 z-30 px-4 shadow-xs">
+        <nav className="border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-[#0F172A]/95 sticky top-14 z-30 px-4 shadow-xs transition-colors">
           <div className="max-w-7xl mx-auto flex space-x-1 sm:space-x-2 overflow-x-auto py-2">
             <button
               onClick={() => setActiveTab('eduviet')}
@@ -2548,6 +2591,8 @@ export default function UnifiedTeacherScheduleApp() {
         {/* ================= TAB 0: EDUVIET TRANG CHỦ (VIETNAMESE DESIGN) ================= */}
         {activeTab === 'eduviet' && (
           <EduVietHomeView
+            theme={theme}
+            onToggleTheme={toggleTheme}
             teacherName={selectedRosterClass ? `GVCN Lớp ${selectedRosterClass}` : "Nguyễn Minh Anh"}
             schoolName="Trường THPT Việt Nam"
             classNameOrSubject={selectedRosterClass ? `Lớp ${selectedRosterClass}` : "Lớp 10A1"}
@@ -5877,6 +5922,56 @@ export default function UnifiedTeacherScheduleApp() {
         {/* ================= TAB 5: CÀI ĐẶT & ĐỒNG BỘ ĐÁM MÂY ================= */}
         {activeTab === 'settings' && (
           <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
+            {/* Theme Selector Card */}
+            <div className="bg-white dark:bg-[#111827] border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 space-y-4 shadow-sm transition-colors">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-11 h-11 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/40 flex items-center justify-center text-amber-600 dark:text-amber-400 shadow-sm">
+                    {theme === 'dark' ? <Moon className="w-5 h-5 text-amber-400" /> : <Sun className="w-5 h-5 text-amber-600" />}
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                      Giao Diện Ứng Dụng (Chế Độ Sáng / Tối)
+                      <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                        {theme === 'dark' ? 'Đang bật Giao diện Tối' : 'Đang bật Giao diện Sáng'}
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Tùy chỉnh tone màu làm việc phù hợp điều kiện ánh sáng và bảo vệ mắt giáo viên khi làm việc ban đêm</p>
+                  </div>
+                </div>
+                <div className="inline-flex p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <button
+                    onClick={() => {
+                      if (theme !== 'light') toggleTheme();
+                    }}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                      theme === 'light'
+                        ? 'bg-white text-slate-900 shadow-xs border border-slate-200'
+                        : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    <Sun className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Giao diện Sáng</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (theme !== 'dark') toggleTheme();
+                    }}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                      theme === 'dark'
+                        ? 'bg-slate-900 text-amber-400 shadow-xs border border-slate-700'
+                        : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    <Moon className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Giao diện Tối</span>
+                  </button>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                💡 Cài đặt giao diện được lưu tự động trên thiết bị này. Khi chuyển đổi, toàn bộ văn bản, thẻ tính năng, lịch giảng dạy và trợ lý AI sẽ tự động đồng bộ tone màu tương phản cao sắc nét.
+              </p>
+            </div>
             {/* Version Badge & Info */}
             <div className="bg-white border border-slate-200/80 rounded-2xl p-6 space-y-4 shadow-sm">
               <div className="flex items-center justify-between flex-wrap gap-3">

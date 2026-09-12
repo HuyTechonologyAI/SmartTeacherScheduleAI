@@ -33,6 +33,8 @@ interface EduVietHomeViewProps {
   totalEventsCount?: number;
   onViewAllSessions?: () => void;
   onSelectSession?: (session: TimelineSessionItem) => void;
+  theme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
 }
 
 export default function EduVietHomeView({
@@ -56,7 +58,9 @@ export default function EduVietHomeView({
   isSyncing,
   totalEventsCount,
   onViewAllSessions,
-  onSelectSession
+  onSelectSession,
+  theme = 'light',
+  onToggleTheme
 }: EduVietHomeViewProps) {
   const [activeNavTab, setActiveNavTab] = useState<EduVietNavTab>('home');
 
@@ -69,7 +73,7 @@ export default function EduVietHomeView({
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col selection:bg-rose-100 selection:text-rose-900 pb-16">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#090D16] text-slate-900 dark:text-slate-100 flex flex-col selection:bg-rose-100 selection:text-rose-900 pb-16 transition-colors duration-200">
       {/* 1. Header (Brand EduViet + Slogan + Search bar + Actions) */}
       <EduVietHeader
         userName={teacherName}
@@ -82,6 +86,8 @@ export default function EduVietHomeView({
         onSyncBothWays={onSyncBothWays}
         isSyncing={isSyncing}
         totalEventsCount={totalEventsCount}
+        theme={theme}
+        onToggleTheme={onToggleTheme}
       />
 
       {/* Main Container */}

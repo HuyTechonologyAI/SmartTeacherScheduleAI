@@ -62,12 +62,12 @@ export default function EduVietTimelineToday({
   const items = (sessions && sessions.length > 0) ? sessions : defaultSessions;
 
   return (
-    <div className="bg-white border border-slate-100 rounded-3xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+    <div className="bg-white dark:bg-[#111827] border border-slate-100 dark:border-slate-800 rounded-3xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Calendar className="w-5 h-5 text-emerald-600" />
-          <h3 className="text-sm sm:text-base font-bold text-slate-900">
+          <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
             {title}
           </h3>
         </div>
@@ -81,15 +81,15 @@ export default function EduVietTimelineToday({
       </div>
 
       {/* Timeline List */}
-      <div className="space-y-3 relative before:absolute before:inset-0 before:left-2 before:w-0.5 before:bg-slate-100 before:z-0">
+      <div className="space-y-3 relative before:absolute before:inset-0 before:left-2 before:w-0.5 before:bg-slate-100 dark:before:bg-slate-800 before:z-0">
         {items.map((item, idx) => (
           <div
             key={item.id || idx}
             onClick={() => onSelectSession && onSelectSession(item)}
             className={`relative z-10 flex items-center justify-between p-2 rounded-2xl transition-all cursor-pointer ${
               item.isActive
-                ? 'bg-emerald-50/80 border border-emerald-200/80 shadow-xs'
-                : 'hover:bg-slate-50'
+                ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs'
+                : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
             }`}
           >
             {/* Timeline Dot & Time */}
@@ -105,17 +105,17 @@ export default function EduVietTimelineToday({
                 )}
               </div>
 
-              <span className={`text-xs font-semibold font-mono ${item.isActive ? 'text-emerald-900' : 'text-slate-500'}`}>
+              <span className={`text-xs font-semibold font-mono ${item.isActive ? 'text-emerald-900 dark:text-emerald-300 font-bold' : 'text-slate-500 dark:text-slate-400'}`}>
                 {item.timeRange}
               </span>
             </div>
 
             {/* Subject & Room */}
             <div className="text-right">
-              <p className={`text-xs sm:text-sm font-bold ${item.isActive ? 'text-emerald-950 font-black' : 'text-slate-800'}`}>
+              <p className={`text-xs sm:text-sm font-bold ${item.isActive ? 'text-emerald-950 dark:text-emerald-200 font-black' : 'text-slate-800 dark:text-slate-200'}`}>
                 {item.subject}
               </p>
-              <p className="text-[11px] text-slate-400 font-medium">
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
                 {item.room} {item.className ? `• ${item.className}` : ''}
               </p>
             </div>

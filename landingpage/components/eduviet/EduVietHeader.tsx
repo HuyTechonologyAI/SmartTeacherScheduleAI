@@ -10,7 +10,8 @@ import {
   User, 
   ShieldCheck,
   Share2,
-  CalendarDays
+  CalendarDays,
+  RefreshCw
 } from 'lucide-react';
 
 interface EduVietHeaderProps {
@@ -21,6 +22,9 @@ interface EduVietHeaderProps {
   onOpenNotifications?: () => void;
   onOpenPortalShare?: () => void;
   onOpenSync?: () => void;
+  onSyncBothWays?: () => void;
+  isSyncing?: boolean;
+  totalEventsCount?: number;
   syncCode?: string;
   unreadCount?: number;
 }
@@ -33,6 +37,9 @@ export default function EduVietHeader({
   onOpenNotifications,
   onOpenPortalShare,
   onOpenSync,
+  onSyncBothWays,
+  isSyncing = false,
+  totalEventsCount,
   syncCode = "",
   unreadCount = 3
 }: EduVietHeaderProps) {
@@ -81,6 +88,19 @@ export default function EduVietHeader({
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                 <span>{syncCode}</span>
+              </button>
+            )}
+
+            {/* Cloud Sync 2-Way button */}
+            {onSyncBothWays && (
+              <button
+                onClick={onSyncBothWays}
+                disabled={isSyncing}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 hover:bg-blue-100 border border-blue-200 text-xs font-semibold text-blue-700 transition-colors cursor-pointer disabled:opacity-50"
+                title="Đồng bộ hai chiều với điện thoại"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span>{isSyncing ? 'Đang đồng bộ...' : (totalEventsCount ? `${totalEventsCount} ca dạy` : 'Đồng bộ')}</span>
               </button>
             )}
 

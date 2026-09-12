@@ -117,6 +117,8 @@ import {
   Calendar,
   Clock,
   BookOpen,
+  Home,
+  GraduationCap,
   Plus,
   Eye,
   Sparkles,
@@ -2347,99 +2349,94 @@ export default function UnifiedTeacherScheduleApp() {
   const selectedDayInfo = getDayInfo(selectedDate);
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans">
-      {/* 1. TOP HEADER & MULTI-PLATFORM SYNC BAR */}
-      <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-40 px-4 py-3">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
-              <BookOpen className="w-5 h-5 text-white" />
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col font-sans">
+      {/* 1. TOP HEADER (CHỈ HIỂN THỊ KHI Ở CÁC TAB CON ĐỂ ĐIỀU HƯỚNG MƯỢT MÀ) */}
+      {activeTab !== 'eduviet' && (
+        <header className="border-b border-slate-200 bg-white/95 backdrop-blur-md sticky top-0 z-40 px-4 py-2.5 shadow-xs">
+          <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+            {/* Brand Logo & Back to EduViet Home */}
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setActiveTab('eduviet')}
+                className="flex items-center gap-2 group cursor-pointer text-left"
+                title="Quay lại Trang chủ EduViet"
+              >
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 p-2 shadow-md shadow-indigo-950/10 flex items-center justify-center border border-indigo-400/30">
+                  <GraduationCap className="w-5 h-5 text-indigo-400" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1 leading-none">
+                    <span className="text-xl font-black tracking-tight text-rose-600">Edu</span>
+                    <span className="text-xl font-black tracking-tight text-emerald-600">Viet</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 font-semibold group-hover:text-rose-600 transition-colors flex items-center gap-1 mt-0.5">
+                    <span>← Trang chủ</span>
+                    <span className="text-slate-300">|</span>
+                    <span className="text-slate-400 font-normal">{todayDayInfo.dayName}, {todayStr.split('-').reverse().join('/')}</span>
+                  </p>
+                </div>
+              </button>
             </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <h1 className="text-lg font-bold tracking-tight text-white">Smart Teacher Schedule AI</h1>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold flex items-center gap-1.5 shadow-sm">
-                  <Monitor className="w-3.5 h-3.5 text-cyan-400" /> Desktop & Web v1.5.0
-                </span>
-              </div>
-              <p className="text-xs text-slate-400">
-                {todayDayInfo.dayName}, {todayStr.split('-').reverse().join('/')} • Hệ sinh thái đồng bộ Máy tính & Điện thoại
-              </p>
-            </div>
-          </div>
 
-          {/* Sync Status Badge & Action */}
-          <div className="flex items-center gap-3">
-            <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl px-3 py-1.5 flex items-center gap-2.5 text-xs">
-              <div className="flex items-center gap-1.5">
-                <span className="relative flex h-2.5 w-2.5">
+            {/* Actions: Sync, Zalo Share, Leave Requests */}
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+              <div className="bg-slate-50 border border-slate-200 rounded-full px-3 py-1.5 flex items-center gap-2 text-xs">
+                <span className="relative flex h-2 w-2">
                   <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${syncStatus === 'synced' ? 'bg-emerald-400 opacity-75' : 'bg-amber-400 opacity-75'}`}></span>
-                  <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${syncStatus === 'synced' ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+                  <span className={`relative inline-flex rounded-full h-2 w-2 ${syncStatus === 'synced' ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
                 </span>
-                <span className="font-semibold text-slate-200">
+                <span className="font-semibold text-slate-700">
                   {events.length > 0 ? `${events.length} ca dạy` : 'Đang tải...'}
                 </span>
+                <span className="text-slate-300">|</span>
+                <button onClick={() => setShowSyncModal(true)} className="text-indigo-600 hover:text-indigo-700 font-mono font-bold cursor-pointer" title="Cài đặt mã ghép nối">Mã: {syncCode}</button>
               </div>
-              <span className="text-slate-500">|</span>
-              <button onClick={() => setShowSyncModal(true)} className="text-indigo-400 hover:text-indigo-300 font-mono underline cursor-pointer" title="Cài đặt mã ghép nối & mã PIN">Mã: {syncCode}</button>
-              <span className="text-slate-500">|</span>
-              <span className="text-slate-400">Cập nhật: {lastSyncTime}</span>
+
+              <button
+                onClick={() => syncBothWays(syncCode, true)}
+                disabled={isSyncing}
+                title="Đồng bộ hai chiều: Gửi lịch máy tính lên đám mây và nhận lịch mới từ điện thoại"
+                className="px-3 py-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs disabled:opacity-50 cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span>{isSyncing ? 'Đang đồng bộ...' : 'Đồng bộ 2 chiều'}</span>
+              </button>
+
+              <button
+                onClick={() => setShowPortalShareModal(true)}
+                className="px-3 py-1.5 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                title="Chia sẻ link & mã QR Cổng Học sinh & Phụ huynh vào nhóm Zalo"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Gửi Zalo</span>
+              </button>
+
+              {(() => {
+                const pendingCount = leaveRequests.filter(r => r.status === 'PENDING').length;
+                return (
+                  <button
+                    onClick={() => setShowLeaveRequestsModal(true)}
+                    className={`relative px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                      pendingCount > 0 
+                        ? 'bg-amber-500 hover:bg-amber-600 text-white animate-pulse' 
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                    }`}
+                    title="Xem và xét duyệt đơn xin nghỉ học trực tuyến từ phụ huynh"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Đơn xin nghỉ</span>
+                    {pendingCount > 0 && (
+                      <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-500 text-white font-bold">
+                        {pendingCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })()}
             </div>
-
-            <button
-              onClick={() => pushToCloud(events, schedules, syncCode, true)}
-              disabled={isSyncing}
-              title="Đẩy toàn bộ lịch đã sửa trên Máy tính lên Đám mây cho Điện thoại"
-              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/20 disabled:opacity-50 cursor-pointer"
-            >
-              <Cloud className="w-3.5 h-3.5 text-white" />
-              <span>Đẩy lên ĐT</span>
-            </button>
-
-            <button
-              onClick={() => syncBothWays(syncCode, true)}
-              disabled={isSyncing}
-              title="Đồng bộ hai chiều: Gửi lịch máy tính lên đám mây và nhận lịch mới từ điện thoại"
-              className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md shadow-blue-600/20 disabled:opacity-50 cursor-pointer"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-              <span>{isSyncing ? 'Đang đồng bộ...' : 'Đồng bộ 2 chiều'}</span>
-            </button>
-
-            <button
-              onClick={() => setShowPortalShareModal(true)}
-              className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
-              title="Chia sẻ link & mã QR Cổng Học sinh & Phụ huynh vào nhóm Zalo"
-            >
-              <Share2 className="w-3.5 h-3.5 text-white" />
-              <span>Cổng HS & PH</span>
-            </button>
-
-            {(() => {
-              const pendingCount = leaveRequests.filter(r => r.status === 'PENDING').length;
-              return (
-                <button
-                  onClick={() => setShowLeaveRequestsModal(true)}
-                  className={`relative px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md cursor-pointer ${
-                    pendingCount > 0 
-                      ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-600/30 animate-pulse' 
-                      : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
-                  }`}
-                  title="Xem và xét duyệt đơn xin nghỉ học trực tuyến từ phụ huynh"
-                >
-                  <FileText className="w-3.5 h-3.5" />
-                  <span>Đơn xin nghỉ</span>
-                  {pendingCount > 0 && (
-                    <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-500 text-white font-bold">
-                      {pendingCount}
-                    </span>
-                  )}
-                </button>
-              );
-            })()}
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       {/* Alert Banner */}
       {alertBanner && (
@@ -2449,109 +2446,104 @@ export default function UnifiedTeacherScheduleApp() {
         </div>
       )}
 
-      {/* 2. NAVIGATION BAR (UNIFIED WITH ANDROID) */}
-      <nav className="border-b border-slate-800 bg-slate-900/90 sticky top-15 z-30 px-4">
-        <div className="max-w-7xl mx-auto flex space-x-1 sm:space-x-4 overflow-x-auto py-2">
-          <button
-            onClick={() => setActiveTab('eduviet')}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all whitespace-nowrap ${
-              activeTab === 'eduviet'
-                ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <Star className="w-4 h-4 text-amber-300 fill-amber-300" />
-            <span>EduViet Trang chủ</span>
-          </button>
+      {/* 2. NAVIGATION BAR (EDUVIET UNIFIED LIGHT TABS - CHỈ HIỆN KHI Ở TAB CON) */}
+      {activeTab !== 'eduviet' && (
+        <nav className="border-b border-slate-200 bg-white/95 sticky top-14 z-30 px-4 shadow-xs">
+          <div className="max-w-7xl mx-auto flex space-x-1 sm:space-x-2 overflow-x-auto py-2">
+            <button
+              onClick={() => setActiveTab('eduviet')}
+              className="px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 cursor-pointer"
+            >
+              <Home className="w-3.5 h-3.5 text-rose-600" />
+              <span>Trang chủ EduViet</span>
+            </button>
 
-          <button
-            onClick={() => setActiveTab('today')}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all whitespace-nowrap ${
-              activeTab === 'today'
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <Clock className="w-4 h-4" />
-            <span>Hôm nay</span>
-            <span className="px-1.5 py-0.2 rounded-full text-xs bg-slate-800 text-blue-300 font-bold">
-              {todayEvents.length}
-            </span>
-          </button>
+            <button
+              onClick={() => setActiveTab('today')}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'today'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5" />
+              <span>Hôm nay</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${activeTab === 'today' ? 'bg-rose-700 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                {todayEvents.length}
+              </span>
+            </button>
 
-          <button
-            onClick={() => setActiveTab('calendar')}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all whitespace-nowrap ${
-              activeTab === 'calendar'
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <Calendar className="w-4 h-4" />
-            <span>Lịch dạy 288 ca</span>
-            <span className="px-1.5 py-0.2 rounded-full text-xs bg-slate-800 text-slate-300 font-bold">
-              {events.length}
-            </span>
-          </button>
+            <button
+              onClick={() => setActiveTab('calendar')}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'calendar'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Lịch dạy</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${activeTab === 'calendar' ? 'bg-rose-700 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                {events.length}
+              </span>
+            </button>
 
-          <button
-            onClick={() => setActiveTab('roster')}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all whitespace-nowrap ${
-              activeTab === 'roster'
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            <span>Lớp & Học Sinh</span>
-            <span className="px-1.5 py-0.2 rounded-full text-xs bg-slate-800 text-cyan-300 font-bold">
-              {students.length} HS
-            </span>
-          </button>
+            <button
+              onClick={() => setActiveTab('roster')}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'roster'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Lớp & Học Sinh</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${activeTab === 'roster' ? 'bg-rose-700 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                {students.length}
+              </span>
+            </button>
 
-          <button
-            onClick={() => setActiveTab('report')}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all whitespace-nowrap ${
-              activeTab === 'report'
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>Sổ Báo Giảng</span>
-            <span className="px-1.5 py-0.2 rounded-full text-xs bg-emerald-950 text-emerald-300 font-bold border border-emerald-500/30">
-              Tiến độ
-            </span>
-          </button>
+            <button
+              onClick={() => setActiveTab('report')}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'report'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Sổ Báo Giảng</span>
+            </button>
 
-          <button
-            onClick={() => setActiveTab('ai')}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all whitespace-nowrap ${
-              activeTab === 'ai'
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <span>Trợ lý AI</span>
-          </button>
+            <button
+              onClick={() => setActiveTab('ai')}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'ai'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <span>Soạn Giáo Án AI</span>
+            </button>
 
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all whitespace-nowrap ${
-              activeTab === 'settings'
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <Settings className="w-4 h-4" />
-            <span>Cài đặt & Đồng bộ</span>
-          </button>
-        </div>
-      </nav>
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'settings'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <Settings className="w-3.5 h-3.5" />
+              <span>Cài đặt</span>
+            </button>
+          </div>
+        </nav>
+      )}
 
       {/* 3. MAIN CONTENT AREA */}
-      <main className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 space-y-6">
+      <main className={activeTab === "eduviet" ? "w-full" : "flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 space-y-6"}>
 
         {/* ================= TAB 0: EDUVIET TRANG CHỦ (VIETNAMESE DESIGN) ================= */}
         {activeTab === 'eduviet' && (
@@ -2593,6 +2585,9 @@ export default function UnifiedTeacherScheduleApp() {
             onOpenSync={() => setShowSyncModal(true)}
             onOpenPortalShare={() => setShowPortalShareModal(true)}
             onOpenNotifications={() => setShowLeaveRequestsModal(true)}
+            onSyncBothWays={() => syncBothWays(syncCode, true)}
+            isSyncing={isSyncing}
+            totalEventsCount={events.length}
             onViewAllSessions={() => setActiveTab('today')}
             onSelectSession={(session) => {
               const found = events.find(e => String(e.id) === session.id);

@@ -28,6 +28,9 @@ interface EduVietHomeViewProps {
   onOpenSync?: () => void;
   onOpenPortalShare?: () => void;
   onOpenNotifications?: () => void;
+  onSyncBothWays?: () => void;
+  isSyncing?: boolean;
+  totalEventsCount?: number;
   onViewAllSessions?: () => void;
   onSelectSession?: (session: TimelineSessionItem) => void;
 }
@@ -49,6 +52,9 @@ export default function EduVietHomeView({
   onOpenSync,
   onOpenPortalShare,
   onOpenNotifications,
+  onSyncBothWays,
+  isSyncing,
+  totalEventsCount,
   onViewAllSessions,
   onSelectSession
 }: EduVietHomeViewProps) {
@@ -73,6 +79,9 @@ export default function EduVietHomeView({
         onOpenSync={onOpenSync}
         onOpenPortalShare={onOpenPortalShare}
         onOpenNotifications={onOpenNotifications}
+        onSyncBothWays={onSyncBothWays}
+        isSyncing={isSyncing}
+        totalEventsCount={totalEventsCount}
       />
 
       {/* Main Container */}

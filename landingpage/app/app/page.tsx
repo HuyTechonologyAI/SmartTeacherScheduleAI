@@ -2906,7 +2906,7 @@ export default function UnifiedTeacherScheduleApp() {
                 {/* Tasks Card */}
                 <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-5 space-y-4 shadow-sm">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-rose-600" />
                       <span>Việc cần làm hôm nay</span>
                     </h4>
@@ -2934,7 +2934,7 @@ export default function UnifiedTeacherScheduleApp() {
                             type="checkbox"
                             checked={task.isCompleted}
                             onChange={() => {}}
-                            className="rounded border-slate-300 text-rose-600 focus:ring-rose-500/20 cursor-pointer w-4 h-4"
+                            className="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-rose-600 focus:ring-rose-500/20 cursor-pointer w-4 h-4"
                           />
                           <span>{task.title}</span>
                         </div>
@@ -3002,7 +3002,7 @@ export default function UnifiedTeacherScheduleApp() {
               </div>
 
               {/* Filter Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-slate-100 dark:border-slate-700/60">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800 dark:border-slate-700/60">
                 {/* Date Picker */}
                 <div>
                   <label className="text-xs text-slate-700 dark:text-slate-300 block mb-1 font-medium">Chọn ngày cụ thể:</label>
@@ -3603,7 +3603,7 @@ export default function UnifiedTeacherScheduleApp() {
                 </button>
                 <button
                   onClick={() => window.print()}
-                  className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
                 >
                   <Printer className="w-4 h-4" /> In Báo Cáo
                 </button>
@@ -3631,30 +3631,30 @@ export default function UnifiedTeacherScheduleApp() {
                     {reportStats.map((st, idx) => {
                       const pct = Math.round((st.done / (st.total || 1)) * 100);
                       return (
-                        <tr key={idx} className="hover:bg-rose-50/30 transition-colors">
-                          <td className="p-3.5 font-mono text-slate-500">{idx + 1}</td>
+                        <tr key={idx} className="hover:bg-rose-50/30 dark:hover:bg-slate-800/60 transition-colors">
+                          <td className="p-3.5 font-mono text-slate-500 dark:text-slate-400">{idx + 1}</td>
                           <td className="p-3.5 font-bold text-slate-900 dark:text-white">{st.subject}</td>
                           <td className="p-3.5">
-                            <span className="px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-semibold">
+                            <span className="px-2.5 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 text-[11px] font-semibold">
                               {st.className}
                             </span>
                           </td>
-                          <td className="p-3.5 text-slate-600">{st.room}</td>
-                          <td className="p-3.5 text-center font-bold text-slate-900 font-mono">{st.total}</td>
-                          <td className="p-3.5 text-center font-bold text-emerald-600 font-mono">{st.done}</td>
-                          <td className="p-3.5 text-center font-bold text-amber-600 font-mono">{st.remaining}</td>
+                          <td className="p-3.5 text-slate-600 dark:text-slate-200 font-medium">{st.room}</td>
+                          <td className="p-3.5 text-center font-bold text-slate-900 dark:text-white font-mono">{st.total}</td>
+                          <td className="p-3.5 text-center font-bold text-emerald-600 dark:text-emerald-400 font-mono">{st.done}</td>
+                          <td className="p-3.5 text-center font-bold text-amber-600 dark:text-amber-400 font-mono">{st.remaining}</td>
                           <td className="p-3.5 text-center">
-                            <span className="text-blue-600 font-mono font-medium">{st.theory} LT</span>
+                            <span className="text-blue-600 dark:text-blue-400 font-mono font-medium">{st.theory} LT</span>
                             <span className="text-slate-400 mx-1">/</span>
-                            <span className="text-emerald-600 font-mono font-medium">{st.practice} TH</span>
+                            <span className="text-emerald-600 dark:text-emerald-400 font-mono font-medium">{st.practice} TH</span>
                           </td>
                           <td className="p-3.5">
                             <div className="w-32 mx-auto space-y-1">
-                              <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono">
+                              <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 font-mono">
                                 <span>{pct}%</span>
                                 <span>{st.done}/{st.total}</span>
                               </div>
-                              <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200">
+                              <div className="w-full bg-slate-100 dark:bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-200 dark:border-slate-700">
                                 <div
                                   className="bg-gradient-to-r from-rose-500 to-emerald-500 h-full rounded-full transition-all"
                                   style={{ width: `${pct}%` }}
@@ -5160,7 +5160,7 @@ export default function UnifiedTeacherScheduleApp() {
                 </div>
 
                 {/* Suggestions chips & Input Bar */}
-                <div className="pt-3 border-t border-slate-100 space-y-3">
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-3">
                   <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
                     <button
                       type="button"
@@ -5982,39 +5982,39 @@ export default function UnifiedTeacherScheduleApp() {
                   <div>
                     <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                       Smart Teacher Schedule AI
-                      <span className="px-2.5 py-0.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 text-xs font-mono font-bold">
+                      <span className="px-2.5 py-0.5 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 text-xs font-mono font-bold">
                         v1.5.0
                       </span>
                     </h3>
-                    <p className="text-xs text-slate-500">Đơn vị phát triển: Huy Technology AI • Hotline/Zalo: 0961364600</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Đơn vị phát triển: Huy Technology AI • Hotline/Zalo: 0961364600</p>
                   </div>
                 </div>
-                <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
+                <span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 text-xs font-semibold">
                   ✓ Phiên bản chính thức v1.5.0
                 </span>
               </div>
-              <div className="text-xs text-slate-600 dark:text-slate-300 grid sm:grid-cols-2 gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-700/60">
-                <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Nền tảng: <strong className="text-slate-800">Desktop (PC/Laptop), Android & Web App</strong></div>
-                <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Cơ sở dữ liệu: <strong className="text-slate-800">Supabase Cloud Sync & Local Offline</strong></div>
-                <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Trợ lý AI: <strong className="text-slate-800">Soạn giáo án CV 5512, Đề thi TT 22, Slide, Mindmap</strong></div>
-                <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Tính năng v1.5.0: <strong className="text-emerald-700 font-semibold">Sổ lớp, Điểm danh 1 chạm, Command Center & Khóa PIN</strong></div>
+              <div className="text-xs text-slate-600 dark:text-slate-300 grid sm:grid-cols-2 gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800 dark:border-slate-700/60">
+                <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Nền tảng: <strong className="text-slate-800 dark:text-slate-100">Desktop (PC/Laptop), Android & Web App</strong></div>
+                <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Cơ sở dữ liệu: <strong className="text-slate-800 dark:text-slate-100">Supabase Cloud Sync & Local Offline</strong></div>
+                <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Trợ lý AI: <strong className="text-slate-800 dark:text-slate-100">Soạn giáo án CV 5512, Đề thi TT 22, Slide, Mindmap</strong></div>
+                <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Tính năng v1.5.0: <strong className="text-emerald-700 dark:text-emerald-400 font-semibold">Sổ lớp, Điểm danh 1 chạm, Command Center & Khóa PIN</strong></div>
               </div>
             </div>
 
             {/* Cloud Sync Settings */}
             <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-6 space-y-4 shadow-sm">
               <div className="flex items-center gap-3.5">
-                <div className="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-200/80 flex items-center justify-center text-blue-600 shadow-sm">
+                <div className="w-11 h-11 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/60 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-sm">
                   <Cloud className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white">Đồng Bộ Đám Mây Đa Nền Tảng</h3>
-                  <p className="text-xs text-slate-500">Kết nối tức thời Máy tính (Windows/Mac) và Điện thoại Android (Tecno, Samsung...)</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Kết nối tức thời Máy tính (Windows/Mac) và Điện thoại Android (Tecno, Samsung...)</p>
                 </div>
               </div>
 
               <div className="space-y-3 pt-2">
-                <label className="text-xs font-medium text-slate-700 block">
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-200 block">
                   Mã đồng bộ cá nhân của Thầy/Cô (Số điện thoại hoặc mã định danh):
                 </label>
                 <div className="flex items-center gap-2">
@@ -6054,14 +6054,14 @@ export default function UnifiedTeacherScheduleApp() {
                   </button>
                 </div>
 
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2 text-xs text-slate-700">
-                  <p className="font-semibold text-slate-900 flex items-center gap-2">
-                    <Smartphone className="w-4 h-4 text-blue-600" /> Hướng dẫn đồng bộ với điện thoại Android:
+                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-700 space-y-2 text-xs text-slate-700 dark:text-slate-300">
+                  <p className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Smartphone className="w-4 h-4 text-blue-500 dark:text-blue-400" /> Hướng dẫn đồng bộ với điện thoại Android:
                   </p>
-                  <ol className="list-decimal list-inside space-y-1.5 text-slate-600 pl-1">
-                    <li>Mở ứng dụng <strong className="text-slate-800">Smart Teacher Schedule</strong> trên điện thoại.</li>
-                    <li>Vào mục <strong className="text-slate-800">Cài đặt</strong> ➔ Kiểm tra mã đồng bộ có khớp <strong className="text-rose-600 font-mono font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">{syncCode}</strong> chưa.</li>
-                    <li>Bấm nút <strong className="text-slate-800">Đồng bộ đám mây ngay</strong> trên điện thoại.</li>
+                  <ol className="list-decimal list-inside space-y-1.5 text-slate-600 dark:text-slate-300 pl-1">
+                    <li>Mở ứng dụng <strong className="text-slate-800 dark:text-white">Smart Teacher Schedule</strong> trên điện thoại.</li>
+                    <li>Vào mục <strong className="text-slate-800 dark:text-white">Cài đặt</strong> ➔ Kiểm tra mã đồng bộ có khớp <strong className="text-rose-600 dark:text-rose-300 font-mono font-bold bg-rose-50 dark:bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-800">{syncCode}</strong> chưa.</li>
+                    <li>Bấm nút <strong className="text-slate-800 dark:text-white">Đồng bộ đám mây ngay</strong> trên điện thoại.</li>
                     <li>Toàn bộ {events.length} ca dạy sẽ tự động hiển thị đầy đủ trên cả máy tính và điện thoại.</li>
                   </ol>
                 </div>
@@ -6072,40 +6072,40 @@ export default function UnifiedTeacherScheduleApp() {
             <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-6 space-y-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3.5">
-                  <div className="w-11 h-11 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-center text-amber-600 shadow-sm">
+                  <div className="w-11 h-11 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/40 flex items-center justify-center text-amber-600 dark:text-amber-400 shadow-sm">
                     <Bell className="w-5 h-5 text-amber-600" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-slate-900">Chuông Báo & Thông Báo Tiết Dạy</h3>
-                    <p className="text-xs text-slate-500">Âm thanh Crystal Chime nhắc giờ 60p và 15p</p>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Chuông Báo & Thông Báo Tiết Dạy</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Âm thanh Crystal Chime nhắc giờ 60p và 15p</p>
                   </div>
                 </div>
 
                 <button
                   onClick={() => playChime('bell')}
-                  className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all border border-slate-200"
+                  className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all border border-slate-200 dark:border-slate-700"
                 >
-                  <Volume2 className="w-3.5 h-3.5 text-slate-600" /> Thử chuông
+                  <Volume2 className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" /> Thử chuông
                 </button>
               </div>
 
               <div className="space-y-3 pt-2">
-                <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-                  <span className="text-xs font-medium text-slate-800">Nhắc nhở trước 60 phút (Chuẩn bị giáo án & vật tư)</span>
+                <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-700">
+                  <span className="text-xs font-medium text-slate-800 dark:text-slate-200">Nhắc nhở trước 60 phút (Chuẩn bị giáo án & vật tư)</span>
                   <input
                     type="checkbox"
                     checked={notify60m}
                     onChange={(e) => setNotify60m(e.target.checked)}
-                    className="rounded border-slate-300 text-rose-600 focus:ring-rose-500/20 cursor-pointer w-4 h-4"
+                    className="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-rose-600 focus:ring-rose-500/20 cursor-pointer w-4 h-4"
                   />
                 </div>
-                <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-                  <span className="text-xs font-medium text-slate-800">Chuông báo khẩn cấp trước 15 phút (Vào phòng học/xưởng)</span>
+                <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-700">
+                  <span className="text-xs font-medium text-slate-800 dark:text-slate-200">Chuông báo khẩn cấp trước 15 phút (Vào phòng học/xưởng)</span>
                   <input
                     type="checkbox"
                     checked={notify15m}
                     onChange={(e) => setNotify15m(e.target.checked)}
-                    className="rounded border-slate-300 text-rose-600 focus:ring-rose-500/20 cursor-pointer w-4 h-4"
+                    className="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-rose-600 focus:ring-rose-500/20 cursor-pointer w-4 h-4"
                   />
                 </div>
               </div>
@@ -6113,11 +6113,11 @@ export default function UnifiedTeacherScheduleApp() {
 
             {/* Data Backup */}
             <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-6 space-y-3 shadow-sm">
-              <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Download className="w-4 h-4 text-blue-600" />
                 <span>Sao lưu & Xuất Dữ Liệu Máy Tính</span>
               </h4>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Xuất file sao lưu JSON chứa toàn bộ {events.length} ca dạy để lưu trữ an toàn trên ổ đĩa máy tính.
               </p>
               <button
@@ -6130,9 +6130,9 @@ export default function UnifiedTeacherScheduleApp() {
                   a.download = `SmartTeacher_Backup_${events.length}Ca_${todayStr}.json`;
                   a.click();
                 }}
-                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold flex items-center gap-1.5 cursor-pointer border border-slate-200 transition-all shadow-sm"
+                className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer border border-slate-200 dark:border-slate-700 transition-all shadow-sm"
               >
-                <Download className="w-3.5 h-3.5 text-slate-700" /> Tải file sao lưu JSON ({events.length} ca)
+                <Download className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" /> Tải file sao lưu JSON ({events.length} ca)
               </button>
             </div>
           </div>
@@ -6143,19 +6143,19 @@ export default function UnifiedTeacherScheduleApp() {
       {showAddEventModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
           <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl text-slate-800 dark:text-slate-100">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Plus className="w-5 h-5 text-emerald-400" />
                 <span>Thêm Ca Dạy Mới (Tự Động Đồng Bộ Điện Thoại)</span>
               </h3>
-              <button onClick={() => setShowAddEventModal(false)} className="text-slate-400 hover:text-slate-700">
+              <button onClick={() => setShowAddEventModal(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="text-slate-700 font-medium block mb-1">
+                <label className="text-slate-700 dark:text-slate-200 font-medium block mb-1">
                   Tên môn học / Module: <span className="text-rose-400">*</span>
                 </label>
                 <input
@@ -6169,7 +6169,7 @@ export default function UnifiedTeacherScheduleApp() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-700 font-medium block mb-1">
+                  <label className="text-slate-700 dark:text-slate-200 font-medium block mb-1">
                     Lớp giảng dạy: <span className="text-rose-400">*</span>
                   </label>
                   <input
@@ -6181,7 +6181,7 @@ export default function UnifiedTeacherScheduleApp() {
                   />
                 </div>
                 <div>
-                  <label className="text-slate-700 font-medium block mb-1">Phòng học / Xưởng:</label>
+                  <label className="text-slate-700 dark:text-slate-200 font-medium block mb-1">Phòng học / Xưởng:</label>
                   <input
                     type="text"
                     placeholder="VD: S3.05/2, Xưởng Cơ khí..."
@@ -6194,7 +6194,7 @@ export default function UnifiedTeacherScheduleApp() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-700 font-medium block mb-1">
+                  <label className="text-slate-700 dark:text-slate-200 font-medium block mb-1">
                     Giờ bắt đầu: <span className="text-rose-400">*</span>
                   </label>
                   <input
@@ -6205,7 +6205,7 @@ export default function UnifiedTeacherScheduleApp() {
                   />
                 </div>
                 <div>
-                  <label className="text-slate-700 font-medium block mb-1">
+                  <label className="text-slate-700 dark:text-slate-200 font-medium block mb-1">
                     Giờ kết thúc: <span className="text-rose-400">*</span>
                   </label>
                   <input
@@ -6259,7 +6259,7 @@ export default function UnifiedTeacherScheduleApp() {
 
               {/* Session Type */}
               <div>
-                <label className="text-slate-700 font-medium block mb-1">Hình thức giảng dạy:</label>
+                <label className="text-slate-700 dark:text-slate-200 font-medium block mb-1">Hình thức giảng dạy:</label>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
@@ -6428,7 +6428,7 @@ export default function UnifiedTeacherScheduleApp() {
               </div>
 
               <div>
-                <label className="text-slate-700 font-medium block mb-1">Ghi chú (tùy chọn):</label>
+                <label className="text-slate-700 dark:text-slate-200 font-medium block mb-1">Ghi chú (tùy chọn):</label>
                 <textarea
                   rows={2}
                   value={newNotes}
@@ -6439,11 +6439,11 @@ export default function UnifiedTeacherScheduleApp() {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setShowAddEventModal(false)}
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700 text-xs font-semibold cursor-pointer"
               >
                 Hủy bỏ
               </button>
@@ -6463,12 +6463,12 @@ export default function UnifiedTeacherScheduleApp() {
       {editingEvent && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
           <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl text-slate-800 dark:text-slate-100">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <Edit3 className="w-5 h-5 text-blue-400" />
                 <span>Chỉnh Sửa Ca Dạy & Tiến Độ</span>
               </h3>
-              <button onClick={() => setEditingEvent(null)} className="text-slate-400 hover:text-slate-700">
+              <button onClick={() => setEditingEvent(null)} className="text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -6630,11 +6630,11 @@ export default function UnifiedTeacherScheduleApp() {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setEditingEvent(null)}
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700 text-xs font-semibold cursor-pointer"
               >
                 Hủy bỏ
               </button>
@@ -6654,18 +6654,18 @@ export default function UnifiedTeacherScheduleApp() {
       {attachingEvent && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
           <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl text-slate-800 dark:text-slate-100">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <Paperclip className="w-5 h-5 text-blue-400" />
                 <span>Đính Kèm Giáo Án / Tài Liệu</span>
               </h3>
-              <button onClick={() => setAttachingEvent(null)} className="text-slate-400 hover:text-slate-700">
+              <button onClick={() => setAttachingEvent(null)} className="text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-3 text-xs">
-              <p className="text-slate-700 font-medium">
+              <p className="text-slate-700 dark:text-slate-200 font-medium">
                 Ca dạy: <span className="text-white font-bold">{attachingEvent.subject}</span> ({attachingEvent.className})
               </p>
               <div>
@@ -6690,11 +6690,11 @@ export default function UnifiedTeacherScheduleApp() {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setAttachingEvent(null)}
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700 text-xs font-semibold cursor-pointer"
               >
                 Hủy
               </button>
@@ -6736,7 +6736,7 @@ export default function UnifiedTeacherScheduleApp() {
 
               <button
                 onClick={() => setAttendanceEvent(null)}
-                className="p-2 rounded-xl bg-slate-100 text-slate-500 hover:text-slate-800 border border-slate-200 cursor-pointer"
+                className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white border border-slate-200 dark:border-slate-700 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -6893,7 +6893,7 @@ export default function UnifiedTeacherScheduleApp() {
                 <button
                   type="button"
                   onClick={() => setAttendanceEvent(null)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700 text-xs font-semibold cursor-pointer"
                 >
                   Hủy
                 </button>
@@ -6917,7 +6917,7 @@ export default function UnifiedTeacherScheduleApp() {
           <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl max-w-md w-full p-5 shadow-2xl text-slate-800 dark:text-slate-100">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <h3 className="font-bold text-base text-white">Thêm Học Sinh Mới</h3>
-              <button onClick={() => setShowAddStudentModal(false)} className="text-slate-400 hover:text-slate-700">
+              <button onClick={() => setShowAddStudentModal(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -7038,7 +7038,7 @@ export default function UnifiedTeacherScheduleApp() {
                 <Download className="w-4 h-4 text-cyan-400" />
                 <span>Nhập Danh Sách Nhanh Cho Lớp {selectedRosterClass}</span>
               </h3>
-              <button onClick={() => setShowImportRosterModal(false)} className="text-slate-400 hover:text-slate-700">
+              <button onClick={() => setShowImportRosterModal(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -7108,7 +7108,7 @@ export default function UnifiedTeacherScheduleApp() {
           <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl text-slate-800 dark:text-slate-100">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <h3 className="font-bold text-base text-white">Thêm Lớp Học Mới</h3>
-              <button onClick={() => setShowAddClassModal(false)} className="text-slate-400 hover:text-slate-700">
+              <button onClick={() => setShowAddClassModal(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -8445,7 +8445,7 @@ export default function UnifiedTeacherScheduleApp() {
                     setLessonPackageFullScreen(false);
                     setIsEditingLessonPackage(false);
                   }}
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700 text-xs font-semibold cursor-pointer"
                 >
                   Đóng
                 </button>

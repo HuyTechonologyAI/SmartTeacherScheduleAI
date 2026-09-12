@@ -91,6 +91,18 @@ export async function GET(req: NextRequest) {
         })
         .slice(0, 10);
 
+      const rawClassroomFees: any[] = Array.isArray(rawPayload.classroomFees) ? rawPayload.classroomFees : [];
+      const rawParentFeedbacks: any[] = Array.isArray(rawPayload.parentFeedbacks) ? rawPayload.parentFeedbacks : [];
+
+      const studentFees = rawClassroomFees.filter((f: any) => 
+        !f.targetClass || f.targetClass.toLowerCase().trim() === matchedStudent.className.toLowerCase().trim()
+      );
+
+      const studentFeedbacks = rawParentFeedbacks.filter((fb: any) => 
+        fb.studentId === matchedStudent.id || 
+        (phone && fb.parentPhone && fb.parentPhone.replace(/[^0-9]/g, '') === phone)
+      ).sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0));
+
       return NextResponse.json({
         type: 'parent',
         syncCode,
@@ -106,6 +118,8 @@ export async function GET(req: NextRequest) {
         },
         attendance: studentAttendance,
         leaveRequests: studentLeaveRequests,
+        fees: studentFees,
+        feedbacks: studentFeedbacks,
         upcomingEvents,
         classroom: classrooms.find(c => (c.name || '').toLowerCase() === matchedStudent.className.toLowerCase()) || { name: matchedStudent.className }
       });
@@ -179,31 +193,123 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { syncCode, studentId, studentCode, studentName, className, parentName, parentPhone, date, reason, type } = body;
+    const action = body.action || 'leave_request';
+    const syncCode = body.syncCode?.trim().replace(/[^a-zA-Z0-9_-]/g, '');
 
-    if (!syncCode || !studentId || !studentName || !date || !reason) {
+    if (!syncCode) {
       return NextResponse.json(
-        { error: 'Vui lòng điền đầy đủ thông tin: Mã trường/lớp, Họ tên học sinh, Ngày xin nghỉ và Lý do.' },
+        { error: 'Thiếu mã trường/lớp (syncCode).' },
         { status: 400 }
       );
     }
 
-    const cleanCode = syncCode.trim().replace(/[^a-zA-Z0-9_-]/g, '');
-
     const { data: storeData, error: fetchErr } = await supabase
       .from('teacher_sync_stores')
       .select('data')
-      .eq('sync_code', cleanCode)
+      .eq('sync_code', syncCode)
       .single();
 
     if (fetchErr || !storeData) {
       return NextResponse.json(
-        { error: 'Không tìm thấy lớp học với mã này để nộp đơn. Vui lòng liên hệ Giáo viên.' },
+        { error: 'Không tìm thấy lớp học với mã này. Vui lòng kiểm tra lại mã hoặc liên hệ Giáo viên.' },
         { status: 404 }
       );
     }
 
     const currentData = storeData.data || {};
+
+    // 1. GỬI ĐỀ XUẤT / KIẾN NGHỊ CỦA PHỤ HUYNH
+    if (action === 'parent_feedback') {
+      const { studentId, studentName, className, parentName, parentPhone, title, content, category, priority } = body;
+      if (!studentName || !title || !content) {
+        return NextResponse.json({ error: 'Vui lòng điền đầy đủ tiêu đề và nội dung kiến nghị.' }, { status: 400 });
+      }
+
+      const existingFeedbacks: any[] = Array.isArray(currentData.parentFeedbacks) ? currentData.parentFeedbacks : [];
+      const newFeedback = {
+        id: `fb_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        studentId: String(studentId || '').trim(),
+        studentName: String(studentName).trim(),
+        className: String(className || '').trim(),
+        parentName: String(parentName || 'Phụ huynh').trim(),
+        parentPhone: String(parentPhone || '').trim(),
+        category: category || 'ACADEMIC',
+        priority: priority || 'NORMAL',
+        title: String(title).trim(),
+        content: String(content).trim(),
+        status: 'PENDING',
+        createdAt: Date.now()
+      };
+
+      const updatedFeedbacks = [newFeedback, ...existingFeedbacks];
+      const updatedPayload = {
+        ...currentData,
+        parentFeedbacks: updatedFeedbacks,
+        updatedAt: Date.now()
+      };
+
+      await supabase
+        .from('teacher_sync_stores')
+        .update({ data: updatedPayload, updated_at: new Date().toISOString() })
+        .eq('sync_code', syncCode);
+
+      return NextResponse.json({
+        success: true,
+        message: 'Đã gửi kiến nghị tới Thầy/Cô thành công!',
+        feedback: newFeedback
+      });
+    }
+
+    // 2. XÁC NHẬN THANH TOÁN KHOẢN THU (CỔNG THANH TOÁN)
+    if (action === 'pay_fee') {
+      const { feeId, studentId, studentName, className, parentName, parentPhone, amount, transactionRef } = body;
+      if (!feeId) {
+        return NextResponse.json({ error: 'Thiếu thông tin khoản thu (feeId).' }, { status: 400 });
+      }
+
+      const existingFees: any[] = Array.isArray(currentData.classroomFees) ? currentData.classroomFees : [];
+      const updatedFees = existingFees.map((fee: any) => {
+        if (fee.id === feeId) {
+          return {
+            ...fee,
+            status: 'PAID',
+            paidAt: Date.now(),
+            paidBy: parentName || 'Phụ huynh',
+            payerPhone: parentPhone || '',
+            transactionRef: transactionRef || `PAY_${Date.now().toString().slice(-6)}`
+          };
+        }
+        return fee;
+      });
+
+      const updatedPayload = {
+        ...currentData,
+        classroomFees: updatedFees,
+        updatedAt: Date.now()
+      };
+
+      await supabase
+        .from('teacher_sync_stores')
+        .update({ data: updatedPayload, updated_at: new Date().toISOString() })
+        .eq('sync_code', syncCode);
+
+      return NextResponse.json({
+        success: true,
+        message: 'Xác nhận nộp phí thành công!',
+        transactionRef: transactionRef || `PAY_${Date.now().toString().slice(-6)}`
+      });
+    }
+
+    // 3. ĐƠN XIN PHÉP NGHỈ HỌC (DEFAULT)
+    const { studentId, studentCode, studentName, className, parentName, parentPhone, date, reason, type } = body;
+
+    if (!studentId || !studentName || !date || !reason) {
+      return NextResponse.json(
+        { error: 'Vui lòng điền đầy đủ thông tin: Họ tên học sinh, Ngày xin nghỉ và Lý do.' },
+        { status: 400 }
+      );
+    }
+
     const existingLeaveRequests: LeaveRequestItem[] = Array.isArray(currentData.leaveRequests) ? currentData.leaveRequests : [];
 
     const newRequest: LeaveRequestItem = {
@@ -234,7 +340,7 @@ export async function POST(req: NextRequest) {
         data: updatedPayload,
         updated_at: new Date().toISOString()
       })
-      .eq('sync_code', cleanCode);
+      .eq('sync_code', syncCode);
 
     if (updateErr) {
       console.error('Supabase update leave request error:', updateErr);
@@ -248,6 +354,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('Portal Leave Request Error:', error);
-    return NextResponse.json({ error: 'Lỗi khi gửi đơn xin phép: ' + (error?.message || String(error)) }, { status: 500 });
+    return NextResponse.json({ error: 'Lỗi khi gửi dữ liệu cổng thông tin: ' + (error?.message || String(error)) }, { status: 500 });
   }
 }

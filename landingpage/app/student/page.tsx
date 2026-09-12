@@ -43,6 +43,7 @@ import {
 import { Language, t, getStoredLanguage, saveStoredLanguage } from '../app/i18n';
 import StudentAuthModal from '@/components/student/StudentAuthModal';
 import StudentProfileEditModal from '@/components/student/StudentProfileEditModal';
+import StudentAiStudyAssistant from '@/components/student/StudentAiStudyAssistant';
 import {
   StudentProfile,
   DEFAULT_STUDENT_PROFILE,
@@ -135,7 +136,8 @@ export default function StudentPortalPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Active Main Tab: 'timetable' | 'homework' | 'materials' | 'kudos'
-  const [studentTab, setStudentTab] = useState<'timetable' | 'homework' | 'materials' | 'kudos'>('timetable');
+  const [studentTab, setStudentTab] = useState<'timetable' | 'homework' | 'materials' | 'kudos' | 'ai_study'>('timetable');
+  const [aiQuestionPrompt, setAiQuestionPrompt] = useState<string>('');
 
   // Completed Homework State (saved locally)
   const [homeworkList, setHomeworkList] = useState<HomeworkTask[]>([
@@ -857,7 +859,7 @@ export default function StudentPortalPage() {
         </div>
 
         {/* 5. 4 Primary Fun Action Tabs (Big icon cards) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
           
           {/* Tab 1: Timetable */}
           <button
@@ -874,6 +876,24 @@ export default function StudentPortalPage() {
             </span>
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${studentTab === 'timetable' ? 'bg-black/20 text-white' : 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300'}`}>
               {events.length} {isEn ? "periods" : "tiết"}
+            </span>
+          </button>
+
+          {/* Tab: AI Study Assistant */}
+          <button
+            onClick={() => setStudentTab('ai_study')}
+            className={`p-3 sm:p-4 rounded-3xl border-2 flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+              studentTab === 'ai_study'
+                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-orange-600 shadow-md scale-102 ring-2 ring-amber-400'
+                : 'bg-white dark:bg-[#111827] border-amber-200 dark:border-amber-900/60 text-slate-800 dark:text-slate-200 hover:border-amber-400'
+            }`}
+          >
+            <span className="text-2xl">🤖</span>
+            <span className="text-xs sm:text-sm font-black tracking-tight">
+              {isEn ? "AI Study Buddy" : "Gia Sư AI Sư Phạm"}
+            </span>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${studentTab === 'ai_study' ? 'bg-black/20 text-white' : 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300'}`}>
+              {isEn ? "Standard SGK ✨" : "Chuẩn SGK ✨"}
             </span>
           </button>
 
@@ -1069,9 +1089,25 @@ export default function StudentPortalPage() {
                       </div>
                     </div>
 
-                    {/* Checkbox button */}
-                    <button
-                      onClick={() => handleToggleHomework(hw.id)}
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      {/* Nút Nhờ Gia Sư AI hướng dẫn phương pháp giải */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAiQuestionPrompt(`[${hw.subject}] ${hw.title}. Hướng dẫn nhiệm vụ: ${hw.notes}`);
+                          setStudentTab('ai_study');
+                        }}
+                        className="px-3 py-2 rounded-2xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                        title={isEn ? "Ask AI for step-by-step method guidance" : "Nhờ Gia sư AI hướng dẫn từng bước cách làm bài"}
+                      >
+                        <span>💡</span>
+                        <span className="hidden sm:inline">{isEn ? "AI Method Hint" : "Gia Sư AI Hướng Dẫn"}</span>
+                        <span className="sm:hidden">{isEn ? "AI Hint" : "Gia Sư AI"}</span>
+                      </button>
+
+                      {/* Checkbox button */}
+                      <button
+                        onClick={() => handleToggleHomework(hw.id)}
                       className={`px-4 py-2.5 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm shrink-0 ${
                         hw.isCompleted
                           ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
@@ -1090,6 +1126,7 @@ export default function StudentPortalPage() {
                         </>
                       )}
                     </button>
+                    </div>
                   </div>
                 );
               })}
@@ -1245,6 +1282,18 @@ export default function StudentPortalPage() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* ================= TAB 5: GIA SƯ AI HỌC TẬP CHUẨN SƯ PHẠM ================= */}
+        {studentTab === 'ai_study' && (
+          <div className="space-y-3 animate-fade-in">
+            <StudentAiStudyAssistant
+              lang={lang}
+              currentClass={selectedClass}
+              studentName={studentName}
+              initialQuestion={aiQuestionPrompt}
+            />
           </div>
         )}
 

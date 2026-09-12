@@ -30,9 +30,26 @@ import {
   Play,
   RotateCcw,
   Globe,
-  BellRing
+  BellRing,
+  Edit3,
+  LogIn,
+  UserCheck,
+  ShieldCheck,
+  GraduationCap,
+  Layers,
+  IdCard
 } from 'lucide-react';
 import { Language, t, getStoredLanguage, saveStoredLanguage } from '../app/i18n';
+import StudentAuthModal from '@/components/student/StudentAuthModal';
+import StudentProfileEditModal from '@/components/student/StudentProfileEditModal';
+import {
+  StudentProfile,
+  DEFAULT_STUDENT_PROFILE,
+  EDUCATION_LEVELS,
+  EducationLevel,
+  getStoredStudentProfile,
+  saveStudentProfile
+} from './studentProfileData';
 
 interface EventItem {
   id: string | number;
@@ -82,6 +99,13 @@ const KID_AVATARS = [
 export default function StudentPortalPage() {
   const [lang, setLang] = useState<Language>('vi');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  // Student Profile State (CCCD, Full info, Education Level)
+  const [studentProfile, setStudentProfile] = useState<StudentProfile>(DEFAULT_STUDENT_PROFILE);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [isProfileEditOpen, setIsProfileEditOpen] = useState<boolean>(false);
+  const [selectedLevel, setSelectedLevel] = useState<EducationLevel>('primary');
+  const [collegeCustomClass, setCollegeCustomClass] = useState<string>('CNTT-K24');
 
   // Student Info State
   const [studentName, setStudentName] = useState<string>('Nguyễn Bảo An');
@@ -158,11 +182,16 @@ export default function StudentPortalPage() {
       const savedLang = getStoredLanguage();
       setLang(savedLang);
 
-      const savedName = localStorage.getItem('smart_student_name');
-      if (savedName) setStudentName(savedName);
-
-      const savedAvatar = localStorage.getItem('smart_student_avatar');
-      if (savedAvatar) setStudentAvatar(savedAvatar);
+      // Load stored student profile
+      const storedProf = getStoredStudentProfile();
+      setStudentProfile(storedProf);
+      setStudentName(storedProf.fullName);
+      setStudentAvatar(storedProf.avatar);
+      setSelectedClass(storedProf.className);
+      setSelectedLevel(storedProf.educationLevel);
+      if (storedProf.educationLevel === 'college') {
+        setCollegeCustomClass(storedProf.className);
+      }
 
       const savedStars = localStorage.getItem('smart_student_stars');
       if (savedStars) setStudentStars(parseInt(savedStars, 10) || 125);
@@ -170,6 +199,30 @@ export default function StudentPortalPage() {
       console.error(e);
     }
   }, []);
+
+  const handleAuthSuccess = (newProfile: StudentProfile) => {
+    setStudentProfile(newProfile);
+    setStudentName(newProfile.fullName);
+    setStudentAvatar(newProfile.avatar);
+    setSelectedClass(newProfile.className);
+    setSelectedLevel(newProfile.educationLevel);
+    if (newProfile.educationLevel === 'college') {
+      setCollegeCustomClass(newProfile.className);
+    }
+    if (syncCode) fetchClassData(syncCode, newProfile.className);
+  };
+
+  const handleSaveProfile = (updatedProfile: StudentProfile) => {
+    setStudentProfile(updatedProfile);
+    setStudentName(updatedProfile.fullName);
+    setStudentAvatar(updatedProfile.avatar);
+    setSelectedClass(updatedProfile.className);
+    setSelectedLevel(updatedProfile.educationLevel);
+    if (updatedProfile.educationLevel === 'college') {
+      setCollegeCustomClass(updatedProfile.className);
+    }
+    if (syncCode) fetchClassData(syncCode, updatedProfile.className);
+  };
 
   const toggleTheme = () => {
     const next = theme === 'light' ? 'dark' : 'light';
@@ -459,9 +512,24 @@ export default function StudentPortalPage() {
             </div>
           </div>
 
-          {/* Right Tools: Language, Theme, Switch to Parent / Teacher */}
+          {/* Right Tools: Language, Theme, Switch to Parent / Teacher, Student Auth */}
           <div className="flex items-center gap-1.5 sm:gap-2">
             
+            {/* Student Account Login / Switcher */}
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              className="h-9 sm:h-10 px-2.5 sm:px-3 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 hover:from-amber-200 hover:to-orange-200 dark:from-amber-950/70 dark:to-orange-950/70 dark:hover:from-amber-900 dark:hover:to-orange-900 border border-amber-300 dark:border-amber-700 flex items-center gap-1.5 text-xs font-bold text-amber-900 dark:text-amber-200 transition-all cursor-pointer shadow-xs"
+              title={isEn ? "Student Account / Citizen ID Login" : "Đăng nhập học sinh bằng CCCD / Đổi tài khoản"}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={studentAvatar} alt={studentName} className="w-5 h-5 rounded-full bg-white object-cover shadow-2xs" />
+              <span className="hidden sm:inline font-black truncate max-w-[85px]">{studentName.split(' ').pop()}</span>
+              <span className="hidden md:inline px-1.5 py-0.2 rounded bg-amber-500 text-white font-mono text-[9px] font-bold">
+                {studentProfile.studentCode.slice(-4)}
+              </span>
+              <LogIn className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+            </button>
+
             {/* Language Toggle */}
             <button
               onClick={toggleLanguage}
@@ -511,12 +579,12 @@ export default function StudentPortalPage() {
       {/* Main Content Area */}
       <main className="max-w-4xl mx-auto px-3.5 sm:px-6 py-4 space-y-4 sm:space-y-5">
         
-        {/* 2. Hero Student Profile Card: Avatar + Name + Class + Stars */}
+        {/* 2. Hero Student Profile Card: Avatar + Name + CCCD + Class + Edit Profile */}
         <section className="relative rounded-3xl p-4 sm:p-6 bg-gradient-to-r from-amber-100/90 via-orange-50 to-pink-100/80 dark:from-slate-900 dark:via-[#161f36] dark:to-slate-900 border-2 border-amber-200/80 dark:border-slate-800 shadow-md flex flex-col sm:flex-row items-center justify-between gap-4 overflow-hidden">
           
-          <div className="flex items-center gap-4 text-center sm:text-left">
-            {/* Avatar with click to change */}
-            <div className="relative group cursor-pointer" onClick={() => setIsChangingAvatar(!isChangingAvatar)}>
+          <div className="flex items-center gap-4 text-center sm:text-left flex-1">
+            {/* Avatar with click to change or edit */}
+            <div className="relative group cursor-pointer" onClick={() => setIsProfileEditOpen(true)} title={isEn ? "Click to update profile & avatar" : "Nhấp để chỉnh sửa hồ sơ & ảnh đại diện"}>
               <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-tr from-amber-400 to-rose-400 p-1 shadow-lg shadow-amber-500/20 overflow-hidden group-hover:scale-105 transition-transform">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -525,33 +593,61 @@ export default function StudentPortalPage() {
                   className="w-full h-full object-cover rounded-2xl bg-white"
                 />
               </div>
-              <span className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black shadow-sm">
-                {isEn ? 'Change' : 'Đổi hình'}
+              <span className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black shadow-sm flex items-center gap-0.5">
+                <Edit3 className="w-2.5 h-2.5" />
+                <span>{isEn ? 'Edit' : 'Sửa'}</span>
               </span>
             </div>
 
-            <div className="space-y-1">
-              <div className="flex items-center justify-center sm:justify-start gap-2">
+            <div className="space-y-1.5 flex-1">
+              <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
                 <h2 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                   {studentName}
                 </h2>
                 <span className="text-lg">⭐</span>
+
+                {/* CCCD / Mã định danh badge */}
+                <span 
+                  className="px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 text-[10px] sm:text-xs font-mono font-bold border border-emerald-300 dark:border-emerald-700 flex items-center gap-1 shadow-2xs"
+                  title={isEn ? "National Citizen ID / Unique Student ID" : "Số CCCD / Mã số định danh không trùng lặp"}
+                >
+                  <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                  <span>CCCD: {studentProfile.studentCode}</span>
+                </span>
+
+                {/* Edit profile button */}
+                <button
+                  onClick={() => setIsProfileEditOpen(true)}
+                  className="px-2.5 py-1 rounded-xl bg-white/90 hover:bg-white dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-300 dark:border-slate-700 shadow-xs flex items-center gap-1 cursor-pointer transition-colors"
+                  title={isEn ? "Edit profile & personal info" : "Chỉnh sửa thông tin cá nhân"}
+                >
+                  <Edit3 className="w-3 h-3 text-amber-500" />
+                  <span>{isEn ? "Edit Info" : "Sửa thông tin"}</span>
+                </button>
               </div>
 
-              <p className="text-xs sm:text-sm font-bold text-emerald-700 dark:text-emerald-400 flex items-center justify-center sm:justify-start gap-1.5">
-                <span>{selectedClass}</span>
+              <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                <span className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                  {selectedClass}
+                </span>
                 <span className="text-slate-300">•</span>
-                <span className="text-slate-600 dark:text-slate-300 font-medium">Trường TH Việt Nam</span>
-              </p>
+                <span className="text-slate-600 dark:text-slate-300 font-medium">
+                  {studentProfile.schoolName || (isEn ? "Vietnam School" : "Trường Tiểu Học Việt Nam")}
+                </span>
+                <span className="text-slate-300 hidden sm:inline">•</span>
+                <span className="text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">
+                  {EDUCATION_LEVELS.find(l => l.id === studentProfile.educationLevel)?.shortLabel || 'Tiểu học'}
+                </span>
+              </div>
 
               <p className="text-xs text-slate-500 dark:text-slate-400 italic">
-                {isEn ? '"Curious learner, bright future!"' : '"Chăm ngoan, học giỏi, vâng lời thầy cô!"'}
+                &ldquo;{studentProfile.bioQuote || (isEn ? "Curious learner, bright future!" : "Chăm ngoan, học giỏi, vâng lời thầy cô!")}&rdquo;
               </p>
             </div>
           </div>
 
-          {/* Star Kudos Reward Box */}
-          <div className="flex sm:flex-col items-center justify-center gap-3 sm:gap-1 bg-white/90 dark:bg-slate-800/90 p-3 sm:p-4 rounded-2xl border border-amber-200 dark:border-slate-700 shadow-sm w-full sm:w-auto">
+          {/* Star Kudos Reward Box & Account Switcher */}
+          <div className="flex sm:flex-col items-center justify-center gap-3 sm:gap-1.5 bg-white/90 dark:bg-slate-800/90 p-3 sm:p-4 rounded-2xl border border-amber-200 dark:border-slate-700 shadow-sm w-full sm:w-auto shrink-0">
             <div className="flex items-center gap-2">
               <div className="w-9 h-9 rounded-xl bg-amber-400 text-white flex items-center justify-center shadow-md animate-bounce">
                 <Star className="w-5 h-5 fill-white text-white" />
@@ -565,87 +661,167 @@ export default function StudentPortalPage() {
                 </p>
               </div>
             </div>
-            <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-300 dark:border-emerald-800">
-              {isEn ? "Rank: Little Star 🏆" : "Hạng: Ngôi Sao Nhí 🏆"}
-            </span>
+            <div className="flex items-center gap-1.5 w-full justify-center">
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-300 dark:border-emerald-800">
+                {isEn ? "Rank: Little Star 🏆" : "Hạng: Ngôi Sao Nhí 🏆"}
+              </span>
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold transition-colors cursor-pointer flex items-center gap-0.5"
+                title={isEn ? "Switch or login with student ID" : "Đổi tài khoản học sinh hoặc đăng nhập mã mới"}
+              >
+                <LogIn className="w-2.5 h-2.5 text-amber-500" />
+                <span>{isEn ? "Switch" : "Đổi TK"}</span>
+              </button>
+            </div>
           </div>
         </section>
 
-        {/* Avatar Picker Modal */}
-        {isChangingAvatar && (
-          <div className="bg-white dark:bg-[#111827] border border-amber-200 dark:border-slate-800 p-4 rounded-3xl shadow-xl space-y-3 animate-fade-in">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                <span>🎨</span>
-                <span>{isEn ? "Choose your favorite avatar:" : "Chọn hình đại diện em thích nhất:"}</span>
-              </h4>
-              <button
-                onClick={() => setIsChangingAvatar(false)}
-                className="text-xs text-slate-400 hover:text-slate-600 font-bold"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="grid grid-cols-6 gap-2">
-              {KID_AVATARS.map((av) => (
+        {/* 3. Multi-tier Grade/Class Selector (Requirement 3: Grade 1 - 12 + Vocational/College Class Code) */}
+        <div className="bg-white dark:bg-[#111827] border border-amber-200 dark:border-slate-800 p-3 sm:p-4 rounded-3xl shadow-xs space-y-2.5">
+          
+          {/* Top Bar: Level Pills & Quick Sync Code */}
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+            <div className="flex items-center gap-1.5 overflow-x-auto">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 shrink-0 flex items-center gap-1">
+                <GraduationCap className="w-3.5 h-3.5 text-emerald-600" />
+                <span>{isEn ? "Level:" : "Cấp học:"}</span>
+              </span>
+              {EDUCATION_LEVELS.map(lvl => (
                 <button
-                  key={av.id}
-                  onClick={() => handlePickAvatar(av.url)}
-                  className={`p-1 rounded-2xl border-2 transition-all hover:scale-110 cursor-pointer flex flex-col items-center gap-1 ${
-                    studentAvatar === av.url ? 'border-amber-500 bg-amber-50 dark:bg-amber-950' : 'border-slate-200 dark:border-slate-700'
+                  key={lvl.id}
+                  onClick={() => {
+                    setSelectedLevel(lvl.id);
+                    const first = lvl.grades[0];
+                    if (lvl.id === 'college') {
+                      handleSelectClass(collegeCustomClass || first);
+                    } else {
+                      handleSelectClass(first);
+                    }
+                  }}
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                    selectedLevel === lvl.id
+                      ? 'bg-amber-500 text-white shadow-xs'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                   }`}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={av.url} alt={av.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl object-cover bg-white" />
-                  <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400 truncate w-full text-center">
-                    {av.name}
-                  </span>
+                  {lvl.shortLabel}
                 </button>
               ))}
             </div>
-          </div>
-        )}
 
-        {/* 3. Class selector pill buttons (1-click to switch class) */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 shrink-0 flex items-center gap-1">
-            <Users className="w-3.5 h-3.5 text-emerald-600" />
-            <span>{isEn ? "Class:" : "Chọn lớp:"}</span>
-          </span>
-          <div className="flex items-center gap-1.5">
-            {availableClasses.map(c => (
+            {/* Quick sync code lookup */}
+            <div className="flex items-center gap-1 shrink-0 ml-auto">
+              <input
+                type="text"
+                placeholder={isEn ? "Sync code..." : "Mã đồng bộ..."}
+                value={syncCode}
+                onChange={e => setSyncCode(e.target.value.toUpperCase())}
+                className="px-2.5 py-1 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white uppercase font-mono w-24 sm:w-28 focus:outline-none"
+              />
               <button
-                key={c.id || c.name}
-                onClick={() => handleSelectClass(c.name)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                  selectedClass.toLowerCase() === c.name.toLowerCase()
-                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-sm'
-                    : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-emerald-400'
-                }`}
+                onClick={() => fetchClassData(syncCode, selectedClass)}
+                disabled={isLoading || !syncCode}
+                className="p-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition-colors cursor-pointer disabled:opacity-40"
+                title={isEn ? "Fetch class timetable" : "Tải thời khóa biểu"}
               >
-                {c.name}
+                <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
               </button>
-            ))}
+            </div>
           </div>
 
-          {/* Quick sync code lookup */}
-          <div className="ml-auto shrink-0 flex items-center gap-1">
-            <input
-              type="text"
-              placeholder={isEn ? "Class code..." : "Mã lớp..."}
-              value={syncCode}
-              onChange={e => setSyncCode(e.target.value.toUpperCase())}
-              className="px-2.5 py-1 text-xs rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white uppercase font-mono w-24 sm:w-28 focus:outline-none"
-            />
-            <button
-              onClick={() => fetchClassData(syncCode, selectedClass)}
-              disabled={isLoading || !syncCode}
-              className="p-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition-colors cursor-pointer disabled:opacity-40"
-              title={isEn ? "Fetch class timetable" : "Tải thời khóa biểu"}
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
+          {/* Bottom Bar: Grade/Class Selection */}
+          {selectedLevel !== 'college' ? (
+            <div className="flex items-center gap-2 overflow-x-auto pt-0.5">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 shrink-0 flex items-center gap-1">
+                <Users className="w-3.5 h-3.5 text-emerald-600" />
+                <span>{isEn ? "Grade / Class:" : "Khối / Lớp:"}</span>
+              </span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {(EDUCATION_LEVELS.find(l => l.id === selectedLevel)?.grades || []).map(grade => {
+                  const isSelected = selectedClass.startsWith(grade);
+                  return (
+                    <button
+                      key={grade}
+                      onClick={() => handleSelectClass(grade)}
+                      className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                        isSelected
+                          ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-xs'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-emerald-400 border border-transparent'
+                      }`}
+                    >
+                      {grade}
+                    </button>
+                  );
+                })}
+
+                {/* Sub-classes or synced classes */}
+                {availableClasses.filter(c => !EDUCATION_LEVELS.find(l => l.id === selectedLevel)?.grades.includes(c.name)).map(c => (
+                  <button
+                    key={c.id || c.name}
+                    onClick={() => handleSelectClass(c.name)}
+                    className={`px-2.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                      selectedClass.toLowerCase() === c.name.toLowerCase()
+                        ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-xs'
+                        : 'bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-emerald-400'
+                    }`}
+                  >
+                    {c.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            /* College / Vocational Class Code Input & Suggestions */
+            <div className="flex flex-wrap items-center gap-2 pt-0.5">
+              <span className="text-xs font-bold text-slate-600 dark:text-slate-300 shrink-0 flex items-center gap-1">
+                <Layers className="w-3.5 h-3.5 text-amber-500" />
+                <span>{isEn ? "College Class Code:" : "Mã lớp chuyên ngành:"}</span>
+              </span>
+              <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
+                <input
+                  type="text"
+                  placeholder="CNTT-K24, QTKD-01..."
+                  value={collegeCustomClass}
+                  onChange={e => {
+                    const val = e.target.value.toUpperCase();
+                    setCollegeCustomClass(val);
+                    setSelectedClass(val);
+                  }}
+                  className="px-3 py-1 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono font-bold uppercase w-36 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleSelectClass(collegeCustomClass)}
+                  className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors cursor-pointer"
+                >
+                  {isEn ? "Load" : "Áp dụng"}
+                </button>
+              </div>
+
+              {/* Sample College Codes */}
+              <div className="flex items-center gap-1 flex-wrap">
+                <span className="text-[10px] text-slate-400 font-semibold">{isEn ? "Samples:" : "Gợi ý:"}</span>
+                {['CNTT-K24', 'QTKD-01', 'DTVT-A', 'DL-K22', 'KT-02'].map(sample => (
+                  <button
+                    key={sample}
+                    type="button"
+                    onClick={() => {
+                      setCollegeCustomClass(sample);
+                      handleSelectClass(sample);
+                    }}
+                    className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold cursor-pointer transition-colors ${
+                      selectedClass === sample
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-emerald-50'
+                    }`}
+                  >
+                    {sample}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 4. Teacher's Friendly Note of the Day */}
@@ -1061,6 +1237,24 @@ export default function StudentPortalPage() {
         )}
 
       </main>
+
+      {/* Student Authentication Modal (CCCD / School ID) */}
+      <StudentAuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        currentProfile={studentProfile}
+        onAuthSuccess={handleAuthSuccess}
+        lang={lang}
+      />
+
+      {/* Student Profile Edit Modal (CCCD, Level, Grades 1-12 & College Codes) */}
+      <StudentProfileEditModal
+        isOpen={isProfileEditOpen}
+        onClose={() => setIsProfileEditOpen(false)}
+        profile={studentProfile}
+        onSave={handleSaveProfile}
+        lang={lang}
+      />
     </div>
   );
 }

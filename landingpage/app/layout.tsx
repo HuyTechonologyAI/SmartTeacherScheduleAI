@@ -16,9 +16,9 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Huy Technology AI", url: "https://github.com/HuyTechonologyAI" }],
   openGraph: {
-    title: "Smart Teacher Schedule AI - Trợ lý Lịch Dạy & Nhắc Việc Giáo Viên",
+    title: "Smart Teacher Schedule AI - Trợ lý Sư Phạm & Lịch Dạy Giáo Viên v1.8.0",
     description:
-      "Tải app v1.6.0 ngay: Hệ sinh thái Đa Nền Tảng (Android, Web, Desktop), Giao diện Sáng/Tối đồng bộ, Soạn giáo án AI chuẩn CV 5512 & CV 2634, Kho tư liệu đối chiếu và Đồng bộ Đám mây 2 chiều.",
+      "Tải app v1.8.0 chính thức: Hệ sinh thái Đa Nền Tảng (Android, Web, Desktop), Sổ điểm & Học bạ điện tử Thông tư 22, Trợ lý AI Soạn bài CV 5512, Đề thi Ma trận đặc tả, Voice AI Tutor và Bản quyền Huy Technology AI.",
     images: [
       {
         url: "/feature_banner.jpg",

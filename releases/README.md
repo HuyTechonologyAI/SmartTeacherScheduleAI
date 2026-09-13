@@ -4,41 +4,41 @@ Chào mừng Quý Thầy/Cô, Ban Giám Hiệu, Học sinh và Phụ huynh đế
 
 ---
 
-## 🚀 Tải về nhanh bản phát hành mới nhất: **v1.7.0 (Kỷ Nguyên Hệ Sinh Thái 4 Cổng Toàn Diện)**
+## 🚀 Tải về nhanh bản phát hành mới nhất: **v1.8.0 (Trí Tuệ Nhân Tạo Sư Phạm & Liên Thông Sổ Điểm Học Bạ Điện Tử)**
 
 | Tệp tin | Định dạng | Dung lượng | Mục đích sử dụng | Tải trực tiếp |
 | :--- | :---: | :---: | :--- | :---: |
-| **`SmartTeacherSchedule_v1.7.0_Release.apk`** | `.apk` | ~15.7 MB | Cài đặt trực tiếp lên điện thoại/máy tính bảng Android (Samsung, Xiaomi, Tecno, OPPO, Vivo...) | [📲 **Tải APK v1.7.0**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.7.0/SmartTeacherSchedule_v1.7.0_Release.apk) |
-| **`SmartTeacherSchedule_v1.7.0_Release.aab`** | `.aab` | ~15.3 MB | Gói Android App Bundle ký số đưa lên Google Play Store | [📦 **Tải AAB v1.7.0**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.7.0/SmartTeacherSchedule_v1.7.0_Release.aab) |
-| **`SmartTeacherSchedule_v1.7.0_Desktop.zip`** | `.zip` | ~610 KB | Bản Desktop chạy trên máy tính Windows, macOS, Linux có menu 4 cổng | [💻 **Tải Desktop**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.7.0/SmartTeacherSchedule_v1.7.0_Desktop.zip) |
+| **`SmartTeacherSchedule_v1.8.0_Release.apk`** | `.apk` | ~15.7 MB | Cài đặt trực tiếp lên điện thoại/máy tính bảng Android (Samsung, Xiaomi, Tecno, OPPO, Vivo...) | [📲 **Tải APK v1.8.0**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.8.0/SmartTeacherSchedule_v1.8.0_Release.apk) |
+| **`SmartTeacherSchedule_v1.8.0_Release.aab`** | `.aab` | ~15.3 MB | Gói Android App Bundle ký số đưa lên Google Play Store | [📦 **Tải AAB v1.8.0**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.8.0/SmartTeacherSchedule_v1.8.0_Release.aab) |
+| **`SmartTeacherSchedule_v1.8.0_Desktop.zip`** | `.zip` | ~610 KB | Bản Desktop chạy trên máy tính Windows, macOS, Linux có menu 4 cổng | [💻 **Tải Desktop**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.8.0/SmartTeacherSchedule_v1.8.0_Desktop.zip) |
 | **`Feature_Graphic_1024x500.png`** | `.png` | ~1.05 MB | Đồ họa nổi bật chuẩn Google Play Store | [🖼️ **Tải Banner**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.6.0/Feature_Graphic_1024x500.png) |
 | **`SmartTeacher_AppIcon_AI.png`** | `.png` | ~483 KB | Biểu tượng nhận diện ứng dụng độ phân giải cao | [🎨 **Tải Icon**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.6.0/SmartTeacher_AppIcon_AI.png) |
 
 ---
 
-## 🌟 Điểm mới nổi bật trên phiên bản v1.7.0:
-1. **Cổng Quản Lý Toàn Trường (/school)**:
-   - Quản trị giáo án chuẩn CV 5512/BGDĐT theo năm học, học kỳ, khoa môn.
-   - Quản lý danh sách nhân sự phân loại 4 khối đối tượng (Cơ hữu, Hợp đồng, Nhân viên, Người lao động).
-   - Lịch công tác BGH, Chi bộ Đảng, Công đoàn, thời khóa biểu và lịch dạy thay/dạy bù.
-   - Quản lý văn bản & hồ sơ pháp quy 4 cấp thẩm quyền ban hành.
-   - Trợ lý AI phân tích rủi ro giáo dục sớm (Early Warning System), quét cân bằng tải giáo viên và tự động xuất biên bản/báo cáo.
-2. **Cổng Học Sinh & Gia Sư AI Sư Phạm (/student)**:
-   - Đăng nhập mã định danh CCCD 12 số, đồng bộ sổ lớp giáo viên, khối 1-12.
-   - Gia sư AI bám sát chương trình GDPT 2018 (SGK Kết nối tri thức, Chân trời sáng tạo, Cánh Diều), chống gian lận và hướng dẫn tư duy từng bước.
-3. **Cổng Phụ Huynh (/parent)**:
-   - Tra cứu con bằng SĐT hoặc CCCD, theo dõi chuyên cần và biểu dương.
-   - Nộp đơn xin nghỉ học trực tuyến, phản ánh kiến nghị với giáo viên.
-   - Cổng thanh toán đóng học phí minh bạch đồng bộ từ trường và giáo viên.
-4. **Đa Ngôn Ngữ & Chế Độ Tối Hoàn Chỉnh**:
-   - Chuyển đổi song ngữ Tiếng Việt 🇻🇳 / English 🇬🇧 trên toàn hệ sinh thái.
-   - Dark Mode & Light Mode đồng bộ theme toàn diện.
+## 🌟 Điểm mới nổi bật trên phiên bản v1.8.0:
+1. **Liên Thông Sổ Điểm & Học Bạ Điện Tử Chuẩn Thông Tư 22/2021/TT-BGDĐT**:
+   - Tự động tính toán điểm trung bình môn ($\text{ĐTB}_{\text{mhk}}$) theo đúng hệ số quy định: ĐGTX (hs 1), ĐGGK (hs 2), ĐGCK (hs 3).
+   - Tự động xếp loại học tập và rèn luyện 4 mức độ: Tốt, Khá, Đạt, Chưa đạt.
+   - Xuất sổ điểm chuẩn Microsoft Excel (`.xlsx`) cho Giáo viên.
+   - Xuất Phiếu liên lạc / Học bạ điện tử chuẩn A4 in ấn / PDF cho Phụ huynh.
+   - Xuất Báo cáo chất lượng giáo dục chuẩn văn bản hành chính (`.doc`) gửi Phòng/Sở GD&ĐT cho Nhà trường.
+2. **Bộ Công Cụ Trí Tuệ Nhân Tạo Sư Phạm Thế Hệ Mới (Next-Gen AI)**:
+   - **Trợ lý AI Soạn Đề Thi Chuẩn Ma Trận Đặc Tả**: Sinh đề 15 phút, 1 tiết, học kỳ với ma trận 4 mức độ tư duy kèm đáp án và thang điểm chi tiết.
+   - **Gia Sư Giọng Nói AI (Voice AI Tutor)**: Hỗ trợ học sinh luyện phát âm tiếng Anh chuẩn ngữ âm và nghe hướng dẫn giải bài bằng giọng tiếng Việt thân thiện.
+   - **Semantic Caching & Token Economy**: Tối ưu 100% thời gian phản hồi và chi phí token cho các câu hỏi trùng lặp.
+3. **Quản Lý & Điều Chỉnh Bộ Lọc Môn Học Linh Hoạt**:
+   - Cho phép giáo viên đổi tên môn học trực tiếp, tự động cập nhật hàng loạt toàn bộ ca dạy trên lịch.
+   - Xoá môn học an toàn (hỗ trợ xoá ca dạy hoặc chuyển sang môn khác) và modal quản lý danh mục môn tập trung.
+4. **Kiến Trúc Lưu Trữ Sức Chứa Hàng Gigabyte (IndexedDB Storage Engine)**:
+   - Thay thế triệt để giới hạn 5MB của LocalStorage bằng IndexedDB, giải quyết hoàn toàn lỗi `QuotaExceededError`.
+   - Cơ chế phát hiện và giải quyết xung đột dữ liệu ngoại tuyến (Offline Concurrency Conflict Resolver).
 
 ---
 
 ## 🔗 Liên kết chính thức:
 - 🏷️ **GitHub Releases:** [https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases)
-- 📌 **Bản phát hành v1.7.0:** [https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/tag/v1.7.0](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/tag/v1.7.0)
+- 📌 **Bản phát hành v1.8.0:** [https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/tag/v1.8.0](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/tag/v1.8.0)
 - 🌐 **Hệ sinh thái Web / PWA:**
   - 🏛️ Cổng Trường: [https://gvcncdsai.io.vn/school](https://gvcncdsai.io.vn/school)
   - 👨‍🏫 Cổng Giáo Viên: [https://gvcncdsai.io.vn/app](https://gvcncdsai.io.vn/app)

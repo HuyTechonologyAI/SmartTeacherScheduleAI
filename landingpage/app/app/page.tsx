@@ -38,6 +38,7 @@ import TeacherAuthModal from '@/components/profile/TeacherAuthModal';
 import StorageDiagnosticsModal from '@/components/storage/StorageDiagnosticsModal';
 import MergeConflictModal from '@/components/sync/MergeConflictModal';
 import ExamSpecificationModal from '@/components/ai/ExamSpecificationModal';
+import ClassGradebookModal from '@/components/gradebook/ClassGradebookModal';
 import { detectAndResolveEventConflicts, ConflictItem } from '@/lib/conflictResolver';
 import { dbGet, dbSet, dbRemove } from '@/lib/storageEngine';
 import { Language, getStoredLanguage, saveStoredLanguage, t } from './i18n';
@@ -973,6 +974,7 @@ export default function UnifiedTeacherScheduleApp() {
   const [examResult, setExamResult] = useState<ExamMatrixData | null>(null);
   const [examIsGenerating, setExamIsGenerating] = useState(false);
   const [isExamSpecModalOpen, setIsExamSpecModalOpen] = useState(false);
+  const [isClassGradebookOpen, setIsClassGradebookOpen] = useState(false);
 
   // AI Chat States
   const [chatMessages, setChatMessages] = useState<Array<{
@@ -5041,6 +5043,15 @@ export default function UnifiedTeacherScheduleApp() {
                     <div className="pt-2">
                       <button
                         type="button"
+                        onClick={() => setIsClassGradebookOpen(true)}
+                        className="w-full mb-2 py-3 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs sm:text-sm shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98"
+                      >
+                        <FileSpreadsheet className="w-4 h-4 text-emerald-200" />
+                        <span>📊 Sổ Điểm & Học Bạ Điện Tử (Thông Tư 22) - Tự Động Tính ĐTB & Xuất Excel (.xlsx)</span>
+                      </button>
+
+                      <button
+                        type="button"
                         onClick={() => setIsExamSpecModalOpen(true)}
                         className="w-full mb-2 py-3 rounded-xl bg-gradient-to-r from-purple-700 via-indigo-600 to-pink-600 hover:from-purple-600 hover:to-indigo-500 text-white font-black text-xs sm:text-sm shadow-lg shadow-purple-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98"
                       >
@@ -8743,6 +8754,15 @@ export default function UnifiedTeacherScheduleApp() {
         defaultTopic={examTopic}
         defaultSubject={examSubject}
         defaultGrade={examGrade}
+        isEn={lang === 'en'}
+      />
+
+      {/* Class Gradebook & Transcripts Modal (Circular 22) */}
+      <ClassGradebookModal
+        isOpen={isClassGradebookOpen}
+        onClose={() => setIsClassGradebookOpen(false)}
+        className="Lớp 3A1"
+        subjectName={examSubject || 'Toán học'}
         isEn={lang === 'en'}
       />
 

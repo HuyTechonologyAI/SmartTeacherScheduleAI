@@ -43,6 +43,11 @@ import {
 } from 'lucide-react';
 import { Language, getStoredLanguage, saveStoredLanguage } from '../app/i18n';
 import { getStoredStudentProfile, StudentProfile } from '../student/studentProfileData';
+import {
+  StudentComprehensiveReportCard,
+  getStudentReportCard,
+  downloadReportCardHtml
+} from '@/lib/gradebookEngine';
 
 export interface StudentInfo {
   id: string;
@@ -213,7 +218,8 @@ export default function ParentPortalPage() {
   const [syncCode, setSyncCode] = useState<string>('');
   const [parentPhone, setParentPhone] = useState<string>('0961364600');
   const [studentCode, setStudentCode] = useState<string>('001208012345');
-  const [activeTab, setActiveTab] = useState<'overview' | 'attendance' | 'schedule' | 'leave_requests' | 'feedback' | 'fees' | 'notices'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'attendance' | 'schedule' | 'leave_requests' | 'feedback' | 'fees' | 'notices' | 'grades'>('overview');
+  const [reportCard, setReportCard] = useState<StudentComprehensiveReportCard | null>(null);
 
   // Dữ liệu học sinh & con cái
   const [student, setStudent] = useState<StudentInfo | null>(DEFAULT_PARENT_STUDENT);
@@ -317,6 +323,7 @@ export default function ParentPortalPage() {
       setLang(savedLang);
 
       setLeaveDate(todayStr);
+      getStudentReportCard(studentCode).then(card => setReportCard(card));
 
       // Nạp hồ sơ học sinh cục bộ nếu có
       const localSt = getStoredStudentProfile();
@@ -1118,6 +1125,7 @@ export default function ParentPortalPage() {
                 { id: 'overview' as const, label: isEn ? 'Overview 📊' : 'Tổng quan 📊', show: true },
                 { id: 'schedule' as const, label: isEn ? 'Timetable 📅' : 'Thời khóa biểu 📅', show: true },
                 { id: 'attendance' as const, label: isEn ? 'Attendance 📋' : 'Sổ Chuyên Cần 📋', show: true },
+                { id: 'grades' as const, label: isEn ? 'Gradebook & Transcripts 📊' : 'Sổ Điểm & Học Bạ 📊', show: true },
                 { id: 'leave_requests' as const, label: `${isEn ? 'Leave Requests 📝' : 'Đơn Xin Nghỉ 📝'} (${leaveRequests.length})`, show: true },
                 { id: 'feedback' as const, label: `${isEn ? 'Inquiries & Feedback 💬' : 'Ý Kiến & Kiến Nghị 💬'} (${feedbackList.length})`, show: true },
                 // LƯU Ý: Cổng thanh toán chỉ hiển thị khi có thông báo / cập nhật phí từ giáo viên hoặc nhà trường!

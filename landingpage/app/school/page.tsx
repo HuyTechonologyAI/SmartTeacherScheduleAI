@@ -68,13 +68,19 @@ import {
   getStoredFacilities
 } from './schoolManagementData';
 import SchoolAiAnalyticsAssistant from '@/components/school/SchoolAiAnalyticsAssistant';
+import {
+  SchoolGradeStatistics,
+  getSchoolWideGradeStatistics,
+  generateOfficialDepartmentReportDoc
+} from '@/lib/gradebookEngine';
 
 export default function SchoolManagementPage() {
   const [lang, setLang] = useState<Language>('vi');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   // Active Main Tab
-  const [activeTab, setActiveTab] = useState<'plans' | 'staff' | 'schedule' | 'documents' | 'sync' | 'ai_analytics' | 'classes' | 'facilities'>('plans');
+  const [activeTab, setActiveTab] = useState<'plans' | 'staff' | 'schedule' | 'documents' | 'sync' | 'ai_analytics' | 'classes' | 'facilities' | 'academic_records'>('plans');
+  const [gradeStats, setGradeStats] = useState<SchoolGradeStatistics | null>(null);
 
   // Dữ liệu quản trị nhà trường
   const [staffList, setStaffList] = useState<TeacherStaffItem[]>([]);
@@ -147,6 +153,7 @@ export default function SchoolManagementPage() {
       setLegalDocuments(getStoredLegalDocuments());
       setClassList(getStoredSchoolClasses());
       setFacilities(getStoredFacilities());
+      getSchoolWideGradeStatistics().then(s => setGradeStats(s));
     } catch (e) {
       console.error('Error loading school management data:', e);
     }
@@ -510,7 +517,8 @@ export default function SchoolManagementPage() {
             { id: 'sync' as const, label: isEn ? "Unified Sync Hub 🔄" : "Đồng Bộ 4 Cổng 🔄" },
             { id: 'ai_analytics' as const, label: isEn ? "AI Risk Analytics 🤖✨" : "AI Phân Tích & Cảnh Báo 🤖✨" },
             { id: 'classes' as const, label: isEn ? "Classes & Homeroom 🏫" : "Lớp Học & Phân Công GVCN 🏫" },
-            { id: 'facilities' as const, label: isEn ? "Smart Facilities 🔬" : "Phòng Học Chức Năng 🔬" }
+            { id: 'facilities' as const, label: isEn ? "Smart Facilities 🔬" : "Phòng Học Chức Năng 🔬" },
+            { id: 'academic_records' as const, label: isEn ? "Gradebooks & Dept Reports 📊" : "Sổ Điểm & Báo Cáo Sở 📊" }
           ].map(tab => (
             <button
               key={tab.id}

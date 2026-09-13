@@ -19,7 +19,8 @@ import {
   LogIn, 
   LogOut, 
   Edit3,
-  Globe
+  Globe,
+  Settings
 } from 'lucide-react';
 import { Language, t } from '@/app/app/i18n';
 
@@ -48,6 +49,7 @@ interface EduVietHeaderProps {
   onOpenProfile?: () => void;
   onOpenLogin?: () => void;
   onLogout?: () => void;
+  onOpenSettings?: () => void;
 }
 
 export default function EduVietHeader({
@@ -74,7 +76,8 @@ export default function EduVietHeader({
   onToggleLanguage,
   onOpenProfile,
   onOpenLogin,
-  onLogout
+  onLogout,
+  onOpenSettings
 }: EduVietHeaderProps) {
   const [searchVal, setSearchVal] = useState('');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -279,6 +282,25 @@ export default function EduVietHeader({
                           </div>
                           <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800">
                             {lang === 'vi' ? '🇻🇳 Tiếng Việt' : '🇬🇧 English'}
+                          </span>
+                        </button>
+                      )}
+
+                      {onOpenSettings && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            onOpenSettings();
+                          }}
+                          className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer text-left"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Settings className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                            <span>{lang === 'vi' ? 'Cài đặt & Gói cước' : 'Settings & Plans'}</span>
+                          </div>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 font-bold border border-rose-200 dark:border-rose-800">
+                            v1.8.0
                           </span>
                         </button>
                       )}

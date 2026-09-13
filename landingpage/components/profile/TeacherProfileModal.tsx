@@ -28,6 +28,7 @@ interface TeacherProfileModalProps {
   profile: TeacherProfile;
   onSaveProfile: (updated: TeacherProfile) => void;
   lang?: Language;
+  onOpenSettings?: () => void;
 }
 
 export default function TeacherProfileModal({
@@ -35,7 +36,8 @@ export default function TeacherProfileModal({
   onClose,
   profile,
   onSaveProfile,
-  lang = 'vi'
+  lang = 'vi',
+  onOpenSettings
 }: TeacherProfileModalProps) {
   const [formData, setFormData] = useState<TeacherProfile>(profile);
   const [newSchoolInput, setNewSchoolInput] = useState('');
@@ -518,14 +520,28 @@ export default function TeacherProfileModal({
                 Bản quyền sở hữu © 2026 Huy Technology AI • Hotline/Zalo: 0961364600
               </p>
             </div>
-            <a
-              href="https://zalo.me/0961364600"
-              target="_blank"
-              rel="noreferrer"
-              className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline shrink-0"
-            >
-              Hỗ trợ 24/7
-            </a>
+            <div className="flex items-center gap-2 shrink-0">
+              {onOpenSettings && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenSettings();
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-[11px] font-bold transition-all cursor-pointer"
+                >
+                  Gói Cước & Bản Quyền
+                </button>
+              )}
+              <a
+                href="https://zalo.me/0961364600"
+                target="_blank"
+                rel="noreferrer"
+                className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline shrink-0"
+              >
+                Hỗ trợ 24/7
+              </a>
+            </div>
           </div>
 
           {/* Footer Actions */}

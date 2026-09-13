@@ -447,6 +447,13 @@ export default function UnifiedTeacherScheduleApp() {
       setTeacherProfile(storedProfile);
       const storedLang = getStoredLanguage();
       setLang(storedLang);
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tab = urlParams.get('tab');
+        if (tab === 'settings' || tab === 'pricing' || tab === 'caidat' || tab === 'goicuoc') {
+          setActiveTab('settings');
+        }
+      }
     } catch (e) {
       console.error(e);
     }
@@ -2890,7 +2897,9 @@ export default function UnifiedTeacherScheduleApp() {
               else if (actionId === 'attendance') setActiveTab('roster');
               else if (actionId === 'share_portal') setShowPortalShareModal(true);
               else if (actionId === 'profile') setShowTeacherProfileModal(true);
+              else if (actionId === 'settings') setActiveTab('settings');
             }}
+            onOpenSettings={() => setActiveTab('settings')}
             onOpenSync={() => setShowSyncModal(true)}
             onOpenPortalShare={() => setShowPortalShareModal(true)}
             onOpenNotifications={() => setShowLeaveRequestsModal(true)}
@@ -9490,6 +9499,10 @@ export default function UnifiedTeacherScheduleApp() {
         onClose={() => setShowTeacherProfileModal(false)}
         profile={teacherProfile}
         lang={lang}
+        onOpenSettings={() => {
+          setShowTeacherProfileModal(false);
+          setActiveTab('settings');
+        }}
         onSaveProfile={(updated) => {
           setTeacherProfile(updated);
           saveTeacherProfile(updated);

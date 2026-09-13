@@ -47,6 +47,7 @@ interface EduVietHomeViewProps {
   onToggleTheme?: () => void;
   lang?: Language;
   onToggleLanguage?: () => void;
+  onOpenSettings?: () => void;
 }
 
 export default function EduVietHomeView({
@@ -83,7 +84,8 @@ export default function EduVietHomeView({
   theme = 'light',
   onToggleTheme,
   lang = 'vi',
-  onToggleLanguage
+  onToggleLanguage,
+  onOpenSettings
 }: EduVietHomeViewProps) {
   const [activeNavTab, setActiveNavTab] = useState<EduVietNavTab>('home');
 
@@ -99,8 +101,8 @@ export default function EduVietHomeView({
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#090D16] text-slate-900 dark:text-slate-100 flex flex-col selection:bg-rose-100 selection:text-rose-900 pb-16 transition-colors duration-200">
-      {/* 1. Header (Brand EduViet + Slogan + Search bar + Actions) */}
+    <div className="w-full min-h-screen bg-[#F8FAFC] dark:bg-[#090D16] flex flex-col font-sans transition-colors duration-200 pb-20">
+      {/* 1. Header (Sticky) */}
       <EduVietHeader
         userName={teacherName}
         userAvatar={teacherAvatar}
@@ -124,6 +126,7 @@ export default function EduVietHomeView({
         onToggleTheme={onToggleTheme}
         lang={lang}
         onToggleLanguage={onToggleLanguage}
+        onOpenSettings={onOpenSettings || (() => onSelectAction('settings'))}
       />
 
       {/* Main Container */}

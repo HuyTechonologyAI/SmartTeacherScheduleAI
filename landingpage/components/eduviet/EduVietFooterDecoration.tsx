@@ -20,8 +20,11 @@ export default function EduVietFooterDecoration() {
             <span>Giáo dục kiến tạo con người Việt Nam</span>
             <Heart className="w-4 h-4 text-rose-500 fill-rose-500 animate-pulse inline" />
           </p>
-          <p className="text-[10px] font-semibold text-emerald-700 tracking-wider uppercase">
-            Hệ sinh thái Giáo dục Thông minh 4.0
+          <p className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 tracking-wider uppercase">
+            Hệ sinh thái Giáo dục Thông minh 4.0 • v1.8.0 Release
+          </p>
+          <p className="text-[10px] text-slate-500 dark:text-slate-400">
+            Bản quyền © 2026 Huy Technology AI • Hotline/Zalo: 0961364600
           </p>
         </div>
       </div>

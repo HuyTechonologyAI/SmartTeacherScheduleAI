@@ -46,7 +46,11 @@ fun SettingsScreen(
     onSaveTelegramCreds: (token: String, chatId: String) -> Unit,
     geminiApiKey: String,
     onSaveGeminiApiKey: (String) -> Unit,
-    onSyncGoogleCalendar: () -> Unit = {}
+    onSyncGoogleCalendar: () -> Unit = {},
+    currentThemeMode: String = "system",
+    onThemeModeChange: (String) -> Unit = {},
+    currentLanguage: String = "vi",
+    onLanguageChange: (String) -> Unit = {}
 ) {
     var showGoogleCalendarDialog by remember { mutableStateOf(false) }
     var showTelegramDialog by remember { mutableStateOf(false) }
@@ -63,6 +67,7 @@ fun SettingsScreen(
     var showEditSyncCodeDialog by remember { mutableStateOf(false) }
     var showPlatformGuide by remember { mutableStateOf<String?>(null) }
     var showEditProfileDialog by remember { mutableStateOf(false) }
+    var showSubscriptionTierDialog by remember { mutableStateOf<String?>(null) }
 
     val profilePref = context.getSharedPreferences("smart_teacher_profile_v1", Context.MODE_PRIVATE)
     var teacherName by remember { mutableStateOf(profilePref.getString("name", "Thầy/Cô Giáo Viên") ?: "Thầy/Cô Giáo Viên") }
@@ -70,9 +75,22 @@ fun SettingsScreen(
     var departmentName by remember { mutableStateOf(profilePref.getString("department", "Tổ Khoa Học Tự Nhiên & Công Nghệ") ?: "Tổ Khoa Học Tự Nhiên & Công Nghệ") }
     var teacherPhone by remember { mutableStateOf(profilePref.getString("phone", "0961364600") ?: "0961364600") }
     var teacherEmail by remember { mutableStateOf(profilePref.getString("email", "giaovien@moet.edu.vn") ?: "giaovien@moet.edu.vn") }
+    var bioQuote by remember { mutableStateOf(profilePref.getString("bioQuote", "Mỗi giờ lên lớp là một hành trình gieo hạt yêu thương!") ?: "Mỗi giờ lên lớp là một hành trình gieo hạt yêu thương!") }
+    var teacherGender by remember { mutableStateOf(profilePref.getString("gender", "Nam") ?: "Nam") }
     var newSyncCodeInput by remember { mutableStateOf("") }
     var lastSyncTime by remember { mutableStateOf(CloudSyncManager.getLastSyncTime(context)) }
     var autoSyncEnabled by remember { mutableStateOf(CloudSyncManager.isAutoSyncEnabled(context)) }
+
+    fun refreshProfileState() {
+        val p = context.getSharedPreferences("smart_teacher_profile_v1", Context.MODE_PRIVATE)
+        teacherName = p.getString("name", "Thầy/Cô Giáo Viên") ?: "Thầy/Cô Giáo Viên"
+        schoolName = p.getString("school", "Trường THPT / THCS") ?: "Trường THPT / THCS"
+        departmentName = p.getString("department", "Tổ Khoa Học Tự Nhiên & Công Nghệ") ?: "Tổ Khoa Học Tự Nhiên & Công Nghệ"
+        teacherPhone = p.getString("phone", "0961364600") ?: "0961364600"
+        teacherEmail = p.getString("email", "giaovien@moet.edu.vn") ?: "giaovien@moet.edu.vn"
+        bioQuote = p.getString("bioQuote", "Mỗi giờ lên lớp là một hành trình gieo hạt yêu thương!") ?: "Mỗi giờ lên lớp là một hành trình gieo hạt yêu thương!"
+        teacherGender = p.getString("gender", "Nam") ?: "Nam"
+    }
 
     Scaffold(
         topBar = {
@@ -93,46 +111,185 @@ fun SettingsScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
             ) {
-                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.weight(1f)) {
                             Box(
                                 modifier = Modifier
-                                    .size(44.dp)
+                                    .size(48.dp)
                                     .clip(CircleShape)
                                     .background(MaterialTheme.colorScheme.primary),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = teacherName.takeLast(1),
+                                    text = if (teacherName.isNotBlank()) teacherName.takeLast(1) else "G",
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 18.sp,
+                                    fontSize = 20.sp,
                                     color = Color.White
                                 )
                             }
-                            Column {
-                                Text(teacherName, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                                Text(schoolName, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
-                                Text(departmentName, fontSize = 10.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text(teacherName, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                    Surface(shape = RoundedCornerShape(4.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)) {
+                                        Text(teacherGender, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp))
+                                    }
+                                }
+                                Text(schoolName, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f))
+                                Text(departmentName, fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                             }
                         }
 
                         OutlinedButton(
                             onClick = { showEditProfileDialog = true },
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            modifier = Modifier.height(30.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            modifier = Modifier.height(32.dp),
                             shape = RoundedCornerShape(8.dp)
                         ) {
                             Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(12.dp))
-                            Spacer(modifier = Modifier.width(3.dp))
-                            Text("Sửa", fontSize = 11.sp)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Sửa hồ sơ", fontSize = 11.sp)
+                        }
+                    }
+
+                    HorizontalDivider(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("📞 $teacherPhone", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                        Text("✉️ $teacherEmail", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                    }
+
+                    if (bioQuote.isNotBlank()) {
+                        Text(
+                            "\"$bioQuote\"",
+                            fontSize = 11.sp,
+                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                        )
+                    }
+                }
+            }
+
+            // Group: GIAO DIỆN & NGÔN NGỮ
+            SettingsGroupHeader("GIAO DIỆN & NGÔN NGỮ")
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+            ) {
+                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // 1. Chế độ giao diện (Sáng / Tối / Hệ thống)
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(
+                                if (currentThemeMode == "dark") Icons.Default.DarkMode else if (currentThemeMode == "light") Icons.Default.LightMode else Icons.Default.SettingsBrightness,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Column {
+                                Text("Chế độ giao diện (Sáng / Tối)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Text("Tùy biến màu sắc khi làm việc ban ngày hoặc ban đêm", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                            }
+                        }
+
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            // Sáng
+                            Surface(
+                                modifier = Modifier.weight(1f).clickable { onThemeModeChange("light") },
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (currentThemeMode == "light") MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, if (currentThemeMode == "light") MaterialTheme.colorScheme.primary else Color.Transparent)
+                            ) {
+                                Row(modifier = Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.LightMode, contentDescription = null, modifier = Modifier.size(14.dp), tint = if (currentThemeMode == "light") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Sáng", fontSize = 11.sp, fontWeight = if (currentThemeMode == "light") FontWeight.Bold else FontWeight.Normal)
+                                }
+                            }
+                            // Tối
+                            Surface(
+                                modifier = Modifier.weight(1f).clickable { onThemeModeChange("dark") },
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (currentThemeMode == "dark") MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, if (currentThemeMode == "dark") MaterialTheme.colorScheme.primary else Color.Transparent)
+                            ) {
+                                Row(modifier = Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.DarkMode, contentDescription = null, modifier = Modifier.size(14.dp), tint = if (currentThemeMode == "dark") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Tối", fontSize = 11.sp, fontWeight = if (currentThemeMode == "dark") FontWeight.Bold else FontWeight.Normal)
+                                }
+                            }
+                            // Hệ thống
+                            Surface(
+                                modifier = Modifier.weight(1f).clickable { onThemeModeChange("system") },
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (currentThemeMode == "system") MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, if (currentThemeMode == "system") MaterialTheme.colorScheme.primary else Color.Transparent)
+                            ) {
+                                Row(modifier = Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.SettingsBrightness, contentDescription = null, modifier = Modifier.size(14.dp), tint = if (currentThemeMode == "system") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Hệ thống", fontSize = 11.sp, fontWeight = if (currentThemeMode == "system") FontWeight.Bold else FontWeight.Normal)
+                                }
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+
+                    // 2. Ngôn ngữ hiển thị
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(
+                                Icons.Default.Translate,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Column {
+                                Text("Ngôn ngữ hiển thị (Language)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Text("Lựa chọn ngôn ngữ sử dụng trên ứng dụng", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                            }
+                        }
+
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            // Tiếng Việt
+                            Surface(
+                                modifier = Modifier.weight(1f).clickable {
+                                    onLanguageChange("vi")
+                                    Toast.makeText(context, "Đã chuyển sang Tiếng Việt", Toast.LENGTH_SHORT).show()
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (currentLanguage == "vi") MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, if (currentLanguage == "vi") MaterialTheme.colorScheme.primary else Color.Transparent)
+                            ) {
+                                Row(modifier = Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                                    Text("🇻🇳 Tiếng Việt", fontSize = 12.sp, fontWeight = if (currentLanguage == "vi") FontWeight.Bold else FontWeight.Normal)
+                                }
+                            }
+                            // English
+                            Surface(
+                                modifier = Modifier.weight(1f).clickable {
+                                    onLanguageChange("en")
+                                    Toast.makeText(context, "Switched to English", Toast.LENGTH_SHORT).show()
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (currentLanguage == "en") MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, if (currentLanguage == "en") MaterialTheme.colorScheme.primary else Color.Transparent)
+                            ) {
+                                Row(modifier = Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                                    Text("🇬🇧 English", fontSize = 12.sp, fontWeight = if (currentLanguage == "en") FontWeight.Bold else FontWeight.Normal)
+                                }
+                            }
                         }
                     }
                 }
@@ -253,14 +410,14 @@ fun SettingsScreen(
                         icon = Icons.Default.Sync,
                         onClick = { showGoogleCalendarDialog = true }
                     )
-                    Divider()
+                    HorizontalDivider()
                     SettingsItem(
                         title = "Telegram Bot",
                         subtitle = if (telegramEnabled) "Đang hoạt động (Gửi nhắc lịch tự động)" else "Chưa bật cấu hình",
                         icon = Icons.Default.Send,
                         onClick = { showTelegramDialog = true }
                     )
-                    Divider()
+                    HorizontalDivider()
                     SettingsItem(
                         title = "Zalo Official Account",
                         subtitle = "Kiến trúc tích hợp qua Zalo OpenAPI chính thức",
@@ -537,60 +694,82 @@ fun SettingsScreen(
 
             // Group: BẢNG GÓI CƯỚC & DỊCH VỤ
             SettingsGroupHeader("BẢNG GÓI CƯỚC & DỊCH VỤ")
+            Text(
+                "💡 Nhấp vào từng gói cước bên dưới để xem chi tiết tính năng & bảng giá:",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 // Tier 1: Free
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showSubscriptionTierDialog = "free" },
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                 ) {
                     Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Column {
-                            Text("Gói Cá Nhân (Miễn Phí)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text("Gói Cá Nhân (Miễn Phí)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Surface(shape = RoundedCornerShape(4.dp), color = Color(0xFF10B981).copy(alpha = 0.15f)) {
+                                    Text("0 đ", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFF059669), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                }
+                            }
                             Text("Thời khóa biểu, Báo thức chuông lớn, Điểm danh cơ bản", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                         }
-                        Text("0 đ", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = Color(0xFF059669))
+                        Text("Xem chi tiết ➔", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF059669))
                     }
                 }
 
                 // Tier 2: Pro
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showSubscriptionTierDialog = "pro" },
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF8B5CF6).copy(alpha = 0.4f))
                 ) {
                     Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text("Gói Giáo Viên Pro (VIP)", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF7C3AED))
                                 Surface(shape = RoundedCornerShape(4.dp), color = Color(0xFF8B5CF6).copy(alpha = 0.15f)) {
                                     Text("Khuyên Dùng", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFF7C3AED), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
                                 }
                             }
-                            Text("Full AI Giáo án 5512, Đề thi TT 22, Voice AI Tutor", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                            Text("Full AI Giáo án 5512, Đề thi TT 22, Voice AI Tutor, Sổ điểm TT 22", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                         }
-                        Text("199.000 đ/năm", fontWeight = FontWeight.ExtraBold, fontSize = 13.sp, color = Color(0xFF7C3AED))
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text("59k/tháng", fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, color = Color(0xFF7C3AED))
+                            Text("Xem chi tiết ➔", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF7C3AED))
+                        }
                     }
                 }
 
                 // Tier 3: School
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showSubscriptionTierDialog = "school" },
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF0284C7).copy(alpha = 0.4f))
                 ) {
                     Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text("Gói Toàn Trường (School Campus)", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF0284C7))
-                            Surface(shape = RoundedCornerShape(6.dp), color = Color(0xFF0284C7).copy(alpha = 0.15f)) {
-                                Text("Liên Hệ Nhận Bảng Phí", fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF0284C7), modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text("Gói Toàn Trường (School Campus)", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF0284C7))
+                                Surface(shape = RoundedCornerShape(6.dp), color = Color(0xFF0284C7).copy(alpha = 0.15f)) {
+                                    Text("BGH & Sở", fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF0284C7), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                }
                             }
+                            Text("Xem chi tiết ➔", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF0284C7))
                         }
                         Text(
-                            "Chi phí linh hoạt tính theo tổng số lượng User (Giáo viên & Học sinh toàn trường), không áp dụng giá cố định.",
+                            "Liên hệ nhận bảng phí theo số lượng User toàn trường. Kết nối 4 cổng: Nhà trường - Giáo viên - Học sinh - Phụ huynh.",
                             fontSize = 10.sp,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
                         )
@@ -675,6 +854,7 @@ fun SettingsScreen(
                                 isSyncing = false
                                 if (result.isSuccess) {
                                     lastSyncTime = CloudSyncManager.getLastSyncTime(context)
+                                    refreshProfileState()
                                     Toast.makeText(context, result.getOrNull() ?: "Đồng bộ đám mây thành công!", Toast.LENGTH_LONG).show()
                                 } else {
                                     Toast.makeText(context, "Lỗi đồng bộ: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
@@ -703,7 +883,8 @@ fun SettingsScreen(
                                     isSyncing = false
                                     if (result.isSuccess) {
                                         lastSyncTime = CloudSyncManager.getLastSyncTime(context)
-                                        Toast.makeText(context, result.getOrNull() ?: "Đã nhận lịch từ Máy tính thành công!", Toast.LENGTH_LONG).show()
+                                        refreshProfileState()
+                                        Toast.makeText(context, result.getOrNull() ?: "Đã nhận lịch & hồ sơ từ Máy tính thành công!", Toast.LENGTH_LONG).show()
                                     } else {
                                         Toast.makeText(context, "Lỗi tải lịch: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
                                     }
@@ -792,7 +973,7 @@ fun SettingsScreen(
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
-                    Divider()
+                    HorizontalDivider()
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
@@ -1062,17 +1243,31 @@ fun SettingsScreen(
         var tempDept by remember { mutableStateOf(departmentName) }
         var tempPhone by remember { mutableStateOf(teacherPhone) }
         var tempEmail by remember { mutableStateOf(teacherEmail) }
+        var tempBio by remember { mutableStateOf(bioQuote) }
+        var tempGender by remember { mutableStateOf(teacherGender) }
 
         AlertDialog(
             onDismissRequest = { showEditProfileDialog = false },
-            title = { Text("Hồ Sơ Giáo Viên Chủ Nhiệm", fontWeight = FontWeight.Bold) },
+            title = { Text("Chỉnh Sửa Hồ Sơ Giáo Viên", fontWeight = FontWeight.Bold, fontSize = 16.sp) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(value = tempName, onValueChange = { tempName = it }, label = { Text("Họ và Tên") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(value = tempSchool, onValueChange = { tempSchool = it }, label = { Text("Trường học công tác") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(value = tempDept, onValueChange = { tempDept = it }, label = { Text("Tổ bộ môn giảng dạy") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = tempPhone, onValueChange = { tempPhone = it }, label = { Text("Số điện thoại") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = tempPhone, onValueChange = { tempPhone = it }, label = { Text("Số điện thoại liên hệ") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(value = tempEmail, onValueChange = { tempEmail = it }, label = { Text("Email liên hệ") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = tempBio, onValueChange = { tempBio = it }, label = { Text("Châm ngôn sư phạm") }, maxLines = 2, modifier = Modifier.fillMaxWidth())
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("Giới tính:", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        listOf("Nam", "Nữ", "Khác").forEach { g ->
+                            FilterChip(
+                                selected = tempGender == g,
+                                onClick = { tempGender = g },
+                                label = { Text(g, fontSize = 11.sp) }
+                            )
+                        }
+                    }
                 }
             },
             confirmButton = {
@@ -1083,15 +1278,26 @@ fun SettingsScreen(
                         departmentName = tempDept.trim()
                         teacherPhone = tempPhone.trim()
                         teacherEmail = tempEmail.trim()
+                        bioQuote = tempBio.trim()
+                        teacherGender = tempGender
                         profilePref.edit()
                             .putString("name", teacherName)
                             .putString("school", schoolName)
                             .putString("department", departmentName)
                             .putString("phone", teacherPhone)
                             .putString("email", teacherEmail)
+                            .putString("bioQuote", bioQuote)
+                            .putString("gender", teacherGender)
+                            .putLong("updatedAt", System.currentTimeMillis())
                             .apply()
                         showEditProfileDialog = false
                         Toast.makeText(context, "Đã lưu hồ sơ giáo viên!", Toast.LENGTH_SHORT).show()
+
+                        if (autoSyncEnabled) {
+                            coroutineScope.launch {
+                                CloudSyncManager.pushToCloud(context)
+                            }
+                        }
                     }
                 ) {
                     Text("Lưu Hồ Sơ")
@@ -1100,6 +1306,102 @@ fun SettingsScreen(
             dismissButton = {
                 TextButton(onClick = { showEditProfileDialog = false }) {
                     Text("Hủy")
+                }
+            }
+        )
+    }
+
+    if (showSubscriptionTierDialog != null) {
+        val tier = showSubscriptionTierDialog!!
+        AlertDialog(
+            onDismissRequest = { showSubscriptionTierDialog = null },
+            title = {
+                val tTitle = when (tier) {
+                    "free" -> "Gói Cá Nhân (Miễn Phí)"
+                    "pro" -> "Gói Giáo Viên Pro (VIP)"
+                    "school" -> "Gói Toàn Trường (School Campus)"
+                    else -> "Chi Tiết Gói Cước"
+                }
+                Text(tTitle, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+            },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    when (tier) {
+                        "free" -> {
+                            Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFF10B981).copy(alpha = 0.12f), modifier = Modifier.fillMaxWidth()) {
+                                Column(modifier = Modifier.padding(10.dp)) {
+                                    Text("0 đ / Vĩnh Viễn", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = Color(0xFF059669))
+                                    Text("Trải nghiệm trợ lý giảng dạy cơ bản không giới hạn thời gian", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                                }
+                            }
+                            Text("✨ Tính năng bao gồm:", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text("✓ Quản lý thời khóa biểu 288 ca dạy cụ thể trong học kỳ", fontSize = 11.sp)
+                            Text("✓ Báo thức chuông lớn 105dB & nhắc trước giờ vào lớp", fontSize = 11.sp)
+                            Text("✓ Điểm danh học sinh & thi đua nề nếp Kudos cơ bản", fontSize = 11.sp)
+                            Text("✓ Đồng bộ đám mây 2 chiều giữa Điện thoại và Máy tính", fontSize = 11.sp)
+                            Text("✓ Hoạt động ngoại tuyến 100% khi mất mạng với Room DB", fontSize = 11.sp)
+                            Text("✓ Xuất báo cáo Sổ Báo Giảng tuần chuẩn khổ A4", fontSize = 11.sp)
+                        }
+                        "pro" -> {
+                            Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFF8B5CF6).copy(alpha = 0.12f), modifier = Modifier.fillMaxWidth()) {
+                                Column(modifier = Modifier.padding(10.dp)) {
+                                    Text("59.000 đ/tháng • 490.000 đ/năm", fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = Color(0xFF7C3AED))
+                                    Text("Tiết kiệm 35% khi đăng ký theo năm • Tặng 1 tháng VIP", fontSize = 10.sp, color = Color(0xFF7C3AED))
+                                }
+                            }
+                            Text("✨ Toàn bộ quyền lợi Gói Cá Nhân và thêm:", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text("✓ Soạn Kế hoạch bài dạy (Giáo án) chuẩn Công văn 5512 bằng AI", fontSize = 11.sp)
+                            Text("✓ Soạn Đề kiểm tra ma trận & bảng đặc tả chuẩn Thông tư 22", fontSize = 11.sp)
+                            Text("✓ Sổ điểm điện tử Thông tư 22 tự động tính ĐTBmhk & xếp loại Tốt/Khá/Đạt", fontSize = 11.sp)
+                            Text("✓ Trợ lý giọng nói Voice AI sư phạm & giải đáp tình huống tức thì", fontSize = 11.sp)
+                            Text("✓ Xuất Bảng kê giờ dạy & thù lao (PDF/Excel) có chữ ký duyệt", fontSize = 11.sp)
+                            Text("✓ Không giới hạn lưu trữ giáo trình, tài liệu chuyên môn", fontSize = 11.sp)
+                            Text("✓ Hỗ trợ kỹ thuật VIP 24/7 trực tiếp qua Zalo kỹ sư", fontSize = 11.sp)
+                        }
+                        "school" -> {
+                            Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFF0284C7).copy(alpha = 0.12f), modifier = Modifier.fillMaxWidth()) {
+                                Column(modifier = Modifier.padding(10.dp)) {
+                                    Text("Liên Hệ Để Nhận Bảng Phí", fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = Color(0xFF0284C7))
+                                    Text("Tính linh hoạt theo số lượng User toàn trường, không áp giá cố định", fontSize = 10.sp, color = Color(0xFF0284C7))
+                                }
+                            }
+                            Text("✨ Giải pháp số hóa toàn diện cấp Trường / Sở:", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text("✓ Cấp tài khoản quản trị tập trung cho Ban Giám Hiệu & Tổ trưởng chuyên môn", fontSize = 11.sp)
+                            Text("✓ Tự động phân công chuyên môn, xếp thời khóa biểu tự động toàn trường", fontSize = 11.sp)
+                            Text("✓ Kết nối thông suốt 4 Cổng: Nhà Trường - Giáo Viên - Học Sinh - Phụ Huynh", fontSize = 11.sp)
+                            Text("✓ Quản lý học bạ điện tử, sổ điểm điện tử Thông tư 22 toàn diện", fontSize = 11.sp)
+                            Text("✓ Duyệt đơn xin nghỉ học trực tuyến, gửi thông báo tức thời tới phụ huynh", fontSize = 11.sp)
+                            Text("✓ Hỗ trợ triển khai MDM qua Google Workspace for Education", fontSize = 11.sp)
+                            Text("✓ Ký hợp đồng dịch vụ giáo dục, xuất hóa đơn VAT điện tử & đào tạo tập huấn", fontSize = 11.sp)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (tier == "pro" || tier == "school") {
+                            runCatching {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://zalo.me/0961364600"))
+                                context.startActivity(intent)
+                            }
+                        } else {
+                            Toast.makeText(context, "Thầy/Cô đang sử dụng gói trải nghiệm miễn phí!", Toast.LENGTH_SHORT).show()
+                        }
+                        showSubscriptionTierDialog = null
+                    }
+                ) {
+                    val label = when (tier) {
+                        "pro" -> "Nâng Cấp Qua Zalo"
+                        "school" -> "Liên Hệ Báo Phí Qua Zalo"
+                        else -> "Đang Sử Dụng"
+                    }
+                    Text(label)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSubscriptionTierDialog = null }) {
+                    Text("Đóng")
                 }
             }
         )

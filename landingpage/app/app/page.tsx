@@ -1281,7 +1281,8 @@ export default function UnifiedTeacherScheduleApp() {
           deletedStudentIds: getDeletedStudentIds(),
           deletedClassroomIds: getDeletedClassroomIds(),
           purgeTestData: purgeTestData,
-          leaveRequests: getStoredLeaveRequests()
+          leaveRequests: getStoredLeaveRequests(),
+          teacherProfile: getStoredTeacherProfile()
         })
       });
       if (res.ok) {
@@ -1408,6 +1409,23 @@ export default function UnifiedTeacherScheduleApp() {
         if (Array.isArray(data.knowledgeDocs)) {
           mergeKnowledgeDocumentsFromCloud(data.knowledgeDocs, data.deletedKnowledgeDocKeys || []);
           refreshKnowledgeDocs();
+        }
+
+        if (data.teacherProfile && typeof data.teacherProfile === 'object') {
+          const currentProfile = getStoredTeacherProfile();
+          const mergedProfile = {
+            ...currentProfile,
+            ...data.teacherProfile,
+            fullName: data.teacherProfile.fullName || data.teacherProfile.name || currentProfile.fullName,
+            schools: Array.isArray(data.teacherProfile.schools) && data.teacherProfile.schools.length > 0 
+              ? data.teacherProfile.schools 
+              : (data.teacherProfile.school ? [data.teacherProfile.school] : currentProfile.schools),
+            subjects: Array.isArray(data.teacherProfile.subjects) && data.teacherProfile.subjects.length > 0 
+              ? data.teacherProfile.subjects 
+              : (data.teacherProfile.department ? [data.teacherProfile.department] : currentProfile.subjects)
+          };
+          saveTeacherProfile(mergedProfile);
+          setTeacherProfile(mergedProfile);
         }
 
         if (cloudEvents.length > 0) {

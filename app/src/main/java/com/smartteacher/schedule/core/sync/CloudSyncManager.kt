@@ -284,6 +284,27 @@ object CloudSyncManager {
                 add("classrooms", classroomsArray)
                 add("students", studentsArray)
                 add("attendanceRecords", attendanceArray)
+
+                val profilePref = context.getSharedPreferences("smart_teacher_profile_v1", Context.MODE_PRIVATE)
+                val profileObj = JsonObject().apply {
+                    addProperty("id", profilePref.getString("id", "GV-202688"))
+                    addProperty("fullName", profilePref.getString("name", "Thầy/Cô Giáo Viên"))
+                    addProperty("name", profilePref.getString("name", "Thầy/Cô Giáo Viên"))
+                    addProperty("school", profilePref.getString("school", "Trường THPT / THCS"))
+                    addProperty("department", profilePref.getString("department", "Tổ Khoa Học Tự Nhiên & Công Nghệ"))
+                    val schoolsArr = JsonArray().apply { add(profilePref.getString("school", "Trường THPT / THCS")) }
+                    add("schools", schoolsArr)
+                    val subjectsArr = JsonArray().apply { add(profilePref.getString("department", "Tổ Khoa Học Tự Nhiên & Công Nghệ")) }
+                    add("subjects", subjectsArr)
+                    addProperty("phone", profilePref.getString("phone", "0961364600"))
+                    addProperty("email", profilePref.getString("email", "giaovien@moet.edu.vn"))
+                    addProperty("bioQuote", profilePref.getString("bioQuote", "Mỗi giờ lên lớp là một hành trình gieo hạt yêu thương!"))
+                    addProperty("gender", profilePref.getString("gender", "Nam"))
+                    addProperty("birthDate", profilePref.getString("birthDate", "1990-01-01"))
+                    addProperty("avatar", profilePref.getString("avatar", ""))
+                    addProperty("updatedAt", profilePref.getLong("updatedAt", System.currentTimeMillis()))
+                }
+                add("teacherProfile", profileObj)
             }
 
             val requestBody = rootObj.toString().toRequestBody(jsonMediaType)
@@ -409,6 +430,39 @@ object CloudSyncManager {
                     ))
                 }
                 db.attendanceDao().insertRecords(list)
+            }
+
+            val profileObj = jsonObject.getAsJsonObject("teacherProfile")
+            if (profileObj != null) {
+                val profilePref = context.getSharedPreferences("smart_teacher_profile_v1", Context.MODE_PRIVATE)
+                val editor = profilePref.edit()
+                val fName = profileObj.get("fullName")?.asString ?: profileObj.get("name")?.asString
+                if (!fName.isNullOrBlank()) editor.putString("name", fName)
+
+                val schoolsElem = profileObj.get("schools")
+                val sName = if (schoolsElem != null && schoolsElem.isJsonArray && schoolsElem.asJsonArray.size() > 0) {
+                    schoolsElem.asJsonArray.get(0).asString
+                } else {
+                    profileObj.get("school")?.asString
+                }
+                if (!sName.isNullOrBlank()) editor.putString("school", sName)
+
+                val subjectsElem = profileObj.get("subjects")
+                val dName = if (subjectsElem != null && subjectsElem.isJsonArray && subjectsElem.asJsonArray.size() > 0) {
+                    subjectsElem.asJsonArray.get(0).asString
+                } else {
+                    profileObj.get("department")?.asString
+                }
+                if (!dName.isNullOrBlank()) editor.putString("department", dName)
+
+                profileObj.get("phone")?.asString?.let { if (it.isNotBlank()) editor.putString("phone", it) }
+                profileObj.get("email")?.asString?.let { if (it.isNotBlank()) editor.putString("email", it) }
+                profileObj.get("bioQuote")?.asString?.let { if (it.isNotBlank()) editor.putString("bioQuote", it) }
+                profileObj.get("gender")?.asString?.let { if (it.isNotBlank()) editor.putString("gender", it) }
+                profileObj.get("birthDate")?.asString?.let { if (it.isNotBlank()) editor.putString("birthDate", it) }
+                profileObj.get("avatar")?.asString?.let { if (it.isNotBlank()) editor.putString("avatar", it) }
+                editor.putLong("updatedAt", System.currentTimeMillis())
+                editor.apply()
             }
 
             val docsArray = jsonObject.getAsJsonArray("knowledgeDocs") ?: jsonObject.getAsJsonArray("knowledgeDocuments")

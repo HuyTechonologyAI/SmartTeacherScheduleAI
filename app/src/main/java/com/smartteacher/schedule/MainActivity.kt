@@ -56,6 +56,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var aiService: GeminiAIServiceImpl
 
     private var geminiApiKey by mutableStateOf("")
+    private var themeMode by mutableStateOf("system")
+    private var appLanguage by mutableStateOf("vi")
 
     // Runtime Permission Request for Android 13+
     private val requestNotificationPermissionLauncher = registerForActivityResult(
@@ -85,6 +87,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        themeMode = com.smartteacher.schedule.core.theme.ThemeManager.getThemeMode(this)
+        appLanguage = com.smartteacher.schedule.core.language.LanguageManager.getLanguage(this)
+
         database = SmartTeacherDatabase.getInstance(this)
         alarmScheduler = AndroidAlarmScheduler(this)
         aiService = GeminiAIServiceImpl(this) { geminiApiKey }
@@ -103,7 +108,13 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            SmartTeacherScheduleTheme {
+            val isSystemDark = androidx.compose.foundation.isSystemInDarkTheme()
+            val isDark = when (themeMode) {
+                com.smartteacher.schedule.core.theme.ThemeManager.MODE_DARK -> true
+                com.smartteacher.schedule.core.theme.ThemeManager.MODE_LIGHT -> false
+                else -> isSystemDark
+            }
+            SmartTeacherScheduleTheme(darkTheme = isDark) {
                 val navController = rememberNavController()
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route
@@ -338,7 +349,17 @@ class MainActivity : ComponentActivity() {
                                 onSaveTelegramCreds = { token, chatId -> },
                                 geminiApiKey = geminiApiKey,
                                 onSaveGeminiApiKey = { key -> geminiApiKey = key },
-                                onSyncGoogleCalendar = { syncAllEventsToGoogleCalendar() }
+                                onSyncGoogleCalendar = { syncAllEventsToGoogleCalendar() },
+                                currentThemeMode = themeMode,
+                                onThemeModeChange = { newMode ->
+                                    themeMode = newMode
+                                    com.smartteacher.schedule.core.theme.ThemeManager.setThemeMode(this@MainActivity, newMode)
+                                },
+                                currentLanguage = appLanguage,
+                                onLanguageChange = { newLang ->
+                                    appLanguage = newLang
+                                    com.smartteacher.schedule.core.language.LanguageManager.setLanguage(this@MainActivity, newLang)
+                                }
                             )
                         }
 

@@ -115,6 +115,23 @@ export interface LeaveRequestPayload {
   teacherNote?: string;
 }
 
+export interface TeacherProfilePayload {
+  id?: string;
+  fullName?: string;
+  name?: string;
+  phone?: string;
+  birthDate?: string;
+  gender?: string;
+  email?: string;
+  schools?: string[];
+  subjects?: string[];
+  school?: string;
+  department?: string;
+  bioQuote?: string;
+  avatar?: string;
+  updatedAt?: number;
+}
+
 export interface SyncPayload {
   pin?: string;
   pinHash?: string;
@@ -133,6 +150,7 @@ export interface SyncPayload {
   students?: StudentPayload[];
   attendanceRecords?: AttendanceRecordPayload[];
   leaveRequests?: LeaveRequestPayload[];
+  teacherProfile?: TeacherProfilePayload;
 }
 
 const memoryCache = new Map<string, { data: SyncPayload; timestamp: number }>();
@@ -363,7 +381,8 @@ async function getFromGist(syncCode: string): Promise<SyncPayload | null> {
       classrooms,
       students,
       attendanceRecords,
-      leaveRequests
+      leaveRequests,
+      teacherProfile: parsed.teacherProfile || undefined
     };
 
     memoryCache.set(cleanCode, { data: syncPayload, timestamp: Date.now() });
@@ -457,6 +476,7 @@ export async function GET(req: NextRequest) {
     classrooms: data.classrooms || [],
     students: data.students || [],
     attendanceRecords: data.attendanceRecords || [],
+    teacherProfile: data.teacherProfile || null,
     totalEvents: data.events.length,
     totalSchedules: data.schedules.length,
     totalKnowledgeDocs: (data.knowledgeDocs || []).length,
@@ -937,6 +957,17 @@ export async function POST(req: NextRequest) {
       Date.now()
     );
 
+    let finalTeacherProfile: TeacherProfilePayload | undefined = body.teacherProfile || existing?.teacherProfile;
+    if (body.teacherProfile && existing?.teacherProfile) {
+      finalTeacherProfile = {
+        ...existing.teacherProfile,
+        ...body.teacherProfile,
+        schools: Array.isArray(body.teacherProfile.schools) && body.teacherProfile.schools.length > 0 ? body.teacherProfile.schools : (existing.teacherProfile.schools || (body.teacherProfile.school ? [body.teacherProfile.school] : undefined)),
+        subjects: Array.isArray(body.teacherProfile.subjects) && body.teacherProfile.subjects.length > 0 ? body.teacherProfile.subjects : (existing.teacherProfile.subjects || (body.teacherProfile.department ? [body.teacherProfile.department] : undefined)),
+        updatedAt: Math.max(Number(body.teacherProfile.updatedAt) || 0, Number(existing.teacherProfile.updatedAt) || 0, Date.now())
+      };
+    }
+
     const payload: SyncPayload = {
       syncCode: cleanCode,
       deviceName: body.deviceName || 'Smart Device',
@@ -952,7 +983,8 @@ export async function POST(req: NextRequest) {
       classrooms: finalClassrooms,
       students: finalStudents,
       attendanceRecords: finalAttendance,
-      leaveRequests: finalLeaveRequests
+      leaveRequests: finalLeaveRequests,
+      teacherProfile: finalTeacherProfile
     };
 
     const saved = await saveSyncStore(payload, body.pin);
@@ -976,6 +1008,7 @@ export async function POST(req: NextRequest) {
       students: payload.students || [],
       attendanceRecords: payload.attendanceRecords || [],
       leaveRequests: payload.leaveRequests || [],
+      teacherProfile: payload.teacherProfile || null,
       totalEvents: payload.events.length,
       totalSchedules: payload.schedules.length,
       totalKnowledgeDocs: (payload.knowledgeDocs || []).length,

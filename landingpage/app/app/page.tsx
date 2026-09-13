@@ -44,6 +44,7 @@ import ClassGradebookModal from '@/components/gradebook/ClassGradebookModal';
 import SubjectManagerModal from '@/components/schedule/SubjectManagerModal';
 import { detectAndResolveEventConflicts, ConflictItem } from '@/lib/conflictResolver';
 import { dbGet, dbSet, dbRemove } from '@/lib/storageEngine';
+import { trackDownload } from '@/lib/analytics';
 import { Language, getStoredLanguage, saveStoredLanguage, t } from './i18n';
 import {
   TeacherProfile,
@@ -6483,7 +6484,10 @@ export default function UnifiedTeacherScheduleApp() {
                       <a
                         href="/SmartTeacherSchedule_v1.8.0_Release.apk"
                         download="SmartTeacherSchedule_v1.8.0_Release.apk"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          trackDownload('android', '1.8.0', 'Settings Android APK');
+                        }}
                         title="Tải trực tiếp file APK"
                         className="p-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950 dark:hover:bg-emerald-900 text-emerald-800 dark:text-emerald-200 text-xs transition-colors shrink-0"
                       >
@@ -6614,7 +6618,10 @@ export default function UnifiedTeacherScheduleApp() {
                       <a
                         href="/downloads/SmartTeacherSchedule_Setup_v1.8.0.exe"
                         download="SmartTeacherSchedule_Setup_v1.8.0.exe"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          trackDownload('windows_setup', '1.8.0', 'Settings Windows Setup');
+                        }}
                         title="Tải bộ cài đặt Windows Setup .exe có logo"
                         className="p-1.5 rounded-lg bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-950 dark:hover:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-xs transition-colors shrink-0"
                       >

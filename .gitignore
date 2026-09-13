@@ -23,3 +23,5 @@ landingpage/.env*
 .kotlin/
 desktop/dist/
 desktop/node_modules/
+releases/*.exe
+releases/*.apk

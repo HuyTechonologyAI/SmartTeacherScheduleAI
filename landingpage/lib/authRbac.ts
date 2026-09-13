@@ -3,9 +3,10 @@
 // 4 Nhóm vai trò cốt lõi: BGH (PRINCIPAL), Giáo viên (TEACHER), Học sinh (STUDENT), Phụ huynh (PARENT)
 // ============================================================================
 
-export type UserRole = 'PRINCIPAL' | 'TEACHER' | 'STUDENT' | 'PARENT' | 'GUEST';
+export type UserRole = 'SUPER_ADMIN' | 'PRINCIPAL' | 'TEACHER' | 'STUDENT' | 'PARENT' | 'GUEST';
 
 export type Permission =
+  | 'CAN_ACCESS_SUPER_ADMIN'     // Quản trị viên cấp cao toàn hệ thống (/admin)
   | 'CAN_APPROVE_LESSON_PLAN'    // Duyệt giáo án CV 5512 (Chỉ BGH / Tổ trưởng)
   | 'CAN_SUBMIT_LESSON_PLAN'     // Nộp giáo án lên trường (Giáo viên)
   | 'CAN_MANAGE_STAFF'           // Thêm, sửa, điều chuyển nhân sự (BGH)
@@ -60,6 +61,17 @@ export const DEFAULT_TEACHER_SESSION: AuthSession = {
 
 // Ma trận quyền hạn sư phạm
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
+  SUPER_ADMIN: [
+    'CAN_ACCESS_SUPER_ADMIN',
+    'CAN_APPROVE_LESSON_PLAN',
+    'CAN_MANAGE_STAFF',
+    'CAN_EDIT_ATTENDANCE_SCORE',
+    'CAN_SUBMIT_LEAVE_REQUEST',
+    'CAN_APPROVE_LEAVE_REQUEST',
+    'CAN_ACCESS_EARLY_WARNING_AI',
+    'CAN_PAY_SCHOOL_FEES',
+    'CAN_USE_AI_STUDY_TUTOR'
+  ],
   PRINCIPAL: [
     'CAN_APPROVE_LESSON_PLAN',
     'CAN_MANAGE_STAFF',

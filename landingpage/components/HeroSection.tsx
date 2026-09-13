@@ -19,6 +19,7 @@ import {
   Apple,
   Monitor,
 } from "lucide-react";
+import { trackDownload } from "@/lib/analytics";
 
 export default function HeroSection() {
   const [showQr, setShowQr] = useState(false);
@@ -99,6 +100,7 @@ export default function HeroSection() {
                 <a
                   href={apkUrl}
                   download="SmartTeacherSchedule_v1.8.0_Release.apk"
+                  onClick={() => trackDownload('android', '1.8.0', 'Hero Android Download')}
                   className="flex items-center justify-center space-x-2.5 px-4 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 hover:from-emerald-400 hover:to-indigo-500 text-white font-bold shadow-xl shadow-emerald-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all group"
                 >
                   <Smartphone className="w-5 h-5 group-hover:scale-110 transition-transform text-emerald-100 shrink-0" />

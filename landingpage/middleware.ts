@@ -47,12 +47,21 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // 3. Kiểm soát Cổng Quản Trị Hệ Thống (/admin)
+  if (pathname.startsWith('/admin')) {
+    const response = NextResponse.next();
+    const isSuperAdmin = roleCookie === 'SUPER_ADMIN';
+    response.headers.set('x-is-super-admin', isSuperAdmin ? 'true' : 'false');
+    return response;
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
     '/school/:path*',
-    '/app/:path*'
+    '/app/:path*',
+    '/admin/:path*'
   ],
 };

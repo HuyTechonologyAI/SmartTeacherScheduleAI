@@ -27,6 +27,7 @@ import {
   HelpCircle,
   FolderOpen
 } from "lucide-react";
+import { trackDownload } from "@/lib/analytics";
 
 export type PlatformType = "android" | "ios" | "desktop" | "web" | "googleplay";
 
@@ -182,6 +183,7 @@ export default function PlatformInstallGuideModal({
                 <a
                   href="/SmartTeacherSchedule_v1.8.0_Release.apk"
                   download="SmartTeacherSchedule_v1.8.0_Release.apk"
+                  onClick={() => trackDownload('android', '1.8.0', 'Modal Android APK')}
                   className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition-all shrink-0 cursor-pointer"
                 >
                   <Download className="w-4 h-4" />
@@ -368,6 +370,7 @@ export default function PlatformInstallGuideModal({
                   <a
                     href="/downloads/SmartTeacherSchedule_Setup_v1.8.0.exe"
                     download="SmartTeacherSchedule_Setup_v1.8.0.exe"
+                    onClick={() => trackDownload('windows_setup', '1.8.0', 'Modal Windows Setup')}
                     className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md transition-all shrink-0 cursor-pointer"
                   >
                     <Download className="w-4 h-4" />
@@ -376,6 +379,7 @@ export default function PlatformInstallGuideModal({
                   <a
                     href="/downloads/SmartTeacherSchedule_v1.8.0_Portable.exe"
                     download="SmartTeacherSchedule_v1.8.0_Portable.exe"
+                    onClick={() => trackDownload('windows_portable', '1.8.0', 'Modal Windows Portable')}
                     className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/60 dark:hover:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-xs font-bold transition-all shrink-0 cursor-pointer"
                     title="Chạy trực tiếp không cần cài đặt"
                   >
@@ -543,6 +547,7 @@ export default function PlatformInstallGuideModal({
                 <a
                   href="/releases/SmartTeacherSchedule_v1.8.0_Release.aab"
                   download="SmartTeacherSchedule_v1.8.0_Release.aab"
+                  onClick={() => trackDownload('android', '1.8.0', 'Modal Android AAB')}
                   className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md transition-all shrink-0 cursor-pointer"
                 >
                   <Download className="w-4 h-4" />

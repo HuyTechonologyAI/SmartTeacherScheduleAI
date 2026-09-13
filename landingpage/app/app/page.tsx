@@ -33,6 +33,7 @@ import SyncSecurityModal from '@/components/dashboard/SyncSecurityModal';
 import PortalShareModal from '@/components/dashboard/PortalShareModal';
 import LeaveRequestsModal from '@/components/dashboard/LeaveRequestsModal';
 import IosPwaGuideModal from '@/components/dashboard/IosPwaGuideModal';
+import PlatformInstallGuideModal, { PlatformType } from '@/components/dashboard/PlatformInstallGuideModal';
 import EduVietHomeView from '@/components/eduviet/EduVietHomeView';
 import TeacherProfileModal from '@/components/profile/TeacherProfileModal';
 import TeacherAuthModal from '@/components/profile/TeacherAuthModal';
@@ -160,6 +161,7 @@ import {
   Users,
   Send,
   HelpCircle,
+  Info,
   FileText,
   Bell,
   BellRing,
@@ -543,6 +545,8 @@ export default function UnifiedTeacherScheduleApp() {
   const [showTeacherProfileModal, setShowTeacherProfileModal] = useState<boolean>(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState<boolean>(false);
   const [showIosGuideModal, setShowIosGuideModal] = useState<boolean>(false);
+  const [showPlatformGuideModal, setShowPlatformGuideModal] = useState<boolean>(false);
+  const [selectedGuidePlatform, setSelectedGuidePlatform] = useState<PlatformType>('android');
   const [upgradeSelectedTier, setUpgradeSelectedTier] = useState<'pro' | 'school'>('pro');
   const [showTeacherAuthModal, setShowTeacherAuthModal] = useState<boolean>(false);
 
@@ -6409,126 +6413,237 @@ export default function UnifiedTeacherScheduleApp() {
                 </div>
               </div>
 
-              {/* 4 Platform Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
-                {/* Android APK */}
-                <div className="p-4 rounded-xl bg-gradient-to-b from-slate-50 to-emerald-50/30 dark:from-slate-800/60 dark:to-emerald-950/20 border border-slate-200/80 dark:border-slate-700 flex flex-col justify-between space-y-3">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                        <Smartphone className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                        Android APK
-                      </span>
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 font-bold">
-                        ~15.7 MB
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-                      Cài đặt trực tiếp trên điện thoại Android (Samsung, Tecno, Xiaomi, Oppo...).
-                    </p>
-                  </div>
-                  <a
-                    href="/SmartTeacherSchedule_v1.8.0_Release.apk"
-                    download="SmartTeacherSchedule_v1.8.0_Release.apk"
-                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all"
+              {/* 5 Interactive Platform Cards with Installation Guides */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                    <HelpCircle className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                    <span><strong>Mẹo:</strong> Nhấp vào bất kỳ lựa chọn nào bên dưới để xem hướng dẫn cài đặt chi tiết & mẹo tối ưu cho thiết bị của Thầy Cô.</span>
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+                  {/* 1. Android APK */}
+                  <div
+                    onClick={() => {
+                      setSelectedGuidePlatform('android');
+                      setShowPlatformGuideModal(true);
+                    }}
+                    className="group p-4 rounded-xl bg-gradient-to-b from-slate-50 to-emerald-50/30 dark:from-slate-800/60 dark:to-emerald-950/20 border border-slate-200/80 dark:border-slate-700 hover:border-emerald-400 dark:hover:border-emerald-500 hover:shadow-md transition-all duration-200 flex flex-col justify-between space-y-3 cursor-pointer relative"
                   >
-                    <Download className="w-3.5 h-3.5" />
-                    Tải file APK
-                  </a>
-                </div>
-
-                {/* iOS / iPhone & iPad (PWA / ISO) */}
-                <div className="p-4 rounded-xl bg-gradient-to-b from-slate-50 to-purple-50/30 dark:from-slate-800/60 dark:to-purple-950/20 border border-slate-200/80 dark:border-slate-700 flex flex-col justify-between space-y-3">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                        <Apple className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                        Bản iOS / iPhone
-                      </span>
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 font-bold">
-                        PWA iOS
-                      </span>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                          <Smartphone className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
+                          Android APK
+                        </span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 font-bold">
+                          ~15.7 MB
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                        Cài đặt trực tiếp trên điện thoại Android (Samsung, Tecno, Xiaomi, Oppo...).
+                      </p>
+                      <div className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1 pt-0.5">
+                        <HelpCircle className="w-3 h-3" />
+                        <span>Xem hướng dẫn cài đặt</span>
+                      </div>
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-                      Chạy mượt trên iPhone/iPad (iOS 16.4+), thông báo Web Push, thêm vào MH chính 1-chạm.
-                    </p>
+                    <div className="flex items-center gap-1.5 pt-1">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedGuidePlatform('android');
+                          setShowPlatformGuideModal(true);
+                        }}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
+                      >
+                        <HelpCircle className="w-3.5 h-3.5" />
+                        <span>Hướng dẫn & Tải</span>
+                      </button>
+                      <a
+                        href="/SmartTeacherSchedule_v1.8.0_Release.apk"
+                        download="SmartTeacherSchedule_v1.8.0_Release.apk"
+                        onClick={(e) => e.stopPropagation()}
+                        title="Tải trực tiếp file APK"
+                        className="p-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950 dark:hover:bg-emerald-900 text-emerald-800 dark:text-emerald-200 text-xs transition-colors shrink-0"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowIosGuideModal(true)}
-                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
+
+                  {/* 2. iOS / iPhone & iPad (PWA / ISO) */}
+                  <div
+                    onClick={() => {
+                      setSelectedGuidePlatform('ios');
+                      setShowPlatformGuideModal(true);
+                    }}
+                    className="group p-4 rounded-xl bg-gradient-to-b from-slate-50 to-purple-50/30 dark:from-slate-800/60 dark:to-purple-950/20 border border-slate-200/80 dark:border-slate-700 hover:border-purple-400 dark:hover:border-purple-500 hover:shadow-md transition-all duration-200 flex flex-col justify-between space-y-3 cursor-pointer relative"
                   >
-                    <Apple className="w-3.5 h-3.5" />
-                    Cài trên iOS / iPhone
-                  </button>
-                </div>
-
-                {/* Google Play Bundle */}
-                <div className="p-4 rounded-xl bg-gradient-to-b from-slate-50 to-blue-50/30 dark:from-slate-800/60 dark:to-blue-950/20 border border-slate-200/80 dark:border-slate-700 flex flex-col justify-between space-y-3">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                        <Globe className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                        Google Play AAB
-                      </span>
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 font-bold">
-                        ~15.3 MB
-                      </span>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                          <Apple className="w-4 h-4 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform" />
+                          Bản iOS / iPhone
+                        </span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 font-bold">
+                          PWA iOS
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                        Chạy mượt trên iPhone/iPad (iOS 16.4+), thông báo Web Push, thêm vào MH chính 1-chạm.
+                      </p>
+                      <div className="text-[10px] font-medium text-purple-600 dark:text-purple-400 flex items-center gap-1 pt-0.5">
+                        <HelpCircle className="w-3 h-3" />
+                        <span>3 bước thêm vào Safari</span>
+                      </div>
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-                      Gói xuất bản chính thức chuẩn Google Play App Bundle (Signed Release).
-                    </p>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedGuidePlatform('ios');
+                        setShowPlatformGuideModal(true);
+                      }}
+                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
+                    >
+                      <Apple className="w-3.5 h-3.5" />
+                      <span>Xem hướng dẫn iOS</span>
+                    </button>
                   </div>
-                  <span className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold">
-                    ✓ Sẵn sàng phát hành
-                  </span>
-                </div>
 
-                {/* Desktop Electron */}
-                <div className="p-4 rounded-xl bg-gradient-to-b from-slate-50 to-indigo-50/30 dark:from-slate-800/60 dark:to-indigo-950/20 border border-slate-200/80 dark:border-slate-700 flex flex-col justify-between space-y-3">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                        <Laptop className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                        Máy tính Desktop
-                      </span>
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950/70 text-indigo-800 dark:text-indigo-300 font-bold">
-                        ~610 KB
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-                      Bản cài đặt Windows/Mac với cửa sổ thu nhỏ & chuông báo Crystal Chime.
-                    </p>
-                  </div>
-                  <a
-                    href="/releases/SmartTeacherSchedule_v1.8.0_Desktop.zip"
-                    download="SmartTeacherSchedule_v1.8.0_Desktop.zip"
-                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition-all"
+                  {/* 3. Google Play Bundle */}
+                  <div
+                    onClick={() => {
+                      setSelectedGuidePlatform('googleplay');
+                      setShowPlatformGuideModal(true);
+                    }}
+                    className="group p-4 rounded-xl bg-gradient-to-b from-slate-50 to-blue-50/30 dark:from-slate-800/60 dark:to-blue-950/20 border border-slate-200/80 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md transition-all duration-200 flex flex-col justify-between space-y-3 cursor-pointer relative"
                   >
-                    <Download className="w-3.5 h-3.5" />
-                    Tải Desktop Zip
-                  </a>
-                </div>
-
-                {/* Web Next.js PWA */}
-                <div className="p-4 rounded-xl bg-gradient-to-b from-slate-50 to-rose-50/30 dark:from-slate-800/60 dark:to-rose-950/20 border border-slate-200/80 dark:border-slate-700 flex flex-col justify-between space-y-3">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                        <Sparkles className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-                        Web App PWA
-                      </span>
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300 font-bold">
-                        Online / Offline
-                      </span>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                          <Globe className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
+                          Google Play AAB
+                        </span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 font-bold">
+                          ~15.3 MB
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                        Gói xuất bản chính thức chuẩn Google Play App Bundle (Signed Release).
+                      </p>
+                      <div className="text-[10px] font-medium text-blue-600 dark:text-blue-400 flex items-center gap-1 pt-0.5">
+                        <HelpCircle className="w-3 h-3" />
+                        <span>Xem thông tin thẩm định</span>
+                      </div>
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-                      Cài đặt PWA tức thì lên màn hình máy tính và điện thoại không cần kho ứng dụng.
-                    </p>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedGuidePlatform('googleplay');
+                        setShowPlatformGuideModal(true);
+                      }}
+                      className="w-full inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-xs font-bold transition-all cursor-pointer"
+                    >
+                      <Info className="w-3.5 h-3.5" />
+                      <span>Xem hướng dẫn AAB</span>
+                    </button>
                   </div>
-                  <span className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold">
-                    ✓ Đang chạy trực tiếp
-                  </span>
+
+                  {/* 4. Desktop Electron */}
+                  <div
+                    onClick={() => {
+                      setSelectedGuidePlatform('desktop');
+                      setShowPlatformGuideModal(true);
+                    }}
+                    className="group p-4 rounded-xl bg-gradient-to-b from-slate-50 to-indigo-50/30 dark:from-slate-800/60 dark:to-indigo-950/20 border border-slate-200/80 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-md transition-all duration-200 flex flex-col justify-between space-y-3 cursor-pointer relative"
+                  >
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                          <Laptop className="w-4 h-4 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform" />
+                          Máy tính Desktop
+                        </span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950/70 text-indigo-800 dark:text-indigo-300 font-bold">
+                          ~2.4 MB
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                        Bản cài đặt Windows/Mac với cửa sổ thu nhỏ & chuông báo Crystal Chime.
+                      </p>
+                      <div className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400 flex items-center gap-1 pt-0.5">
+                        <HelpCircle className="w-3 h-3" />
+                        <span>Xem mẹo mở PiP khi chiếu</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 pt-1">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedGuidePlatform('desktop');
+                          setShowPlatformGuideModal(true);
+                        }}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
+                      >
+                        <HelpCircle className="w-3.5 h-3.5" />
+                        <span>Hướng dẫn & Tải</span>
+                      </button>
+                      <a
+                        href="/releases/SmartTeacherSchedule_v1.8.0_Desktop.zip"
+                        download="SmartTeacherSchedule_v1.8.0_Desktop.zip"
+                        onClick={(e) => e.stopPropagation()}
+                        title="Tải trực tiếp file Zip"
+                        className="p-1.5 rounded-lg bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-950 dark:hover:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-xs transition-colors shrink-0"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* 5. Web Next.js PWA */}
+                  <div
+                    onClick={() => {
+                      setSelectedGuidePlatform('web');
+                      setShowPlatformGuideModal(true);
+                    }}
+                    className="group p-4 rounded-xl bg-gradient-to-b from-slate-50 to-rose-50/30 dark:from-slate-800/60 dark:to-rose-950/20 border border-slate-200/80 dark:border-slate-700 hover:border-rose-400 dark:hover:border-rose-500 hover:shadow-md transition-all duration-200 flex flex-col justify-between space-y-3 cursor-pointer relative"
+                  >
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                          <Sparkles className="w-4 h-4 text-rose-600 dark:text-rose-400 group-hover:scale-110 transition-transform" />
+                          Web App PWA
+                        </span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300 font-bold">
+                          Online / Offline
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                        Cài đặt PWA tức thì lên màn hình máy tính và điện thoại không cần kho ứng dụng.
+                      </p>
+                      <div className="text-[10px] font-medium text-rose-600 dark:text-rose-400 flex items-center gap-1 pt-0.5">
+                        <HelpCircle className="w-3 h-3" />
+                        <span>Cách ghim Taskbar</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedGuidePlatform('web');
+                        setShowPlatformGuideModal(true);
+                      }}
+                      className="w-full inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-xs font-bold transition-all cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Xem hướng dẫn PWA</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -9532,6 +9647,12 @@ export default function UnifiedTeacherScheduleApp() {
       <IosPwaGuideModal
         isOpen={showIosGuideModal}
         onClose={() => setShowIosGuideModal(false)}
+      />
+
+      <PlatformInstallGuideModal
+        isOpen={showPlatformGuideModal}
+        onClose={() => setShowPlatformGuideModal(false)}
+        initialPlatform={selectedGuidePlatform}
       />
 
       <TeacherProfileModal

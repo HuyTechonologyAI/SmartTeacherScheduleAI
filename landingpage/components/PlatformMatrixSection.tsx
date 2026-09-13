@@ -1,9 +1,17 @@
 "use client";
 
-import React from "react";
-import { Check, Minus, Smartphone, Monitor, Globe, Apple, ShieldCheck, Zap, Bell, WifiOff } from "lucide-react";
+import React, { useState } from "react";
+import { Check, Minus, Smartphone, Monitor, Globe, Apple, ShieldCheck, Zap, Bell, WifiOff, HelpCircle } from "lucide-react";
+import PlatformInstallGuideModal, { PlatformType } from "@/components/dashboard/PlatformInstallGuideModal";
 
 export default function PlatformMatrixSection() {
+  const [showGuideModal, setShowGuideModal] = useState<boolean>(false);
+  const [guidePlatform, setGuidePlatform] = useState<PlatformType>("android");
+
+  const handleOpenGuide = (platform: PlatformType) => {
+    setGuidePlatform(platform);
+    setShowGuideModal(true);
+  };
   const features = [
     {
       title: "Báo thức ca dạy chuông lớn (Bất chấp chế độ im lặng/pin)",
@@ -131,36 +139,60 @@ export default function PlatformMatrixSection() {
                     {typeof item.android === "boolean" ? (
                       item.android ? <Check className="w-5 h-5 text-emerald-400 mx-auto" /> : <Minus className="w-5 h-5 text-slate-600 mx-auto" />
                     ) : (
-                      <span className="text-xs font-bold text-emerald-300 bg-emerald-950/50 px-2.5 py-1 rounded-lg border border-emerald-500/30">
-                        {item.android}
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenGuide("android")}
+                        className="text-xs font-bold text-emerald-300 bg-emerald-950/60 hover:bg-emerald-900/80 px-2.5 py-1 rounded-lg border border-emerald-500/40 hover:border-emerald-400 transition-all cursor-pointer inline-flex items-center gap-1 shadow-xs group"
+                        title="Bấm để xem hướng dẫn cài đặt Android APK"
+                      >
+                        <span>{item.android}</span>
+                        <HelpCircle className="w-3 h-3 text-emerald-400 group-hover:scale-110 transition-transform" />
+                      </button>
                     )}
                   </td>
                   <td className="py-4 px-4 text-center">
                     {typeof item.desktop === "boolean" ? (
                       item.desktop ? <Check className="w-5 h-5 text-blue-400 mx-auto" /> : <Minus className="w-5 h-5 text-slate-600 mx-auto" />
                     ) : (
-                      <span className="text-xs font-bold text-blue-300 bg-blue-950/50 px-2.5 py-1 rounded-lg border border-blue-500/30">
-                        {item.desktop}
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenGuide("desktop")}
+                        className="text-xs font-bold text-blue-300 bg-blue-950/60 hover:bg-blue-900/80 px-2.5 py-1 rounded-lg border border-blue-500/40 hover:border-blue-400 transition-all cursor-pointer inline-flex items-center gap-1 shadow-xs group"
+                        title="Bấm để xem hướng dẫn cài đặt Desktop"
+                      >
+                        <span>{item.desktop}</span>
+                        <HelpCircle className="w-3 h-3 text-blue-400 group-hover:scale-110 transition-transform" />
+                      </button>
                     )}
                   </td>
                   <td className="py-4 px-4 text-center">
                     {typeof item.web === "boolean" ? (
                       item.web ? <Check className="w-5 h-5 text-indigo-400 mx-auto" /> : <Minus className="w-5 h-5 text-slate-600 mx-auto" />
                     ) : (
-                      <span className="text-xs font-bold text-indigo-300 bg-indigo-950/50 px-2.5 py-1 rounded-lg border border-indigo-500/30">
-                        {item.web}
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenGuide("web")}
+                        className="text-xs font-bold text-indigo-300 bg-indigo-950/60 hover:bg-indigo-900/80 px-2.5 py-1 rounded-lg border border-indigo-500/40 hover:border-indigo-400 transition-all cursor-pointer inline-flex items-center gap-1 shadow-xs group"
+                        title="Bấm để xem hướng dẫn Web PWA"
+                      >
+                        <span>{item.web}</span>
+                        <HelpCircle className="w-3 h-3 text-indigo-400 group-hover:scale-110 transition-transform" />
+                      </button>
                     )}
                   </td>
                   <td className="py-4 px-4 text-center">
                     {typeof item.ios === "boolean" ? (
                       item.ios ? <Check className="w-5 h-5 text-purple-400 mx-auto" /> : <Minus className="w-5 h-5 text-slate-600 mx-auto" />
                     ) : (
-                      <span className="text-xs font-bold text-purple-300 bg-purple-950/50 px-2.5 py-1 rounded-lg border border-purple-500/30">
-                        {item.ios}
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenGuide("ios")}
+                        className="text-xs font-bold text-purple-300 bg-purple-950/60 hover:bg-purple-900/80 px-2.5 py-1 rounded-lg border border-purple-500/40 hover:border-purple-400 transition-all cursor-pointer inline-flex items-center gap-1 shadow-xs group"
+                        title="Bấm để xem hướng dẫn cài đặt iOS"
+                      >
+                        <span>{item.ios}</span>
+                        <HelpCircle className="w-3 h-3 text-purple-400 group-hover:scale-110 transition-transform" />
+                      </button>
                     )}
                   </td>
                 </tr>
@@ -169,6 +201,12 @@ export default function PlatformMatrixSection() {
           </table>
         </div>
       </div>
+
+      <PlatformInstallGuideModal
+        isOpen={showGuideModal}
+        onClose={() => setShowGuideModal(false)}
+        initialPlatform={guidePlatform}
+      />
     </section>
   );
 }

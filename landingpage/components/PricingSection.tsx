@@ -206,9 +206,9 @@ export default function PricingSection({ onSelectPlan }: PricingSectionProps) {
                 Giải pháp toàn diện cho Khoa, Tổ chuyên môn và Trường học quản lý giờ dạy tập trung.
               </p>
               <div className="pt-2">
-                <div className="text-4xl font-extrabold text-white">1.490.000 đ</div>
-                <div className="text-xs text-slate-400 mt-1">
-                  / năm (Cho tối đa 30 giáo viên trong tổ/khoa)
+                <div className="text-3xl sm:text-4xl font-extrabold text-white">Liên Hệ Báo Giá</div>
+                <div className="text-xs text-indigo-300 mt-1">
+                  Tính theo số lượng User (Giáo viên & Học sinh) toàn trường • Không áp dụng giá cố định
                 </div>
               </div>
 
@@ -237,10 +237,10 @@ export default function PricingSection({ onSelectPlan }: PricingSectionProps) {
             </div>
 
             <button
-              onClick={() => handleChoosePlan("Gói Tổ Bộ Môn / Nhà Trường")}
-              className="mt-8 w-full py-3.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-purple-300 hover:text-white font-bold text-sm text-center border border-purple-500/30 hover:border-purple-500 transition-all flex items-center justify-center gap-2"
+              onClick={() => handleChoosePlan("Gói Trường Học & Tổ Bộ Môn (Báo Phí Theo Số User)")}
+              className="mt-8 w-full py-4 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-sm text-center shadow-lg shadow-purple-600/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Nhận Tư Vấn Gói Trường Học</span>
+              <span>Liên Hệ Nhận Bảng Phí Trường Học</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

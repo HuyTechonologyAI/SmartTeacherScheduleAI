@@ -10,9 +10,13 @@ Chào mừng Quý Thầy/Cô, Ban Giám Hiệu, Học sinh và Phụ huynh đế
 | :--- | :---: | :---: | :--- | :---: |
 | **`SmartTeacherSchedule_v1.8.0_Release.apk`** | `.apk` | ~15.7 MB | Cài đặt trực tiếp lên điện thoại/máy tính bảng Android (Samsung, Xiaomi, Tecno, OPPO, Vivo...) | [📲 **Tải APK v1.8.0**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.8.0/SmartTeacherSchedule_v1.8.0_Release.apk) |
 | **`SmartTeacherSchedule_v1.8.0_Release.aab`** | `.aab` | ~15.3 MB | Gói Android App Bundle ký số đưa lên Google Play Store | [📦 **Tải AAB v1.8.0**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.8.0/SmartTeacherSchedule_v1.8.0_Release.aab) |
-| **`SmartTeacherSchedule_v1.8.0_Desktop.zip`** | `.zip` | ~610 KB | Bản Desktop chạy trên máy tính Windows, macOS, Linux có menu 4 cổng | [💻 **Tải Desktop**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.8.0/SmartTeacherSchedule_v1.8.0_Desktop.zip) |
+| **`SmartTeacherSchedule_v1.8.0_Desktop.zip`** | `.zip` | ~2.4 MB | Bản Desktop chạy trên máy tính Windows, macOS, Linux có menu 4 cổng | [💻 **Tải Desktop**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.8.0/SmartTeacherSchedule_v1.8.0_Desktop.zip) |
+| **`Bản iOS (iPhone & iPad)`** | `PWA / ISO` | Safari Web App | Hỗ trợ iPhone, iPad (iOS 16.4+), Web Push Notification, Thêm vào MH chính 1-chạm | [🍎 **Mở trên iOS**](https://gvcncdsai.io.vn/app) |
 | **`Feature_Graphic_1024x500.png`** | `.png` | ~1.05 MB | Đồ họa nổi bật chuẩn Google Play Store | [🖼️ **Tải Banner**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.6.0/Feature_Graphic_1024x500.png) |
 | **`SmartTeacher_AppIcon_AI.png`** | `.png` | ~483 KB | Biểu tượng nhận diện ứng dụng độ phân giải cao | [🎨 **Tải Icon**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.6.0/SmartTeacher_AppIcon_AI.png) |
+
+> 📢 **Chính sách Bảng phí Gói Trường Học & Tổ Bộ Môn**:
+> Nhà trường và Tổ bộ môn vui lòng **Liên hệ để nhận bảng phí** (Hotline/Zalo: **`0961364600`**). Chi phí được tính linh hoạt theo **tổng số lượng User (Giáo viên & Học sinh)** thực tế của toàn trường, cam kết mức chiết khấu tốt nhất kèm hợp đồng bản quyền và hóa đơn VAT, **không áp dụng mức giá cố định cào bằng**.
 
 ---
 

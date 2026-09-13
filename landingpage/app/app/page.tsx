@@ -32,6 +32,7 @@ import TodayCommandCenter from '@/components/dashboard/TodayCommandCenter';
 import SyncSecurityModal from '@/components/dashboard/SyncSecurityModal';
 import PortalShareModal from '@/components/dashboard/PortalShareModal';
 import LeaveRequestsModal from '@/components/dashboard/LeaveRequestsModal';
+import IosPwaGuideModal from '@/components/dashboard/IosPwaGuideModal';
 import EduVietHomeView from '@/components/eduviet/EduVietHomeView';
 import TeacherProfileModal from '@/components/profile/TeacherProfileModal';
 import TeacherAuthModal from '@/components/profile/TeacherAuthModal';
@@ -205,7 +206,8 @@ import {
   Zap,
   CheckCheck,
   CreditCard,
-  Phone
+  Phone,
+  Apple
 } from 'lucide-react';
 
 export interface CalendarEventItem {
@@ -540,6 +542,7 @@ export default function UnifiedTeacherScheduleApp() {
   const [teacherProfile, setTeacherProfile] = useState<TeacherProfile>(DEFAULT_TEACHER_PROFILE);
   const [showTeacherProfileModal, setShowTeacherProfileModal] = useState<boolean>(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState<boolean>(false);
+  const [showIosGuideModal, setShowIosGuideModal] = useState<boolean>(false);
   const [upgradeSelectedTier, setUpgradeSelectedTier] = useState<'pro' | 'school'>('pro');
   const [showTeacherAuthModal, setShowTeacherAuthModal] = useState<boolean>(false);
 
@@ -6407,7 +6410,7 @@ export default function UnifiedTeacherScheduleApp() {
               </div>
 
               {/* 4 Platform Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
                 {/* Android APK */}
                 <div className="p-4 rounded-xl bg-gradient-to-b from-slate-50 to-emerald-50/30 dark:from-slate-800/60 dark:to-emerald-950/20 border border-slate-200/80 dark:border-slate-700 flex flex-col justify-between space-y-3">
                   <div className="space-y-1.5">
@@ -6432,6 +6435,32 @@ export default function UnifiedTeacherScheduleApp() {
                     <Download className="w-3.5 h-3.5" />
                     Tải file APK
                   </a>
+                </div>
+
+                {/* iOS / iPhone & iPad (PWA / ISO) */}
+                <div className="p-4 rounded-xl bg-gradient-to-b from-slate-50 to-purple-50/30 dark:from-slate-800/60 dark:to-purple-950/20 border border-slate-200/80 dark:border-slate-700 flex flex-col justify-between space-y-3">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                        <Apple className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                        Bản iOS / iPhone
+                      </span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 font-bold">
+                        PWA iOS
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                      Chạy mượt trên iPhone/iPad (iOS 16.4+), thông báo Web Push, thêm vào MH chính 1-chạm.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowIosGuideModal(true)}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
+                  >
+                    <Apple className="w-3.5 h-3.5" />
+                    Cài trên iOS / iPhone
+                  </button>
                 </div>
 
                 {/* Google Play Bundle */}
@@ -6805,14 +6834,18 @@ export default function UnifiedTeacherScheduleApp() {
                       </p>
                     </div>
 
-                    <div className="pt-2">
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-extrabold text-indigo-600 dark:text-indigo-400">1.490.000 đ</span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">/ năm</span>
+                    <div className="pt-2 space-y-1.5">
+                      <div className="flex items-baseline gap-1.5 flex-wrap">
+                        <span className="text-2xl sm:text-3xl font-extrabold text-indigo-600 dark:text-indigo-400">
+                          Liên Hệ Nhận Bảng Phí
+                        </span>
                       </div>
-                      <span className="inline-block mt-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
-                        Áp dụng toàn bộ giáo viên trong trường
-                      </span>
+                      <div className="inline-block text-[11px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
+                        Tính theo số lượng User (Giáo viên & Học sinh) toàn trường
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                        Bảng phí linh hoạt theo quy mô thực tế, không có giá cố định cào bằng.
+                      </p>
                     </div>
 
                     <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300 pt-3 border-t border-slate-200/80 dark:border-slate-800">
@@ -6856,7 +6889,7 @@ export default function UnifiedTeacherScheduleApp() {
                     className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition-all cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     <School className="w-4 h-4" />
-                    <span>Đăng Ký Gói Trường Học (1.490k/năm)</span>
+                    <span>Liên Hệ Nhận Bảng Phí Nhà Trường</span>
                   </button>
                 </div>
               </div>
@@ -9422,17 +9455,19 @@ export default function UnifiedTeacherScheduleApp() {
                   {upgradeSelectedTier === 'school' ? 'Gói Toàn Trường' : 'Gói Cá Nhân VIP'}
                 </span>
                 <p className="text-sm font-extrabold text-slate-900 dark:text-white">
-                  {upgradeSelectedTier === 'school' ? 'Gói Nhà Trường & Tổ Bộ Môn (1 năm)' : 'Gói Giáo Viên Pro - 1 Năm (Tiết kiệm 35%)'}
+                  {upgradeSelectedTier === 'school' ? 'Gói Nhà Trường & Tổ Bộ Môn (Báo Phí Theo Số User)' : 'Gói Giáo Viên Pro - 1 Năm (Tiết kiệm 35%)'}
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Mở khóa trọn bộ Trợ lý AI Soạn bài 5512, Đề thi TT 22, Voice AI Tutor & Cloud Sync
+                  {upgradeSelectedTier === 'school' ? 'Bảng phí tối ưu theo quy mô số lượng User (Giáo viên & Học sinh), hỗ trợ hợp đồng và hóa đơn VAT.' : 'Mở khóa trọn bộ Trợ lý AI Soạn bài 5512, Đề thi TT 22, Voice AI Tutor & Cloud Sync'}
                 </p>
               </div>
               <div className="text-right shrink-0">
-                <span className="text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400">
-                  {upgradeSelectedTier === 'school' ? '1.490.000 đ' : '399.000 đ'}
+                <span className="text-lg sm:text-xl font-black text-rose-600 dark:text-rose-400">
+                  {upgradeSelectedTier === 'school' ? 'Liên Hệ Báo Phí' : '399.000 đ'}
                 </span>
-                <span className="block text-[10px] text-slate-500 dark:text-slate-400">/ 12 tháng</span>
+                <span className="block text-[10px] text-slate-500 dark:text-slate-400">
+                  {upgradeSelectedTier === 'school' ? 'Theo số lượng User' : '/ 12 tháng'}
+                </span>
               </div>
             </div>
 
@@ -9493,6 +9528,11 @@ export default function UnifiedTeacherScheduleApp() {
           </div>
         </div>
       )}
+
+      <IosPwaGuideModal
+        isOpen={showIosGuideModal}
+        onClose={() => setShowIosGuideModal(false)}
+      />
 
       <TeacherProfileModal
         isOpen={showTeacherProfileModal}

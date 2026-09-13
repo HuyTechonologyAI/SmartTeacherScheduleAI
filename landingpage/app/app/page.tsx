@@ -35,6 +35,8 @@ import LeaveRequestsModal from '@/components/dashboard/LeaveRequestsModal';
 import EduVietHomeView from '@/components/eduviet/EduVietHomeView';
 import TeacherProfileModal from '@/components/profile/TeacherProfileModal';
 import TeacherAuthModal from '@/components/profile/TeacherAuthModal';
+import StorageDiagnosticsModal from '@/components/storage/StorageDiagnosticsModal';
+import { dbGet, dbSet, dbRemove } from '@/lib/storageEngine';
 import { Language, getStoredLanguage, saveStoredLanguage, t } from './i18n';
 import {
   TeacherProfile,
@@ -189,7 +191,8 @@ import {
   Minimize2,
   ZoomIn,
   ZoomOut,
-  School
+  School,
+  Database
 } from 'lucide-react';
 
 export interface CalendarEventItem {
@@ -506,6 +509,7 @@ export default function UnifiedTeacherScheduleApp() {
   const [alertBanner, setAlertBanner] = useState<string | null>(null);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [showPortalShareModal, setShowPortalShareModal] = useState<boolean>(false);
+  const [showStorageModal, setShowStorageModal] = useState<boolean>(false);
   const [showLeaveRequestsModal, setShowLeaveRequestsModal] = useState<boolean>(false);
 
   // Teacher Profile & Authentication States
@@ -2458,6 +2462,15 @@ export default function UnifiedTeacherScheduleApp() {
                 <span>{isSyncing ? 'Đang đồng bộ...' : 'Đồng bộ 2 chiều'}</span>
               </button>
 
+              <button
+                onClick={() => setShowStorageModal(true)}
+                className="hidden lg:flex px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/70 dark:hover:bg-emerald-900/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                title="Giám sát dung lượng lưu trữ IndexedDB (Sức chứa hàng GB)"
+              >
+                <Database className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Bộ nhớ GB</span>
+              </button>
+
               <Link
                 href="/school"
                 className="hidden md:flex px-3 py-1.5 rounded-full bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/70 dark:hover:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold items-center gap-1.5 transition-all shadow-xs"
@@ -4342,10 +4355,12 @@ export default function UnifiedTeacherScheduleApp() {
                               try {
                                 if (plannerFullPackage) {
                                   localStorage.setItem(`smart_teacher_ai_pack_${plannerSelectedEventId}`, JSON.stringify(plannerFullPackage));
+      dbSet(`smart_teacher_ai_pack_${plannerSelectedEventId}`, plannerFullPackage);
                                   localStorage.setItem(`smart_teacher_ai_pack_${docName}`, JSON.stringify(plannerFullPackage));
                                 }
                                 if (contentToSave) {
                                   localStorage.setItem(`smart_teacher_ai_plan_${plannerSelectedEventId}`, contentToSave);
+      dbSet(`smart_teacher_ai_plan_${plannerSelectedEventId}`, contentToSave);
                                   localStorage.setItem(`smart_teacher_ai_plan_${docName}`, contentToSave);
                                 }
                               } catch (_) {}
@@ -8595,6 +8610,12 @@ export default function UnifiedTeacherScheduleApp() {
       />
 
       {/* Student & Parent Portal Sharing Modal */}
+      <StorageDiagnosticsModal
+        isOpen={showStorageModal}
+        onClose={() => setShowStorageModal(false)}
+        isEn={lang === 'en'}
+      />
+
       <PortalShareModal
         isOpen={showPortalShareModal}
         onClose={() => setShowPortalShareModal(false)}

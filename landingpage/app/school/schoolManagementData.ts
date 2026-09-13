@@ -1,3 +1,4 @@
+import { dbGetSync, dbSet, dbGet } from '@/lib/storageEngine';
 // ============================================================================
 // SCHOOL MANAGEMENT DATA ENGINE - EDUVIET SMART TEACHER SCHEDULE
 // Quản trị toàn diện: Giáo án, Nhân sự 4 nhóm, Lịch công tác, Văn bản pháp quy,
@@ -494,96 +495,73 @@ export const STORAGE_CLASSES_KEY = 'smart_school_classes_v1';
 export const STORAGE_FACILITIES_KEY = 'smart_school_facilities_v1';
 
 export function getStoredStaffList(): TeacherStaffItem[] {
-  if (typeof window === 'undefined') return INITIAL_STAFF_LIST;
-  try {
-    const raw = localStorage.getItem(STORAGE_STAFF_KEY);
-    return raw ? JSON.parse(raw) : INITIAL_STAFF_LIST;
-  } catch (_) {
-    return INITIAL_STAFF_LIST;
-  }
+  return dbGetSync<TeacherStaffItem[]>(STORAGE_STAFF_KEY, INITIAL_STAFF_LIST);
 }
 
 export function saveStoredStaffList(data: TeacherStaffItem[]): void {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(STORAGE_STAFF_KEY, JSON.stringify(data));
-  } catch (_) {}
+  dbSet<TeacherStaffItem[]>(STORAGE_STAFF_KEY, data);
+}
+
+export async function getStoredStaffListAsync(): Promise<TeacherStaffItem[]> {
+  return dbGet<TeacherStaffItem[]>(STORAGE_STAFF_KEY, INITIAL_STAFF_LIST);
 }
 
 export function getStoredLessonPlans(): SchoolLessonPlanItem[] {
-  if (typeof window === 'undefined') return INITIAL_LESSON_PLANS;
-  try {
-    const raw = localStorage.getItem(STORAGE_LESSON_PLANS_KEY);
-    return raw ? JSON.parse(raw) : INITIAL_LESSON_PLANS;
-  } catch (_) {
-    return INITIAL_LESSON_PLANS;
-  }
+  return dbGetSync<SchoolLessonPlanItem[]>(STORAGE_LESSON_PLANS_KEY, INITIAL_LESSON_PLANS);
 }
 
 export function saveStoredLessonPlans(data: SchoolLessonPlanItem[]): void {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(STORAGE_LESSON_PLANS_KEY, JSON.stringify(data));
-  } catch (_) {}
+  dbSet<SchoolLessonPlanItem[]>(STORAGE_LESSON_PLANS_KEY, data);
+}
+
+export async function getStoredLessonPlansAsync(): Promise<SchoolLessonPlanItem[]> {
+  return dbGet<SchoolLessonPlanItem[]>(STORAGE_LESSON_PLANS_KEY, INITIAL_LESSON_PLANS);
 }
 
 export function getStoredWorkSchedules(): SchoolWorkScheduleItem[] {
-  if (typeof window === 'undefined') return INITIAL_WORK_SCHEDULES;
-  try {
-    const raw = localStorage.getItem(STORAGE_WORK_SCHEDULES_KEY);
-    return raw ? JSON.parse(raw) : INITIAL_WORK_SCHEDULES;
-  } catch (_) {
-    return INITIAL_WORK_SCHEDULES;
-  }
+  return dbGetSync<SchoolWorkScheduleItem[]>(STORAGE_WORK_SCHEDULES_KEY, INITIAL_WORK_SCHEDULES);
 }
 
 export function saveStoredWorkSchedules(data: SchoolWorkScheduleItem[]): void {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(STORAGE_WORK_SCHEDULES_KEY, JSON.stringify(data));
-  } catch (_) {}
+  dbSet<SchoolWorkScheduleItem[]>(STORAGE_WORK_SCHEDULES_KEY, data);
+}
+
+export async function getStoredWorkSchedulesAsync(): Promise<SchoolWorkScheduleItem[]> {
+  return dbGet<SchoolWorkScheduleItem[]>(STORAGE_WORK_SCHEDULES_KEY, INITIAL_WORK_SCHEDULES);
 }
 
 export function getStoredLegalDocuments(): LegalDocumentItem[] {
-  if (typeof window === 'undefined') return INITIAL_LEGAL_DOCUMENTS;
-  try {
-    const raw = localStorage.getItem(STORAGE_DOCUMENTS_KEY);
-    return raw ? JSON.parse(raw) : INITIAL_LEGAL_DOCUMENTS;
-  } catch (_) {
-    return INITIAL_LEGAL_DOCUMENTS;
-  }
+  return dbGetSync<LegalDocumentItem[]>(STORAGE_DOCUMENTS_KEY, INITIAL_LEGAL_DOCUMENTS);
 }
 
 export function saveStoredLegalDocuments(data: LegalDocumentItem[]): void {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(STORAGE_DOCUMENTS_KEY, JSON.stringify(data));
-  } catch (_) {}
+  dbSet<LegalDocumentItem[]>(STORAGE_DOCUMENTS_KEY, data);
+}
+
+export async function getStoredLegalDocumentsAsync(): Promise<LegalDocumentItem[]> {
+  return dbGet<LegalDocumentItem[]>(STORAGE_DOCUMENTS_KEY, INITIAL_LEGAL_DOCUMENTS);
 }
 
 export function getStoredSchoolClasses(): SchoolClassroomItem[] {
-  if (typeof window === 'undefined') return INITIAL_SCHOOL_CLASSES;
-  try {
-    const raw = localStorage.getItem(STORAGE_CLASSES_KEY);
-    return raw ? JSON.parse(raw) : INITIAL_SCHOOL_CLASSES;
-  } catch (_) {
-    return INITIAL_SCHOOL_CLASSES;
-  }
+  return dbGetSync<SchoolClassroomItem[]>(STORAGE_CLASSES_KEY, INITIAL_SCHOOL_CLASSES);
 }
 
 export function saveStoredSchoolClasses(data: SchoolClassroomItem[]): void {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(STORAGE_CLASSES_KEY, JSON.stringify(data));
-  } catch (_) {}
+  dbSet<SchoolClassroomItem[]>(STORAGE_CLASSES_KEY, data);
+}
+
+export async function getStoredSchoolClassesAsync(): Promise<SchoolClassroomItem[]> {
+  return dbGet<SchoolClassroomItem[]>(STORAGE_CLASSES_KEY, INITIAL_SCHOOL_CLASSES);
 }
 
 export function getStoredFacilities(): FacilityRoomItem[] {
-  if (typeof window === 'undefined') return INITIAL_FACILITIES;
-  try {
-    const raw = localStorage.getItem(STORAGE_FACILITIES_KEY);
-    return raw ? JSON.parse(raw) : INITIAL_FACILITIES;
-  } catch (_) {
-    return INITIAL_FACILITIES;
-  }
+  return dbGetSync<FacilityRoomItem[]>(STORAGE_FACILITIES_KEY, INITIAL_FACILITIES);
+}
+
+export function saveStoredFacilities(data: FacilityRoomItem[]): void {
+  dbSet<FacilityRoomItem[]>(STORAGE_FACILITIES_KEY, data);
+}
+
+export async function getStoredFacilitiesAsync(): Promise<FacilityRoomItem[]> {
+  return dbGet<FacilityRoomItem[]>(STORAGE_FACILITIES_KEY, INITIAL_FACILITIES);
 }

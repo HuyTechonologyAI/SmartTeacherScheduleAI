@@ -1,3 +1,4 @@
+import { dbGetSync, dbSet } from '@/lib/storageEngine';
 export type EducationLevel = 'primary' | 'secondary' | 'high_school' | 'college';
 
 export interface StudentProfile {
@@ -205,6 +206,7 @@ export function saveStudentProfile(profile: StudentProfile): void {
     // Tự động đồng bộ và xác minh lớp học với cơ sở dữ liệu của giáo viên
     const synced = syncStudentWithTeacherRoster(profile);
     localStorage.setItem(STORAGE_KEY_STUDENT_PROFILE, JSON.stringify(synced));
+  dbSet(STORAGE_KEY_STUDENT_PROFILE, synced);
     saveStudentAccountToList(synced);
 
     // Cập nhật ngược lại vào danh sách lớp của giáo viên nếu học sinh đã tồn tại
@@ -259,6 +261,7 @@ export function saveStudentAccountToList(profile: StudentProfile): void {
       list.unshift(profile);
     }
     localStorage.setItem(STORAGE_KEY_STUDENT_ACCOUNTS, JSON.stringify(list.slice(0, 10)));
+  dbSet(STORAGE_KEY_STUDENT_ACCOUNTS, list.slice(0, 10));
   } catch (e) {
     console.error('Error saving student account list:', e);
   }

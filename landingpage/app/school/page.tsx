@@ -36,9 +36,11 @@ import {
   Building,
   Briefcase,
   Sliders,
-  FolderOpen
+  FolderOpen,
+  Database
 } from 'lucide-react';
 import { Language, getStoredLanguage, saveStoredLanguage } from '../app/i18n';
+import StorageDiagnosticsModal from '@/components/storage/StorageDiagnosticsModal';
 import {
   TeacherStaffItem,
   SchoolLessonPlanItem,
@@ -98,6 +100,7 @@ export default function SchoolManagementPage() {
 
   // Modals State
   const [selectedPlanForReview, setSelectedPlanForReview] = useState<SchoolLessonPlanItem | null>(null);
+  const [showStorageModal, setShowStorageModal] = useState<boolean>(false);
   const [showReviewModal, setShowReviewModal] = useState<boolean>(false);
   const [reviewComment, setReviewComment] = useState<string>('');
   
@@ -324,6 +327,16 @@ export default function SchoolManagementPage() {
               <span>🏡</span>
               <span className="hidden md:inline">{isEn ? "Parent" : "Phụ huynh"}</span>
             </Link>
+
+            {/* Storage Quota Diagnostics Badge */}
+            <button
+              onClick={() => setShowStorageModal(true)}
+              className="hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-full bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold transition-all shadow-xs cursor-pointer"
+              title={isEn ? "IndexedDB Storage Engine & Disk Quota Monitor" : "Giám sát Dung lượng Bộ nhớ IndexedDB"}
+            >
+              <Database className="w-3.5 h-3.5 text-emerald-500" />
+              <span>{isEn ? "Storage: GBs Safe" : "Bộ nhớ: GBs An Toàn"}</span>
+            </button>
 
             {/* Language Switcher */}
             <button
@@ -1278,6 +1291,11 @@ export default function SchoolManagementPage() {
         </div>
       )}
 
+      <StorageDiagnosticsModal
+        isOpen={showStorageModal}
+        onClose={() => setShowStorageModal(false)}
+        isEn={isEn}
+      />
     </div>
   );
 }

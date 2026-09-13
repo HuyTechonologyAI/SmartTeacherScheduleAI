@@ -37,6 +37,7 @@ import TeacherProfileModal from '@/components/profile/TeacherProfileModal';
 import TeacherAuthModal from '@/components/profile/TeacherAuthModal';
 import StorageDiagnosticsModal from '@/components/storage/StorageDiagnosticsModal';
 import MergeConflictModal from '@/components/sync/MergeConflictModal';
+import ExamSpecificationModal from '@/components/ai/ExamSpecificationModal';
 import { detectAndResolveEventConflicts, ConflictItem } from '@/lib/conflictResolver';
 import { dbGet, dbSet, dbRemove } from '@/lib/storageEngine';
 import { Language, getStoredLanguage, saveStoredLanguage, t } from './i18n';
@@ -971,6 +972,7 @@ export default function UnifiedTeacherScheduleApp() {
   const [examQuestionCount, setExamQuestionCount] = useState(10);
   const [examResult, setExamResult] = useState<ExamMatrixData | null>(null);
   const [examIsGenerating, setExamIsGenerating] = useState(false);
+  const [isExamSpecModalOpen, setIsExamSpecModalOpen] = useState(false);
 
   // AI Chat States
   const [chatMessages, setChatMessages] = useState<Array<{
@@ -5039,6 +5041,15 @@ export default function UnifiedTeacherScheduleApp() {
                     <div className="pt-2">
                       <button
                         type="button"
+                        onClick={() => setIsExamSpecModalOpen(true)}
+                        className="w-full mb-2 py-3 rounded-xl bg-gradient-to-r from-purple-700 via-indigo-600 to-pink-600 hover:from-purple-600 hover:to-indigo-500 text-white font-black text-xs sm:text-sm shadow-lg shadow-purple-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98"
+                      >
+                        <FileText className="w-4 h-4 text-purple-200" />
+                        <span>📋 Soạn Đề Thi Chuẩn Ma Trận Đặc Tả (TT 22/2021/TT-BGDĐT) & Xuất Word (.doc)</span>
+                      </button>
+
+                      <button
+                        type="button"
                         disabled={examIsGenerating}
                         onClick={() => {
                           const top = examTopic.trim();
@@ -8725,6 +8736,16 @@ export default function UnifiedTeacherScheduleApp() {
       />
 
       {/* Teacher Authentication Modal (Login / Register / Switch Account) */}
+      {/* Exam Specification Matrix Modal (TT 22) */}
+      <ExamSpecificationModal
+        isOpen={isExamSpecModalOpen}
+        onClose={() => setIsExamSpecModalOpen(false)}
+        defaultTopic={examTopic}
+        defaultSubject={examSubject}
+        defaultGrade={examGrade}
+        isEn={lang === 'en'}
+      />
+
       <TeacherAuthModal
         isOpen={showTeacherAuthModal}
         onClose={() => setShowTeacherAuthModal(false)}

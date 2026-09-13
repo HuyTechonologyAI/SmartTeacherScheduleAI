@@ -44,6 +44,7 @@ import { Language, t, getStoredLanguage, saveStoredLanguage } from '../app/i18n'
 import StudentAuthModal from '@/components/student/StudentAuthModal';
 import StudentProfileEditModal from '@/components/student/StudentProfileEditModal';
 import StudentAiStudyAssistant from '@/components/student/StudentAiStudyAssistant';
+import VoiceAiTutorModal from '@/components/student/VoiceAiTutorModal';
 import {
   StudentProfile,
   DEFAULT_STUDENT_PROFILE,
@@ -108,6 +109,7 @@ export default function StudentPortalPage() {
   const [studentProfile, setStudentProfile] = useState<StudentProfile>(DEFAULT_STUDENT_PROFILE);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isProfileEditOpen, setIsProfileEditOpen] = useState<boolean>(false);
+  const [isVoiceTutorOpen, setIsVoiceTutorOpen] = useState<boolean>(false);
   const [selectedLevel, setSelectedLevel] = useState<EducationLevel>('primary');
   const [collegeCustomClass, setCollegeCustomClass] = useState<string>('CNTT-K24');
 
@@ -1226,7 +1228,7 @@ export default function StudentPortalPage() {
                   </p>
                 </div>
                 <button
-                  onClick={() => alert(isEn ? "Playing English song..." : "Đang phát bài hát tiếng Anh...")}
+                  onClick={() => setIsVoiceTutorOpen(true)}
                   className="w-full py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <Volume2 className="w-3.5 h-3.5" />
@@ -1315,6 +1317,15 @@ export default function StudentPortalPage() {
         )}
 
       </main>
+
+      {/* Voice AI Tutor & Pronunciation Modal */}
+      <VoiceAiTutorModal
+        isOpen={isVoiceTutorOpen}
+        onClose={() => setIsVoiceTutorOpen(false)}
+        currentClass={selectedClass}
+        studentName={studentName}
+        isEn={isEn}
+      />
 
       {/* Student Authentication Modal (CCCD / School ID) */}
       <StudentAuthModal

@@ -4,6 +4,9 @@ import React, { useState } from 'react';
 import {
   Sparkles,
   Zap,
+  Volume2,
+  Mic,
+  VolumeX,
   BookOpen,
   Send,
   HelpCircle,
@@ -35,6 +38,8 @@ import {
   checkStudentRateLimit 
 } from '@/lib/aiSemanticCache';
 import AiCacheAnalyticsModal from '@/components/ai/AiCacheAnalyticsModal';
+import VoiceAiTutorModal from '@/components/student/VoiceAiTutorModal';
+import { speakVietnamese, stopSpeaking } from '@/lib/voiceAiService';
 
 interface StudentAiStudyAssistantProps {
   lang: Language;
@@ -84,6 +89,8 @@ export default function StudentAiStudyAssistant({
   const [cacheLatency, setCacheLatency] = useState<number>(0);
   const [showCacheModal, setShowCacheModal] = useState<boolean>(false);
   const [rateLimitWarning, setRateLimitWarning] = useState<string | null>(null);
+  const [showVoiceModal, setShowVoiceModal] = useState<boolean>(false);
+  const [playingStepNumber, setPlayingStepNumber] = useState<number | null>(null);
   const [response, setResponse] = useState<StudentAiResponse | null>(() => {
     if (initialQuestion) {
       return generatePedagogicalResponse(initialQuestion, currentClass, 'HINT_METHOD');
@@ -169,6 +176,22 @@ export default function StudentAiStudyAssistant({
     }, 300);
   };
 
+  const handleSpeakStep = (stepNumber: number, textToRead: string) => {
+    if (playingStepNumber === stepNumber) {
+      stopSpeaking();
+      setPlayingStepNumber(null);
+      return;
+    }
+
+    stopSpeaking();
+    setPlayingStepNumber(stepNumber);
+    speakVietnamese(textToRead, {
+      rate: 0.92,
+      onStart: () => setPlayingStepNumber(stepNumber),
+      onEnd: () => setPlayingStepNumber(null)
+    });
+  };
+
   const handleReset = () => {
     setQuestion('');
     setStudentSolution('');
@@ -200,6 +223,17 @@ export default function StudentAiStudyAssistant({
             </p>
           </div>
         </div>
+
+        {/* Nút mở phòng luyện phát âm & giọng nói AI */}
+        <button
+          type="button"
+          onClick={() => setShowVoiceModal(true)}
+          className="px-3 py-1.5 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-700/70 text-rose-800 dark:text-rose-200 text-[11px] font-bold flex items-center gap-1.5 shrink-0 shadow-2xs hover:bg-rose-100 transition-colors cursor-pointer"
+          title={isEn ? "Open Voice AI Tutor & Pronunciation Coach" : "Mở Phòng Luyện Phát Âm & Trợ Lý Giọng Nói AI"}
+        >
+          <Mic className="w-3.5 h-3.5 text-rose-600 fill-rose-500" />
+          <span>{isEn ? "Voice Tutor" : "Luyện Giọng Nói AI 🎙️"}</span>
+        </button>
 
         {/* Nút xem thống kê Token & Bộ đệm AI */}
         <button
@@ -416,13 +450,25 @@ export default function StudentAiStudyAssistant({
                   key={step.stepNumber}
                   className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-2"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
-                      {step.stepNumber}
-                    </span>
-                    <h6 className="font-bold text-slate-900 dark:text-white">
-                      {step.stepTitle}
-                    </h6>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
+                        {step.stepNumber}
+                      </span>
+                      <h6 className="font-bold text-slate-900 dark:text-white">
+                        {step.stepTitle}
+                      </h6>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSpeakStep(step.stepNumber, `${step.stepTitle}. ${step.guidance}`)}
+                      className="px-2.5 py-1 rounded-xl bg-emerald-100/70 hover:bg-emerald-200/80 dark:bg-emerald-950 dark:hover:bg-emerald-900 text-emerald-800 dark:text-emerald-200 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                      title={playingStepNumber === step.stepNumber ? "Dừng giọng đọc" : "Nghe cô giáo AI giảng bước này"}
+                    >
+                      <Volume2 className={`w-3.5 h-3.5 ${playingStepNumber === step.stepNumber ? 'animate-bounce text-emerald-600' : ''}`} />
+                      <span>{playingStepNumber === step.stepNumber ? "Tạm dừng" : "Nghe cô giảng 🔊"}</span>
+                    </button>
                   </div>
 
                   <p className="text-slate-700 dark:text-slate-300 leading-relaxed font-normal pl-8 whitespace-pre-wrap">
@@ -475,6 +521,14 @@ export default function StudentAiStudyAssistant({
 
         </div>
       )}
+
+      <VoiceAiTutorModal
+        isOpen={showVoiceModal}
+        onClose={() => setShowVoiceModal(false)}
+        currentClass={currentClass}
+        studentName={studentName}
+        isEn={isEn}
+      />
 
       <AiCacheAnalyticsModal
         isOpen={showCacheModal}

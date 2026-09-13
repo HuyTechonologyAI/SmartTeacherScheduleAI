@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import {
   Sparkles,
+  Zap,
   BookOpen,
   Send,
   HelpCircle,
@@ -28,6 +29,12 @@ import {
   StudentAiResponse
 } from './studentAiPedagogyBrain';
 import { Language } from '@/app/app/i18n';
+import { 
+  querySemanticCache, 
+  storeInSemanticCache, 
+  checkStudentRateLimit 
+} from '@/lib/aiSemanticCache';
+import AiCacheAnalyticsModal from '@/components/ai/AiCacheAnalyticsModal';
 
 interface StudentAiStudyAssistantProps {
   lang: Language;
@@ -73,6 +80,10 @@ export default function StudentAiStudyAssistant({
   const [mode, setMode] = useState<PedagogicalMode>('HINT_METHOD');
   const [selectedSubject, setSelectedSubject] = useState<SubjectType>('math');
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isCacheHit, setIsCacheHit] = useState<boolean>(false);
+  const [cacheLatency, setCacheLatency] = useState<number>(0);
+  const [showCacheModal, setShowCacheModal] = useState<boolean>(false);
+  const [rateLimitWarning, setRateLimitWarning] = useState<string | null>(null);
   const [response, setResponse] = useState<StudentAiResponse | null>(() => {
     if (initialQuestion) {
       return generatePedagogicalResponse(initialQuestion, currentClass, 'HINT_METHOD');
@@ -80,33 +91,82 @@ export default function StudentAiStudyAssistant({
     return null;
   });
 
-  const handleAsk = (e?: React.FormEvent) => {
+  const handleAsk = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!question.trim()) return;
+    setRateLimitWarning(null);
+
+    // Kiểm tra Rate Limit (30 câu/giờ/học sinh)
+    const rateCheck = checkStudentRateLimit(studentName);
+    if (!rateCheck.isAllowed) {
+      setRateLimitWarning(
+        isEn 
+          ? "You have reached the hourly AI quota (30 questions/hour). Please take a break or review your notebook!" 
+          : "Em đã sử dụng hết hạn mức 30 câu hỏi AI trong 1 giờ. Hãy nghỉ giải lao một chút hoặc ôn lại bài trong vở nhé!"
+      );
+      return;
+    }
 
     setIsLoading(true);
-    setTimeout(() => {
-      const res = generatePedagogicalResponse(
-        question.trim(),
-        currentClass,
-        mode,
-        mode === 'CHECK_WORK' ? studentSolution : undefined
-      );
+
+    try {
+      // 1. Kiểm tra L1/L2 Semantic Cache trước (0 Tokens, phản hồi < 30ms)
+      const cacheResult = await querySemanticCache(question.trim(), currentClass, mode);
+      if (cacheResult.isHit && cacheResult.entry) {
+        setResponse(cacheResult.entry.response);
+        setSelectedSubject(cacheResult.entry.subject);
+        setIsCacheHit(true);
+        setCacheLatency(cacheResult.latencyMs || 18);
+        setIsLoading(false);
+        return;
+      }
+
+      // 2. Cache Miss: Suy luận sư phạm và nạp vào Cache cho các học sinh kế tiếp
+      setTimeout(async () => {
+        const res = generatePedagogicalResponse(
+          question.trim(),
+          currentClass,
+          mode,
+          mode === 'CHECK_WORK' ? studentSolution : undefined
+        );
+        setResponse(res);
+        setSelectedSubject(res.subject);
+        setIsCacheHit(false);
+        setCacheLatency(390);
+        setIsLoading(false);
+
+        await storeInSemanticCache(question.trim(), currentClass, mode, res.subject, res);
+      }, 350);
+    } catch {
+      const res = generatePedagogicalResponse(question.trim(), currentClass, mode);
       setResponse(res);
-      setSelectedSubject(res.subject);
       setIsLoading(false);
-    }, 450);
+    }
   };
 
-  const handleSelectSample = (sample: typeof SAMPLE_QUESTIONS[0]) => {
+  const handleSelectSample = async (sample: typeof SAMPLE_QUESTIONS[0]) => {
     setQuestion(sample.question);
     setSelectedSubject(sample.subject);
+    setRateLimitWarning(null);
     setIsLoading(true);
-    setTimeout(() => {
+
+    const cacheResult = await querySemanticCache(sample.question, currentClass, mode);
+    if (cacheResult.isHit && cacheResult.entry) {
+      setResponse(cacheResult.entry.response);
+      setIsCacheHit(true);
+      setCacheLatency(cacheResult.latencyMs || 15);
+      setIsLoading(false);
+      return;
+    }
+
+    setTimeout(async () => {
       const res = generatePedagogicalResponse(sample.question, currentClass, mode);
       setResponse(res);
+      setIsCacheHit(false);
+      setCacheLatency(340);
       setIsLoading(false);
-    }, 350);
+      await storeInSemanticCache(sample.question, currentClass, mode, sample.subject, res);
+    }, 300);
   };
 
   const handleReset = () => {
@@ -140,6 +200,17 @@ export default function StudentAiStudyAssistant({
             </p>
           </div>
         </div>
+
+        {/* Nút xem thống kê Token & Bộ đệm AI */}
+        <button
+          type="button"
+          onClick={() => setShowCacheModal(true)}
+          className="px-3 py-1.5 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700/70 text-amber-800 dark:text-amber-200 text-[11px] font-bold flex items-center gap-1.5 shrink-0 shadow-2xs hover:bg-amber-100 transition-colors cursor-pointer"
+          title={isEn ? "View AI Token Economy & Semantic Cache Monitor" : "Xem Giám Sát Hiệu Quả Token & Bộ Đệm Ngữ Nghĩa"}
+        >
+          <Zap className="w-3.5 h-3.5 text-amber-600 fill-amber-500" />
+          <span>{isEn ? "AI Cache Monitor" : "Tiết Kiệm Token AI"}</span>
+        </button>
 
         {/* Badge Tuyên ngôn Sư phạm */}
         <div className="px-3 py-1.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[11px] font-bold flex items-center gap-1.5 shrink-0 shadow-2xs">
@@ -217,6 +288,14 @@ export default function StudentAiStudyAssistant({
         </div>
       </div>
 
+      {/* Cảnh báo Rate Limit nếu chạm trần */}
+      {rateLimitWarning && (
+        <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs flex items-center gap-2 animate-shake">
+          <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+          <span className="font-semibold">{rateLimitWarning}</span>
+        </div>
+      )}
+
       {/* Form Nhập Câu Hỏi & Bài Tập Cần Hỗ Trợ */}
       <form onSubmit={handleAsk} className="space-y-3">
         <div>
@@ -285,9 +364,22 @@ export default function StudentAiStudyAssistant({
           {/* Tiêu đề & Cảnh báo Sư phạm */}
           <div className="bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 rounded-2xl p-3.5 flex items-start justify-between gap-3">
             <div className="space-y-1">
-              <span className="px-2 py-0.5 rounded-full bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-200 text-[10px] font-black uppercase">
-                {isEn ? "Pedagogical Solution Plan" : "Kế Hoạch Hướng Dẫn Sư Phạm"}
-              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-2 py-0.5 rounded-full bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-200 text-[10px] font-black uppercase">
+                  {isEn ? "Pedagogical Solution Plan" : "Kế Hoạch Hướng Dẫn Sư Phạm"}
+                </span>
+                {isCacheHit ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 text-[10px] font-black border border-emerald-300 dark:border-emerald-800">
+                    <Zap className="w-3 h-3 text-emerald-600 fill-emerald-600" />
+                    <span>{isEn ? `Pre-warmed SGK Cache Hit (0 Tokens • ${cacheLatency}ms)` : `⚡ Đã đệm chuẩn SGK (0 Token • ${cacheLatency}ms)`}</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-200 text-[10px] font-black border border-indigo-300 dark:border-indigo-800">
+                    <Sparkles className="w-3 h-3 text-indigo-600" />
+                    <span>{isEn ? `Direct AI Inference (~850 Tokens • ${cacheLatency}ms)` : `✨ Suy luận trực tiếp (~850 Token • ${cacheLatency}ms)`}</span>
+                  </span>
+                )}
+              </div>
               <h4 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
                 {response.title}
               </h4>
@@ -384,6 +476,11 @@ export default function StudentAiStudyAssistant({
         </div>
       )}
 
+      <AiCacheAnalyticsModal
+        isOpen={showCacheModal}
+        onClose={() => setShowCacheModal(false)}
+        isEn={isEn}
+      />
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import {
   Sparkles,
+  Zap,
   ShieldAlert,
   TrendingUp,
   AlertTriangle,
@@ -25,6 +26,7 @@ import {
   SchoolClassroomItem
 } from '@/app/school/schoolManagementData';
 import { Language } from '@/app/app/i18n';
+import AiCacheAnalyticsModal from '@/components/ai/AiCacheAnalyticsModal';
 
 interface SchoolAiAnalyticsAssistantProps {
   lang: Language;
@@ -43,6 +45,7 @@ export default function SchoolAiAnalyticsAssistant({
   const [activeSubTab, setActiveSubTab] = useState<'risk_detection' | 'workload_analytics' | 'auto_reports'>('risk_detection');
   const [copiedReport, setCopiedReport] = useState<boolean>(false);
   const [selectedReportType, setSelectedReportType] = useState<'MONTHLY_SUMMARY' | 'SAFETY_INSPECTION' | 'PARENT_ANNOUNCEMENT'>('MONTHLY_SUMMARY');
+  const [showAiCacheStats, setShowAiCacheStats] = useState<boolean>(false);
 
   // Tính toán chỉ số phân tích dữ liệu tự động
   const totalStaff = staffList.length;
@@ -104,38 +107,49 @@ export default function SchoolAiAnalyticsAssistant({
           </div>
         </div>
 
-        {/* 3 Sub-tabs */}
-        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl shrink-0">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => setActiveSubTab('risk_detection')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeSubTab === 'risk_detection'
-                ? 'bg-white dark:bg-[#171b2d] text-rose-600 dark:text-rose-400 shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-            }`}
+            onClick={() => setShowAiCacheStats(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700/60 text-amber-700 dark:text-amber-300 text-xs font-bold transition-colors cursor-pointer"
+            title={isEn ? "View School AI Token Economy Monitor" : "Giám sát kinh tế Token AI & Bộ đệm nhà trường"}
           >
-            🚨 {isEn ? "Risk Alerts" : "Cảnh Báo Rủi Ro"}
+            <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+            <span>{isEn ? "AI Token Economy" : "Giám Sát Token AI"}</span>
           </button>
-          <button
-            onClick={() => setActiveSubTab('workload_analytics')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeSubTab === 'workload_analytics'
-                ? 'bg-white dark:bg-[#171b2d] text-indigo-600 dark:text-indigo-400 shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-            }`}
-          >
-            📊 {isEn ? "Workload Scan" : "Định Mức Giờ Dạy"}
-          </button>
-          <button
-            onClick={() => setActiveSubTab('auto_reports')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeSubTab === 'auto_reports'
-                ? 'bg-white dark:bg-[#171b2d] text-emerald-600 dark:text-emerald-400 shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-            }`}
-          >
-            📝 {isEn ? "Auto Reports" : "Soạn Thảo Báo Cáo"}
-          </button>
+
+          {/* 3 Sub-tabs */}
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl shrink-0">
+            <button
+              onClick={() => setActiveSubTab('risk_detection')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeSubTab === 'risk_detection'
+                  ? 'bg-white dark:bg-[#171b2d] text-rose-600 dark:text-rose-400 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
+            >
+              🚨 {isEn ? "Risk Alerts" : "Cảnh Báo Rủi Ro"}
+            </button>
+            <button
+              onClick={() => setActiveSubTab('workload_analytics')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeSubTab === 'workload_analytics'
+                  ? 'bg-white dark:bg-[#171b2d] text-indigo-600 dark:text-indigo-400 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
+            >
+              📊 {isEn ? "Workload Scan" : "Định Mức Giờ Dạy"}
+            </button>
+            <button
+              onClick={() => setActiveSubTab('auto_reports')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeSubTab === 'auto_reports'
+                  ? 'bg-white dark:bg-[#171b2d] text-emerald-600 dark:text-emerald-400 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
+            >
+              📝 {isEn ? "Auto Reports" : "Soạn Thảo Báo Cáo"}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -304,6 +318,11 @@ export default function SchoolAiAnalyticsAssistant({
         </div>
       )}
 
+      <AiCacheAnalyticsModal
+        isOpen={showAiCacheStats}
+        onClose={() => setShowAiCacheStats(false)}
+        isEn={isEn}
+      />
     </div>
   );
 }

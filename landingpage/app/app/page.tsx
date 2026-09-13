@@ -39,6 +39,7 @@ import StorageDiagnosticsModal from '@/components/storage/StorageDiagnosticsModa
 import MergeConflictModal from '@/components/sync/MergeConflictModal';
 import ExamSpecificationModal from '@/components/ai/ExamSpecificationModal';
 import ClassGradebookModal from '@/components/gradebook/ClassGradebookModal';
+import SubjectManagerModal from '@/components/schedule/SubjectManagerModal';
 import { detectAndResolveEventConflicts, ConflictItem } from '@/lib/conflictResolver';
 import { dbGet, dbSet, dbRemove } from '@/lib/storageEngine';
 import { Language, getStoredLanguage, saveStoredLanguage, t } from './i18n';
@@ -501,6 +502,7 @@ export default function UnifiedTeacherScheduleApp() {
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSubject, setFilterSubject] = useState('ALL');
+  const [showSubjectManagerModal, setShowSubjectManagerModal] = useState<boolean>(false);
   const [filterClass, setFilterClass] = useState('ALL');
   const [filterType, setFilterType] = useState('ALL');
   const [calendarViewMode, setCalendarViewMode] = useState<'day' | 'week' | 'all'>('day');
@@ -1761,6 +1763,122 @@ export default function UnifiedTeacherScheduleApp() {
   // Distinct subjects and classes for filter dropdowns
   const subjectList = useMemo(() => Array.from(new Set(events.map((e) => e.subject))).filter(Boolean), [events]);
   const classList = useMemo(() => Array.from(new Set(events.map((e) => e.className))).filter(Boolean), [events]);
+
+
+  // Danh sách môn học và thống kê số ca dạy
+  const subjectStatsList = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const ev of events) {
+      if (excludeTestData && isTestData(ev)) continue;
+      if (ev.subject) {
+        map.set(ev.subject, (map.get(ev.subject) || 0) + 1);
+      }
+    }
+    return Array.from(map.entries()).map(([name, count]) => ({ name, count }));
+  }, [events, excludeTestData]);
+
+  // Đổi tên môn học hàng loạt (Rename Subject across events & schedules)
+  const handleRenameSubject = (oldName: string, newName: string) => {
+    if (!oldName || !newName || oldName === newName) return;
+
+    let updatedCount = 0;
+    const updatedEvents = events.map(e => {
+      if (e.subject === oldName) {
+        updatedCount++;
+        return {
+          ...e,
+          subject: newName,
+          title: e.title === oldName ? newName : e.title,
+          updatedAt: Date.now()
+        };
+      }
+      return e;
+    });
+
+    const updatedSchedules = schedules.map(s => {
+      if (s.subject === oldName) {
+        return {
+          ...s,
+          subject: newName,
+          updatedAt: Date.now()
+        };
+      }
+      return s;
+    });
+
+    setEvents(updatedEvents);
+    setSchedules(updatedSchedules);
+    localStorage.setItem('smart_teacher_events', JSON.stringify(updatedEvents));
+    localStorage.setItem('smart_teacher_schedules', JSON.stringify(updatedSchedules));
+
+    if (filterSubject === oldName) {
+      setFilterSubject(newName);
+    }
+
+    pushToCloud(updatedEvents, updatedSchedules, syncCode, false);
+    setAlertBanner(`🟢 Đã đổi tên môn "${oldName}" thành "${newName}" cho ${updatedCount} ca dạy!`);
+    setTimeout(() => setAlertBanner(null), 4000);
+  };
+
+  // Xoá môn học (Delete Subject: delete events or keep & reassign)
+  const handleDeleteSubject = (subjectToDelete: string, action: 'delete_events' | 'keep_and_reassign', fallbackSubject?: string) => {
+    if (!subjectToDelete) return;
+
+    let updatedEvents = [...events];
+    let updatedSchedules = [...schedules];
+
+    if (action === 'delete_events') {
+      const deletedIds = events.filter(e => e.subject === subjectToDelete).map(e => String(e.id));
+      recordDeletedEventIds(deletedIds);
+      updatedEvents = events.filter(e => e.subject !== subjectToDelete);
+      updatedSchedules = schedules.filter(s => s.subject !== subjectToDelete);
+      setAlertBanner(`🟢 Đã xoá môn "${subjectToDelete}" và toàn bộ ${deletedIds.length} ca dạy liên quan!`);
+    } else {
+      const targetSub = fallbackSubject || 'Toán học';
+      updatedEvents = events.map(e => {
+        if (e.subject === subjectToDelete) {
+          return {
+            ...e,
+            subject: targetSub,
+            title: e.title === subjectToDelete ? targetSub : e.title,
+            updatedAt: Date.now()
+          };
+        }
+        return e;
+      });
+      updatedSchedules = schedules.map(s => {
+        if (s.subject === subjectToDelete) {
+          return {
+            ...s,
+            subject: targetSub,
+            updatedAt: Date.now()
+          };
+        }
+        return s;
+      });
+      setAlertBanner(`🟢 Đã xoá môn "${subjectToDelete}" và chuyển toàn bộ ca dạy sang môn "${targetSub}"!`);
+    }
+
+    setEvents(updatedEvents);
+    setSchedules(updatedSchedules);
+    localStorage.setItem('smart_teacher_events', JSON.stringify(updatedEvents));
+    localStorage.setItem('smart_teacher_schedules', JSON.stringify(updatedSchedules));
+
+    if (filterSubject === subjectToDelete) {
+      setFilterSubject('ALL');
+    }
+
+    pushToCloud(updatedEvents, updatedSchedules, syncCode, false, action === 'delete_events');
+    setTimeout(() => setAlertBanner(null), 4000);
+  };
+
+  // Thêm môn học mới nhanh
+  const handleAddSubjectQuick = (newSubjectName: string) => {
+    if (!newSubjectName.trim()) return;
+    setFilterSubject(newSubjectName.trim());
+    setAlertBanner(`🟢 Đã tạo môn mới "${newSubjectName.trim()}". Thầy/Cô có thể tạo ca dạy cho môn này ngay!`);
+    setTimeout(() => setAlertBanner(null), 4000);
+  };
 
   // Pedagogical Log Statistics (Sổ Báo Giảng)
   const reportStats = useMemo(() => {
@@ -3161,9 +3279,51 @@ export default function UnifiedTeacherScheduleApp() {
                   />
                 </div>
 
-                {/* Subject Dropdown */}
+                {/* Subject Dropdown with Quick Edit, Delete & Manager */}
                 <div>
-                  <label className="text-xs text-slate-700 dark:text-slate-300 block mb-1 font-medium">Lọc môn học:</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs text-slate-700 dark:text-slate-300 font-medium">Lọc môn học:</label>
+                    <div className="flex items-center gap-1">
+                      {filterSubject !== 'ALL' && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newName = prompt(`Nhập tên mới cho môn "${filterSubject}":`, filterSubject);
+                              if (newName && newName.trim() && newName.trim() !== filterSubject) {
+                                handleRenameSubject(filterSubject, newName.trim());
+                              }
+                            }}
+                            className="p-1 rounded-md text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                            title="Đổi tên môn này"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const count = events.filter(e => e.subject === filterSubject).length;
+                              if (confirm(`Thầy/Cô có chắc chắn muốn xoá môn "${filterSubject}" (${count} ca dạy)?\n\nBấm OK để mở bảng quản lý xoá an toàn.`)) {
+                                setShowSubjectManagerModal(true);
+                              }
+                            }}
+                            className="p-1 rounded-md text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                            title="Xoá môn này"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setShowSubjectManagerModal(true)}
+                        className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-semibold ml-1 cursor-pointer"
+                        title="Mở bảng quản lý môn học"
+                      >
+                        Quản lý
+                      </button>
+                    </div>
+                  </div>
                   <select
                     value={filterSubject}
                     onChange={(e) => setFilterSubject(e.target.value)}
@@ -8766,6 +8926,16 @@ export default function UnifiedTeacherScheduleApp() {
         isEn={lang === 'en'}
       />
 
+
+      {/* Subject Manager Modal (Edit / Delete / Add Subjects) */}
+      <SubjectManagerModal
+        isOpen={showSubjectManagerModal}
+        onClose={() => setShowSubjectManagerModal(false)}
+        subjects={subjectStatsList}
+        onRenameSubject={handleRenameSubject}
+        onDeleteSubject={handleDeleteSubject}
+        onAddSubject={handleAddSubjectQuick}
+      />
       <TeacherAuthModal
         isOpen={showTeacherAuthModal}
         onClose={() => setShowTeacherAuthModal(false)}

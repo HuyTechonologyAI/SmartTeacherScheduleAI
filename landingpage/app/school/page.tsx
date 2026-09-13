@@ -37,7 +37,9 @@ import {
   Briefcase,
   Sliders,
   FolderOpen,
-  Database
+  Database,
+  Edit3,
+  Trash2
 } from 'lucide-react';
 import { Language, getStoredLanguage, saveStoredLanguage } from '../app/i18n';
 import StorageDiagnosticsModal from '@/components/storage/StorageDiagnosticsModal';
@@ -231,6 +233,34 @@ export default function SchoolManagementPage() {
     setShowAddStaffModal(false);
     setNewStaffName('');
     showToast('Đã thêm nhân sự mới vào danh sách toàn trường thành công!');
+  };
+
+
+  // Đổi tên môn học trong toàn bộ giáo án của trường
+  const handleRenameSchoolSubject = (oldName: string, newName: string) => {
+    if (!oldName || !newName || oldName === newName) return;
+    const updated = lessonPlans.map(p => {
+      if (p.subject === oldName) {
+        return { ...p, subject: newName };
+      }
+      return p;
+    });
+    setLessonPlans(updated);
+    saveStoredLessonPlans(updated);
+    if (filterSubject === oldName) setFilterSubject(newName);
+    showToast(`Đã đổi tên môn "${oldName}" thành "${newName}" trong toàn bộ giáo án nhà trường!`);
+  };
+
+  // Xoá môn học trong giáo án
+  const handleDeleteSchoolSubject = (subjectToDelete: string) => {
+    if (!subjectToDelete) return;
+    const count = lessonPlans.filter(p => p.subject === subjectToDelete).length;
+    if (!confirm(`Thầy/Cô có chắc muốn xoá tất cả ${count} giáo án thuộc môn "${subjectToDelete}" không?`)) return;
+    const updated = lessonPlans.filter(p => p.subject !== subjectToDelete);
+    setLessonPlans(updated);
+    saveStoredLessonPlans(updated);
+    if (filterSubject === subjectToDelete) setFilterSubject('ALL');
+    showToast(`Đã xoá môn "${subjectToDelete}" và các giáo án liên quan thành công!`);
   };
 
   // Lọc danh sách Giáo án đa chiều (Tab A)
@@ -608,15 +638,42 @@ export default function SchoolManagementPage() {
                   </select>
                 </div>
 
-                {/* 4. Môn học */}
+                {/* 4. Môn học with quick edit & delete */}
                 <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Môn học</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase">Môn học</label>
+                    {filterSubject !== 'ALL' && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newName = prompt(`Nhập tên mới cho môn "${filterSubject}":`, filterSubject);
+                            if (newName && newName.trim() && newName.trim() !== filterSubject) {
+                              handleRenameSchoolSubject(filterSubject, newName.trim());
+                            }
+                          }}
+                          className="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer p-0.5"
+                          title="Đổi tên môn học này"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteSchoolSubject(filterSubject)}
+                          className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer p-0.5"
+                          title="Xoá môn học này"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <select
                     value={filterSubject}
                     onChange={e => setFilterSubject(e.target.value)}
                     className="w-full px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400"
                   >
-                    <option value="ALL">Tất cả môn học</option>
+                    <option value="ALL">Tất cả môn học ({subjectsList.length} môn)</option>
                     {subjectsList.map(s => (
                       <option key={s} value={s}>{s}</option>
                     ))}

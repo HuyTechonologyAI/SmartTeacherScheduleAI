@@ -234,7 +234,18 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        // 3. TASKS SCREEN
+                        // 3. STUDENTS & GRADEBOOK SCREEN (THÔNG TƯ 22)
+                        composable(Screen.Students.route) {
+                            com.smartteacher.schedule.feature.students.StudentManagementScreen(
+                                onNavigateBack = {
+                                    navController.navigate(Screen.Today.route) {
+                                        popUpTo(Screen.Today.route) { inclusive = false }
+                                    }
+                                }
+                            )
+                        }
+
+                        // TASKS SCREEN (Secondary)
                         composable(Screen.Tasks.route) {
                             com.smartteacher.schedule.feature.tasks.TasksScreen(
                                 tasks = allTasks,

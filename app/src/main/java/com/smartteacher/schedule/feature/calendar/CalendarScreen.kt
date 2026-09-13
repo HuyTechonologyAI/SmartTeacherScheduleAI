@@ -126,17 +126,22 @@ fun CalendarScreen(
     val startOfNextWeek = endOfThisWeek.plusDays(1)
     val endOfNextWeek = startOfNextWeek.plusDays(6)
 
+    val dynamicSubjects = remember(events) {
+        events.map { it.subject.trim() }.filter { it.isNotBlank() }.distinct()
+    }
+
     // Lọc sự kiện cho chế độ xem tổng thể (Agenda)
-    val agendaEvents = remember(events, selectedFilter) {
+    val agendaEvents = remember(events, selectedFilter, dynamicSubjects) {
         events.filter { event ->
             val eventDate = try { LocalDate.parse(event.date) } catch (e: Exception) { null }
             if (eventDate == null) return@filter false
 
-            when (selectedFilter) {
-                "Tuần này" -> !eventDate.isBefore(startOfThisWeek) && !eventDate.isAfter(endOfThisWeek)
-                "Tuần tới" -> !eventDate.isBefore(startOfNextWeek) && !eventDate.isAfter(endOfNextWeek)
-                "Lý thuyết" -> event.sessionType.contains("lý thuyết", ignoreCase = true) || (!event.sessionType.contains("thực hành", ignoreCase = true) && !event.title.contains("thực hành", ignoreCase = true) && !event.notes.contains("thực hành", ignoreCase = true))
-                "Thực hành" -> event.sessionType.contains("thực hành", ignoreCase = true) || event.title.contains("thực hành", ignoreCase = true) || event.notes.contains("thực hành", ignoreCase = true) || event.room.contains("xưởng", ignoreCase = true)
+            when {
+                selectedFilter == "Tuần này" -> !eventDate.isBefore(startOfThisWeek) && !eventDate.isAfter(endOfThisWeek)
+                selectedFilter == "Tuần tới" -> !eventDate.isBefore(startOfNextWeek) && !eventDate.isAfter(endOfNextWeek)
+                selectedFilter == "Lý thuyết" -> event.sessionType.contains("lý thuyết", ignoreCase = true) || (!event.sessionType.contains("thực hành", ignoreCase = true) && !event.title.contains("thực hành", ignoreCase = true) && !event.notes.contains("thực hành", ignoreCase = true))
+                selectedFilter == "Thực hành" -> event.sessionType.contains("thực hành", ignoreCase = true) || event.title.contains("thực hành", ignoreCase = true) || event.notes.contains("thực hành", ignoreCase = true) || event.room.contains("xưởng", ignoreCase = true)
+                dynamicSubjects.contains(selectedFilter) -> event.subject.trim().equals(selectedFilter, ignoreCase = true) || event.title.contains(selectedFilter, ignoreCase = true)
                 else -> !eventDate.isBefore(today.minusDays(1)) // Mặc định hiển thị từ hôm nay trở đi
             }
         }.sortedWith(compareBy({ it.date }, { it.startTime }))
@@ -148,13 +153,14 @@ fun CalendarScreen(
     }
 
     // Sự kiện cho chế độ xem theo ngày đơn lẻ
-    val singleDayEvents = remember(events, selectedDate, selectedFilter) {
+    val singleDayEvents = remember(events, selectedDate, selectedFilter, dynamicSubjects) {
         val dateStr = selectedDate.toString()
         events.filter { event ->
             if (event.date != dateStr) return@filter false
-            when (selectedFilter) {
-                "Lý thuyết" -> event.sessionType.contains("lý thuyết", ignoreCase = true) || (!event.sessionType.contains("thực hành", ignoreCase = true) && !event.title.contains("thực hành", ignoreCase = true) && !event.notes.contains("thực hành", ignoreCase = true))
-                "Thực hành" -> event.sessionType.contains("thực hành", ignoreCase = true) || event.title.contains("thực hành", ignoreCase = true) || event.notes.contains("thực hành", ignoreCase = true) || event.room.contains("xưởng", ignoreCase = true)
+            when {
+                selectedFilter == "Lý thuyết" -> event.sessionType.contains("lý thuyết", ignoreCase = true) || (!event.sessionType.contains("thực hành", ignoreCase = true) && !event.title.contains("thực hành", ignoreCase = true) && !event.notes.contains("thực hành", ignoreCase = true))
+                selectedFilter == "Thực hành" -> event.sessionType.contains("thực hành", ignoreCase = true) || event.title.contains("thực hành", ignoreCase = true) || event.notes.contains("thực hành", ignoreCase = true) || event.room.contains("xưởng", ignoreCase = true)
+                dynamicSubjects.contains(selectedFilter) -> event.subject.trim().equals(selectedFilter, ignoreCase = true) || event.title.contains(selectedFilter, ignoreCase = true)
                 else -> true
             }
         }.sortedBy { it.startTime }
@@ -247,10 +253,16 @@ fun CalendarScreen(
             }
 
             // Quick Filter Chips row (Lý thuyết / Thực hành / Thời gian) - Available in BOTH view modes
-            val filterOptions = if (viewMode == 0) {
-                listOf("Tất cả", "Tuần này", "Tuần tới", "📘 Lý thuyết", "🛠️ Thực hành")
-            } else {
-                listOf("Tất cả", "📘 Lý thuyết", "🛠️ Thực hành")
+            val filterOptions = remember(viewMode, dynamicSubjects) {
+                val base = if (viewMode == 0) {
+                    mutableListOf("Tất cả", "Tuần này", "Tuần tới", "📘 Lý thuyết", "🛠️ Thực hành")
+                } else {
+                    mutableListOf("Tất cả", "📘 Lý thuyết", "🛠️ Thực hành")
+                }
+                dynamicSubjects.forEach { sub ->
+                    base.add("📚 $sub")
+                }
+                base
             }
 
             Row(
@@ -261,9 +273,10 @@ fun CalendarScreen(
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 filterOptions.forEach { filterName ->
-                    val normalizedFilter = when (filterName) {
-                        "📘 Lý thuyết" -> "Lý thuyết"
-                        "🛠️ Thực hành" -> "Thực hành"
+                    val normalizedFilter = when {
+                        filterName == "📘 Lý thuyết" -> "Lý thuyết"
+                        filterName == "🛠️ Thực hành" -> "Thực hành"
+                        filterName.startsWith("📚 ") -> filterName.removePrefix("📚 ")
                         else -> filterName
                     }
                     FilterChip(

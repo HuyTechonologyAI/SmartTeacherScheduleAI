@@ -1,8 +1,11 @@
 package com.smartteacher.schedule.feature.settings
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
 import com.smartteacher.schedule.core.sync.CloudSyncManager
 import com.smartteacher.schedule.core.sync.GoogleCalendarManager
 import com.smartteacher.schedule.feature.lockscreen.LockScreenGlanceManager
@@ -58,6 +61,15 @@ fun SettingsScreen(
     var syncCode by remember { mutableStateOf(CloudSyncManager.getSyncCode(context)) }
     var isSyncing by remember { mutableStateOf(false) }
     var showEditSyncCodeDialog by remember { mutableStateOf(false) }
+    var showPlatformGuide by remember { mutableStateOf<String?>(null) }
+    var showEditProfileDialog by remember { mutableStateOf(false) }
+
+    val profilePref = context.getSharedPreferences("smart_teacher_profile_v1", Context.MODE_PRIVATE)
+    var teacherName by remember { mutableStateOf(profilePref.getString("name", "Thầy/Cô Giáo Viên") ?: "Thầy/Cô Giáo Viên") }
+    var schoolName by remember { mutableStateOf(profilePref.getString("school", "Trường THPT / THCS") ?: "Trường THPT / THCS") }
+    var departmentName by remember { mutableStateOf(profilePref.getString("department", "Tổ Khoa Học Tự Nhiên & Công Nghệ") ?: "Tổ Khoa Học Tự Nhiên & Công Nghệ") }
+    var teacherPhone by remember { mutableStateOf(profilePref.getString("phone", "0961364600") ?: "0961364600") }
+    var teacherEmail by remember { mutableStateOf(profilePref.getString("email", "giaovien@moet.edu.vn") ?: "giaovien@moet.edu.vn") }
     var newSyncCodeInput by remember { mutableStateOf("") }
     var lastSyncTime by remember { mutableStateOf(CloudSyncManager.getLastSyncTime(context)) }
     var autoSyncEnabled by remember { mutableStateOf(CloudSyncManager.isAutoSyncEnabled(context)) }
@@ -77,6 +89,54 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Teacher Profile Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
+            ) {
+                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = teacherName.takeLast(1),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                    color = Color.White
+                                )
+                            }
+                            Column {
+                                Text(teacherName, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                Text(schoolName, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                                Text(departmentName, fontSize = 10.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
+
+                        OutlinedButton(
+                            onClick = { showEditProfileDialog = true },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                            modifier = Modifier.height(30.dp),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(12.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text("Sửa", fontSize = 11.sp)
+                        }
+                    }
+                }
+            }
             // Group 1: Notification & Reliability
             SettingsGroupHeader("ĐỘ TIN CẬY & THÔNG BÁO")
             Card(
@@ -282,68 +342,258 @@ fun SettingsScreen(
                 }
             }
 
-            // Group: Cập Nhật Phiên Bản Mới
-            SettingsGroupHeader("CẬP NHẬT ỨNG DỤNG & PHIÊN BẢN MỚI")
+            // Group: HỆ SINH THÁI ĐA NỀN TẢNG (v1.8.0)
+            SettingsGroupHeader("HỆ SINH THÁI ĐA NỀN TẢNG (v1.8.0)")
+            Text(
+                "💡 Nhấp vào bất kỳ lựa chọn nào để xem hướng dẫn cài đặt chi tiết:",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+
+            // 5 Platform Cards Grid
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // 1. Android APK
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showPlatformGuide = "android" },
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.4f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.weight(1f)) {
+                            Box(modifier = Modifier.size(36.dp).background(Color(0xFF10B981).copy(alpha = 0.15f), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.PhoneAndroid, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(20.dp))
+                            }
+                            Column {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text("Android APK", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Surface(shape = RoundedCornerShape(4.dp), color = Color(0xFF10B981).copy(alpha = 0.15f)) {
+                                        Text("v1.8.0 • ~15.7 MB", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFF059669), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                    }
+                                }
+                                Text("Cài trực tiếp Samsung, Tecno, Xiaomi, Oppo...", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                            }
+                        }
+                        Text("Hướng dẫn ➔", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF059669))
+                    }
+                }
+
+                // 2. iOS / iPhone
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showPlatformGuide = "ios" },
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF8B5CF6).copy(alpha = 0.4f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.weight(1f)) {
+                            Box(modifier = Modifier.size(36.dp).background(Color(0xFF8B5CF6).copy(alpha = 0.15f), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.PhoneIphone, contentDescription = null, tint = Color(0xFF8B5CF6), modifier = Modifier.size(20.dp))
+                            }
+                            Column {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text("Bản iOS / iPhone & iPad", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Surface(shape = RoundedCornerShape(4.dp), color = Color(0xFF8B5CF6).copy(alpha = 0.15f)) {
+                                        Text("PWA iOS Safari", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFF7C3AED), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                    }
+                                }
+                                Text("3 bước thêm vào Màn hình chính qua Safari", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                            }
+                        }
+                        Text("Hướng dẫn ➔", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF7C3AED))
+                    }
+                }
+
+                // 3. Desktop Windows / Mac
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showPlatformGuide = "desktop" },
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF6366F1).copy(alpha = 0.4f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.weight(1f)) {
+                            Box(modifier = Modifier.size(36.dp).background(Color(0xFF6366F1).copy(alpha = 0.15f), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.Laptop, contentDescription = null, tint = Color(0xFF6366F1), modifier = Modifier.size(20.dp))
+                            }
+                            Column {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text("Máy tính Desktop", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Surface(shape = RoundedCornerShape(4.dp), color = Color(0xFF6366F1).copy(alpha = 0.15f)) {
+                                        Text("Portable • ~2.4 MB", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4F46E5), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                    }
+                                }
+                                Text("Cửa sổ bục giảng thu nhỏ PiP & chuông Crystal Chime", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                            }
+                        }
+                        Text("Hướng dẫn ➔", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4F46E5))
+                    }
+                }
+
+                // 4. Web App PWA
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showPlatformGuide = "web" },
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF43F5E).copy(alpha = 0.4f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.weight(1f)) {
+                            Box(modifier = Modifier.size(36.dp).background(Color(0xFFF43F5E).copy(alpha = 0.15f), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.Language, contentDescription = null, tint = Color(0xFFF43F5E), modifier = Modifier.size(20.dp))
+                            }
+                            Column {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text("Web App PWA", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Surface(shape = RoundedCornerShape(4.dp), color = Color(0xFFF43F5E).copy(alpha = 0.15f)) {
+                                        Text("Trực tiếp • Offline", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE11D48), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                    }
+                                }
+                                Text("Truy cập gvcncdsai.io.vn/app trên Chrome, Edge", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                            }
+                        }
+                        Text("Hướng dẫn ➔", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE11D48))
+                    }
+                }
+
+                // 5. Google Play AAB
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showPlatformGuide = "googleplay" },
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF0284C7).copy(alpha = 0.4f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.weight(1f)) {
+                            Box(modifier = Modifier.size(36.dp).background(Color(0xFF0284C7).copy(alpha = 0.15f), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.Shop, contentDescription = null, tint = Color(0xFF0284C7), modifier = Modifier.size(20.dp))
+                            }
+                            Column {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text("Google Play AAB", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Surface(shape = RoundedCornerShape(4.dp), color = Color(0xFF0284C7).copy(alpha = 0.15f)) {
+                                        Text("Signed Release", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0284C7), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                    }
+                                }
+                                Text("Gói App Bundle chuẩn triển khai MDM Nhà trường", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                            }
+                        }
+                        Text("Chi tiết ➔", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0284C7))
+                    }
+                }
+            }
+
+            // Group: BẢN QUYỀN & PHÁP LÝ GIÁO DỤC
+            SettingsGroupHeader("BẢN QUYỀN & PHÁP LÝ GIÁO DỤC")
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f))
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
             ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Default.SystemUpdate,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                "Bản cập nhật mới nhất: v1.8.0",
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.titleSmall
-                            )
-                            Text(
-                                "Hệ sinh thái Đa Nền Tảng: Sổ điểm & Học bạ điện tử (TT 22), Trợ lý AI Soạn Đề thi Ma trận đặc tả, Voice AI Tutor luyện phát âm tiếng Anh, Quản lý bộ lọc môn học chủ động!",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                            )
-                        }
+                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(Icons.Default.VerifiedUser, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        Text("Giấy Phép Bản Quyền Số: VN-EDU-2026-STSAI", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     }
+                    Text(
+                        "• Bản quyền tác giả & Đơn vị phát triển: Huy Technology AI\n• Chứng nhận sở hữu trí tuệ: Giải pháp Trợ lý Lịch dạy & Sư phạm số\n• Tiêu chuẩn an toàn thông tin: Đáp ứng Khung năng lực số giáo viên (CV 3456/BGDĐT-CNTT) & Bảo mật dữ liệu học sinh (Nghị định 13/2023/NĐ-CP).",
+                        fontSize = 11.sp,
+                        lineHeight = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                }
+            }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = {
-                                runCatching {
-                                    val url = "https://gvcncdsai.io.vn/SmartTeacherSchedule_v1.8.0_Release.apk"
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                    context.startActivity(intent)
-                                }
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Tải APK v1.8.0")
+            // Group: BẢNG GÓI CƯỚC & DỊCH VỤ
+            SettingsGroupHeader("BẢNG GÓI CƯỚC & DỊCH VỤ")
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Tier 1: Free
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                ) {
+                    Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Column {
+                            Text("Gói Cá Nhân (Miễn Phí)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text("Thời khóa biểu, Báo thức chuông lớn, Điểm danh cơ bản", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                         }
+                        Text("0 đ", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = Color(0xFF059669))
+                    }
+                }
 
-                        OutlinedButton(
-                            onClick = {
-                                runCatching {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://gvcncdsai.io.vn"))
-                                    context.startActivity(intent)
+                // Tier 2: Pro
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF8B5CF6).copy(alpha = 0.4f))
+                ) {
+                    Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text("Gói Giáo Viên Pro (VIP)", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF7C3AED))
+                                Surface(shape = RoundedCornerShape(4.dp), color = Color(0xFF8B5CF6).copy(alpha = 0.15f)) {
+                                    Text("Khuyên Dùng", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFF7C3AED), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
                                 }
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.Language, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Trang chủ Web")
+                            }
+                            Text("Full AI Giáo án 5512, Đề thi TT 22, Voice AI Tutor", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                         }
+                        Text("199.000 đ/năm", fontWeight = FontWeight.ExtraBold, fontSize = 13.sp, color = Color(0xFF7C3AED))
+                    }
+                }
+
+                // Tier 3: School
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF0284C7).copy(alpha = 0.4f))
+                ) {
+                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Text("Gói Toàn Trường (School Campus)", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF0284C7))
+                            Surface(shape = RoundedCornerShape(6.dp), color = Color(0xFF0284C7).copy(alpha = 0.15f)) {
+                                Text("Liên Hệ Nhận Bảng Phí", fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF0284C7), modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp))
+                            }
+                        }
+                        Text(
+                            "Chi phí linh hoạt tính theo tổng số lượng User (Giáo viên & Học sinh toàn trường), không áp dụng giá cố định.",
+                            fontSize = 10.sp,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+                        )
                     }
                 }
             }
@@ -714,6 +964,141 @@ fun SettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showEditSyncCodeDialog = false }) {
+                    Text("Hủy")
+                }
+            }
+        )
+    }
+
+    if (showPlatformGuide != null) {
+        val platform = showPlatformGuide!!
+        AlertDialog(
+            onDismissRequest = { showPlatformGuide = null },
+            title = {
+                val titleText = when (platform) {
+                    "android" -> "Hướng Dẫn Cài Đặt Android APK"
+                    "ios" -> "Hướng Dẫn Bản iOS / iPhone (Safari)"
+                    "desktop" -> "Hướng Dẫn Máy Tính Desktop (Windows/Mac)"
+                    "web" -> "Hướng Dẫn Web App PWA Trực Tiếp"
+                    "googleplay" -> "Thông Tin Google Play App Bundle"
+                    else -> "Hướng Dẫn Nền Tảng"
+                }
+                Text(titleText, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    when (platform) {
+                        "android" -> {
+                            Text("1️⃣ Bấm 'Tải APK v1.8.0' bên dưới để tải tệp cài đặt chính thức.")
+                            Text("2️⃣ Nếu máy báo 'Tệp có thể gây hại', bấm 'Vẫn tải xuống' (Do cài ngoài Google Play, file đã ký số tuyệt đối an toàn).")
+                            Text("3️⃣ Bấm mở file vừa tải và chọn 'Cài đặt'.")
+                            Text("4️⃣ Cực kỳ quan trọng: Vào Cài đặt điện thoại > Ứng dụng > Smart Teacher > Pin > Chọn 'Không hạn chế' để chống tắt ngầm chuông báo!")
+                        }
+                        "ios" -> {
+                            Text("1️⃣ Mở trình duyệt Safari trên iPhone hoặc iPad.")
+                            Text("2️⃣ Truy cập: gvcncdsai.io.vn/app")
+                            Text("3️⃣ Bấm biểu tượng Chia sẻ (ô vuông có mũi tên lên ở dưới cùng).")
+                            Text("4️⃣ Chọn 'Thêm vào MH chính' (Add to Home Screen) rồi nhấn 'Thêm'.")
+                        }
+                        "desktop" -> {
+                            Text("1️⃣ Tải tệp SmartTeacherSchedule_v1.8.0_Desktop.zip từ gvcncdsai.io.vn")
+                            Text("2️⃣ Chuột phải vào file zip và chọn 'Extract All...' (Giải nén tất cả).")
+                            Text("3️⃣ Nhấp đúp vào file 'SmartTeacherSchedule.exe' để chạy ngay.")
+                            Text("💡 Bật tính năng 'Cửa sổ thu nhỏ bục giảng' để xem đếm ngược ca dạy nổi đè lên slide PowerPoint!")
+                        }
+                        "web" -> {
+                            Text("1️⃣ Mở Google Chrome hoặc Microsoft Edge trên máy tính/điện thoại.")
+                            Text("2️⃣ Truy cập: gvcncdsai.io.vn/app")
+                            Text("3️⃣ Bấm biểu tượng 'Cài đặt ứng dụng' ở góc phải thanh địa chỉ.")
+                            Text("4️⃣ Chọn 'Ghim vào Taskbar / Start' để mở 1-chạm không cần mạng.")
+                        }
+                        "googleplay" -> {
+                            Text("• Tệp Android App Bundle (AAB) đã ký số Release Keystore SHA-256.")
+                            Text("• Chuẩn đóng gói tối ưu dung lượng và bảo mật cao nhất của Google.")
+                            Text("• Dành cho Quản trị viên Phòng CNTT nhà trường triển khai diện rộng qua Google Workspace for Education (MDM).")
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (platform == "android") {
+                            runCatching {
+                                val url = "https://gvcncdsai.io.vn/SmartTeacherSchedule_v1.8.0_Release.apk"
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                context.startActivity(intent)
+                            }
+                        } else {
+                            runCatching {
+                                val url = if (platform == "desktop") "https://gvcncdsai.io.vn/releases/SmartTeacherSchedule_v1.8.0_Desktop.zip" else "https://gvcncdsai.io.vn/app"
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                context.startActivity(intent)
+                            }
+                        }
+                        showPlatformGuide = null
+                    }
+                ) {
+                    val btnLabel = when (platform) {
+                        "android" -> "Tải APK Ngay"
+                        "desktop" -> "Tải Zip Desktop"
+                        "ios" -> "Mở Safari Ngay"
+                        else -> "Mở Website"
+                    }
+                    Text(btnLabel)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPlatformGuide = null }) {
+                    Text("Đóng")
+                }
+            }
+        )
+    }
+
+    if (showEditProfileDialog) {
+        var tempName by remember { mutableStateOf(teacherName) }
+        var tempSchool by remember { mutableStateOf(schoolName) }
+        var tempDept by remember { mutableStateOf(departmentName) }
+        var tempPhone by remember { mutableStateOf(teacherPhone) }
+        var tempEmail by remember { mutableStateOf(teacherEmail) }
+
+        AlertDialog(
+            onDismissRequest = { showEditProfileDialog = false },
+            title = { Text("Hồ Sơ Giáo Viên Chủ Nhiệm", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = tempName, onValueChange = { tempName = it }, label = { Text("Họ và Tên") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = tempSchool, onValueChange = { tempSchool = it }, label = { Text("Trường học công tác") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = tempDept, onValueChange = { tempDept = it }, label = { Text("Tổ bộ môn giảng dạy") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = tempPhone, onValueChange = { tempPhone = it }, label = { Text("Số điện thoại") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = tempEmail, onValueChange = { tempEmail = it }, label = { Text("Email liên hệ") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        teacherName = tempName.trim()
+                        schoolName = tempSchool.trim()
+                        departmentName = tempDept.trim()
+                        teacherPhone = tempPhone.trim()
+                        teacherEmail = tempEmail.trim()
+                        profilePref.edit()
+                            .putString("name", teacherName)
+                            .putString("school", schoolName)
+                            .putString("department", departmentName)
+                            .putString("phone", teacherPhone)
+                            .putString("email", teacherEmail)
+                            .apply()
+                        showEditProfileDialog = false
+                        Toast.makeText(context, "Đã lưu hồ sơ giáo viên!", Toast.LENGTH_SHORT).show()
+                    }
+                ) {
+                    Text("Lưu Hồ Sơ")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditProfileDialog = false }) {
                     Text("Hủy")
                 }
             }

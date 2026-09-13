@@ -207,6 +207,7 @@ const INITIAL_CLASSROOM_FEES: ClassroomFeeItem[] = [
 export default function ParentPortalPage() {
   const [lang, setLang] = useState<Language>('vi');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [deniedAlert, setDeniedAlert] = useState<string | null>(null);
 
   // Tra cứu & Đồng bộ
   const [syncCode, setSyncCode] = useState<string>('');
@@ -758,6 +759,14 @@ export default function ParentPortalPage() {
           </div>
         </div>
       </header>
+
+      {deniedAlert && (
+        <div className="bg-gradient-to-r from-amber-600 to-rose-600 text-white text-center py-2.5 px-4 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg sticky top-14 z-30">
+          <AlertCircle className="w-4 h-4 fill-white text-amber-600" />
+          <span>{deniedAlert}</span>
+          <button onClick={() => setDeniedAlert(null)} className="ml-2 underline text-[11px] cursor-pointer">[Đóng]</button>
+        </div>
+      )}
 
       {/* Main Container */}
       <main className="max-w-4xl mx-auto px-3.5 sm:px-6 py-4 space-y-4 sm:space-y-5">

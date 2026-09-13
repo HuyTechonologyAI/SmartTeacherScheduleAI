@@ -41,6 +41,8 @@ import {
 } from 'lucide-react';
 import { Language, getStoredLanguage, saveStoredLanguage } from '../app/i18n';
 import StorageDiagnosticsModal from '@/components/storage/StorageDiagnosticsModal';
+import SchoolAuthGateModal from '@/components/school/SchoolAuthGateModal';
+import { getCurrentAuthSession, clearAuthSession, AuthSession } from '@/lib/authRbac';
 import {
   TeacherStaffItem,
   SchoolLessonPlanItem,
@@ -101,6 +103,8 @@ export default function SchoolManagementPage() {
   // Modals State
   const [selectedPlanForReview, setSelectedPlanForReview] = useState<SchoolLessonPlanItem | null>(null);
   const [showStorageModal, setShowStorageModal] = useState<boolean>(false);
+  const [principalSession, setPrincipalSession] = useState<AuthSession | null>(null);
+  const [showAuthGate, setShowAuthGate] = useState<boolean>(false);
   const [showReviewModal, setShowReviewModal] = useState<boolean>(false);
   const [reviewComment, setReviewComment] = useState<string>('');
   
@@ -128,6 +132,13 @@ export default function SchoolManagementPage() {
       }
 
       setLang(getStoredLanguage());
+      const sess = getCurrentAuthSession();
+      if (sess && sess.role === 'PRINCIPAL') {
+        setPrincipalSession(sess);
+      } else {
+        setPrincipalSession(null);
+        setShowAuthGate(true);
+      }
 
       // Load initial data
       setStaffList(getStoredStaffList());
@@ -295,7 +306,36 @@ export default function SchoolManagementPage() {
             </div>
           </div>
 
-          {/* Right Navigation Hub: Cross-portal switcher */}
+          {/* BGH Session Badge & Auth Guard */}
+            {principalSession ? (
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-800 text-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="font-bold text-indigo-800 dark:text-indigo-200 truncate max-w-[160px]">
+                  🏛️ {principalSession.fullName}
+                </span>
+                <button
+                  onClick={() => {
+                    clearAuthSession();
+                    setPrincipalSession(null);
+                    setShowAuthGate(true);
+                  }}
+                  className="text-rose-600 dark:text-rose-400 hover:underline font-bold text-[10px] ml-1 cursor-pointer"
+                  title="Đăng xuất khỏi Cổng Ban Giám Hiệu"
+                >
+                  [{isEn ? 'Logout' : 'Đăng xuất'}]
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowAuthGate(true)}
+                className="px-3 py-1.5 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span>{isEn ? 'Principal Login' : 'Đăng nhập BGH'}</span>
+              </button>
+            )}
+
+            {/* Right Navigation Hub: Cross-portal switcher */}
           <div className="flex items-center gap-1.5 sm:gap-2">
             
             {/* Quick Link: Teacher App */}
@@ -1290,6 +1330,16 @@ export default function SchoolManagementPage() {
           </div>
         </div>
       )}
+
+      <SchoolAuthGateModal
+        isOpen={showAuthGate}
+        onSuccess={(sess) => {
+          setPrincipalSession(sess);
+          setShowAuthGate(false);
+          setNotification(isEn ? 'Authenticated successfully as Principal.' : 'Đã xác thực quyền Ban Giám Hiệu thành công.');
+        }}
+        isEn={isEn}
+      />
 
       <StorageDiagnosticsModal
         isOpen={showStorageModal}

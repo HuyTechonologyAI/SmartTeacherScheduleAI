@@ -171,6 +171,7 @@ export default function StudentPortalPage() {
   ]);
 
   const [cheerMsg, setCheerMsg] = useState<string | null>(null);
+  const [deniedAlert, setDeniedAlert] = useState<string | null>(null);
 
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
   const isEn = lang === 'en';
@@ -606,6 +607,14 @@ export default function StudentPortalPage() {
           </div>
         </div>
       </header>
+
+      {deniedAlert && (
+        <div className="bg-gradient-to-r from-rose-600 to-amber-600 text-white text-center py-2.5 px-4 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg sticky top-14 z-30">
+          <AlertCircle className="w-4 h-4 fill-white text-rose-600" />
+          <span>{deniedAlert}</span>
+          <button onClick={() => setDeniedAlert(null)} className="ml-2 underline text-[11px] cursor-pointer">[Đóng]</button>
+        </div>
+      )}
 
       {/* Cheer Banner upon completing homework */}
       {cheerMsg && (

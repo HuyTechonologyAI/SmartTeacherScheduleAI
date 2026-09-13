@@ -36,6 +36,8 @@ import EduVietHomeView from '@/components/eduviet/EduVietHomeView';
 import TeacherProfileModal from '@/components/profile/TeacherProfileModal';
 import TeacherAuthModal from '@/components/profile/TeacherAuthModal';
 import StorageDiagnosticsModal from '@/components/storage/StorageDiagnosticsModal';
+import MergeConflictModal from '@/components/sync/MergeConflictModal';
+import { detectAndResolveEventConflicts, ConflictItem } from '@/lib/conflictResolver';
 import { dbGet, dbSet, dbRemove } from '@/lib/storageEngine';
 import { Language, getStoredLanguage, saveStoredLanguage, t } from './i18n';
 import {
@@ -192,7 +194,10 @@ import {
   ZoomIn,
   ZoomOut,
   School,
-  Database
+  Database,
+  Wifi,
+  WifiOff,
+  GitMerge
 } from 'lucide-react';
 
 export interface CalendarEventItem {
@@ -510,6 +515,9 @@ export default function UnifiedTeacherScheduleApp() {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [showPortalShareModal, setShowPortalShareModal] = useState<boolean>(false);
   const [showStorageModal, setShowStorageModal] = useState<boolean>(false);
+  const [showConflictModal, setShowConflictModal] = useState<boolean>(false);
+  const [detectedConflicts, setDetectedConflicts] = useState<ConflictItem[]>([]);
+  const [isOnline, setIsOnline] = useState<boolean>(true);
   const [showLeaveRequestsModal, setShowLeaveRequestsModal] = useState<boolean>(false);
 
   // Teacher Profile & Authentication States
@@ -626,7 +634,7 @@ export default function UnifiedTeacherScheduleApp() {
       setKbPreviewPdfUrl(null);
     }
 
-    return () => {
+  return () => {
       if (activeBlobUrl && activeBlobUrl.startsWith('blob:')) {
         URL.revokeObjectURL(activeBlobUrl);
       }
@@ -1398,7 +1406,15 @@ export default function UnifiedTeacherScheduleApp() {
           const deletedEvents = new Set(getDeletedEventIds());
           const cleanCloudEvents = cloudEvents.filter((e: any) => !isTestSyncData(e) && !deletedEvents.has(String(e.id)));
           const cleanSavedEvents = currentSavedEvents.filter((e: any) => !isTestSyncData(e) && !deletedEvents.has(String(e.id)));
-          const mergedEvents = mergeEventsDesktop(cleanSavedEvents, cleanCloudEvents, deletedEvents);
+          // Phân tích và phát hiện xung đột dữ liệu ngoại tuyến
+          const conflictAnalysis = detectAndResolveEventConflicts(cleanSavedEvents, cleanCloudEvents, lastLocalUpdate);
+          let mergedEvents = conflictAnalysis.autoMergedEvents;
+
+          if (conflictAnalysis.conflicts.length > 0) {
+            setDetectedConflicts(conflictAnalysis.conflicts);
+            setShowConflictModal(true);
+            setAlertBanner(`⚠️ Phát hiện ${conflictAnalysis.conflicts.length} ca dạy có xung đột giữa Máy tính và Đám mây. Vui lòng chọn phương án hợp nhất.`);
+          }
           const mergedSchedules = mergeSchedulesDesktop(currentSavedSchedules, cloudSchedules);
 
           setEvents(mergedEvents);
@@ -1561,6 +1577,22 @@ export default function UnifiedTeacherScheduleApp() {
     setIsClient(true);
     setSelectedDate(todayStr);
 
+    // Lắng nghe trạng thái mạng Online / Offline
+    if (typeof window !== 'undefined') {
+      setIsOnline(navigator.onLine);
+      const handleOnline = () => {
+        setIsOnline(true);
+        setAlertBanner('🟢 Đã kết nối mạng trở lại! Hệ thống sẵn sàng đồng bộ 2 chiều.');
+        setTimeout(() => setAlertBanner(null), 4000);
+      };
+      const handleOffline = () => {
+        setIsOnline(false);
+        setAlertBanner('🟠 Đang ở chế độ Ngoại Tuyến (Offline). Mọi thay đổi được lưu trữ an toàn trong IndexedDB.');
+        setTimeout(() => setAlertBanner(null), 5000);
+      };
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+    }
     // Tự động quét và thanh lọc dữ liệu kiểm thử (mock / sample test data)
     const rosterPurge = purgeTestRosterData();
     const storedCls = getStoredClassrooms();
@@ -2403,6 +2435,29 @@ export default function UnifiedTeacherScheduleApp() {
     return `${present}/${classStudents.length}`;
   };
 
+  const handleResolveConflicts = (resolvedItems: ConflictItem[]) => {
+    const resolvedMap = new Map<string, any>();
+    resolvedItems.forEach(item => {
+      let finalItem = item.smartMergedItem;
+      if (item.chosenResolution === 'KEEP_LOCAL') finalItem = item.localItem;
+      else if (item.chosenResolution === 'KEEP_REMOTE') finalItem = item.remoteItem;
+      else finalItem = item.smartMergedItem;
+      resolvedMap.set(String(item.id), finalItem);
+    });
+
+    const updatedEvents = events.map(e => resolvedMap.get(String(e.id)) || e);
+    setEvents(updatedEvents);
+    localStorage.setItem('smart_teacher_events', JSON.stringify(updatedEvents));
+    dbSet('smart_teacher_events', updatedEvents);
+    setShowConflictModal(false);
+    setDetectedConflicts([]);
+
+    // Đẩy bản đã giải quyết lên Đám mây
+    pushToCloud(updatedEvents, schedules, syncCode, false);
+    setAlertBanner(`✨ Đã giải quyết thành công ${resolvedItems.length} mục xung đột và hoàn tất đồng bộ an toàn!`);
+    setTimeout(() => setAlertBanner(null), 5000);
+  };
+
   if (!isClient) return null;
 
   const todayDayInfo = getDayInfo(todayStr);
@@ -2461,6 +2516,19 @@ export default function UnifiedTeacherScheduleApp() {
                 <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
                 <span>{isSyncing ? 'Đang đồng bộ...' : 'Đồng bộ 2 chiều'}</span>
               </button>
+
+              {/* Network Online / Offline Status Badge */}
+              <div 
+                className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border shadow-2xs ${
+                  isOnline 
+                    ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800' 
+                    : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                }`}
+                title={isOnline ? "Hệ thống đang trực tuyến" : "Đang ngoại tuyến: dữ liệu lưu an toàn vào IndexedDB"}
+              >
+                <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                <span>{isOnline ? 'Trực tuyến' : 'Ngoại tuyến'}</span>
+              </div>
 
               <button
                 onClick={() => setShowStorageModal(true)}
@@ -8613,6 +8681,14 @@ export default function UnifiedTeacherScheduleApp() {
       <StorageDiagnosticsModal
         isOpen={showStorageModal}
         onClose={() => setShowStorageModal(false)}
+        isEn={lang === 'en'}
+      />
+
+      <MergeConflictModal
+        isOpen={showConflictModal}
+        conflicts={detectedConflicts}
+        onResolve={handleResolveConflicts}
+        onCancel={() => setShowConflictModal(false)}
         isEn={lang === 'en'}
       />
 

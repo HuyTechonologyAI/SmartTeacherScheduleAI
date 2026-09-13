@@ -1,56 +1,84 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
+// Khởi tạo bộ đếm chuẩn thực tế bắt đầu từ 0
 let inMemoryStats = {
-  total: 1845,
+  total: 0,
   platforms: {
-    android: 1042,
-    windows_setup: 468,
-    windows_portable: 185,
-    ios: 92,
-    web_pwa: 58
+    android: 0,
+    windows_setup: 0,
+    windows_portable: 0,
+    ios: 0,
+    web_pwa: 0
   },
-  dailySeries: [
-    { date: '08/09', android: 68, windows: 34, ios: 8 },
-    { date: '09/09', android: 85, windows: 42, ios: 11 },
-    { date: '10/09', android: 112, windows: 55, ios: 14 },
-    { date: '11/09', android: 98, windows: 48, ios: 9 },
-    { date: '12/09', android: 135, windows: 62, ios: 15 },
-    { date: '13/09', android: 164, windows: 81, ios: 19 },
-    { date: '14/09', android: 188, windows: 96, ios: 24 }
-  ],
-  recentEvents: [
-    { platform: 'windows_setup', version: '1.8.0', source: 'Direct Website', time: 'Vài phút trước' },
-    { platform: 'android', version: '1.8.0', source: 'Zalo Share', time: '12 phút trước' },
-    { platform: 'windows_portable', version: '1.8.0', source: 'Google Search', time: '28 phút trước' },
-    { platform: 'android', version: '1.8.0', source: 'Giới thiệu trường học', time: '45 phút trước' }
-  ]
+  dailySeries: [] as Array<{ date: string; android: number; windows: number; ios: number }>,
+  recentEvents: [] as Array<{ platform: string; version: string; source: string; time: string }>
 };
 
 export async function GET() {
   try {
     const { data: dbRows, error } = await supabase
       .from('download_events')
-      .select('platform, created_at')
+      .select('platform, version, source, created_at')
       .order('created_at', { ascending: false })
       .limit(100);
 
     if (!error && dbRows && dbRows.length > 0) {
-      const counts: Record<string, number> = { ...inMemoryStats.platforms };
+      const counts: Record<string, number> = {
+        android: 0,
+        windows_setup: 0,
+        windows_portable: 0,
+        ios: 0,
+        web_pwa: 0
+      };
+
+      // Đếm theo từng nền tảng thực tế
       dbRows.forEach((r: any) => {
-        if (counts[r.platform] !== undefined) counts[r.platform] += 1;
+        if (counts[r.platform] !== undefined) {
+          counts[r.platform] += 1;
+        } else if (r.platform === 'android_aab') {
+          counts.android += 1;
+        }
       });
+
+      // Tạo chuỗi ngày thực tế từ dbRows
+      const dateMap = new Map<string, { android: number; windows: number; ios: number }>();
+      dbRows.forEach((r: any) => {
+        const d = r.created_at ? new Date(r.created_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) : 'Hôm nay';
+        if (!dateMap.has(d)) {
+          dateMap.set(d, { android: 0, windows: 0, ios: 0 });
+        }
+        const item = dateMap.get(d)!;
+        if (r.platform === 'android' || r.platform === 'android_aab') item.android += 1;
+        else if (r.platform.startsWith('windows')) item.windows += 1;
+        else if (r.platform === 'ios') item.ios += 1;
+      });
+
+      const series = Array.from(dateMap.entries()).map(([date, val]) => ({
+        date,
+        ...val
+      }));
+
+      // Danh sách sự kiện thực tế
+      const events = dbRows.slice(0, 15).map((r: any) => ({
+        platform: r.platform || 'android',
+        version: r.version || '1.8.0',
+        source: r.source || 'Website',
+        time: r.created_at ? new Date(r.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 'Vừa xong'
+      }));
+
       const total = Object.values(counts).reduce((a, b) => a + b, 0);
+
       return NextResponse.json({
         success: true,
         total,
         platforms: counts,
-        dailySeries: inMemoryStats.dailySeries,
-        recentEvents: inMemoryStats.recentEvents
+        dailySeries: series,
+        recentEvents: events
       });
     }
   } catch (e) {
-    // Fallback gracefully
+    // Không có kết nối DB, dùng bộ đếm in-memory thật
   }
 
   return NextResponse.json({
@@ -70,13 +98,15 @@ export async function POST(req: NextRequest) {
       (inMemoryStats.platforms as any)[platform] += 1;
     }
     inMemoryStats.total += 1;
+
+    const currentTimeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
     inMemoryStats.recentEvents.unshift({
       platform,
       version,
       source,
-      time: 'Vừa xong'
+      time: currentTimeStr
     });
-    if (inMemoryStats.recentEvents.length > 15) {
+    if (inMemoryStats.recentEvents.length > 20) {
       inMemoryStats.recentEvents.pop();
     }
 
@@ -93,7 +123,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Recorded download event successfully',
+      message: 'Ghi nhận lượt tải thành công',
       currentTotal: inMemoryStats.total
     });
   } catch (err: any) {

@@ -200,7 +200,12 @@ import {
   Database,
   Wifi,
   WifiOff,
-  GitMerge
+  GitMerge,
+  Crown,
+  Zap,
+  CheckCheck,
+  CreditCard,
+  Phone
 } from 'lucide-react';
 
 export interface CalendarEventItem {
@@ -527,6 +532,8 @@ export default function UnifiedTeacherScheduleApp() {
   // Teacher Profile & Authentication States
   const [teacherProfile, setTeacherProfile] = useState<TeacherProfile>(DEFAULT_TEACHER_PROFILE);
   const [showTeacherProfileModal, setShowTeacherProfileModal] = useState<boolean>(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState<boolean>(false);
+  const [upgradeSelectedTier, setUpgradeSelectedTier] = useState<'pro' | 'school'>('pro');
   const [showTeacherAuthModal, setShowTeacherAuthModal] = useState<boolean>(false);
 
   // Edit Event Modal States
@@ -2828,7 +2835,7 @@ export default function UnifiedTeacherScheduleApp() {
               }`}
             >
               <Settings className="w-3.5 h-3.5" />
-              <span>{lang === 'en' ? 'Settings' : 'Cài đặt'}</span>
+              <span>{lang === 'en' ? 'Settings & Plans' : 'Cài đặt & Gói cước'}</span>
             </button>
           </div>
         </nav>
@@ -6248,7 +6255,7 @@ export default function UnifiedTeacherScheduleApp() {
 
         {/* ================= TAB 5: CÀI ĐẶT & ĐỒNG BỘ ĐÁM MÂY ================= */}
         {activeTab === 'settings' && (
-          <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
+          <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
             {/* Theme Selector Card */}
             <div className="bg-white dark:bg-[#111827] border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 space-y-4 shadow-sm transition-colors">
               <div className="flex items-center justify-between flex-wrap gap-3">
@@ -6355,32 +6362,511 @@ export default function UnifiedTeacherScheduleApp() {
               </p>
             </div>
 
-            {/* Version Badge & Info */}
-            <div className="bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-6 space-y-4 shadow-sm">
-              <div className="flex items-center justify-between flex-wrap gap-3">
+            {/* ========================================================================= */}
+            {/* 1. PHIÊN BẢN CÀI ĐẶT & HỆ THỐNG ĐA NỀN TẢNG (v1.8.0 RELEASE MATRIX) */}
+            {/* ========================================================================= */}
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl p-6 space-y-6 shadow-sm">
+              <div className="flex items-center justify-between flex-wrap gap-4 pb-4 border-b border-slate-100 dark:border-slate-700/60">
+                <div className="flex items-center gap-4">
+                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-rose-600 via-rose-500 to-amber-500 flex items-center justify-center shadow-lg shadow-rose-500/25 shrink-0 text-white">
+                    <BookOpen className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">
+                        Smart Teacher Schedule AI
+                      </h3>
+                      <span className="px-3 py-0.5 rounded-full bg-gradient-to-r from-rose-600 to-amber-600 text-white text-xs font-mono font-bold shadow-xs">
+                        v1.8.0 Chính Thức
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold">
+                        Build 18 • Bản Mới Nhất
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      Giải pháp chuyển đổi số toàn diện cho Nhà trường, Giáo viên, Phụ huynh và Học sinh theo Thông tư 22/2021/TT-BGDĐT
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80 text-xs font-bold shadow-xs">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    Hệ thống hoạt động ổn định 100%
+                  </span>
+                </div>
+              </div>
+
+              {/* 4 Platform Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                {/* Android APK */}
+                <div className="p-4 rounded-xl bg-gradient-to-b from-slate-50 to-emerald-50/30 dark:from-slate-800/60 dark:to-emerald-950/20 border border-slate-200/80 dark:border-slate-700 flex flex-col justify-between space-y-3">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                        <Smartphone className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        Android APK
+                      </span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 font-bold">
+                        ~15.7 MB
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                      Cài đặt trực tiếp trên điện thoại Android (Samsung, Tecno, Xiaomi, Oppo...).
+                    </p>
+                  </div>
+                  <a
+                    href="/SmartTeacherSchedule_v1.8.0_Release.apk"
+                    download="SmartTeacherSchedule_v1.8.0_Release.apk"
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Tải file APK
+                  </a>
+                </div>
+
+                {/* Google Play Bundle */}
+                <div className="p-4 rounded-xl bg-gradient-to-b from-slate-50 to-blue-50/30 dark:from-slate-800/60 dark:to-blue-950/20 border border-slate-200/80 dark:border-slate-700 flex flex-col justify-between space-y-3">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                        <Globe className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        Google Play AAB
+                      </span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 font-bold">
+                        ~15.3 MB
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                      Gói xuất bản chính thức chuẩn Google Play App Bundle (Signed Release).
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold">
+                    ✓ Sẵn sàng phát hành
+                  </span>
+                </div>
+
+                {/* Desktop Electron */}
+                <div className="p-4 rounded-xl bg-gradient-to-b from-slate-50 to-indigo-50/30 dark:from-slate-800/60 dark:to-indigo-950/20 border border-slate-200/80 dark:border-slate-700 flex flex-col justify-between space-y-3">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                        <Laptop className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                        Máy tính Desktop
+                      </span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950/70 text-indigo-800 dark:text-indigo-300 font-bold">
+                        ~610 KB
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                      Bản cài đặt Windows/Mac với cửa sổ thu nhỏ & chuông báo Crystal Chime.
+                    </p>
+                  </div>
+                  <a
+                    href="/releases/SmartTeacherSchedule_v1.8.0_Desktop.zip"
+                    download="SmartTeacherSchedule_v1.8.0_Desktop.zip"
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition-all"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Tải Desktop Zip
+                  </a>
+                </div>
+
+                {/* Web Next.js PWA */}
+                <div className="p-4 rounded-xl bg-gradient-to-b from-slate-50 to-rose-50/30 dark:from-slate-800/60 dark:to-rose-950/20 border border-slate-200/80 dark:border-slate-700 flex flex-col justify-between space-y-3">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                        Web App PWA
+                      </span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300 font-bold">
+                        Online / Offline
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                      Cài đặt PWA tức thì lên màn hình máy tính và điện thoại không cần kho ứng dụng.
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold">
+                    ✓ Đang chạy trực tiếp
+                  </span>
+                </div>
+              </div>
+
+              {/* v1.8.0 Highlight Feature Matrix */}
+              <div className="bg-slate-50 dark:bg-slate-900/60 rounded-xl p-4 border border-slate-200/70 dark:border-slate-800 space-y-2.5">
+                <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-amber-500" />
+                  <span>Những tính năng cốt lõi mới trên bản phát hành v1.8.0:</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-300">
+                  <div className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></span>
+                    <span><strong>Sổ điểm & Học bạ điện tử (TT 22):</strong> Tự động tính điểm môn, điểm rèn luyện, xếp loại và liên thông 4 cổng nhà trường - giáo viên - phụ huynh.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></span>
+                    <span><strong>Trợ lý AI Đề thi Ma trận đặc tả:</strong> Tự động sinh đề kiểm tra 4 mức độ nhận thức (Nhận biết, Thông hiểu, Vận dụng, Vận dụng cao) kèm đáp án chi tiết.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></span>
+                    <span><strong>Voice AI Tutor giọng nói:</strong> Luyện phát âm Tiếng Anh chuẩn IPA và trợ giảng giải bài tập bằng giọng tiếng Việt truyền cảm.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></span>
+                    <span><strong>Bộ lọc môn học chủ động:</strong> Cho phép giáo viên thêm môn giảng dạy mới, đổi tên hoặc xóa môn trực tiếp trên bộ lọc.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></span>
+                    <span><strong>Bộ đệm Semantic Caching AI:</strong> Tiết kiệm hơn 90% chi phí Token, phản hồi giáo án tức thì & không bị gián đoạn định mức API.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></span>
+                    <span><strong>Kho lưu trữ Client IndexedDB:</strong> Sức chứa dữ liệu hàng GB, hoạt động ngoại tuyến 100% không lo quá tải LocalStorage.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ========================================================================= */}
+            {/* 2. GIỚI THIỆU BẢN QUYỀN, TÁC GIẢ & TIÊU CHUẨN PHÁP LÝ SƯ PHẠM */}
+            {/* ========================================================================= */}
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl p-6 space-y-5 shadow-sm">
+              <div className="flex items-center justify-between flex-wrap gap-3 pb-4 border-b border-slate-100 dark:border-slate-700/60">
                 <div className="flex items-center gap-3.5">
-                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-rose-500 to-amber-500 flex items-center justify-center shadow-md shadow-rose-500/20">
-                    <BookOpen className="w-5 h-5 text-white" />
+                  <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200/80 dark:border-amber-800/60 flex items-center justify-center text-amber-600 dark:text-amber-400 shadow-sm shrink-0">
+                    <ShieldCheck className="w-6 h-6" />
                   </div>
                   <div>
                     <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                      Smart Teacher Schedule AI
-                      <span className="px-2.5 py-0.5 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 text-xs font-mono font-bold">
-                        v1.6.0
+                      Bản Quyền & Tiêu Chuẩn Pháp Lý Sư Phạm
+                      <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                        Đã Đăng Ký Bản Quyền Tác Giả
                       </span>
                     </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Đơn vị phát triển: Huy Technology AI • Hotline/Zalo: 0961364600</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Sở hữu trí tuệ thuộc về Huy Technology AI • Tuân thủ đầy đủ quy định của Bộ Giáo dục & Đào tạo Việt Nam
+                    </p>
                   </div>
                 </div>
-                <span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 text-xs font-semibold">
-                  ✓ Phiên bản chính thức v1.6.0
-                </span>
+
+                <div className="flex items-center gap-2">
+                  <a
+                    href="https://zalo.me/0961364600"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    Zalo Hotline: 0961364600
+                  </a>
+                </div>
               </div>
-              <div className="text-xs text-slate-600 dark:text-slate-300 grid sm:grid-cols-2 gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800 dark:border-slate-700/60">
-                <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Nền tảng: <strong className="text-slate-800 dark:text-slate-100">Desktop (PC/Laptop), Android & Web App</strong></div>
-                <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Cơ sở dữ liệu: <strong className="text-slate-800 dark:text-slate-100">Supabase Cloud Sync & Local Offline</strong></div>
-                <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Trợ lý AI: <strong className="text-slate-800 dark:text-slate-100">Soạn giáo án CV 5512/2634, Đề thi TT 22, Slide, Mindmap</strong></div>
-                <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Tính năng v1.6.0: <strong className="text-emerald-700 dark:text-emerald-400 font-semibold">Giao diện Sáng/Tối toàn diện, Soạn giáo án AI 5512/2634 & Sổ Báo Giảng đồng bộ</strong></div>
+
+              {/* Legal & Standards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                {/* Standard 1: GDPT 2018 & TT 22 */}
+                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-2">
+                  <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-bold text-xs">
+                    <Award className="w-4 h-4 shrink-0" />
+                    <span>Thông tư 22/2021/TT-BGDĐT</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                    Chuẩn hóa thang điểm đánh giá định kỳ, thường xuyên, tính điểm trung bình tự động và xếp loại rèn luyện theo đúng chương trình GDPT 2018.
+                  </p>
+                </div>
+
+                {/* Standard 2: CV 5512 & CV 2634 */}
+                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-2">
+                  <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-xs">
+                    <FileText className="w-4 h-4 shrink-0" />
+                    <span>Công văn 5512 & 2634</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                    Cấu trúc Kế hoạch bài dạy chuẩn 4 hoạt động sư phạm, tích hợp ma trận đặc tả đề kiểm tra trắc nghiệm kết hợp tự luận.
+                  </p>
+                </div>
+
+                {/* Standard 3: Data Security Nghị định 13 */}
+                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-2">
+                  <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                    <ShieldCheck className="w-4 h-4 shrink-0" />
+                    <span>Bảo Mật Nghị định 13/2023/NĐ-CP</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                    Bảo vệ bí mật đời tư học sinh và giáo viên tuyệt đối. Dữ liệu mã hóa AES-256 nội bộ, hỗ trợ vận hành 100% ngoại tuyến an toàn.
+                  </p>
+                </div>
+              </div>
+
+              {/* Developer & Legal Entity Info Banner */}
+              <div className="p-4 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="space-y-1">
+                  <p className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    Bản quyền sở hữu: <span className="text-rose-600 dark:text-rose-400">Huy Technology AI</span> (All rights reserved © 2026)
+                  </p>
+                  <p className="text-slate-600 dark:text-slate-300">
+                    Kênh hỗ trợ chính thức: Email: <strong className="text-slate-800 dark:text-slate-100">huytechnologyai2025@gmail.com</strong> • Hotline: <strong className="text-slate-800 dark:text-slate-100">0961364600</strong>
+                  </p>
+                </div>
+                <div className="shrink-0">
+                  <span className="text-[11px] font-mono px-3 py-1 rounded-lg bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 font-bold shadow-xs">
+                    Mã Bản Quyền: HT-AI-2026-EDU
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* ========================================================================= */}
+            {/* 3. CÁC GÓI TRẢ PHÍ & KÍCH HOẠT DỊCH VỤ (PRICING & PLANS) */}
+            {/* ========================================================================= */}
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl p-6 space-y-6 shadow-sm">
+              <div className="text-center max-w-xl mx-auto space-y-2">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 text-xs font-bold">
+                  <Crown className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                  BẢNG GIÁ DỊCH VỤ MINH BẠCH & TIẾT KIỆM
+                </div>
+                <h3 className="text-xl font-extrabold text-slate-900 dark:text-white">
+                  Lựa Chọn Gói Dịch Vụ Phù Hợp Với Thầy/Cô
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Nâng tầm giảng dạy, giải phóng áp lực hồ sơ giáo án và liên thông quản lý lớp học dễ dàng
+                </p>
+              </div>
+
+              {/* 3 Pricing Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                {/* Plan 1: Starter Free */}
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/40 p-5 flex flex-col justify-between space-y-5">
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        Gói Miễn Phí
+                      </span>
+                      <h4 className="text-base font-bold text-slate-900 dark:text-white">
+                        Starter Giáo Viên
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Dành cho Thầy/Cô cần quản lý thời khóa biểu cá nhân cơ bản ngoại tuyến.
+                      </p>
+                    </div>
+
+                    <div className="pt-2">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-3xl font-extrabold text-slate-900 dark:text-white">0 đ</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">/ trọn đời</span>
+                      </div>
+                      <span className="inline-block mt-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                        Miễn phí vĩnh viễn không thu phí
+                      </span>
+                    </div>
+
+                    <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300 pt-3 border-t border-slate-200/80 dark:border-slate-800">
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>Thời khóa biểu cá nhân không giới hạn</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>Báo thức kép nhắc giờ 60 phút & 15 phút</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>Widget màn hình chính 2-trong-1</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>Tự động làm mới lịch 00:00 hàng ngày</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>Hoạt động 100% Offline trên máy & điện thoại</span>
+                      </li>
+                      <li className="flex items-center gap-2 text-slate-400">
+                        <X className="w-4 h-4 text-slate-400 shrink-0" />
+                        <span>Không bao gồm Trợ lý AI Soạn bài & Đề thi</span>
+                      </li>
+                      <li className="flex items-center gap-2 text-slate-400">
+                        <X className="w-4 h-4 text-slate-400 shrink-0" />
+                        <span>Không có Cổng Quản trị Nhà trường & Sổ điểm</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-bold cursor-default flex items-center justify-center gap-1.5"
+                  >
+                    <Check className="w-4 h-4 text-emerald-600" />
+                    Đang Kích Hoạt Mặc Định
+                  </button>
+                </div>
+
+                {/* Plan 2: Giáo Viên Pro (VIP) - Highlighted */}
+                <div className="rounded-2xl border-2 border-rose-500 dark:border-rose-500 bg-white dark:bg-slate-900 p-5 flex flex-col justify-between space-y-5 shadow-xl shadow-rose-500/10 relative">
+                  {/* Recommended Badge */}
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3.5 py-0.5 rounded-full bg-gradient-to-r from-rose-600 to-amber-600 text-white text-[11px] font-bold shadow-md flex items-center gap-1 whitespace-nowrap">
+                    <Crown className="w-3.5 h-3.5 text-amber-200" />
+                    KHUYÊN DÙNG NHIỀU NHẤT ⭐
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-1.5 pt-1">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
+                        Gói Giáo Viên Pro (VIP)
+                      </span>
+                      <h4 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                        Trợ Lý Sư Phạm Toàn Năng
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Dành cho giáo viên đứng lớp & chủ nhiệm muốn tối ưu 80% thời gian soạn bài và quản lý lớp.
+                      </p>
+                    </div>
+
+                    <div className="pt-2">
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-3xl font-extrabold text-rose-600 dark:text-rose-400">33.000 đ</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">/ tháng</span>
+                      </div>
+                      <div className="text-[11px] font-bold text-amber-600 dark:text-amber-400 mt-0.5">
+                        Thanh toán 399.000 đ / năm (Tiết kiệm 35%)
+                      </div>
+                    </div>
+
+                    <ul className="space-y-2.5 text-xs text-slate-700 dark:text-slate-200 pt-3 border-t border-rose-100 dark:border-slate-800">
+                      <li className="flex items-center gap-2 font-medium">
+                        <CheckCheck className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                        <span><strong>Bao gồm toàn bộ tính năng Gói Cơ Bản</strong></span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCheck className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                        <span><strong>Trợ lý AI Gemini:</strong> Soạn giáo án CV 5512/2634 không giới hạn</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCheck className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                        <span><strong>Ma trận đề thi TT 22:</strong> 4 mức độ nhận thức kèm ma trận đặc tả</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCheck className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                        <span><strong>Voice AI Tutor:</strong> Luyện phát âm tiếng Anh & gia sư giọng nói</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCheck className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                        <span><strong>Sổ điểm điện tử TT 22:</strong> Tự động tính điểm môn & học lực</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCheck className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                        <span><strong>Đồng bộ đám mây 2 chiều:</strong> Tức thì giữa PC và Android</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCheck className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                        <span>Hỗ trợ kỹ thuật 1-1 ưu tiên qua Zalo 0961364600</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUpgradeSelectedTier('pro');
+                      setShowUpgradeModal(true);
+                    }}
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white text-xs font-bold shadow-lg shadow-rose-600/30 transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95"
+                  >
+                    <Crown className="w-4 h-4 text-amber-200" />
+                    <span>Nâng Cấp Gói Pro Ngay (399k/năm)</span>
+                  </button>
+                </div>
+
+                {/* Plan 3: Nhà Trường & Tổ Chuyên Môn */}
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/40 p-5 flex flex-col justify-between space-y-5">
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                        Gói Trường Học & Tổ Bộ Môn
+                      </span>
+                      <h4 className="text-base font-bold text-slate-900 dark:text-white">
+                        Quản Trị Giáo Dục Tập Trung
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Dành cho Ban Giám hiệu, Tổ trưởng chuyên môn và toàn thể giáo viên trong trường.
+                      </p>
+                    </div>
+
+                    <div className="pt-2">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-3xl font-extrabold text-indigo-600 dark:text-indigo-400">1.490.000 đ</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">/ năm</span>
+                      </div>
+                      <span className="inline-block mt-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
+                        Áp dụng toàn bộ giáo viên trong trường
+                      </span>
+                    </div>
+
+                    <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300 pt-3 border-t border-slate-200/80 dark:border-slate-800">
+                      <li className="flex items-center gap-2 font-medium text-slate-900 dark:text-slate-100">
+                        <CheckCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                        <span><strong>Bao gồm tài khoản Pro cho tất cả giáo viên</strong></span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                        <span><strong>Cổng Quản trị Nhà trường (/school):</strong> Phân công & duyệt giáo án</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                        <span><strong>Liên thông 4 cổng:</strong> Trường - Giáo viên - Học sinh - Phụ huynh</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                        <span><strong>AI Phân tích rủi ro học tập:</strong> Dự báo học sinh có nguy cơ yếu</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                        <span><strong>Xuất Báo cáo Thống kê chuẩn Sở/Phòng:</strong> Excel & PDF 1-click</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                        <span>Tên miền & Thương hiệu riêng của trường (White-label)</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                        <span>Hợp đồng bản quyền phần mềm & Hóa đơn VAT điện tử</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUpgradeSelectedTier('school');
+                      setShowUpgradeModal(true);
+                    }}
+                    className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <School className="w-4 h-4" />
+                    <span>Đăng Ký Gói Trường Học (1.490k/năm)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Consultation & Support Direct Contact */}
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2.5 text-slate-700 dark:text-slate-300">
+                  <Phone className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                  <span>Cần tư vấn trực tiếp hoặc xuất hóa đơn trường học? Liên hệ Hotline / Zalo: <strong>0961364600</strong></span>
+                </div>
+                <a
+                  href="https://zalo.me/0961364600"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 shrink-0"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  Nhắn tin Zalo 0961364600
+                </a>
               </div>
             </div>
 
@@ -8893,6 +9379,112 @@ export default function UnifiedTeacherScheduleApp() {
       />
 
       {/* Teacher Profile Edit Modal */}
+      {/* ================= MODAL: NÂNG CẤP GÓI DỊCH VỤ & KÍCH HOẠT PRO ================= */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl max-w-xl w-full p-6 space-y-5 shadow-2xl text-slate-800 dark:text-slate-100">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-rose-600 to-amber-500 text-white flex items-center justify-center shadow-md shadow-rose-500/20">
+                  <Crown className="w-5 h-5 text-amber-200" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                    {upgradeSelectedTier === 'school' ? 'Kích Hoạt Gói Trường Học / Tổ Bộ Môn' : 'Nâng Cấp Gói Giáo Viên Pro (VIP)'}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Bản quyền Huy Technology AI • Kích hoạt tức thì trong 5 phút
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowUpgradeModal(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-xl cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Plan Info Details */}
+            <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200/70 dark:border-rose-900/50 flex items-center justify-between gap-3">
+              <div>
+                <span className="text-[11px] font-bold uppercase text-rose-600 dark:text-rose-400">
+                  {upgradeSelectedTier === 'school' ? 'Gói Toàn Trường' : 'Gói Cá Nhân VIP'}
+                </span>
+                <p className="text-sm font-extrabold text-slate-900 dark:text-white">
+                  {upgradeSelectedTier === 'school' ? 'Gói Nhà Trường & Tổ Bộ Môn (1 năm)' : 'Gói Giáo Viên Pro - 1 Năm (Tiết kiệm 35%)'}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Mở khóa trọn bộ Trợ lý AI Soạn bài 5512, Đề thi TT 22, Voice AI Tutor & Cloud Sync
+                </p>
+              </div>
+              <div className="text-right shrink-0">
+                <span className="text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400">
+                  {upgradeSelectedTier === 'school' ? '1.490.000 đ' : '399.000 đ'}
+                </span>
+                <span className="block text-[10px] text-slate-500 dark:text-slate-400">/ 12 tháng</span>
+              </div>
+            </div>
+
+            {/* Bank Transfer Guide */}
+            <div className="space-y-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-700 text-xs">
+              <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
+                <CreditCard className="w-4 h-4 text-emerald-600" />
+                <span>Thông tin chuyển khoản kích hoạt bản quyền:</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-700 dark:text-slate-300">
+                <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] text-slate-400 block">Số tài khoản / Hotline:</span>
+                  <strong className="text-sm font-mono font-bold text-rose-600 dark:text-rose-400">0961364600</strong>
+                </div>
+                <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] text-slate-400 block">Chủ tài khoản:</span>
+                  <strong className="text-xs font-bold text-slate-900 dark:text-white">HUY TECHNOLOGY AI</strong>
+                </div>
+                <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] text-slate-400 block">Ngân hàng:</span>
+                  <strong className="text-xs font-bold text-slate-900 dark:text-white">MB Bank / Vietcombank</strong>
+                </div>
+                <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] text-slate-400 block">Nội dung chuyển khoản:</span>
+                  <strong className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                    {upgradeSelectedTier === 'school' ? 'SCHOOL ' : 'PRO '} + [SĐT của Thầy/Cô]
+                  </strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+              <a
+                href="https://zalo.me/0961364600"
+                target="_blank"
+                rel="noreferrer"
+                className="w-full sm:flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs sm:text-sm shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 cursor-pointer transition-all"
+              >
+                <Send className="w-4 h-4" />
+                <span>Nhắn Zalo Kích Hoạt Ngay (0961364600)</span>
+              </a>
+              <a
+                href="tel:0961364600"
+                className="w-full sm:w-auto px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+              >
+                <Phone className="w-4 h-4 text-emerald-600" />
+                <span>Gọi 0961364600</span>
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowUpgradeModal(false)}
+                className="w-full sm:w-auto px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold cursor-pointer"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <TeacherProfileModal
         isOpen={showTeacherProfileModal}
         onClose={() => setShowTeacherProfileModal(false)}

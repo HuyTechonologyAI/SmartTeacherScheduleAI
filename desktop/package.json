@@ -34,7 +34,9 @@
           ]
         }
       ],
-      "icon": "icon.ico"
+      "icon": "icon.ico",
+      "signAndEditExecutable": false,
+      "verifyUpdateCodeSignature": false
     },
     "nsis": {
       "oneClick": false,
@@ -58,7 +60,8 @@
       ],
       "category": "public.app-category.education",
       "icon": "icon.icns"
-    }
+    },
+    "forceCodeSigning": false
   },
   "dependencies": {},
   "devDependencies": {

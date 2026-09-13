@@ -21,3 +21,5 @@ node_modules/
 landingpage/.env*
 *.tsbuildinfo
 .kotlin/
+desktop/dist/
+desktop/node_modules/

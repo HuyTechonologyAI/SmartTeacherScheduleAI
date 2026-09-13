@@ -354,30 +354,40 @@ export default function PlatformInstallGuideModal({
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-sm text-indigo-900 dark:text-indigo-200">
-                      Bản Portable Dành Riêng Cho Máy Tính Giáo Viên
+                      Bộ Cài Đặt Chính Thức Windows (.EXE) Có Logo
                     </span>
                     <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-indigo-200 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-300">
-                      Chạy Ngay
+                      v1.8.0 Chuẩn PE
                     </span>
                   </div>
                   <p className="text-xs text-indigo-700 dark:text-indigo-300">
-                    Tích hợp chuông báo Crystal Chime chuẩn phòng học & cửa sổ nổi thu nhỏ (Mini PiP) khi chiếu PowerPoint.
+                    Tự động tạo lối tắt (Shortcut) ra màn hình Desktop có Icon phần mềm đầy đủ, chuông Crystal Chime và cửa sổ thu nhỏ (Mini PiP).
                   </p>
                 </div>
-                <a
-                  href="/releases/SmartTeacherSchedule_v1.8.0_Desktop.zip"
-                  download="SmartTeacherSchedule_v1.8.0_Desktop.zip"
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md transition-all shrink-0 cursor-pointer"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Tải Desktop Zip (~2.4 MB)</span>
-                </a>
+                <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                  <a
+                    href="/downloads/SmartTeacherSchedule_Setup_v1.8.0.exe"
+                    download="SmartTeacherSchedule_Setup_v1.8.0.exe"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md transition-all shrink-0 cursor-pointer"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Tải Bản Cài Đặt (.exe)</span>
+                  </a>
+                  <a
+                    href="/downloads/SmartTeacherSchedule_v1.8.0_Portable.exe"
+                    download="SmartTeacherSchedule_v1.8.0_Portable.exe"
+                    className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/60 dark:hover:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-xs font-bold transition-all shrink-0 cursor-pointer"
+                    title="Chạy trực tiếp không cần cài đặt"
+                  >
+                    <span>Bản Portable</span>
+                  </a>
+                </div>
               </div>
 
               {/* 3 Steps */}
               <div className="space-y-3.5">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                  3 Bước Đơn Giản Để Sử Dụng Trên Máy Tính:
+                  3 Bước Cài Đặt Dễ Dàng Trên Máy Tính Windows:
                 </h4>
 
                 <div className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800">
@@ -386,10 +396,10 @@ export default function PlatformInstallGuideModal({
                   </div>
                   <div className="space-y-1 text-xs">
                     <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-                      Tải gói tệp nén Desktop Zip
+                      Tải tệp cài đặt chính thức .exe
                     </p>
                     <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                      Nhấn nút <strong className="text-indigo-600">"Tải Desktop Zip"</strong> ở trên để lưu tệp <code className="bg-slate-200 dark:bg-slate-700 px-1 py-0.5 rounded font-mono font-bold">SmartTeacherSchedule_v1.8.0_Desktop.zip</code> về máy tính.
+                      Bấm nút <strong className="text-indigo-600">"Tải Bản Cài Đặt (.exe)"</strong> ở trên để tải file <code className="bg-slate-200 dark:bg-slate-700 px-1 py-0.5 rounded font-mono font-bold">SmartTeacherSchedule_Setup_v1.8.0.exe</code> về máy tính.
                     </p>
                   </div>
                 </div>
@@ -400,10 +410,10 @@ export default function PlatformInstallGuideModal({
                   </div>
                   <div className="space-y-1 text-xs">
                     <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-                      Giải nén thư mục (Extract All)
+                      Nhấp đúp mở file để cài đặt tự động
                     </p>
                     <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                      Nhấp chuột phải vào tệp ZIP vừa tải về ➔ Chọn <strong>"Extract All..." (hoặc Giải nén tại đây)</strong> ➔ Nhấn Extract.
+                      Mở file vừa tải về ➔ Chọn thư mục cài đặt ➔ Nhấn <strong>"Install" (Cài đặt)</strong>. Trình cài đặt NSIS sẽ tự động tạo biểu tượng logo phần mềm trên màn hình Desktop và Start Menu.
                     </p>
                   </div>
                 </div>
@@ -414,10 +424,10 @@ export default function PlatformInstallGuideModal({
                   </div>
                   <div className="space-y-1 text-xs">
                     <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-                      Chạy ứng dụng và ghim ra Desktop
+                      Mở biểu tượng trên màn hình & Tự động cập nhật
                     </p>
                     <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                      Mở thư mục vừa giải nén ➔ Nhấp đúp vào file <strong className="text-emerald-700 dark:text-emerald-400">`SmartTeacherSchedule.exe`</strong> để sử dụng ngay. Có thể nhấp chuột phải ➔ Chọn <em>"Send to ➔ Desktop (create shortcut)"</em> để mở nhanh mỗi ngày lên lớp.
+                      Thầy cô mở biểu tượng <strong className="text-emerald-700 dark:text-emerald-400">Smart Teacher Schedule AI</strong> ngoài màn hình. Phần mềm có cơ chế Auto-Update tự động kiểm tra bản phát hành mới nhất mỗi khi khởi động.
                     </p>
                   </div>
                 </div>

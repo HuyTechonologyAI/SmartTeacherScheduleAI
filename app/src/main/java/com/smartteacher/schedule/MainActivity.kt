@@ -10,11 +10,13 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -167,6 +169,88 @@ class MainActivity : ComponentActivity() {
                 val pendingLeaveCount by database.leaveRequestDao().getPendingCountFlow().collectAsState(initial = 0)
 
                 var aiWarnings by remember { mutableStateOf<List<String>>(emptyList()) }
+
+                // Auto-Update State
+                var updateDialogInfo by remember { mutableStateOf<com.smartteacher.schedule.core.update.VersionResponse?>(null) }
+
+                LaunchedEffect(Unit) {
+                    try {
+                        val updateRes = com.smartteacher.schedule.core.update.AppUpdateManager.checkUpdate()
+                        if (com.smartteacher.schedule.core.update.AppUpdateManager.isUpdateAvailable(updateRes)) {
+                            updateDialogInfo = updateRes
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+
+                // Update Dialog
+                updateDialogInfo?.let { update ->
+                    val androidPlatform = update.platforms?.android
+                    val newVersion = androidPlatform?.versionName ?: update.versionName ?: "Mới"
+                    val notes = update.releaseNotes ?: emptyList()
+                    val downloadUrl = androidPlatform?.downloadUrl ?: "https://www.gvcncdsai.io.vn/downloads/SmartTeacherSchedule_v1.8.0.apk"
+                    val isForce = androidPlatform?.isForceUpdate == true
+
+                    AlertDialog(
+                        onDismissRequest = {
+                            if (!isForce) updateDialogInfo = null
+                        },
+                        title = {
+                            Text(
+                                text = "🎉 Đã có bản cập nhật v$newVersion!",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        },
+                        text = {
+                            androidx.compose.foundation.layout.Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = update.title ?: "Bản cập nhật tối ưu hóa hiệu năng & đồng bộ đám mây.",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                if (notes.isNotEmpty()) {
+                                    Text(
+                                        text = "Điểm mới nổi bật:",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    notes.forEach { note ->
+                                        Text(
+                                            text = "• $note",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    com.smartteacher.schedule.core.update.AppUpdateManager.startDownloadAndInstall(
+                                        context = context,
+                                        downloadUrl = downloadUrl,
+                                        fileName = "SmartTeacherSchedule_v$newVersion.apk"
+                                    )
+                                    if (!isForce) updateDialogInfo = null
+                                }
+                            ) {
+                                Text("Cập nhật ngay")
+                            }
+                        },
+                        dismissButton = if (!isForce) {
+                            {
+                                TextButton(onClick = { updateDialogInfo = null }) {
+                                    Text("Để sau")
+                                }
+                            }
+                        } else null
+                    )
+                }
 
                 // Collect AI risks for today
                 LaunchedEffect(todayEvents, todayTasks) {

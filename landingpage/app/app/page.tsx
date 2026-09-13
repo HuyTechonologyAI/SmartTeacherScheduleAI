@@ -6612,10 +6612,10 @@ export default function UnifiedTeacherScheduleApp() {
                         <span>Hướng dẫn & Tải</span>
                       </button>
                       <a
-                        href="/releases/SmartTeacherSchedule_v1.8.0_Desktop.zip"
-                        download="SmartTeacherSchedule_v1.8.0_Desktop.zip"
+                        href="/downloads/SmartTeacherSchedule_Setup_v1.8.0.exe"
+                        download="SmartTeacherSchedule_Setup_v1.8.0.exe"
                         onClick={(e) => e.stopPropagation()}
-                        title="Tải trực tiếp file Zip"
+                        title="Tải bộ cài đặt Windows Setup .exe có logo"
                         className="p-1.5 rounded-lg bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-950 dark:hover:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-xs transition-colors shrink-0"
                       >
                         <Download className="w-3.5 h-3.5" />

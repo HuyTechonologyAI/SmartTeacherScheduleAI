@@ -1,6 +1,7 @@
 
-const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification, shell } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification, shell, dialog } = require('electron');
 const path = require('path');
+const https = require('https');
 
 let mainWindow = null;
 let tray = null;
@@ -131,12 +132,16 @@ function createMenu() {
       label: 'Trợ Giúp',
       submenu: [
         {
+          label: '🔄 Kiểm tra bản cập nhật mới...',
+          click: () => checkForUpdates(true)
+        },
+        {
           label: '🌐 Trang chủ Smart Teacher Schedule AI',
           click: () => shell.openExternal('https://gvcncdsai.io.vn')
         },
         {
-          label: '📱 Tải bản Android APK v1.7.0',
-          click: () => shell.openExternal('https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases')
+          label: '📱 Tải bản Android APK v1.8.0',
+          click: () => shell.openExternal('https://www.gvcncdsai.io.vn/downloads/SmartTeacherSchedule_v1.8.0.apk')
         },
         {
           label: '💬 Hỗ trợ Zalo: 0961364600',
@@ -144,12 +149,12 @@ function createMenu() {
         },
         { type: 'separator' },
         {
-          label: 'Về ứng dụng Smart Teacher Schedule AI v1.7.0',
+          label: 'Về ứng dụng Smart Teacher Schedule AI v1.8.0',
           click: () => {
             if (Notification.isSupported()) {
               new Notification({
                 title: 'Smart Teacher Schedule AI Desktop',
-                body: 'Phiên bản v1.7.0 - Hệ sinh thái đồng bộ đám mây đa nền tảng, giao diện sáng/tối toàn diện và trợ lý giáo viên AI.'
+                body: 'Phiên bản v1.8.0 - Hệ sinh thái đa nền tảng, tự động hóa sư phạm, đồng bộ đám mây và trợ lý giáo viên AI.'
               }).show();
             }
           }
@@ -217,6 +222,65 @@ ipcMain.on('desktop-notification', (event, { title, body }) => {
   }
 });
 
+// Auto Update Check Function
+function checkForUpdates(manual = false) {
+  const versionUrl = 'https://www.gvcncdsai.io.vn/api/version';
+  https.get(versionUrl, (res) => {
+    let rawData = '';
+    res.on('data', (chunk) => { rawData += chunk; });
+    res.on('end', () => {
+      try {
+        const data = JSON.parse(rawData);
+        const currentVersionCode = 18; // v1.8.0
+        const remoteVersionCode = data.versionCode || 18;
+        const remoteVersionName = data.versionName || '1.8.0';
+
+        if (remoteVersionCode > currentVersionCode) {
+          dialog.showMessageBox(mainWindow, {
+            type: 'info',
+            title: `Đã có bản cập nhật mới v${remoteVersionName}!`,
+            message: data.title || `Smart Teacher Schedule AI đã có bản cập nhật mới v${remoteVersionName}.`,
+            detail: (data.releaseNotes || []).join('\n• ') + '\n\nThầy cô có muốn tải về bản cài đặt mới ngay bây giờ không?',
+            buttons: ['Tải bản cài đặt mới (.exe)', 'Để sau'],
+            defaultId: 0,
+            cancelId: 1
+          }).then((result) => {
+            if (result.response === 0) {
+              const downloadUrl = data.platforms?.windows?.setupUrl || 'https://www.gvcncdsai.io.vn/downloads/SmartTeacherSchedule_Setup_v1.8.0.exe';
+              shell.openExternal(downloadUrl);
+            }
+          });
+        } else if (manual) {
+          dialog.showMessageBox(mainWindow, {
+            type: 'info',
+            title: 'Phiên bản mới nhất',
+            message: `Thầy cô đang sử dụng phiên bản v1.8.0 mới nhất của Smart Teacher Schedule AI.`,
+            buttons: ['Đồng ý']
+          });
+        }
+      } catch (err) {
+        if (manual) {
+          dialog.showMessageBox(mainWindow, {
+            type: 'error',
+            title: 'Kiểm tra cập nhật',
+            message: 'Không thể kết nối đến máy chủ kiểm tra phiên bản. Vui lòng thử lại sau.',
+            buttons: ['Đóng']
+          });
+        }
+      }
+    });
+  }).on('error', () => {
+    if (manual) {
+      dialog.showMessageBox(mainWindow, {
+        type: 'error',
+        title: 'Lỗi mạng',
+        message: 'Vui lòng kiểm tra kết nối Internet của máy tính.',
+        buttons: ['Đóng']
+      });
+    }
+  });
+}
+
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
@@ -232,6 +296,11 @@ if (!gotTheLock) {
 
   app.whenReady().then(() => {
     createWindow();
+
+    // Check updates after 5s of startup
+    setTimeout(() => {
+      checkForUpdates(false);
+    }, 5000);
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

@@ -26,9 +26,10 @@ import kotlinx.coroutines.launch
         KnowledgeDocumentEntity::class,
         ClassroomEntity::class,
         StudentEntity::class,
-        AttendanceRecordEntity::class
+        AttendanceRecordEntity::class,
+        LeaveRequestEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -45,6 +46,7 @@ abstract class SmartTeacherDatabase : RoomDatabase() {
     abstract fun classroomDao(): ClassroomDao
     abstract fun studentDao(): StudentDao
     abstract fun attendanceDao(): AttendanceDao
+    abstract fun leaveRequestDao(): LeaveRequestDao
 
     companion object {
         @Volatile
@@ -178,6 +180,31 @@ abstract class SmartTeacherDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_7_8 = object : androidx.room.migration.Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `leave_requests` (
+                        `id` TEXT PRIMARY KEY NOT NULL,
+                        `studentId` TEXT NOT NULL,
+                        `studentCode` TEXT NOT NULL DEFAULT '',
+                        `studentName` TEXT NOT NULL,
+                        `className` TEXT NOT NULL,
+                        `parentName` TEXT NOT NULL,
+                        `parentPhone` TEXT NOT NULL,
+                        `date` TEXT NOT NULL,
+                        `reason` TEXT NOT NULL,
+                        `type` TEXT NOT NULL DEFAULT 'OTHER',
+                        `status` TEXT NOT NULL DEFAULT 'PENDING',
+                        `createdAt` INTEGER NOT NULL DEFAULT 0,
+                        `reviewedAt` INTEGER,
+                        `teacherNote` TEXT
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_leave_requests_className_date` ON `leave_requests` (`className`, `date`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_leave_requests_status` ON `leave_requests` (`status`)")
+            }
+        }
+
         fun getInstance(context: Context): SmartTeacherDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -185,7 +212,7 @@ abstract class SmartTeacherDatabase : RoomDatabase() {
                     SmartTeacherDatabase::class.java,
                     "smart_teacher_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                     .fallbackToDestructiveMigration()
                     .addCallback(object : Callback() {
                         override fun onCreate(db: SupportSQLiteDatabase) {

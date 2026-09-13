@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
@@ -162,6 +164,7 @@ class MainActivity : ComponentActivity() {
                 val allTasks by database.taskDao().getAllTasks().collectAsState(initial = emptyList())
                 val allSchedules by database.teachingScheduleDao().getAllActiveSchedules().collectAsState(initial = emptyList())
                 val notificationLogs by database.notificationLogDao().getRecentLogs().collectAsState(initial = emptyList())
+                val pendingLeaveCount by database.leaveRequestDao().getPendingCountFlow().collectAsState(initial = 0)
 
                 var aiWarnings by remember { mutableStateOf<List<String>>(emptyList()) }
 
@@ -179,7 +182,21 @@ class MainActivity : ComponentActivity() {
                             NavigationBar {
                                 bottomNavScreens.forEach { screen ->
                                     NavigationBarItem(
-                                        icon = { Icon(screen.icon, contentDescription = screen.title) },
+                                        icon = {
+                                            if (screen == Screen.Students && pendingLeaveCount > 0) {
+                                                BadgedBox(
+                                                    badge = {
+                                                        Badge(containerColor = MaterialTheme.colorScheme.error) {
+                                                            Text("$pendingLeaveCount", color = Color.White, fontSize = 10.sp)
+                                                        }
+                                                    }
+                                                ) {
+                                                    Icon(screen.icon, contentDescription = screen.title)
+                                                }
+                                            } else {
+                                                Icon(screen.icon, contentDescription = screen.title)
+                                            }
+                                        },
                                         label = { Text(screen.title) },
                                         selected = currentRoute == screen.route,
                                         onClick = {

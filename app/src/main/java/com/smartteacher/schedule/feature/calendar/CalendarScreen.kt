@@ -234,20 +234,27 @@ fun CalendarScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 FilterChip(
                     selected = viewMode == 0,
                     onClick = { viewMode = 0 },
-                    label = { Text("📋 Lịch trình tổng thể (${agendaEvents.size} ca)") },
-                    leadingIcon = { Icon(Icons.Default.ViewAgenda, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                    label = { Text("📋 Lịch trình (${agendaEvents.size})", fontSize = 11.sp) },
+                    leadingIcon = { Icon(Icons.Default.ViewAgenda, contentDescription = null, modifier = Modifier.size(14.dp)) },
                     modifier = Modifier.weight(1f)
                 )
                 FilterChip(
                     selected = viewMode == 1,
                     onClick = { viewMode = 1 },
-                    label = { Text("📅 Xem theo ngày") },
-                    leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                    label = { Text("📅 Theo ngày", fontSize = 11.sp) },
+                    leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(14.dp)) },
+                    modifier = Modifier.weight(1f)
+                )
+                FilterChip(
+                    selected = viewMode == 2,
+                    onClick = { viewMode = 2 },
+                    label = { Text("📊 Báo giảng", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                    leadingIcon = { Icon(Icons.Default.Summarize, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color(0xFF10B981)) },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -265,6 +272,7 @@ fun CalendarScreen(
                 base
             }
 
+            if (viewMode != 2) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -285,6 +293,7 @@ fun CalendarScreen(
                         label = { Text(filterName, fontSize = 12.sp) }
                     )
                 }
+            }
             }
 
             // =========================================================================
@@ -394,7 +403,7 @@ fun CalendarScreen(
                         }
                     }
                 }
-            } else {
+            } else if (viewMode == 1) {
                 // =========================================================================
                 // CHẾ ĐỘ 2: XEM THEO TỪNG NGÀY (CÓ BỘ CHUYỂN NGÀY)
                 // =========================================================================
@@ -458,6 +467,239 @@ fun CalendarScreen(
                                     GoogleCalendarManager.insertEventViaIntent(context, event)
                                 }
                             )
+                        }
+                    }
+                }
+            } else {
+                // =========================================================================
+                // CHẾ ĐỘ 3: SỔ BÁO GIẢNG & LỊCH TRÌNH SƯ PHẠM THEO TUẦN (TEACHING JOURNAL)
+                // =========================================================================
+                val semesterStart = remember { LocalDate.of(2026, 9, 7) }
+                val currentWeekNum = remember {
+                    val days = java.time.temporal.ChronoUnit.DAYS.between(semesterStart, today)
+                    val w = (days / 7).toInt() + 1
+                    w.coerceIn(1, 25)
+                }
+                var selectedWeek by remember { mutableStateOf(currentWeekNum) }
+                val weekStart = remember(selectedWeek) { semesterStart.plusWeeks((selectedWeek - 1).toLong()) }
+                val weekEnd = remember(selectedWeek) { weekStart.plusDays(6) }
+                val dFmt = remember { DateTimeFormatter.ofPattern("dd/MM/yyyy") }
+
+                val weekEvents = remember(events, weekStart, weekEnd) {
+                    val sStr = weekStart.toString()
+                    val eStr = weekEnd.toString()
+                    events.filter { it.date in sStr..eStr }.sortedWith(compareBy({ it.date }, { it.startTime }))
+                }
+
+                val weekGrouped = remember(weekEvents) {
+                    weekEvents.groupBy { it.date }
+                }
+
+                // Week selector header card
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f))
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(
+                            onClick = { if (selectedWeek > 1) selectedWeek-- },
+                            enabled = selectedWeek > 1
+                        ) {
+                            Icon(Icons.Default.ChevronLeft, contentDescription = "Tuần trước")
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "TUẦN ${selectedWeek}",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "${weekStart.format(dFmt)} - ${weekEnd.format(dFmt)}",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+                        }
+                        IconButton(
+                            onClick = { if (selectedWeek < 25) selectedWeek++ },
+                            enabled = selectedWeek < 25
+                        ) {
+                            Icon(Icons.Default.ChevronRight, contentDescription = "Tuần sau")
+                        }
+                    }
+                }
+
+                // Week summary banner & Export actions
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF10B981).copy(alpha = 0.1f)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.3f))
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "Tổng số: ${weekEvents.size} tiết dạy",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = Color(0xFF047857)
+                            )
+                            val ltCount = weekEvents.count { !it.sessionType.contains("thực hành", true) }
+                            val thCount = weekEvents.size - ltCount
+                            Text(
+                                text = "Lý thuyết: $ltCount tiết • Thực hành: $thCount tiết",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            )
+                        }
+                        Button(
+                            onClick = { showReportDialog = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Icon(Icons.Default.Print, contentDescription = null, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("In / Xuất PDF", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+
+                if (weekEvents.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.Summarize, contentDescription = null, tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), modifier = Modifier.size(48.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Tuần này chưa có lịch lên lớp",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                            Text(
+                                text = "Thầy/Cô có thể chuyển tuần hoặc nạp thời khóa biểu từ màn hình chính.",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(vertical = 6.dp)
+                    ) {
+                        weekGrouped.forEach { (dateStr, dayList) ->
+                            val lDate = try { LocalDate.parse(dateStr) } catch (e: Exception) { today }
+                            val dayOfWeekName = lDate.format(DateTimeFormatter.ofPattern("EEEE", Locale("vi", "VN"))).replaceFirstChar { it.uppercase() }
+                            val isCurrentDay = lDate == today
+
+                            item {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (isCurrentDay) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 5.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "$dayOfWeekName (${lDate.format(DateTimeFormatter.ofPattern("dd/MM"))})",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp,
+                                            color = if (isCurrentDay) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = "${dayList.size} tiết",
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                        )
+                                    }
+                                }
+                            }
+
+                            items(dayList) { ev ->
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Surface(
+                                                    shape = RoundedCornerShape(6.dp),
+                                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                                ) {
+                                                    Text(
+                                                        text = "${ev.startTime} - ${ev.endTime}",
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                    )
+                                                }
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Surface(
+                                                    shape = RoundedCornerShape(6.dp),
+                                                    color = if (ev.sessionType.contains("thực hành", true)) Color(0xFFFEF3C7) else Color(0xFFEFF6FF)
+                                                ) {
+                                                    Text(
+                                                        text = if (ev.sessionType.contains("thực hành", true)) "Thực hành" else "Lý thuyết",
+                                                        fontSize = 10.sp,
+                                                        fontWeight = FontWeight.Medium,
+                                                        color = if (ev.sessionType.contains("thực hành", true)) Color(0xFFB45309) else Color(0xFF1D4ED8),
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                    )
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = "${ev.className} • ${ev.subject}",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.sp
+                                            )
+                                            Text(
+                                                text = ev.title.ifBlank { "Nội dung bài học" },
+                                                fontSize = 11.sp,
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                            )
+                                            if (ev.room.isNotBlank()) {
+                                                Text(
+                                                    text = "Phòng/Xưởng: ${ev.room}",
+                                                    fontSize = 10.sp,
+                                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                                )
+                                            }
+                                        }
+
+                                        IconButton(
+                                            onClick = { editingEvent = ev },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(Icons.Default.Edit, contentDescription = "Sửa", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

@@ -91,6 +91,8 @@ fun TodayScreen(
     var attendanceTargetEvent by remember { mutableStateOf<CalendarEventEntity?>(null) }
     var showStudentManagementDialog by remember { mutableStateOf(false) }
     var todayFilter by remember { mutableStateOf("Tất cả") }
+    var showReportDialog by remember { mutableStateOf(false) }
+    val allEventsForReport by db.calendarEventDao().getAllEvents().collectAsState(initial = emptyList())
 
 
     if (viewingDocumentsEvent != null) {
@@ -113,6 +115,13 @@ fun TodayScreen(
                     db.lessonAttachmentDao().deleteAttachment(item)
                 }
             }
+        )
+    }
+
+    if (showReportDialog) {
+        com.smartteacher.schedule.feature.schedule.components.ExportPedagogicalReportDialog(
+            onDismiss = { showReportDialog = false },
+            allEvents = allEventsForReport
         )
     }
 
@@ -301,6 +310,13 @@ fun TodayScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { showReportDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Summarize,
+                            contentDescription = "Sổ báo giảng",
+                            tint = Color(0xFF10B981)
+                        )
+                    }
                     IconButton(onClick = onOpenAIClick) {
                         Icon(
                             imageVector = Icons.Default.AutoAwesome,

@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.sp
 import com.smartteacher.schedule.core.database.SmartTeacherDatabase
 import com.smartteacher.schedule.core.database.entity.ClassroomEntity
 import com.smartteacher.schedule.core.database.entity.StudentEntity
+import com.smartteacher.schedule.core.database.entity.AttendanceRecordEntity
+import com.smartteacher.schedule.core.database.entity.LeaveRequestEntity
 import com.smartteacher.schedule.core.gradebook.GradebookManager
 import com.smartteacher.schedule.core.gradebook.StudentScoreRecord
 import com.smartteacher.schedule.core.sync.CloudSyncManager
@@ -53,6 +55,10 @@ fun StudentManagementScreen(
     // Screen sub-tab: 0 = Danh sách & Điểm danh, 1 = Sổ điểm Thông tư 22
     var selectedSubTab by remember { mutableStateOf(0) }
     var selectedSemester by remember { mutableStateOf("Học kỳ I") }
+
+    val leaveRequests by db.leaveRequestDao().getAllLeaveRequestsFlow().collectAsState(initial = emptyList())
+    val pendingLeaveCount = remember(leaveRequests) { leaveRequests.count { it.status == "PENDING" } }
+    var leaveFilter by remember { mutableStateOf("ALL") } // ALL, PENDING, APPROVED, REJECTED
 
     LaunchedEffect(classrooms) {
         if (classrooms.isEmpty()) {
@@ -231,12 +237,33 @@ fun StudentManagementScreen(
                 Tab(
                     selected = selectedSubTab == 0,
                     onClick = { selectedSubTab = 0 },
-                    text = { Text("📋 Danh Sách & Nề Nếp", fontWeight = FontWeight.Bold, fontSize = 13.sp) }
+                    text = { Text("📋 Danh Sách", fontWeight = FontWeight.Bold, fontSize = 12.sp) }
                 )
                 Tab(
                     selected = selectedSubTab == 1,
                     onClick = { selectedSubTab = 1 },
-                    text = { Text("📊 Sổ Điểm TT 22", fontWeight = FontWeight.Bold, fontSize = 13.sp) }
+                    text = { Text("📊 Sổ Điểm", fontWeight = FontWeight.Bold, fontSize = 12.sp) }
+                )
+                Tab(
+                    selected = selectedSubTab == 2,
+                    onClick = { selectedSubTab = 2 },
+                    text = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("📩 Đơn Nghỉ", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            if (pendingLeaveCount > 0) {
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Surface(
+                                    shape = CircleShape,
+                                    color = Color(0xFFEF4444),
+                                    modifier = Modifier.size(18.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text("$pendingLeaveCount", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+                    }
                 )
             }
 
@@ -550,6 +577,372 @@ fun StudentManagementScreen(
                     }
                 }
             }
+            // ================= TAB 2: ĐƠN PHỤ HUYNH =================
+            if (selectedSubTab == 2) {
+                // Header action row for Leave Requests
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Đơn Xin Nghỉ Của Phụ Huynh",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp
+                        )
+                        Text(
+                            text = if (pendingLeaveCount > 0) "Có $pendingLeaveCount đơn mới đang chờ thầy/cô xét duyệt" else "Tất cả đơn xin phép đã được xử lý",
+                            fontSize = 11.sp,
+                            color = if (pendingLeaveCount > 0) Color(0xFFD97706) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                    Button(
+                        onClick = {
+                            coroutineScope.launch(Dispatchers.IO) {
+                                val res = CloudSyncManager.pullFromCloud(context)
+                                withContext(Dispatchers.Main) {
+                                    if (res.isSuccess) {
+                                        Toast.makeText(context, "Đã cập nhật đơn mới từ đám mây!", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        Toast.makeText(context, "Lỗi kiểm tra đơn: " + (res.exceptionOrNull()?.message ?: ""), Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(text = "Tải đơn mới", fontSize = 11.sp)
+                    }
+                }
+
+                // Filter chips: ALL, PENDING, APPROVED, REJECTED
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(vertical = 6.dp)
+                ) {
+                    val pCount = leaveRequests.count { it.status == "PENDING" }
+                    val aCount = leaveRequests.count { it.status == "APPROVED" }
+                    val rCount = leaveRequests.count { it.status == "REJECTED" }
+
+                    item {
+                        FilterChip(
+                            selected = leaveFilter == "ALL",
+                            onClick = { leaveFilter = "ALL" },
+                            label = { Text("Tất cả (" + leaveRequests.size + ")", fontSize = 11.sp) }
+                        )
+                    }
+                    item {
+                        FilterChip(
+                            selected = leaveFilter == "PENDING",
+                            onClick = { leaveFilter = "PENDING" },
+                            label = {
+                                Text(
+                                    "Chờ duyệt ($pCount)",
+                                    fontSize = 11.sp,
+                                    color = if (pCount > 0) Color(0xFFD97706) else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        )
+                    }
+                    item {
+                        FilterChip(
+                            selected = leaveFilter == "APPROVED",
+                            onClick = { leaveFilter = "APPROVED" },
+                            label = { Text("Đã duyệt ($aCount)", fontSize = 11.sp, color = Color(0xFF059669)) }
+                        )
+                    }
+                    item {
+                        FilterChip(
+                            selected = leaveFilter == "REJECTED",
+                            onClick = { leaveFilter = "REJECTED" },
+                            label = { Text("Từ chối ($rCount)", fontSize = 11.sp, color = Color(0xFFDC2626)) }
+                        )
+                    }
+                }
+
+                val filteredRequests = remember(leaveRequests, leaveFilter, selectedClass?.name) {
+                    leaveRequests.filter { r ->
+                        val matchClass = if (selectedClass != null) {
+                            r.className.trim().equals(selectedClass!!.name.trim(), ignoreCase = true)
+                        } else true
+                        val matchFilter = when (leaveFilter) {
+                            "PENDING" -> r.status == "PENDING"
+                            "APPROVED" -> r.status == "APPROVED"
+                            "REJECTED" -> r.status == "REJECTED"
+                            else -> true
+                        }
+                        matchClass && matchFilter
+                    }
+                }
+
+                if (filteredRequests.isEmpty()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(28.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MarkEmailRead,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = "Không có đơn nghỉ phép nào",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Phụ huynh gửi đơn từ Cổng Sổ liên lạc điện tử (gvcncdsai.io.vn/parent) sẽ hiển thị ngay tại đây.",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxSize().padding(bottom = 16.dp)
+                    ) {
+                        items(filteredRequests, key = { it.id }) { req ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = when (req.status) {
+                                        "PENDING" -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f)
+                                        "APPROVED" -> Color(0xFF10B981).copy(alpha = 0.08f)
+                                        else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                                    }
+                                ),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    when (req.status) {
+                                        "PENDING" -> Color(0xFFF59E0B).copy(alpha = 0.6f)
+                                        "APPROVED" -> Color(0xFF10B981).copy(alpha = 0.5f)
+                                        else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                                    }
+                                )
+                            ) {
+                                Column(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
+                                    // Top row: Student name, class & status badge
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Surface(
+                                                shape = CircleShape,
+                                                color = MaterialTheme.colorScheme.primaryContainer,
+                                                modifier = Modifier.size(36.dp)
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(imageVector = Icons.Default.Person, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.width(10.dp))
+                                            Column {
+                                                Text(text = req.studentName, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                                Text(text = "Lớp: " + req.className + " • Ngày nghỉ: " + req.date, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                                            }
+                                        }
+
+                                        // Status badge
+                                        Surface(
+                                            shape = RoundedCornerShape(20.dp),
+                                            color = when (req.status) {
+                                                "PENDING" -> Color(0xFFFEF3C7)
+                                                "APPROVED" -> Color(0xFFD1FAE5)
+                                                else -> Color(0xFFFEE2E2)
+                                            }
+                                        ) {
+                                            Text(
+                                                text = when (req.status) {
+                                                    "PENDING" -> "⏳ Chờ duyệt"
+                                                    "APPROVED" -> "✅ Đã duyệt"
+                                                    else -> "❌ Từ chối"
+                                                },
+                                                color = when (req.status) {
+                                                    "PENDING" -> Color(0xFFB45309)
+                                                    "APPROVED" -> Color(0xFF047857)
+                                                    else -> Color(0xFFB91C1C)
+                                                },
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(10.dp))
+
+                                    // Reason row
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        val typeLabel = when (req.type) {
+                                            "SICK" -> "🤒 Nghỉ ốm"
+                                            "FAMILY" -> "🏠 Việc gia đình"
+                                            else -> "📝 Lý do khác"
+                                        }
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = MaterialTheme.colorScheme.surfaceVariant
+                                        ) {
+                                            Text(
+                                                text = typeLabel,
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Medium,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(text = req.reason, fontSize = 12.sp, fontWeight = FontWeight.Normal)
+                                    }
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    // Parent contact info
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "Phụ huynh: " + req.parentName.ifBlank { "PH Học sinh" } + " (" + req.parentPhone.ifBlank { "Chưa có SĐT" } + ")",
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                        )
+
+                                        if (req.parentPhone.isNotBlank()) {
+                                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                IconButton(
+                                                    onClick = {
+                                                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + req.parentPhone))
+                                                        context.startActivity(intent)
+                                                    },
+                                                    modifier = Modifier.size(28.dp)
+                                                ) {
+                                                    Icon(imageVector = Icons.Default.Phone, contentDescription = "Gọi PH", tint = Color(0xFF059669), modifier = Modifier.size(16.dp))
+                                                }
+                                                IconButton(
+                                                    onClick = {
+                                                        val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:" + req.parentPhone))
+                                                        context.startActivity(intent)
+                                                    },
+                                                    modifier = Modifier.size(28.dp)
+                                                ) {
+                                                    Icon(imageVector = Icons.Default.Sms, contentDescription = "Nhắn tin PH", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // Teacher Note if present
+                                    if (!req.teacherNote.isNullOrBlank()) {
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Ghi chú GV: " + req.teacherNote,
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                                        )
+                                    }
+
+                                    // Action buttons row (Approve / Reject)
+                                    if (req.status == "PENDING") {
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                        Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Button(
+                                                onClick = {
+                                                    coroutineScope.launch(Dispatchers.IO) {
+                                                        // 1. Update Leave Request to APPROVED
+                                                        db.leaveRequestDao().updateStatus(
+                                                            id = req.id,
+                                                            status = "APPROVED",
+                                                            reviewedAt = System.currentTimeMillis(),
+                                                            teacherNote = "GV đã duyệt nghỉ có phép"
+                                                        )
+                                                        // 2. Automatically record Attendance ABSENT_EXCUSED
+                                                        val att = AttendanceRecordEntity(
+                                                            id = "att_leave_" + req.id,
+                                                            date = req.date,
+                                                            eventId = "",
+                                                            scheduleId = "",
+                                                            studentId = req.studentId,
+                                                            className = req.className,
+                                                            status = "ABSENT_EXCUSED",
+                                                            kudosDelta = 0,
+                                                            note = "Nghỉ có phép: " + req.reason,
+                                                            updatedAt = System.currentTimeMillis()
+                                                        )
+                                                        db.attendanceDao().insertRecord(att)
+                                                        // 3. Auto push to cloud
+                                                        CloudSyncManager.pushToCloud(context)
+                                                        withContext(Dispatchers.Main) {
+                                                            Toast.makeText(context, "Đã duyệt đơn và cập nhật điểm danh nghỉ có phép cho em " + req.studentName + "!", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    }
+                                                },
+                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)),
+                                                shape = RoundedCornerShape(10.dp),
+                                                modifier = Modifier.weight(1f),
+                                                contentPadding = PaddingValues(vertical = 8.dp)
+                                            ) {
+                                                Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(text = "Duyệt đơn", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                            }
+
+                                            OutlinedButton(
+                                                onClick = {
+                                                    coroutineScope.launch(Dispatchers.IO) {
+                                                        db.leaveRequestDao().updateStatus(
+                                                            id = req.id,
+                                                            status = "REJECTED",
+                                                            reviewedAt = System.currentTimeMillis(),
+                                                            teacherNote = "Không được chấp thuận"
+                                                        )
+                                                        CloudSyncManager.pushToCloud(context)
+                                                        withContext(Dispatchers.Main) {
+                                                            Toast.makeText(context, "Đã từ chối đơn của em " + req.studentName, Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    }
+                                                },
+                                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFDC2626)),
+                                                shape = RoundedCornerShape(10.dp),
+                                                modifier = Modifier.weight(1f),
+                                                contentPadding = PaddingValues(vertical = 8.dp)
+                                            ) {
+                                                Icon(imageVector = Icons.Default.Cancel, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(text = "Từ chối", fontSize = 12.sp)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
         }
     }
 

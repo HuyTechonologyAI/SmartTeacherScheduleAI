@@ -12,6 +12,7 @@ import com.smartteacher.schedule.core.database.entity.KnowledgeDocumentEntity
 import com.smartteacher.schedule.core.database.entity.ClassroomEntity
 import com.smartteacher.schedule.core.database.entity.StudentEntity
 import com.smartteacher.schedule.core.database.entity.AttendanceRecordEntity
+import com.smartteacher.schedule.core.database.entity.LeaveRequestEntity
 import com.smartteacher.schedule.core.util.ScheduleSyncManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -34,6 +35,32 @@ object CloudSyncManager {
     private const val KEY_LAST_SYNC_TIME = "last_sync_timestamp"
     private const val KEY_AUTO_SYNC = "auto_sync_enabled"
     private const val BASE_SYNC_URL = "https://www.gvcncdsai.io.vn/api/sync"
+    private const val FALLBACK_SYNC_URL = "https://gvcncdsai.io.vn/api/sync"
+
+    private fun JsonObject.getSafeArray(key: String): JsonArray? {
+        val elem = this.get(key) ?: return null
+        return if (!elem.isJsonNull && elem.isJsonArray) elem.asJsonArray else null
+    }
+
+    private fun JsonObject.getSafeObject(key: String): JsonObject? {
+        val elem = this.get(key) ?: return null
+        return if (!elem.isJsonNull && elem.isJsonObject) elem.asJsonObject else null
+    }
+
+    private fun com.google.gson.JsonElement?.asSafeString(default: String = ""): String {
+        if (this == null || this.isJsonNull) return default
+        return try { this.asString } catch (e: Exception) { default }
+    }
+
+    private fun com.google.gson.JsonElement?.asSafeInt(default: Int = 0): Int {
+        if (this == null || this.isJsonNull) return default
+        return try { this.asInt } catch (e: Exception) { default }
+    }
+
+    private fun com.google.gson.JsonElement?.asSafeLong(default: Long = 0L): Long {
+        if (this == null || this.isJsonNull) return default
+        return try { this.asLong } catch (e: Exception) { default }
+    }
 
     private val httpClient = OkHttpClient.Builder()
         .followRedirects(true)
@@ -258,6 +285,27 @@ object CloudSyncManager {
                 })
             }
 
+            val leaveRequestsArray = JsonArray()
+            val allLeaveRequests = runCatching { db.leaveRequestDao().getAllLeaveRequests() }.getOrDefault(emptyList())
+            for (r in allLeaveRequests) {
+                leaveRequestsArray.add(JsonObject().apply {
+                    addProperty("id", r.id)
+                    addProperty("studentId", r.studentId)
+                    addProperty("studentCode", r.studentCode)
+                    addProperty("studentName", r.studentName)
+                    addProperty("className", r.className)
+                    addProperty("parentName", r.parentName)
+                    addProperty("parentPhone", r.parentPhone)
+                    addProperty("date", r.date)
+                    addProperty("reason", r.reason)
+                    addProperty("type", r.type)
+                    addProperty("status", r.status)
+                    addProperty("createdAt", r.createdAt)
+                    if (r.reviewedAt != null) addProperty("reviewedAt", r.reviewedAt)
+                    if (r.teacherNote != null) addProperty("teacherNote", r.teacherNote)
+                })
+            }
+
             val deletedKeysArray = JsonArray().apply {
                 add("custom_7")
                 add("gt-cn10")
@@ -284,6 +332,7 @@ object CloudSyncManager {
                 add("classrooms", classroomsArray)
                 add("students", studentsArray)
                 add("attendanceRecords", attendanceArray)
+                add("leaveRequests", leaveRequestsArray)
 
                 val profilePref = context.getSharedPreferences("smart_teacher_profile_v1", Context.MODE_PRIVATE)
                 val profileObj = JsonObject().apply {
@@ -308,12 +357,31 @@ object CloudSyncManager {
             }
 
             val requestBody = rootObj.toString().toRequestBody(jsonMediaType)
-            val request = Request.Builder()
-                .url(BASE_SYNC_URL)
-                .post(requestBody)
-                .build()
+            var targetUrl = BASE_SYNC_URL
+            var response: okhttp3.Response? = null
+            var lastError: Exception? = null
 
-            val response = httpClient.newCall(request).execute()
+            for (url in listOf(BASE_SYNC_URL, FALLBACK_SYNC_URL)) {
+                try {
+                    val req = Request.Builder().url(url).post(requestBody).build()
+                    val resp = httpClient.newCall(req).execute()
+                    if (resp.isSuccessful) {
+                        response = resp
+                        targetUrl = url
+                        break
+                    } else if (resp.code in 400..499) {
+                        response = resp
+                        break
+                    }
+                } catch (e: Exception) {
+                    lastError = e
+                }
+            }
+
+            if (response == null) {
+                return@withContext Result.failure(lastError ?: Exception("Không thể kết nối máy chủ đồng bộ"))
+            }
+
             val responseBody = response.body?.string() ?: ""
             if (response.isSuccessful) {
                 context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -337,18 +405,32 @@ object CloudSyncManager {
         try {
             val syncCode = getSyncCode(context)
             val pin = getSyncPin(context)
-            val url = if (!pin.isNullOrBlank()) {
-                "$BASE_SYNC_URL?code=$syncCode&pin=$pin"
-            } else {
-                "$BASE_SYNC_URL?code=$syncCode"
+            val queryParams = if (!pin.isNullOrBlank()) "code=$syncCode&pin=$pin" else "code=$syncCode"
+
+            var response: okhttp3.Response? = null
+            var lastError: Exception? = null
+
+            for (baseUrl in listOf(BASE_SYNC_URL, FALLBACK_SYNC_URL)) {
+                try {
+                    val targetUrl = "$baseUrl?$queryParams"
+                    val req = Request.Builder().url(targetUrl).get().build()
+                    val resp = httpClient.newCall(req).execute()
+                    if (resp.isSuccessful) {
+                        response = resp
+                        break
+                    } else if (resp.code in 400..499) {
+                        response = resp
+                        break
+                    }
+                } catch (e: Exception) {
+                    lastError = e
+                }
             }
 
-            val request = Request.Builder()
-                .url(url)
-                .get()
-                .build()
+            if (response == null) {
+                return@withContext Result.failure(lastError ?: Exception("Không thể kết nối máy chủ đồng bộ"))
+            }
 
-            val response = httpClient.newCall(request).execute()
             if (!response.isSuccessful) {
                 val errorBody = response.body?.string() ?: ""
                 return@withContext Result.failure(Exception("Lỗi kết nối máy chủ (${response.code}): $errorBody"))
@@ -359,115 +441,182 @@ object CloudSyncManager {
                 return@withContext Result.success(0)
             }
 
-            val jsonObject = gson.fromJson(responseBody, JsonObject::class.java)
+            val jsonObject = try {
+                gson.fromJson(responseBody, JsonObject::class.java)
+            } catch (e: Exception) {
+                return@withContext Result.failure(Exception("Định dạng phản hồi từ máy chủ không hợp lệ: ${e.message}"))
+            }
+
             val db = SmartTeacherDatabase.getInstance(context)
-            val schedulesArray = jsonObject.getAsJsonArray("schedules")
-            val eventsArray = jsonObject.getAsJsonArray("events")
+            val schedulesArray = jsonObject.getSafeArray("schedules")
+            val eventsArray = jsonObject.getSafeArray("events")
+            val classroomsArray = jsonObject.getSafeArray("classrooms")
+            val studentsArray = jsonObject.getSafeArray("students")
+            val attendanceArray = jsonObject.getSafeArray("attendanceRecords")
+            val leaveRequestsArray = jsonObject.getSafeArray("leaveRequests")
+            val profileObj = jsonObject.getSafeObject("teacherProfile")
+            val docsArray = jsonObject.getSafeArray("knowledgeDocs") ?: jsonObject.getSafeArray("knowledgeDocuments")
 
-            val classroomsArray = jsonObject.getAsJsonArray("classrooms")
+            var changedCount = 0
+
+            // Classrooms
             if (classroomsArray != null && classroomsArray.size() > 0) {
-                val list = mutableListOf<ClassroomEntity>()
-                for (i in 0 until classroomsArray.size()) {
-                    val obj = classroomsArray.get(i).asJsonObject
-                    val cId = obj.get("id")?.asString ?: ""
-                    val cName = obj.get("name")?.asString ?: ""
-                    if (isTestSyncItem(cId, cName)) continue
-                    list.add(ClassroomEntity(
-                        id = obj.get("id")?.asString ?: "cls_${System.currentTimeMillis()}",
-                        name = obj.get("name")?.asString ?: "",
-                        grade = obj.get("grade")?.asString ?: "",
-                        totalStudents = obj.get("totalStudents")?.asInt ?: 0,
-                        academicYear = obj.get("academicYear")?.asString ?: "2024-2025",
-                        notes = obj.get("notes")?.asString ?: "",
-                        updatedAt = obj.get("updatedAt")?.asLong ?: System.currentTimeMillis()
-                    ))
+                runCatching {
+                    val list = mutableListOf<ClassroomEntity>()
+                    for (i in 0 until classroomsArray.size()) {
+                        val itemElem = classroomsArray.get(i)
+                        if (!itemElem.isJsonObject) continue
+                        val obj = itemElem.asJsonObject
+                        val cId = obj.get("id").asSafeString()
+                        val cName = obj.get("name").asSafeString()
+                        if (isTestSyncItem(cId, cName)) continue
+                        list.add(ClassroomEntity(
+                            id = if (cId.isNotBlank()) cId else "cls_${System.currentTimeMillis()}",
+                            name = cName,
+                            grade = obj.get("grade").asSafeString(),
+                            totalStudents = obj.get("totalStudents").asSafeInt(0),
+                            academicYear = obj.get("academicYear").asSafeString("2024-2025"),
+                            notes = obj.get("notes").asSafeString(),
+                            updatedAt = obj.get("updatedAt").asSafeLong(System.currentTimeMillis())
+                        ))
+                    }
+                    if (list.isNotEmpty()) {
+                        db.classroomDao().insertClassrooms(list)
+                        changedCount += list.size
+                    }
                 }
-                db.classroomDao().insertClassrooms(list)
             }
 
-            val studentsArray = jsonObject.getAsJsonArray("students")
+            // Students
             if (studentsArray != null && studentsArray.size() > 0) {
-                val list = mutableListOf<StudentEntity>()
-                for (i in 0 until studentsArray.size()) {
-                    val obj = studentsArray.get(i).asJsonObject
-                    val sId = obj.get("id")?.asString ?: ""
-                    val sName = obj.get("fullName")?.asString ?: ""
-                    val sClass = obj.get("className")?.asString ?: ""
-                    if (isTestSyncItem(sId, sName) || isTestSyncItem("", sClass)) continue
-                    list.add(StudentEntity(
-                        id = obj.get("id")?.asString ?: "std_${System.currentTimeMillis()}",
-                        classId = obj.get("classId")?.asString ?: "",
-                        className = obj.get("className")?.asString ?: "",
-                        studentCode = obj.get("studentCode")?.asString ?: "",
-                        fullName = obj.get("fullName")?.asString ?: "",
-                        gender = obj.get("gender")?.asString ?: "Nam",
-                        parentPhone = obj.get("parentPhone")?.asString ?: "",
-                        parentName = obj.get("parentName")?.asString ?: "",
-                        kudosPoints = obj.get("kudosPoints")?.asInt ?: 0,
-                        notes = obj.get("notes")?.asString ?: "",
-                        updatedAt = obj.get("updatedAt")?.asLong ?: System.currentTimeMillis()
-                    ))
+                runCatching {
+                    val list = mutableListOf<StudentEntity>()
+                    for (i in 0 until studentsArray.size()) {
+                        val itemElem = studentsArray.get(i)
+                        if (!itemElem.isJsonObject) continue
+                        val obj = itemElem.asJsonObject
+                        val sId = obj.get("id").asSafeString()
+                        val sName = obj.get("fullName").asSafeString()
+                        val sClass = obj.get("className").asSafeString()
+                        if (isTestSyncItem(sId, sName) || isTestSyncItem("", sClass)) continue
+                        list.add(StudentEntity(
+                            id = if (sId.isNotBlank()) sId else "std_${System.currentTimeMillis()}",
+                            classId = obj.get("classId").asSafeString(),
+                            className = sClass,
+                            studentCode = obj.get("studentCode").asSafeString(),
+                            fullName = sName,
+                            gender = obj.get("gender").asSafeString("Nam"),
+                            parentPhone = obj.get("parentPhone").asSafeString(),
+                            parentName = obj.get("parentName").asSafeString(),
+                            kudosPoints = obj.get("kudosPoints").asSafeInt(0),
+                            notes = obj.get("notes").asSafeString(),
+                            updatedAt = obj.get("updatedAt").asSafeLong(System.currentTimeMillis())
+                        ))
+                    }
+                    if (list.isNotEmpty()) {
+                        db.studentDao().insertStudents(list)
+                        changedCount += list.size
+                    }
                 }
-                db.studentDao().insertStudents(list)
             }
 
-            val attendanceArray = jsonObject.getAsJsonArray("attendanceRecords")
+            // Attendance
             if (attendanceArray != null && attendanceArray.size() > 0) {
-                val list = mutableListOf<AttendanceRecordEntity>()
-                for (i in 0 until attendanceArray.size()) {
-                    val obj = attendanceArray.get(i).asJsonObject
-                    list.add(AttendanceRecordEntity(
-                        id = obj.get("id")?.asString ?: "att_${System.currentTimeMillis()}",
-                        date = obj.get("date")?.asString ?: "",
-                        eventId = obj.get("eventId")?.asString ?: "",
-                        scheduleId = obj.get("scheduleId")?.asString ?: "",
-                        studentId = obj.get("studentId")?.asString ?: "",
-                        className = obj.get("className")?.asString ?: "",
-                        status = obj.get("status")?.asString ?: "PRESENT",
-                        kudosDelta = obj.get("kudosDelta")?.asInt ?: 0,
-                        note = obj.get("note")?.asString ?: "",
-                        updatedAt = obj.get("updatedAt")?.asLong ?: System.currentTimeMillis()
-                    ))
+                runCatching {
+                    val list = mutableListOf<AttendanceRecordEntity>()
+                    for (i in 0 until attendanceArray.size()) {
+                        val itemElem = attendanceArray.get(i)
+                        if (!itemElem.isJsonObject) continue
+                        val obj = itemElem.asJsonObject
+                        list.add(AttendanceRecordEntity(
+                            id = obj.get("id").asSafeString("att_${System.currentTimeMillis()}"),
+                            date = obj.get("date").asSafeString(),
+                            eventId = obj.get("eventId").asSafeString(),
+                            scheduleId = obj.get("scheduleId").asSafeString(),
+                            studentId = obj.get("studentId").asSafeString(),
+                            className = obj.get("className").asSafeString(),
+                            status = obj.get("status").asSafeString("PRESENT"),
+                            kudosDelta = obj.get("kudosDelta").asSafeInt(0),
+                            note = obj.get("note").asSafeString(),
+                            updatedAt = obj.get("updatedAt").asSafeLong(System.currentTimeMillis())
+                        ))
+                    }
+                    if (list.isNotEmpty()) {
+                        db.attendanceDao().insertRecords(list)
+                        changedCount += list.size
+                    }
                 }
-                db.attendanceDao().insertRecords(list)
             }
 
-            val profileObj = jsonObject.getAsJsonObject("teacherProfile")
+            // Leave Requests (Đơn Phụ Huynh)
+            if (leaveRequestsArray != null && leaveRequestsArray.size() > 0) {
+                runCatching {
+                    val list = mutableListOf<LeaveRequestEntity>()
+                    for (i in 0 until leaveRequestsArray.size()) {
+                        val itemElem = leaveRequestsArray.get(i)
+                        if (!itemElem.isJsonObject) continue
+                        val obj = itemElem.asJsonObject
+                        val rId = obj.get("id").asSafeString()
+                        if (rId.isNotBlank()) {
+                            list.add(LeaveRequestEntity(
+                                id = rId,
+                                studentId = obj.get("studentId").asSafeString(),
+                                studentCode = obj.get("studentCode").asSafeString(),
+                                studentName = obj.get("studentName").asSafeString(),
+                                className = obj.get("className").asSafeString(),
+                                parentName = obj.get("parentName").asSafeString(),
+                                parentPhone = obj.get("parentPhone").asSafeString(),
+                                date = obj.get("date").asSafeString(),
+                                reason = obj.get("reason").asSafeString(),
+                                type = obj.get("type").asSafeString("OTHER"),
+                                status = obj.get("status").asSafeString("PENDING"),
+                                createdAt = obj.get("createdAt").asSafeLong(System.currentTimeMillis()),
+                                reviewedAt = obj.get("reviewedAt")?.takeIf { !it.isJsonNull }?.asSafeLong(0L)?.takeIf { it > 0L },
+                                teacherNote = obj.get("teacherNote")?.takeIf { !it.isJsonNull }?.asSafeString()
+                            ))
+                        }
+                    }
+                    if (list.isNotEmpty()) {
+                        db.leaveRequestDao().insertLeaveRequests(list)
+                        changedCount += list.size
+                    }
+                }
+            }
+
+            // Teacher Profile
             if (profileObj != null) {
-                val profilePref = context.getSharedPreferences("smart_teacher_profile_v1", Context.MODE_PRIVATE)
-                val editor = profilePref.edit()
-                val fName = profileObj.get("fullName")?.asString ?: profileObj.get("name")?.asString
-                if (!fName.isNullOrBlank()) editor.putString("name", fName)
+                runCatching {
+                    val profilePref = context.getSharedPreferences("smart_teacher_profile_v1", Context.MODE_PRIVATE)
+                    val editor = profilePref.edit()
+                    val fName = profileObj.get("fullName").asSafeString().takeIf { it.isNotBlank() } ?: profileObj.get("name").asSafeString()
+                    if (fName.isNotBlank()) editor.putString("name", fName)
 
-                val schoolsElem = profileObj.get("schools")
-                val sName = if (schoolsElem != null && schoolsElem.isJsonArray && schoolsElem.asJsonArray.size() > 0) {
-                    schoolsElem.asJsonArray.get(0).asString
-                } else {
-                    profileObj.get("school")?.asString
+                    val schoolsElem = profileObj.get("schools")
+                    val sName = if (schoolsElem != null && schoolsElem.isJsonArray && schoolsElem.asJsonArray.size() > 0) {
+                        schoolsElem.asJsonArray.get(0).asSafeString()
+                    } else {
+                        profileObj.get("school").asSafeString()
+                    }
+                    if (sName.isNotBlank()) editor.putString("school", sName)
+
+                    val subjectsElem = profileObj.get("subjects")
+                    val dName = if (subjectsElem != null && subjectsElem.isJsonArray && subjectsElem.asJsonArray.size() > 0) {
+                        subjectsElem.asJsonArray.get(0).asSafeString()
+                    } else {
+                        profileObj.get("department").asSafeString()
+                    }
+                    if (dName.isNotBlank()) editor.putString("department", dName)
+
+                    profileObj.get("phone").asSafeString().let { if (it.isNotBlank()) editor.putString("phone", it) }
+                    profileObj.get("email").asSafeString().let { if (it.isNotBlank()) editor.putString("email", it) }
+                    profileObj.get("bioQuote").asSafeString().let { if (it.isNotBlank()) editor.putString("bioQuote", it) }
+                    profileObj.get("gender").asSafeString().let { if (it.isNotBlank()) editor.putString("gender", it) }
+                    profileObj.get("birthDate").asSafeString().let { if (it.isNotBlank()) editor.putString("birthDate", it) }
+                    profileObj.get("avatar").asSafeString().let { if (it.isNotBlank()) editor.putString("avatar", it) }
+                    editor.putLong("updatedAt", System.currentTimeMillis())
+                    editor.apply()
                 }
-                if (!sName.isNullOrBlank()) editor.putString("school", sName)
-
-                val subjectsElem = profileObj.get("subjects")
-                val dName = if (subjectsElem != null && subjectsElem.isJsonArray && subjectsElem.asJsonArray.size() > 0) {
-                    subjectsElem.asJsonArray.get(0).asString
-                } else {
-                    profileObj.get("department")?.asString
-                }
-                if (!dName.isNullOrBlank()) editor.putString("department", dName)
-
-                profileObj.get("phone")?.asString?.let { if (it.isNotBlank()) editor.putString("phone", it) }
-                profileObj.get("email")?.asString?.let { if (it.isNotBlank()) editor.putString("email", it) }
-                profileObj.get("bioQuote")?.asString?.let { if (it.isNotBlank()) editor.putString("bioQuote", it) }
-                profileObj.get("gender")?.asString?.let { if (it.isNotBlank()) editor.putString("gender", it) }
-                profileObj.get("birthDate")?.asString?.let { if (it.isNotBlank()) editor.putString("birthDate", it) }
-                profileObj.get("avatar")?.asString?.let { if (it.isNotBlank()) editor.putString("avatar", it) }
-                editor.putLong("updatedAt", System.currentTimeMillis())
-                editor.apply()
             }
-
-            val docsArray = jsonObject.getAsJsonArray("knowledgeDocs") ?: jsonObject.getAsJsonArray("knowledgeDocuments")
-
-            var changedCount = (classroomsArray?.size() ?: 0) + (studentsArray?.size() ?: 0) + (attendanceArray?.size() ?: 0)
 
             if ((schedulesArray == null || schedulesArray.size() == 0) &&
                 (eventsArray == null || eventsArray.size() == 0) &&
@@ -478,9 +627,11 @@ object CloudSyncManager {
 
             // 1. Cập nhật các mẫu định kỳ (teaching_schedules)
             if (schedulesArray != null && schedulesArray.size() > 0) {
-                val currentSchedules = db.teachingScheduleDao().getAllActiveSchedulesList()
-                for (elem in schedulesArray) {
-                    val item = elem.asJsonObject
+                runCatching {
+                    val currentSchedules = db.teachingScheduleDao().getAllActiveSchedulesList()
+                    for (elem in schedulesArray) {
+                        if (!elem.isJsonObject) continue
+                        val item = elem.asJsonObject
                     val rawIdStr = item.get("id")?.asString?.replace("sch_", "")?.trim() ?: ""
                     val numId = rawIdStr.toLongOrNull()
                     val subject = item.get("subject")?.asString ?: ""
@@ -557,16 +708,19 @@ object CloudSyncManager {
                         changedCount++
                     }
                 }
+                }
             }
 
             // 2. Cập nhật các ca dạy cụ thể (calendar_events)
             if (eventsArray != null && eventsArray.size() > 0) {
-                val currentEvents = db.calendarEventDao().getAllEventsSync()
-                val toInsert = mutableListOf<CalendarEventEntity>()
-                val toUpdate = mutableListOf<CalendarEventEntity>()
+                runCatching {
+                    val currentEvents = db.calendarEventDao().getAllEventsSync()
+                    val toInsert = mutableListOf<CalendarEventEntity>()
+                    val toUpdate = mutableListOf<CalendarEventEntity>()
 
-                for (elem in eventsArray) {
-                    val item = elem.asJsonObject
+                    for (elem in eventsArray) {
+                        if (!elem.isJsonObject) continue
+                        val item = elem.asJsonObject
                     val rawIdStr = item.get("id")?.asString?.replace("ev_", "")?.trim() ?: ""
                     val numId = rawIdStr.toLongOrNull()
                     val subject = item.get("subject")?.asString ?: item.get("title")?.asString ?: ""
@@ -642,9 +796,11 @@ object CloudSyncManager {
                     db.calendarEventDao().insertEvents(toInsert)
                     changedCount += toInsert.size
                 }
+                }
             }
 
             // 3. Cập nhật tài liệu giáo trình, đề cương và văn bản chuẩn (knowledge_documents)
+            runCatching {
             var currentDocs = db.knowledgeDocumentDao().getAllDocumentsList()
 
             // A. Purge any blacklisted documents (e.g. Giao_trinh_CN10.docx, SGV_CN10_GDPT)
@@ -824,6 +980,7 @@ object CloudSyncManager {
                         changedCount++
                     }
                 }
+            }
             }
 
             // Tự động kiểm tra và sinh bù các ca dạy còn thiếu (Self-Healing)

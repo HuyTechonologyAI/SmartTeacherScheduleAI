@@ -4,12 +4,12 @@
 // 2. Hình ảnh minh họa vector sắc nét (thuần đồ họa, không chứa text tĩnh bị khóa).
 // 3. Đầy đủ hiệu ứng chuyển slide (Fade, Push, Wipe) chuẩn OpenXML.
 // 4. Tích hợp Speaker Notes trong chế độ Presenter View.
+// 5. Đồng bộ 100%, không bị treo/lag khi tải về.
 import JSZip from 'jszip';
 import { LessonSlideItem } from './lessonPlanAi';
 
 /**
  * Tạo hình ảnh minh họa vector thuần đồ họa (Icons & Visual Art - KHÔNG chứa chữ tĩnh)
- * Đảm bảo mọi nội dung chữ trên slide đều là Text Box riêng biệt, giáo viên tùy ý chỉnh sửa.
  */
 function createPureGraphicIllustrationSvg(type: string, subject: string): string {
   const cleanSub = (subject || '').toLowerCase();
@@ -19,10 +19,6 @@ function createPureGraphicIllustrationSvg(type: string, subject: string): string
     case 'cover':
       return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 450" width="500" height="450">
         <defs>
-          <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#38bdf8"/>
-            <stop offset="100%" stop-color="#0284c7"/>
-          </linearGradient>
           <linearGradient id="g2" x1="0%" y1="100%" x2="100%" y2="0%">
             <stop offset="0%" stop-color="#0284c7" stop-opacity="0.1"/>
             <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.3"/>
@@ -65,8 +61,6 @@ function createPureGraphicIllustrationSvg(type: string, subject: string): string
         <line x1="250" y1="70" x2="250" y2="95" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
         <line x1="160" y1="100" x2="180" y2="120" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
         <line x1="340" y1="100" x2="320" y2="120" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
-        <line x1="120" y1="180" x2="150" y2="180" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
-        <line x1="380" y1="180" x2="350" y2="180" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
         <circle cx="340" cy="290" r="55" fill="none" stroke="#0284c7" stroke-width="8"/>
         <line x1="380" y1="330" x2="430" y2="380" stroke="#0284c7" stroke-width="12" stroke-linecap="round"/>
       </svg>`;
@@ -85,8 +79,6 @@ function createPureGraphicIllustrationSvg(type: string, subject: string): string
           <line x1="390" y1="280" x2="130" y2="280" stroke="#0f172a" stroke-width="4"/>
           <line x1="130" y1="280" x2="130" y2="225" stroke="#0f172a" stroke-width="4"/>
           <circle cx="280" cy="280" r="10" fill="#ef4444"/>
-          <polygon points="210,175 225,180 210,185" fill="#0284c7"/>
-          <polygon points="350,175 365,180 350,185" fill="#0284c7"/>
         </svg>`;
       }
       return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 450" width="500" height="450">
@@ -116,8 +108,6 @@ function createPureGraphicIllustrationSvg(type: string, subject: string): string
       return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 450" width="500" height="450">
         <circle cx="250" cy="225" r="140" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="3" stroke-dasharray="8 6"/>
         <circle cx="250" cy="225" r="60" fill="#ffffff" stroke="#8b5cf6" stroke-width="4"/>
-        <path d="M230 225 C230 210 270 210 270 225 L270 240 L230 240 Z" fill="#8b5cf6"/>
-        <circle cx="250" cy="205" r="12" fill="#8b5cf6"/>
         <g transform="translate(140, 100)"><circle cx="25" cy="25" r="25" fill="#3b82f6"/></g>
         <g transform="translate(310, 100)"><circle cx="25" cy="25" r="25" fill="#10b981"/></g>
         <g transform="translate(140, 270)"><circle cx="25" cy="25" r="25" fill="#f59e0b"/></g>
@@ -145,55 +135,23 @@ function createPureGraphicIllustrationSvg(type: string, subject: string): string
         <path d="M220 200 L180 230 L220 235 Z" fill="#0284c7"/>
         <path d="M280 200 L320 230 L280 235 Z" fill="#0284c7"/>
         <polygon points="230,235 250,290 270,235" fill="#f59e0b"/>
-        <polygon points="238,235 250,270 262,235" fill="#fef08a"/>
-        <path d="M150 110 L155 125 L170 125 L158 135 L162 150 L150 140 L138 150 L142 135 L130 125 L145 125 Z" fill="#f59e0b"/>
-        <path d="M350 110 L355 125 L370 125 L358 135 L362 150 L350 140 L338 150 L342 135 L330 125 L345 125 Z" fill="#f59e0b"/>
       </svg>`;
   }
 }
 
 /**
- * Chuyển SVG thành Data URL (PNG hoặc base64 SVG)
+ * Chuyển SVG thành Base64 Data URL (Hoàn toàn đồng bộ, tức thì 0ms, không phụ thuộc Canvas hay Image DOM)
  */
-async function svgToDataUrl(svgString: string, width: number = 600, height: number = 450): Promise<string> {
-  if (typeof window === 'undefined' || typeof document === 'undefined') {
-    return 'image/svg+xml;base64,' + Buffer.from(svgString).toString('base64');
-  }
-
-  return new Promise((resolve) => {
-    try {
-      const img = new Image();
-      const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-      const url = URL.createObjectURL(svgBlob);
-
-      img.onload = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, width, height);
-            ctx.drawImage(img, 0, 0, width, height);
-            URL.revokeObjectURL(url);
-            return resolve(canvas.toDataURL('image/png'));
-          }
-        } catch (_) {}
-        URL.revokeObjectURL(url);
-        resolve('image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString))));
-      };
-
-      img.onerror = () => {
-        URL.revokeObjectURL(url);
-        resolve('image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString))));
-      };
-
-      img.src = url;
-    } catch (_) {
-      resolve('image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString))));
+function svgToDataUrl(svgString: string): string {
+  try {
+    if (typeof window !== 'undefined' && typeof window.btoa === 'function') {
+      return 'image/svg+xml;base64,' + window.btoa(unescape(encodeURIComponent(svgString)));
     }
-  });
+    return 'image/svg+xml;base64,' + Buffer.from(svgString).toString('base64');
+  } catch (err) {
+    console.warn('Base64 encoding fallback:', err);
+    return 'image/svg+xml;utf8,' + encodeURIComponent(svgString);
+  }
 }
 
 /**
@@ -267,9 +225,27 @@ export async function generateAndDownloadPptx(params: {
     schoolName = 'Trường THPT'
   } = params;
 
-  const pptxgenModule = await import('pptxgenjs');
-  const PptxGenJS = pptxgenModule.default || pptxgenModule;
-  const pptx = new PptxGenJS();
+  if (!slides || slides.length === 0) {
+    throw new Error('Chưa có danh sách slide để xuất PowerPoint.');
+  }
+
+  // 1. Phân giải Constructor PptxGenJS chuẩn xác trên mọi môi trường (Webpack, Turbopack, Node)
+  let PptxClass: any;
+  try {
+    const pptxgenModule = await import('pptxgenjs');
+    PptxClass = (pptxgenModule as any).default || pptxgenModule;
+    if (typeof PptxClass !== 'function' && PptxClass.default && typeof PptxClass.default === 'function') {
+      PptxClass = PptxClass.default;
+    }
+    if (typeof PptxClass !== 'function' && typeof window !== 'undefined' && (window as any).PptxGenJS) {
+      PptxClass = (window as any).PptxGenJS;
+    }
+  } catch (err) {
+    console.error('Không thể load module pptxgenjs:', err);
+    throw new Error('Không thể khởi động bộ tạo PowerPoint. Vui lòng thử lại.');
+  }
+
+  const pptx = new PptxClass();
 
   pptx.layout = 'LAYOUT_16x9';
   pptx.author = teacherName;
@@ -295,23 +271,19 @@ export async function generateAndDownloadPptx(params: {
     if (i === 0) {
       slide.background = { color: '0A192F' };
 
-      // Dải trang trí
       slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 10, h: 0.15, fill: { color: '0284C7' } });
 
-      // Huy hiệu GDPT 2018 (Native text editable)
       slide.addText('🌟 KẾ HOẠCH BÀI DẠY SỐ • CHUẨN GDPT 2018', {
         x: 0.8, y: 0.55, w: 6.0, h: 0.35,
         fontSize: 12, bold: true, color: '38BDF8', fontFace: 'Calibri'
       });
 
-      // Tên bài học (Native text editable lớn nổi bật)
       slide.addText(lessonTitle.toUpperCase(), {
         x: 0.8, y: 1.0, w: 5.6, h: 1.8,
         fontSize: 26, bold: true, color: 'FFFFFF', fontFace: 'Arial',
         valign: 'top', wrap: true
       });
 
-      // Hộp thông tin giảng dạy (Native Shape & Native Text)
       slide.addShape(pptx.ShapeType.roundRect, {
         x: 0.8, y: 3.0, w: 5.5, h: 1.8, rectRadius: 0.15,
         fill: { color: '1E293B' }, line: { color: '334155', width: 1.5 }
@@ -330,9 +302,8 @@ export async function generateAndDownloadPptx(params: {
         x: 1.0, y: 3.1, w: 5.1, h: 1.6, fontFace: 'Calibri', valign: 'middle'
       });
 
-      // Ảnh minh họa đồ họa thuần túy (không chứa text tĩnh)
       const svg = createPureGraphicIllustrationSvg('cover', subject);
-      const imgData = await svgToDataUrl(svg, 500, 450);
+      const imgData = svgToDataUrl(svg);
       slide.addImage({ data: imgData, x: 6.6, y: 1.1, w: 2.9, h: 3.6 });
 
       continue;
@@ -344,13 +315,11 @@ export async function generateAndDownloadPptx(params: {
     if (i === 1) {
       slide.background = { color: 'F8FAFC' };
 
-      // Header Banner
       slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 10, h: 0.9, fill: { color: '0284C7' } });
       slide.addText('MỤC TIÊU BÀI HỌC CẦN ĐẠT (CHUẨN GDPT 2018)', {
         x: 0.8, y: 0.15, w: 8.4, h: 0.6, fontSize: 18, bold: true, color: 'FFFFFF', fontFace: 'Arial'
       });
 
-      // 4 Thẻ mục tiêu có thể chỉnh sửa trực tiếp từng từ
       const objCards = [
         {
           x: 0.6, y: 1.1, w: 4.2, h: 1.95, color: 'EFF6FF', border: '3B82F6',
@@ -389,7 +358,6 @@ export async function generateAndDownloadPptx(params: {
         });
       }
 
-      // Footer
       slide.addShape(pptx.ShapeType.rect, { x: 0, y: 5.25, w: 10, h: 0.375, fill: { color: 'F1F5F9' }, line: { color: 'E2E8F0', width: 1 } });
       slide.addText(`📖 ${subject} - ${lessonTitle} | ${className} | Văn bản chỉnh sửa được 100%`, {
         x: 0.5, y: 5.25, w: 8.0, h: 0.375, fontSize: 9.5, color: '64748B', valign: 'middle', fontFace: 'Calibri'
@@ -412,7 +380,6 @@ export async function generateAndDownloadPptx(params: {
         x: 0.8, y: 0.15, w: 8.4, h: 0.6, fontSize: 17, bold: true, color: 'FFFFFF', fontFace: 'Arial'
       });
 
-      // 3 Bước thực hành dạng Native Cards
       const stepCards = [
         {
           num: '1', title: 'BƯỚC 1: CHUẨN BỊ & KHẢO SÁT',
@@ -435,13 +402,11 @@ export async function generateAndDownloadPptx(params: {
         const sc = stepCards[idx];
         const yPos = 1.1 + idx * 1.05;
 
-        // Thẻ nền
         slide.addShape(pptx.ShapeType.roundRect, {
           x: 0.6, y: yPos, w: 6.2, h: 0.95, rectRadius: 0.1,
           fill: { color: sc.color }, line: { color: sc.border, width: 1.5 }
         });
 
-        // Vòng tròn số bước
         slide.addShape(pptx.ShapeType.ellipse, {
           x: 0.8, y: yPos + 0.18, w: 0.6, h: 0.6,
           fill: { color: sc.tagColor }
@@ -451,7 +416,6 @@ export async function generateAndDownloadPptx(params: {
           fontSize: 14, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle'
         });
 
-        // Tiêu đề & nội dung bước (Native Text)
         slide.addText(sc.title, {
           x: 1.55, y: yPos + 0.1, w: 5.1, h: 0.3,
           fontSize: 12.5, bold: true, color: '0F172A', fontFace: 'Arial'
@@ -462,7 +426,6 @@ export async function generateAndDownloadPptx(params: {
         });
       }
 
-      // Hộp cảnh báo an toàn ở dưới (Native Text)
       slide.addShape(pptx.ShapeType.roundRect, {
         x: 0.6, y: 4.35, w: 6.2, h: 0.75, rectRadius: 0.1,
         fill: { color: 'FEF2F2' }, line: { color: 'EF4444', width: 1.5 }
@@ -476,12 +439,10 @@ export async function generateAndDownloadPptx(params: {
         fontSize: 10.5, color: '7F1D1D', fontFace: 'Calibri', wrap: true
       });
 
-      // Ảnh minh họa đồ họa bên phải
       const svg = createPureGraphicIllustrationSvg('procedure', subject);
-      const imgData = await svgToDataUrl(svg, 500, 450);
+      const imgData = svgToDataUrl(svg);
       slide.addImage({ data: imgData, x: 7.1, y: 1.2, w: 2.4, h: 3.8 });
 
-      // Footer
       slide.addShape(pptx.ShapeType.rect, { x: 0, y: 5.25, w: 10, h: 0.375, fill: { color: 'F1F5F9' }, line: { color: 'E2E8F0', width: 1 } });
       slide.addText(`📖 ${subject} - ${lessonTitle} | ${className} | Văn bản chỉnh sửa được 100%`, {
         x: 0.5, y: 5.25, w: 8.0, h: 0.375, fontSize: 9.5, color: '64748B', valign: 'middle', fontFace: 'Calibri'
@@ -504,7 +465,6 @@ export async function generateAndDownloadPptx(params: {
         x: 0.8, y: 0.15, w: 8.4, h: 0.6, fontSize: 17, bold: true, color: 'FFFFFF', fontFace: 'Arial'
       });
 
-      // Khung câu hỏi (Native Text)
       slide.addShape(pptx.ShapeType.roundRect, {
         x: 0.6, y: 1.1, w: 6.2, h: 1.2, rectRadius: 0.12,
         fill: { color: 'FFFFFF' }, line: { color: '0284C7', width: 1.5 }
@@ -518,7 +478,6 @@ export async function generateAndDownloadPptx(params: {
         fontSize: 12.5, bold: true, color: '0F172A', fontFace: 'Calibri', wrap: true
       });
 
-      // 4 Lựa chọn A, B, C, D (Native Shapes & Native Text)
       const options = [
         { label: 'A', text: s.bulletPoints[1] || 'Phương án A: Khái niệm và đặc điểm kỹ thuật cơ bản', bg: 'FEE2E2', border: 'EF4444', textColor: '991B1B' },
         { label: 'B', text: s.bulletPoints[2] || 'Phương án B: Quy trình vận hành và tiêu chuẩn an toàn', bg: 'DBEAFE', border: '3B82F6', textColor: '1E40AF' },
@@ -538,7 +497,6 @@ export async function generateAndDownloadPptx(params: {
           fill: { color: opt.bg }, line: { color: opt.border, width: 1.5 }
         });
 
-        // Huy hiệu chữ cái A, B, C, D
         slide.addShape(pptx.ShapeType.ellipse, {
           x: xPos + 0.15, y: yPos + 0.15, w: 0.45, h: 0.45,
           fill: { color: opt.border }
@@ -548,19 +506,16 @@ export async function generateAndDownloadPptx(params: {
           fontSize: 12, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle'
         });
 
-        // Nội dung lựa chọn (Native Text)
         slide.addText(opt.text, {
           x: xPos + 0.7, y: yPos + 0.15, w: 2.2, h: 0.95,
           fontSize: 11.5, color: opt.textColor, fontFace: 'Calibri', valign: 'top', wrap: true
         });
       }
 
-      // Ảnh minh họa cúp / quiz bên phải
       const svg = createPureGraphicIllustrationSvg('quiz', subject);
-      const imgData = await svgToDataUrl(svg, 500, 450);
+      const imgData = svgToDataUrl(svg);
       slide.addImage({ data: imgData, x: 7.1, y: 1.2, w: 2.4, h: 3.8 });
 
-      // Footer
       slide.addShape(pptx.ShapeType.rect, { x: 0, y: 5.25, w: 10, h: 0.375, fill: { color: 'F1F5F9' }, line: { color: 'E2E8F0', width: 1 } });
       slide.addText(`📖 ${subject} - ${lessonTitle} | ${className} | Văn bản chỉnh sửa được 100%`, {
         x: 0.5, y: 5.25, w: 8.0, h: 0.375, fontSize: 9.5, color: '64748B', valign: 'middle', fontFace: 'Calibri'
@@ -577,10 +532,8 @@ export async function generateAndDownloadPptx(params: {
     // =========================================================================
     slide.background = { color: 'F8FAFC' };
 
-    // Thanh tiêu đề phía trên
     slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 10, h: 0.95, fill: { color: '0284C7' } });
 
-    // Huy hiệu số slide
     slide.addShape(pptx.ShapeType.roundRect, {
       x: 0.5, y: 0.2, w: 1.1, h: 0.55, rectRadius: 0.1,
       fill: { color: '0369A1' }, line: { color: '38BDF8', width: 1 }
@@ -590,25 +543,21 @@ export async function generateAndDownloadPptx(params: {
       fontSize: 11, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle', fontFace: 'Arial'
     });
 
-    // Tiêu đề Slide (Native Text)
     slide.addText(s.title.toUpperCase(), {
       x: 1.75, y: 0.15, w: 7.8, h: 0.65,
       fontSize: 17, bold: true, color: 'FFFFFF', valign: 'middle', fontFace: 'Arial'
     });
 
-    // Khung nội dung chính bên trái (Native Shape)
     slide.addShape(pptx.ShapeType.roundRect, {
       x: 0.5, y: 1.15, w: 5.8, h: 3.8, rectRadius: 0.15,
       fill: { color: 'FFFFFF' }, line: { color: 'E2E8F0', width: 1.5 }
     });
 
-    // Nhãn hướng dẫn (Native Text)
     slide.addText('📌 NỘI DUNG TRÌNH CHIẾU TRỌNG TÂM:', {
       x: 0.7, y: 1.25, w: 5.4, h: 0.35,
       fontSize: 12, bold: true, color: '0369A1', fontFace: 'Calibri'
     });
 
-    // Các gạch đầu dòng (100% Native Editable Text Items)
     const bulletItems = s.bulletPoints.map(bp => ({
       text: bp + '\\n',
       options: {
@@ -625,21 +574,18 @@ export async function generateAndDownloadPptx(params: {
       valign: 'top', wrap: true
     });
 
-    // Khung hình ảnh minh họa bên phải (Native Shape)
     slide.addShape(pptx.ShapeType.roundRect, {
       x: 6.5, y: 1.15, w: 3.0, h: 3.8, rectRadius: 0.15,
       fill: { color: 'FFFFFF' }, line: { color: '38BDF8', width: 1.5 }
     });
 
-    // Ảnh minh họa vector thuần túy (không chứa text tĩnh)
     const svg = createPureGraphicIllustrationSvg(type, subject);
-    const imgData = await svgToDataUrl(svg, 500, 450);
+    const imgData = svgToDataUrl(svg);
     slide.addImage({
       data: imgData,
       x: 6.6, y: 1.25, w: 2.8, h: 2.4
     });
 
-    // Hộp ghi chú sư phạm bên dưới ảnh (Native Text editable)
     slide.addShape(pptx.ShapeType.roundRect, {
       x: 6.6, y: 3.75, w: 2.8, h: 1.1, rectRadius: 0.1,
       fill: { color: 'F0F9FF' }, line: { color: 'BAE6FD', width: 1 }
@@ -652,7 +598,6 @@ export async function generateAndDownloadPptx(params: {
       fontFace: 'Calibri', valign: 'middle', wrap: true
     });
 
-    // Chân trang (Footer)
     slide.addShape(pptx.ShapeType.rect, { x: 0, y: 5.25, w: 10, h: 0.375, fill: { color: 'F1F5F9' }, line: { color: 'E2E8F0', width: 1 } });
     slide.addText(`📖 ${subject} - ${lessonTitle} | ${className} | Văn bản chỉnh sửa được 100%`, {
       x: 0.5, y: 5.25, w: 8.0, h: 0.375, fontSize: 9.5, color: '64748B', valign: 'middle', fontFace: 'Calibri'
@@ -663,17 +608,40 @@ export async function generateAndDownloadPptx(params: {
   }
 
   // Xuất file và nhúng Transition
-  const rawPptx = await pptx.write({ outputType: 'arraybuffer' });
-  const finalBlob = await injectSlideTransitions(rawPptx as ArrayBuffer);
+  const cleanFileName = `Slide_${(lessonTitle || 'Bai_Giang').replace(/[^a-zA-Z0-9\u00C0-\u1EF9]/g, '_')}.pptx`;
+  let finalBlob: Blob | null = null;
+  try {
+    const rawPptx = await pptx.write({ outputType: 'arraybuffer' });
+    finalBlob = await injectSlideTransitions(rawPptx as ArrayBuffer);
+  } catch (transErr) {
+    console.warn('Transition injection error, falling back to direct blob:', transErr);
+    try {
+      finalBlob = (await pptx.write({ outputType: 'blob' })) as Blob;
+    } catch (writeErr) {
+      console.warn('Direct blob failed, falling back to writeFile:', writeErr);
+      await pptx.writeFile({ fileName: cleanFileName });
+      return;
+    }
+  }
 
-  // Kích hoạt tải về
-  const cleanFileName = `Slide_${lessonTitle.replace(/[^a-zA-Z0-9\u00C0-\u1EF9]/g, '_')}.pptx`;
-  const blobUrl = URL.createObjectURL(finalBlob);
-  const a = document.createElement('a');
-  a.href = blobUrl;
-  a.download = cleanFileName;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+  // Kích hoạt tải về trình duyệt
+  if (finalBlob) {
+    try {
+      const blobUrl = URL.createObjectURL(finalBlob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = cleanFileName;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        try {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(blobUrl);
+        } catch (_) {}
+      }, 10000);
+    } catch (dlErr) {
+      console.warn('Blob URL download failed, trying pptx.writeFile:', dlErr);
+      await pptx.writeFile({ fileName: cleanFileName });
+    }
+  }
 }

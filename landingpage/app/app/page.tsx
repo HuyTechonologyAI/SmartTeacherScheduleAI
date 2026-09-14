@@ -888,6 +888,7 @@ export default function UnifiedTeacherScheduleApp() {
   const [testDataCount, setTestDataCount] = useState(0);
   const [dismissTestBanner, setDismissTestBanner] = useState(false);
   const [plannerActiveResultTab, setPlannerActiveResultTab] = useState<'plan' | 'slides' | 'game' | 'video' | 'mindmap' | 'audit'>('plan');
+  const [isExportingPptx, setIsExportingPptx] = useState(false);
   const [plannerStepProgress, setPlannerStepProgress] = useState('');
 
   // Hàm chọn ca dạy và tự động trích xuất tiết học, tên bài và khớp nối tài liệu giáo trình
@@ -5229,21 +5230,37 @@ export default function UnifiedTeacherScheduleApp() {
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
-                              onClick={() => {
-                                generateAndDownloadPptx({
-                                  slides: plannerFullPackage.slides,
-                                  lessonTitle: plannerFullPackage.lessonTitle,
-                                  subject: plannerFullPackage.subject,
-                                  className: plannerClass || '12A1',
-                                  teacherName: teacherProfile.fullName || 'Giáo viên bộ môn',
-                                  schoolName: teacherProfile.schools?.[0] || 'Trường THPT'
-                                });
+                              disabled={isExportingPptx}
+                              onClick={async () => {
+                                if (isExportingPptx) return;
+                                setIsExportingPptx(true);
+                                try {
+                                  await generateAndDownloadPptx({
+                                    slides: plannerFullPackage.slides,
+                                    lessonTitle: plannerFullPackage.lessonTitle,
+                                    subject: plannerFullPackage.subject,
+                                    className: plannerClass || '12A1',
+                                    teacherName: teacherProfile.fullName || 'Giáo viên bộ môn',
+                                    schoolName: teacherProfile.schools?.[0] || 'Trường THPT'
+                                  });
+                                  setAlertBanner('🟢 Đã xuất bản và tải thành công bài giảng PowerPoint (.pptx)!');
+                                  setTimeout(() => setAlertBanner(null), 4000);
+                                } catch (err: any) {
+                                  console.error('Lỗi tải slide PPTX:', err);
+                                  alert('Không thể tạo file PowerPoint: ' + (err?.message || 'Vui lòng thử lại'));
+                                } finally {
+                                  setIsExportingPptx(false);
+                                }
                               }}
-                              className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition-all active:scale-95 cursor-pointer"
+                              className={`px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition-all active:scale-95 cursor-pointer ${isExportingPptx ? 'opacity-70 cursor-wait' : ''}`}
                               title="Tải trực tiếp file PowerPoint (.pptx) trình chiếu ngay trên lớp"
                             >
-                              <Presentation className="w-4 h-4" />
-                              <span>Tải File PowerPoint (.pptx)</span>
+                              {isExportingPptx ? (
+                                <RefreshCw className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Presentation className="w-4 h-4" />
+                              )}
+                              <span>{isExportingPptx ? 'Đang tạo slide...' : 'Tải File PowerPoint (.pptx)'}</span>
                             </button>
                             <button
                               type="button"
@@ -9510,21 +9527,37 @@ export default function UnifiedTeacherScheduleApp() {
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => {
-                          generateAndDownloadPptx({
-                            slides: viewingLessonPackage.slides,
-                            lessonTitle: viewingLessonPackage.lessonTitle,
-                            subject: viewingLessonPackage.subject,
-                            className: viewingLessonEvent?.className || 'Lớp học',
-                            teacherName: teacherProfile.fullName || 'Giáo viên bộ môn',
-                            schoolName: teacherProfile.schools?.[0] || 'Trường THPT'
-                          });
+                        disabled={isExportingPptx}
+                        onClick={async () => {
+                          if (isExportingPptx) return;
+                          setIsExportingPptx(true);
+                          try {
+                            await generateAndDownloadPptx({
+                              slides: viewingLessonPackage.slides,
+                              lessonTitle: viewingLessonPackage.lessonTitle,
+                              subject: viewingLessonPackage.subject,
+                              className: viewingLessonEvent?.className || 'Lớp học',
+                              teacherName: teacherProfile.fullName || 'Giáo viên bộ môn',
+                              schoolName: teacherProfile.schools?.[0] || 'Trường THPT'
+                            });
+                            setAlertBanner('🟢 Đã xuất bản và tải thành công bài giảng PowerPoint (.pptx)!');
+                            setTimeout(() => setAlertBanner(null), 4000);
+                          } catch (err: any) {
+                            console.error('Lỗi tải slide PPTX:', err);
+                            alert('Không thể tạo file PowerPoint: ' + (err?.message || 'Vui lòng thử lại'));
+                          } finally {
+                            setIsExportingPptx(false);
+                          }
                         }}
-                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition-all active:scale-95 cursor-pointer"
+                        className={`px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition-all active:scale-95 cursor-pointer ${isExportingPptx ? 'opacity-70 cursor-wait' : ''}`}
                         title="Tải trực tiếp file PowerPoint (.pptx) trình chiếu ngay trên lớp"
                       >
-                        <Presentation className="w-4 h-4" />
-                        <span>Tải File PowerPoint (.pptx)</span>
+                        {isExportingPptx ? (
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Presentation className="w-4 h-4" />
+                        )}
+                        <span>{isExportingPptx ? 'Đang tạo slide...' : 'Tải File PowerPoint (.pptx)'}</span>
                       </button>
                       <button
                         type="button"

@@ -27,7 +27,8 @@ import {
   X,
   Sliders,
   HelpCircle,
-  Pencil
+  Pencil,
+  Expand
 } from 'lucide-react';
 import { LessonMindmapData } from './lessonPlanAi';
 
@@ -99,7 +100,7 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
   const [isDragMode, setIsDragMode] = useState<boolean>(true); // Bật chế độ di chuyển mặc định
   const [showHelpHint, setShowHelpHint] = useState<boolean>(true);
 
-  // 3. Quản lý Toạ độ động của các khung nội dung
+  // 3. Quản lý Toạ độ động của các khung nội dung (Bố cục 5 cột cân xứng, lề an toàn 40px mỗi bên)
   const generateDefaultPositions = (bList: typeof branches): MindmapPositions => {
     const defaultSubSlots = [
       [70, 142, 214, 286, 358],   // Nhánh 0: Top-Left
@@ -111,21 +112,21 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
     const subPos: Record<string, NodePosition> = {};
     bList.slice(0, 4).forEach((b, bIdx) => {
       const isLeft = bIdx === 0 || bIdx === 2;
-      const subX = isLeft ? 30 : 1300;
+      const subX = isLeft ? 40 : 1320;
       const slots = defaultSubSlots[bIdx] || [70, 142, 214, 286];
       (b.subItems || []).forEach((_, sIdx) => {
         const subY = slots[sIdx] ?? (slots[slots.length - 1] + (sIdx - slots.length + 1) * 72);
-        subPos[`${bIdx}_${sIdx}`] = { x: subX, y: subY, width: 290, height: 56 };
+        subPos[`${bIdx}_${sIdx}`] = { x: subX, y: subY, width: 280, height: 56 };
       });
     });
 
     return {
-      center: { x: 670, y: 415, width: 280, height: 90 },
+      center: { x: 680, y: 415, width: 280, height: 90 },
       branches: [
-        { x: 360, y: 190, width: 270, height: 74 },
-        { x: 990, y: 190, width: 270, height: 74 },
-        { x: 360, y: 650, width: 270, height: 74 },
-        { x: 990, y: 650, width: 270, height: 74 }
+        { x: 360, y: 190, width: 260, height: 74 },
+        { x: 1020, y: 190, width: 260, height: 74 },
+        { x: 360, y: 650, width: 260, height: 74 },
+        { x: 1020, y: 650, width: 260, height: 74 }
       ],
       subItems: subPos
     };
@@ -149,13 +150,15 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
 
   const handleResetPositions = () => {
     setPositions(generateDefaultPositions(branches));
+    setZoomLevel(1);
+    setActiveBranchIdx(null);
   };
 
   // 4. Cơ chế Kéo thả di chuyển (Drag & Drop)
   const svgRef = useRef<SVGSVGElement>(null);
   const [dragState, setDragState] = useState<DragState | null>(null);
 
-  // Helper chuyển đổi toạ độ màn hình sang toạ độ SVG 1620x920
+  // Helper chuyển đổi toạ độ màn hình sang toạ độ SVG 1640x920 chuẩn xác 100%
   const getSvgCoordinates = (clientX: number, clientY: number) => {
     if (!svgRef.current) return { x: 0, y: 0 };
     const svg = svgRef.current;
@@ -168,7 +171,7 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
       return { x: svgPoint.x, y: svgPoint.y };
     }
     const rect = svg.getBoundingClientRect();
-    const scaleX = 1620 / (rect.width || 1);
+    const scaleX = 1640 / (rect.width || 1);
     const scaleY = 920 / (rect.height || 1);
     return {
       x: (clientX - rect.left) * scaleX,
@@ -200,7 +203,7 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
       initialY = positions.branches[branchIdx]?.y ?? 190;
     } else if (type === 'sub' && branchIdx !== undefined && subIdx !== undefined) {
       const pos = positions.subItems[`${branchIdx}_${subIdx}`];
-      initialX = pos?.x ?? 30;
+      initialX = pos?.x ?? 40;
       initialY = pos?.y ?? 70;
     }
 
@@ -231,7 +234,7 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
             ...prev,
             center: {
               ...prev.center,
-              x: Math.round(Math.max(10, Math.min(1330, dragState.initialNodeX + dx))),
+              x: Math.round(Math.max(10, Math.min(1350, dragState.initialNodeX + dx))),
               y: Math.round(Math.max(10, Math.min(820, dragState.initialNodeY + dy)))
             }
           };
@@ -239,7 +242,7 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
           const newBranches = [...prev.branches];
           newBranches[dragState.branchIdx] = {
             ...newBranches[dragState.branchIdx],
-            x: Math.round(Math.max(10, Math.min(1340, dragState.initialNodeX + dx))),
+            x: Math.round(Math.max(10, Math.min(1370, dragState.initialNodeX + dx))),
             y: Math.round(Math.max(10, Math.min(830, dragState.initialNodeY + dy)))
           };
           return { ...prev, branches: newBranches };
@@ -249,14 +252,14 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
           dragState.subIdx !== undefined
         ) {
           const key = `${dragState.branchIdx}_${dragState.subIdx}`;
-          const current = prev.subItems[key] || { x: 30, y: 70, width: 290, height: 56 };
+          const current = prev.subItems[key] || { x: 40, y: 70, width: 280, height: 56 };
           return {
             ...prev,
             subItems: {
               ...prev.subItems,
               [key]: {
                 ...current,
-                x: Math.round(Math.max(10, Math.min(1320, dragState.initialNodeX + dx))),
+                x: Math.round(Math.max(10, Math.min(1350, dragState.initialNodeX + dx))),
                 y: Math.round(Math.max(10, Math.min(850, dragState.initialNodeY + dy)))
               }
             }
@@ -454,7 +457,7 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
   ];
 
   // Helper bẻ dòng SVG nhiều dòng tránh bị cắt chữ
-  const wrapSvgText = (text: string, maxCharsPerLine = 32): string[] => {
+  const wrapSvgText = (text: string, maxCharsPerLine = 30): string[] => {
     if (!text) return [];
     const words = text.trim().split(/\s+/);
     const lines: string[] = [];
@@ -477,7 +480,7 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
     return lines;
   };
 
-  // Tải trực tiếp dạng ảnh PNG với độ phân giải cao 2x: 3240 x 1840 (Phản ánh chính xác vị trí & nội dung mới nhất)
+  // Tải trực tiếp dạng ảnh PNG với độ phân giải cao 2x: 3280 x 1840
   const handleDownloadPng = () => {
     if (!svgRef.current) return;
     try {
@@ -490,11 +493,11 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        canvas.width = 3240;
+        canvas.width = 3280;
         canvas.height = 1840;
         const ctx = canvas.getContext('2d');
         if (ctx) {
-          const bgGrad = ctx.createLinearGradient(0, 0, 3240, 1840);
+          const bgGrad = ctx.createLinearGradient(0, 0, 3280, 1840);
           bgGrad.addColorStop(0, '#0a1526');
           bgGrad.addColorStop(1, '#0f172a');
           ctx.fillStyle = bgGrad;
@@ -552,7 +555,7 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
             <h4 className="text-sm font-bold text-white flex items-center gap-2">
               <span>Sơ Đồ Tư Duy Tương Tác & Chỉnh Sửa</span>
               <span className="text-[11px] px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30">
-                Kéo Thả • Soạn Thảo Tự Do
+                Toàn Cảnh • Không Bị Ẩn Chữ
               </span>
             </h4>
             <p className="text-xs text-slate-400">
@@ -617,28 +620,35 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
               type="button"
               onClick={handleResetPositions}
               className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer"
-              title="Khôi phục lại vị trí các khung về bố cục 5 cột chuẩn mực ban đầu"
+              title="Khôi phục lại vị trí các khung về bố cục chuẩn mực ban đầu (100% vừa màn hình)"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Bố Cục Chuẩn</span>
             </button>
           )}
 
-          {/* Phóng to / thu nhỏ */}
+          {/* Phóng to / thu nhỏ / vừa màn hình */}
           {viewTab === 'diagram' && (
             <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-800 border border-slate-700 text-slate-300">
               <button
                 type="button"
-                onClick={() => setZoomLevel(prev => Math.max(0.6, prev - 0.1))}
+                onClick={() => setZoomLevel(prev => Math.max(0.7, +(prev - 0.1).toFixed(1)))}
                 className="p-1.5 hover:bg-slate-700 rounded-lg cursor-pointer"
                 title="Thu nhỏ"
               >
                 <ZoomOut className="w-4 h-4" />
               </button>
-              <span className="text-xs font-mono px-1 font-bold">{Math.round(zoomLevel * 100)}%</span>
               <button
                 type="button"
-                onClick={() => setZoomLevel(prev => Math.min(1.6, prev + 0.1))}
+                onClick={() => setZoomLevel(1)}
+                className="text-xs font-mono px-1.5 py-0.5 hover:bg-slate-700 rounded font-bold"
+                title="Khôi phục 100% vừa màn hình"
+              >
+                {Math.round(zoomLevel * 100)}%
+              </button>
+              <button
+                type="button"
+                onClick={() => setZoomLevel(prev => Math.min(1.8, +(prev + 0.1).toFixed(1)))}
                 className="p-1.5 hover:bg-slate-700 rounded-lg cursor-pointer"
                 title="Phóng to"
               >
@@ -692,13 +702,13 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-teal-400 shrink-0" />
             <span>
-              💡 <strong>Mẹo giảng dạy & tùy biến:</strong> Nhấp giữ chuột để <strong>kéo thả di chuyển</strong> bất kỳ ô nào theo ý Thầy/Cô. <strong>Nhấp đúp chuột</strong> (hoặc bấm icon bút ✏️) trên ô bất kỳ để chỉnh sửa trực tiếp nội dung!
+              💡 <strong>Toàn cảnh sơ đồ:</strong> Toàn bộ 4 nhánh và các ý con bên trái & phải đã được căn chỉnh vừa vặn trong màn hình, không còn bị ẩn. Thầy/Cô có thể <strong>kéo thả</strong> các ô hoặc <strong>nhấp đúp chuột</strong> để sửa chữ trực tiếp!
             </span>
           </div>
           <button
             type="button"
             onClick={() => setShowHelpHint(false)}
-            className="text-teal-400 hover:text-white p-1 rounded-lg"
+            className="text-teal-400 hover:text-white p-1 rounded-lg cursor-pointer"
             title="Đóng gợi ý"
           >
             <X className="w-3.5 h-3.5" />
@@ -708,53 +718,63 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
 
       {/* KHU VỰC HIỂN THỊ CHÍNH (DIAGRAM VIEW) */}
       {viewTab === 'diagram' && (
-        <div className={`relative rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-slate-800 overflow-hidden shadow-2xl transition-all ${isFullscreen ? 'flex-1 flex flex-col justify-center' : 'min-h-[620px]'}`}>
-          {/* Thanh lọc/Focus từng nhánh khi giảng dạy */}
-          <div className="absolute top-4 left-4 z-10 flex flex-wrap items-center gap-1.5 p-1.5 rounded-xl bg-slate-900/85 backdrop-blur border border-slate-700 text-xs">
-            <span className="text-slate-400 font-semibold px-2">Lấy nét nhánh:</span>
-            <button
-              type="button"
-              onClick={() => setActiveBranchIdx(null)}
-              className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                activeBranchIdx === null ? 'bg-teal-500 text-white' : 'text-slate-300 hover:bg-slate-800'
-              }`}
-            >
-              Toàn Bộ
-            </button>
-            {branches.map((b, idx) => {
-              const theme = branchThemes[idx % branchThemes.length];
-              const isAct = activeBranchIdx === idx;
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => setActiveBranchIdx(isAct ? null : idx)}
-                  className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer ${
-                    isAct ? 'text-white shadow' : 'text-slate-300 hover:bg-slate-800'
-                  }`}
-                  style={{ backgroundColor: isAct ? theme.color : undefined }}
-                >
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: theme.lightColor }} />
-                  <span>Nhánh {idx + 1}</span>
-                </button>
-              );
-            })}
+        <div className={`relative rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-slate-800 overflow-hidden shadow-2xl transition-all flex flex-col ${isFullscreen ? 'flex-1 justify-center' : 'min-h-[660px]'}`}>
+          {/* Thanh lọc/Focus từng nhánh phía trên sơ đồ (Tách riêng biệt không đè lên SVG) */}
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-slate-900/90 border-b border-slate-800 text-xs">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-slate-400 font-semibold px-1">Lấy nét nhánh:</span>
+              <button
+                type="button"
+                onClick={() => setActiveBranchIdx(null)}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                  activeBranchIdx === null ? 'bg-teal-500 text-white' : 'text-slate-300 hover:bg-slate-800'
+                }`}
+              >
+                Toàn Bộ
+              </button>
+              {branches.map((b, idx) => {
+                const theme = branchThemes[idx % branchThemes.length];
+                const isAct = activeBranchIdx === idx;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setActiveBranchIdx(isAct ? null : idx)}
+                    className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                      isAct ? 'text-white shadow' : 'text-slate-300 hover:bg-slate-800'
+                    }`}
+                    style={{ backgroundColor: isAct ? theme.color : undefined }}
+                  >
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: theme.lightColor }} />
+                    <span>Nhánh {idx + 1}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="text-[11px] text-slate-400 flex items-center gap-2">
+              <span>{isDragMode ? '🖐️ Chế độ kéo thả đang BẬT' : '🔒 Đã khóa vị trí'}</span>
+              <span>•</span>
+              <span>Kích thước chuẩn 1640 × 920</span>
+            </div>
           </div>
 
-          {/* SVG SƠ ĐỒ TƯ DUY TRỰC TIẾP */}
-          <div className="w-full h-full flex items-center justify-center p-4 overflow-auto">
+          {/* KHUNG CUỘN SVG TOÀN CẢNH (KHÔNG BỊ SCROLL-TRAP / KHÔNG BỊ CẮT BÊN TRÁI) */}
+          <div className="w-full flex-1 overflow-x-auto overflow-y-auto p-2 sm:p-4 flex items-center justify-center">
             <div
+              className="mx-auto"
               style={{
-                transform: `scale(${zoomLevel})`,
-                transformOrigin: 'center center',
-                transition: dragState ? 'none' : 'transform 0.2s ease-out'
+                width: zoomLevel === 1 ? '100%' : `${zoomLevel * 100}%`,
+                maxWidth: zoomLevel === 1 ? '1640px' : 'none',
+                minWidth: zoomLevel === 1 ? '100%' : `${Math.round(1640 * zoomLevel)}px`,
+                transition: dragState ? 'none' : 'width 0.2s ease-out'
               }}
             >
               <svg
                 ref={svgRef}
                 xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 1620 920"
-                className={`w-[1620px] h-[920px] select-none ${isDragMode ? 'cursor-default' : ''}`}
+                viewBox="0 0 1640 920"
+                className={`w-full h-auto aspect-[1640/920] select-none block drop-shadow-2xl ${isDragMode ? 'cursor-default' : ''}`}
               >
                 <defs>
                   {/* Gradient trung tâm */}
@@ -793,7 +813,7 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
                 {/* 1. CÁC ĐƯỜNG NỐI BEZIER ĐỘNG TỪ TRUNG TÂM RA CÁC NHÁNH CHÍNH */}
                 {branches.slice(0, 4).map((_, idx) => {
                   const theme = branchThemes[idx % branchThemes.length];
-                  const branchPos = positions.branches[idx] || { x: 360, y: 190, width: 270, height: 74 };
+                  const branchPos = positions.branches[idx] || { x: 360, y: 190, width: 260, height: 74 };
                   const pathD = calculateConnectingPath(positions.center, branchPos);
                   const isAct = activeBranchIdx === idx || activeBranchIdx === null;
 
@@ -813,11 +833,11 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
                 {/* 2. CÁC ĐƯỜNG NỐI TỪ NHÁNH CHÍNH TỚI CÁC SUB-ITEMS */}
                 {branches.slice(0, 4).map((b, bIdx) => {
                   const theme = branchThemes[bIdx % branchThemes.length];
-                  const branchPos = positions.branches[bIdx] || { x: 360, y: 190, width: 270, height: 74 };
+                  const branchPos = positions.branches[bIdx] || { x: 360, y: 190, width: 260, height: 74 };
                   const isHighlighted = activeBranchIdx === bIdx;
 
                   return (b.subItems || []).slice(0, 4).map((_, sIdx) => {
-                    const subPos = positions.subItems[`${bIdx}_${sIdx}`] || { x: 30, y: 70, width: 290, height: 56 };
+                    const subPos = positions.subItems[`${bIdx}_${sIdx}`] || { x: 40, y: 70, width: 280, height: 56 };
                     const curvePath = calculateConnectingPath(branchPos, subPos);
 
                     return (
@@ -906,7 +926,7 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
                   const theme = branchThemes[bIdx % branchThemes.length];
                   const isDimmed = activeBranchIdx !== null && activeBranchIdx !== bIdx;
                   const isHighlighted = activeBranchIdx === bIdx;
-                  const branchPos = positions.branches[bIdx] || { x: 360, y: 190, width: 270, height: 74 };
+                  const branchPos = positions.branches[bIdx] || { x: 360, y: 190, width: 260, height: 74 };
 
                   return (
                     <g
@@ -955,7 +975,7 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
                         <g
                           className="no-drag cursor-pointer hover:opacity-80"
                           onClick={(e) => { e.stopPropagation(); openEditModal('branch', bIdx); }}
-                          transform="translate(236, 10)"
+                          transform="translate(226, 10)"
                         >
                           <rect x="0" y="0" width="22" height="18" rx="4" fill="#0f172a" fillOpacity="0.4" stroke={theme.lightColor} strokeWidth="0.8" />
                           <text x="11" y="13" textAnchor="middle" fill="#ffffff" fontSize="9.5">✏️</text>
@@ -970,7 +990,7 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
                           fontWeight="bold"
                           fontFamily="Arial"
                         >
-                          {b.title.length > 23 ? b.title.substring(0, 23) + '...' : b.title}
+                          {b.title.length > 22 ? b.title.substring(0, 22) + '...' : b.title}
                         </text>
                         <text
                           x="48"
@@ -985,8 +1005,8 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
 
                       {/* CÁC THẺ CON (SUB-ITEMS) CỦA NHÁNH NÀY */}
                       {(b.subItems || []).slice(0, 4).map((item, sIdx) => {
-                        const subPos = positions.subItems[`${bIdx}_${sIdx}`] || { x: 30, y: 70, width: 290, height: 56 };
-                        const subLines = wrapSvgText(item, 32);
+                        const subPos = positions.subItems[`${bIdx}_${sIdx}`] || { x: 40, y: 70, width: 280, height: 56 };
+                        const subLines = wrapSvgText(item, 30);
 
                         return (
                           <g
@@ -1012,7 +1032,7 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
                             <g
                               className="no-drag cursor-pointer hover:opacity-80"
                               onClick={(e) => { e.stopPropagation(); openEditModal('sub', bIdx, sIdx); }}
-                              transform="translate(262, 8)"
+                              transform="translate(252, 8)"
                             >
                               <rect x="0" y="0" width="18" height="16" rx="3" fill="#1e293b" stroke="#64748b" strokeWidth="0.8" />
                               <text x="9" y="12" textAnchor="middle" fill="#94a3b8" fontSize="8.5">✏️</text>

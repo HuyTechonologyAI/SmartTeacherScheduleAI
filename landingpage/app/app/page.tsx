@@ -78,6 +78,7 @@ import {
 import { generateAndDownloadPptx } from './lessonPlanPptx';
 import { InteractiveMindMap } from './InteractiveMindMap';
 import { InteractiveMiniGame } from './InteractiveMiniGame';
+import { AutomatedPaymentModal } from './AutomatedPaymentModal';
 import { extractPedagogicalKnowledge, PedagogicalKnowledge } from './deepRagPedagogicalParser';
 import { isTestData, cleanAllTestData, countTestData } from './testDataSanitizer';
 import {
@@ -9849,112 +9850,28 @@ export default function UnifiedTeacherScheduleApp() {
 
       {/* Teacher Profile Edit Modal */}
       {/* ================= MODAL: NÂNG CẤP GÓI DỊCH VỤ & KÍCH HOẠT PRO ================= */}
-      {showUpgradeModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl max-w-xl w-full p-6 space-y-5 shadow-2xl text-slate-800 dark:text-slate-100">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-rose-600 to-amber-500 text-white flex items-center justify-center shadow-md shadow-rose-500/20">
-                  <Crown className="w-5 h-5 text-amber-200" />
-                </div>
-                <div>
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-                    {upgradeSelectedTier === 'school' ? 'Kích Hoạt Gói Trường Học / Tổ Bộ Môn' : 'Nâng Cấp Gói Giáo Viên Pro (VIP)'}
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Bản quyền Huy Technology AI • Kích hoạt tức thì trong 5 phút
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowUpgradeModal(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-xl cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Plan Info Details */}
-            <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200/70 dark:border-rose-900/50 flex items-center justify-between gap-3">
-              <div>
-                <span className="text-[11px] font-bold uppercase text-rose-600 dark:text-rose-400">
-                  {upgradeSelectedTier === 'school' ? 'Gói Toàn Trường' : 'Gói Cá Nhân VIP'}
-                </span>
-                <p className="text-sm font-extrabold text-slate-900 dark:text-white">
-                  {upgradeSelectedTier === 'school' ? 'Gói Nhà Trường & Tổ Bộ Môn (Báo Phí Theo Số User)' : 'Gói Giáo Viên Pro - 1 Năm (Tiết kiệm 35%)'}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {upgradeSelectedTier === 'school' ? 'Bảng phí tối ưu theo quy mô số lượng User (Giáo viên & Học sinh), hỗ trợ hợp đồng và hóa đơn VAT.' : 'Mở khóa trọn bộ Trợ lý AI Soạn bài 5512, Đề thi TT 22, Voice AI Tutor & Cloud Sync'}
-                </p>
-              </div>
-              <div className="text-right shrink-0">
-                <span className="text-lg sm:text-xl font-black text-rose-600 dark:text-rose-400">
-                  {upgradeSelectedTier === 'school' ? 'Liên Hệ Báo Phí' : '399.000 đ'}
-                </span>
-                <span className="block text-[10px] text-slate-500 dark:text-slate-400">
-                  {upgradeSelectedTier === 'school' ? 'Theo số lượng User' : '/ 12 tháng'}
-                </span>
-              </div>
-            </div>
-
-            {/* Bank Transfer Guide */}
-            <div className="space-y-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-700 text-xs">
-              <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
-                <CreditCard className="w-4 h-4 text-emerald-600" />
-                <span>Thông tin chuyển khoản kích hoạt bản quyền:</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-700 dark:text-slate-300">
-                <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                  <span className="text-[10px] text-slate-400 block">Số tài khoản / Hotline:</span>
-                  <strong className="text-sm font-mono font-bold text-rose-600 dark:text-rose-400">0961364600</strong>
-                </div>
-                <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                  <span className="text-[10px] text-slate-400 block">Chủ tài khoản:</span>
-                  <strong className="text-xs font-bold text-slate-900 dark:text-white">HUY TECHNOLOGY AI</strong>
-                </div>
-                <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                  <span className="text-[10px] text-slate-400 block">Ngân hàng:</span>
-                  <strong className="text-xs font-bold text-slate-900 dark:text-white">MB Bank / Vietcombank</strong>
-                </div>
-                <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                  <span className="text-[10px] text-slate-400 block">Nội dung chuyển khoản:</span>
-                  <strong className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                    {upgradeSelectedTier === 'school' ? 'SCHOOL ' : 'PRO '} + [SĐT của Thầy/Cô]
-                  </strong>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
-              <a
-                href="https://zalo.me/0961364600"
-                target="_blank"
-                rel="noreferrer"
-                className="w-full sm:flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs sm:text-sm shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 cursor-pointer transition-all"
-              >
-                <Send className="w-4 h-4" />
-                <span>Nhắn Zalo Kích Hoạt Ngay (0961364600)</span>
-              </a>
-              <a
-                href="tel:0961364600"
-                className="w-full sm:w-auto px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all"
-              >
-                <Phone className="w-4 h-4 text-emerald-600" />
-                <span>Gọi 0961364600</span>
-              </a>
-              <button
-                type="button"
-                onClick={() => setShowUpgradeModal(false)}
-                className="w-full sm:w-auto px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold cursor-pointer"
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ================= MODAL: CỔNG THANH TOÁN VIETQR TỰ ĐỘNG (ACB 37780997) & HÓA ĐƠN VAT ================= */}
+      <AutomatedPaymentModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        syncCode={syncCode || 'GV-202688'}
+        teacherName={teacherProfile?.fullName || 'Thầy/Cô'}
+        initialPlanId={upgradeSelectedTier === 'school' ? 'SCHOOL1Y' : 'PRO1Y'}
+        onPaymentSuccess={(tier, expiresAt) => {
+          setTeacherProfile(prev => {
+            const updated = {
+              ...prev,
+              licenseTier: tier,
+              licenseExpiresAt: expiresAt
+            };
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('smart_teacher_profile', JSON.stringify(updated));
+            }
+            return updated;
+          });
+          pushToCloud(events, schedules, syncCode, false);
+        }}
+      />
 
       <IosPwaGuideModal
         isOpen={showIosGuideModal}

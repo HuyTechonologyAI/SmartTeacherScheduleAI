@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 export interface TeacherProfile {
   id: string; // Mã giáo viên duy nhất (VD: GV-202688 hoặc mã trường cấp)
@@ -15,6 +15,8 @@ export interface TeacherProfile {
   bioQuote?: string; // Châm ngôn sư phạm
   isLoggedIn: boolean; // Trạng thái đăng nhập
   lastLoginAt?: string; // Thời gian đăng nhập gần nhất
+  licenseTier?: 'STARTER' | 'PRO' | 'SCHOOL'; // Hạng mức bản quyền dịch vụ
+  licenseExpiresAt?: string; // Ngày hết hạn bản quyền
 }
 
 export const POPULAR_SUBJECTS = [

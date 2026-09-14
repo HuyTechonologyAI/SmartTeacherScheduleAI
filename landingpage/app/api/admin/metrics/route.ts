@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { PaymentStore } from '@/app/lib/paymentStore';
 
 export async function GET() {
   let supabaseStatus = 'Healthy';
@@ -71,7 +72,7 @@ export async function GET() {
     // Nếu chưa có bảng hoặc chưa có dữ liệu, giữ nguyên 0
   }
 
-  // 3. Thống kê tài chính & giao dịch thực tế (bắt đầu từ 0 nếu chưa phát sinh)
+  // 3. Thống kê tài chính & giao dịch thực tế từ Supabase và PaymentStore (ACB VietQR)
   let totalRevenueVnd = 0;
   let mrrVnd = 0;
   let arrVnd = 0;
@@ -94,8 +95,6 @@ export async function GET() {
           if (o.plan?.includes('SCHOOL')) schoolSubscriptionsCount += 1;
         }
       });
-      mrrVnd = totalRevenueVnd;
-      arrVnd = totalRevenueVnd * 12;
       recentTransactions = orders.map((o: any) => ({
         id: o.order_code || o.id,
         teacher: o.customer_name || 'Khách hàng',
@@ -107,8 +106,37 @@ export async function GET() {
       }));
     }
   } catch (_) {
-    // Giữ nguyên 0 nếu chưa có dữ liệu giao dịch thật
+    // Fallback sang local store
   }
+
+  // Bổ sung các giao dịch từ PaymentStore (Cổng VietQR ACB 37780997)
+  try {
+    const localTxs = PaymentStore.getAllTransactions();
+    if (localTxs && localTxs.length > 0) {
+      localTxs.forEach(tx => {
+        if (tx.status === 'SUCCESS') {
+          totalRevenueVnd += Number(tx.amount || 0);
+          payingUsersCount += 1;
+          if (tx.planId?.includes('SCHOOL')) schoolSubscriptionsCount += 1;
+
+          recentTransactions.push({
+            id: tx.id,
+            teacher: `Giáo viên (${tx.syncCode})`,
+            school: 'ACB Napas 24/7',
+            plan: tx.planId === 'SCHOOL1Y' ? 'Gói Trường Học' : (tx.planId === 'PRO1M' ? 'Gói Pro (1 Tháng)' : 'Gói Pro (1 Năm)'),
+            amount: Number(tx.amount || 0),
+            status: 'THÀNH CÔNG',
+            time: tx.paidAt ? new Date(tx.paidAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 'Vừa xong'
+          });
+        }
+      });
+    }
+  } catch (_) {
+    // Bỏ qua nếu lỗi store
+  }
+
+  mrrVnd = totalRevenueVnd;
+  arrVnd = totalRevenueVnd * 12;
 
   return NextResponse.json({
     success: true,

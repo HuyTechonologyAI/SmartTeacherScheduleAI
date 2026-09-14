@@ -189,7 +189,7 @@ class MainActivity : ComponentActivity() {
                     val androidPlatform = update.platforms?.android
                     val newVersion = androidPlatform?.versionName ?: update.versionName ?: "Mới"
                     val notes = update.releaseNotes ?: emptyList()
-                    val downloadUrl = androidPlatform?.downloadUrl ?: "https://www.gvcncdsai.io.vn/downloads/SmartTeacherSchedule_v1.8.0.apk"
+                    val downloadUrl = androidPlatform?.downloadUrl ?: "https://www.gvcncdsai.io.vn/downloads/SmartTeacherSchedule_v2.0.0.apk"
                     val isForce = androidPlatform?.isForceUpdate == true
 
                     AlertDialog(

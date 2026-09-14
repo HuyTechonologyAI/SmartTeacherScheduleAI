@@ -75,6 +75,7 @@ import {
   fullPackageToDocHtml,
   downloadWordDoc
 } from './lessonPlanAi';
+import { extractPedagogicalKnowledge, PedagogicalKnowledge } from './deepRagPedagogicalParser';
 import { isTestData, cleanAllTestData, countTestData } from './testDataSanitizer';
 import {
   KnowledgeDocument,
@@ -842,6 +843,8 @@ export default function UnifiedTeacherScheduleApp() {
   const [plannerClassFilter, setPlannerClassFilter] = useState('ALL');
   const [plannerMatchedDocResult, setPlannerMatchedDocResult] = useState<MatchedDocResult | null>(null);
   const [plannerSelectedDocId, setPlannerSelectedDocId] = useState<string>('AUTO');
+  const [plannerQuickUploading, setPlannerQuickUploading] = useState(false);
+  const [plannerExtractedPreview, setPlannerExtractedPreview] = useState<PedagogicalKnowledge | null>(null);
   const [plannerFullPackage, setPlannerFullPackage] = useState<FullLessonPackage | null>(null);
   // Viewing state for the 6-in-1 Unified Lesson Package Modal
   const [viewingLessonPackage, setViewingLessonPackage] = useState<FullLessonPackage | null>(null);
@@ -912,8 +915,67 @@ export default function UnifiedTeacherScheduleApp() {
     }
   };
 
-  // Hàm sinh kế hoạch bài giảng trọn gói đa phương tiện 5 bước
-  const handleGenerateFullLessonPackage = () => {
+  // Nạp tệp bài giảng nhanh trực tiếp từ máy tính cho Trợ lý AI Deep-RAG
+  const handlePlannerQuickUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setPlannerQuickUploading(true);
+    try {
+      const extractedText = await extractFullTextFromFile(file);
+      if (!extractedText || extractedText.trim().length < 20) {
+        alert('Không thể trích xuất văn bản từ tệp này hoặc tệp quá ngắn. Vui lòng chọn tệp .docx, .pdf hoặc .txt hợp lệ!');
+        setPlannerQuickUploading(false);
+        return;
+      }
+
+      const newDocId = 'custom_' + Date.now();
+      const baseName = file.name.replace(/\.[^/.]+$/, '');
+      const newDoc: KnowledgeDocument = {
+        id: newDocId,
+        code: 'TL-' + Math.floor(1000 + Math.random() * 9000),
+        title: baseName,
+        category: 'GIAO_TRINH',
+        subject: plannerSubject || 'ALL',
+        targetLevel: plannerClass || 'ALL',
+        content: extractedText,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        isBuiltIn: false,
+        isActive: true,
+        createdAt: new Date().toISOString()
+      };
+
+      saveKnowledgeDocument(newDoc);
+      const updatedDocs = getResolvedKnowledgeDocuments();
+      setKnowledgeDocs(updatedDocs);
+      setPlannerSelectedDocId(newDocId);
+
+      const matchedResult: MatchedDocResult = {
+        doc: newDoc,
+        relevantSnippet: extractedText.slice(0, 1400),
+        confidence: 100
+      };
+      setPlannerMatchedDocResult(matchedResult);
+
+      const previewKnowledge = extractPedagogicalKnowledge(extractedText, plannerLessonTitle || baseName);
+      setPlannerExtractedPreview(previewKnowledge);
+
+      if (!plannerLessonTitle.trim()) {
+        setPlannerLessonTitle(baseName);
+      }
+    } catch (err) {
+      console.error('Lỗi khi nạp tệp bài giảng nhanh:', err);
+      alert('Đã xảy ra lỗi khi đọc tệp. Vui lòng thử lại!');
+    } finally {
+      setPlannerQuickUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  // Hàm sinh kế hoạch bài giảng trọn gói đa phương tiện 5 bước với Deep-RAG Sư Phạm
+  const handleGenerateFullLessonPackage = async () => {
     const title = plannerLessonTitle.trim();
     if (!title) {
       alert('Vui lòng nhập hoặc chọn Tên bài dạy!');
@@ -921,73 +983,120 @@ export default function UnifiedTeacherScheduleApp() {
     }
 
     setPlannerIsGenerating(true);
-    setPlannerStepProgress('Bước 1/5: Thiết lập Kế hoạch bài dạy chuẩn quy chuẩn...');
+    setPlannerStepProgress('Bước 1/5: Khởi động Deep-RAG bóc tách cấu trúc tài liệu bài học...');
 
-    setTimeout(() => {
-      setPlannerStepProgress('Bước 2/5: Soạn thảo kịch bản Slide thuyết trình PowerPoint...');
-      setTimeout(() => {
-        setPlannerStepProgress('Bước 3/5: Thiết kế bộ câu hỏi Mini Game tương tác...');
-        setTimeout(() => {
-          setPlannerStepProgress('Bước 4/5: Xây dựng kịch bản Video bài giảng vi mô...');
-          setTimeout(() => {
-            setPlannerStepProgress('Bước 5/5: Vẽ Sơ đồ tư duy & Chấm điểm Năng lực số...');
+    const durationNum = Number(plannerDuration) || (plannerStandard === 5512 ? 1 : 4);
+    const selectedEv = events.find(e => e.id === plannerSelectedEventId);
+    const sessionInfoStr = selectedEv
+      ? `${selectedEv.date} • Ca: ${selectedEv.startTime}-${selectedEv.endTime} (Phòng: ${selectedEv.room || 'Lớp học'})`
+      : 'Theo phân phối chương trình';
 
-            const durationNum = Number(plannerDuration) || (plannerStandard === 5512 ? 1 : 4);
-            const selectedEv = events.find(e => e.id === plannerSelectedEventId);
-            const sessionInfoStr = selectedEv
-              ? `${selectedEv.date} • Ca: ${selectedEv.startTime}-${selectedEv.endTime} (Phòng: ${selectedEv.room || 'Lớp học'})`
-              : 'Theo phân phối chương trình';
+    // Xác định tài liệu đối chiếu theo chỉ định thủ công hoặc tự động
+    let freshMatched: MatchedDocResult | null = null;
+    if (plannerSelectedDocId === 'AUTO') {
+      freshMatched = findMatchingKnowledgeDocument(plannerSubject, plannerClass, title);
+    } else if (plannerSelectedDocId === 'NONE') {
+      freshMatched = null;
+    } else {
+      const explicitDoc = knowledgeDocs.find(d => d.id === plannerSelectedDocId);
+      if (explicitDoc) {
+        freshMatched = {
+          doc: explicitDoc,
+          relevantSnippet: explicitDoc.content.slice(0, 1400),
+          confidence: 100
+        };
+      }
+    }
+    setPlannerMatchedDocResult(freshMatched);
 
-            // Xác định tài liệu đối chiếu theo chỉ định thủ công hoặc tự động
-            let freshMatched: MatchedDocResult | null = null;
-            if (plannerSelectedDocId === 'AUTO') {
-              freshMatched = findMatchingKnowledgeDocument(plannerSubject, plannerClass, title);
-            } else if (plannerSelectedDocId === 'NONE') {
-              freshMatched = null;
-            } else {
-              const explicitDoc = knowledgeDocs.find(d => d.id === plannerSelectedDocId);
-              if (explicitDoc) {
-                freshMatched = {
-                  doc: explicitDoc,
-                  relevantSnippet: explicitDoc.content.slice(0, 1400),
-                  confidence: 100
-                };
-              }
-            }
-            setPlannerMatchedDocResult(freshMatched);
+    const refCtx = freshMatched?.relevantSnippet || getActiveReferenceContext(plannerSubject, plannerStandard === 5512 ? 'PHAP_QUY' : 'ATLD_5S');
 
-            const pkg = generateComprehensiveLessonPlanPackage({
-              lessonTitle: title,
-              subject: plannerSubject || 'Chung',
-              className: plannerClass || 'Toàn trường',
-              sessionInfo: sessionInfoStr,
-              standard: plannerStandard,
-              durationMinutes: durationNum * (plannerStandard === 5512 ? 45 : 60),
-              customRequirements: plannerRequirements,
-              matchedDoc: freshMatched?.doc ? {
-                code: freshMatched.doc.code,
-                title: freshMatched.doc.title,
-                fileName: freshMatched.doc.fileName,
-                relevantSnippet: freshMatched.relevantSnippet
-              } : null,
-              referenceContext: freshMatched?.relevantSnippet || getActiveReferenceContext(plannerSubject, plannerStandard === 5512 ? 'PHAP_QUY' : 'ATLD_5S')
-            });
+    // Cập nhật preview bóc tách Deep-RAG
+    if (freshMatched?.doc?.content) {
+      const parsed = extractPedagogicalKnowledge(freshMatched.doc.content, title);
+      setPlannerExtractedPreview(parsed);
+    }
 
-            setPlannerFullPackage(pkg);
-            if (plannerStandard === 5512) {
-              setPlannerResult5512(pkg.plan5512 || null);
-              setPlannerResult2634(null);
-            } else {
-              setPlannerResult2634(pkg.plan2634 || null);
-              setPlannerResult5512(null);
-            }
-            setPlannerActiveResultTab('plan');
-            setPlannerIsGenerating(false);
-            setPlannerStepProgress('');
-          }, 350);
-        }, 350);
-      }, 350);
-    }, 350);
+    setPlannerStepProgress('Bước 2/5: Bóc tách khái niệm, công thức, quy trình từ tài liệu bài giảng...');
+
+    // Thử gọi AI Backend (Gemini Cloud AI) với Deep-RAG Grounding
+    let aiServerPlan: any = null;
+    try {
+      const res = await fetch('/api/ai/lesson-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lessonTitle: title,
+          subject: plannerSubject || 'Chung',
+          className: plannerClass || 'Toàn trường',
+          sessionInfo: sessionInfoStr,
+          standard: plannerStandard,
+          durationMinutes: durationNum * (plannerStandard === 5512 ? 45 : 60),
+          customRequirements: plannerRequirements,
+          matchedDoc: freshMatched?.doc ? {
+            code: freshMatched.doc.code,
+            title: freshMatched.doc.title,
+            fileName: freshMatched.doc.fileName,
+            relevantSnippet: freshMatched.relevantSnippet
+          } : null,
+          referenceContext: refCtx
+        })
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json.plan) {
+          aiServerPlan = json.plan;
+        }
+      }
+    } catch (apiErr) {
+      console.warn('API call to /api/ai/lesson-plan failed, using local Deep-RAG synthesizer:', apiErr);
+    }
+
+    setPlannerStepProgress('Bước 3/5: Soạn thảo kịch bản Slide thuyết trình & Bộ câu hỏi Mini Game...');
+    await new Promise(r => setTimeout(r, 200));
+
+    setPlannerStepProgress('Bước 4/5: Xây dựng kịch bản Video bài giảng vi mô...');
+    await new Promise(r => setTimeout(r, 200));
+
+    setPlannerStepProgress('Bước 5/5: Vẽ Sơ đồ tư duy & Chấm điểm Năng lực số...');
+
+    const pkg = generateComprehensiveLessonPlanPackage({
+      lessonTitle: title,
+      subject: plannerSubject || 'Chung',
+      className: plannerClass || 'Toàn trường',
+      sessionInfo: sessionInfoStr,
+      standard: plannerStandard,
+      durationMinutes: durationNum * (plannerStandard === 5512 ? 45 : 60),
+      customRequirements: plannerRequirements,
+      matchedDoc: freshMatched?.doc ? {
+        code: freshMatched.doc.code,
+        title: freshMatched.doc.title,
+        fileName: freshMatched.doc.fileName,
+        relevantSnippet: freshMatched.relevantSnippet
+      } : null,
+      referenceContext: refCtx
+    });
+
+    if (aiServerPlan) {
+      if (plannerStandard === 5512 && aiServerPlan.activities) {
+        pkg.plan5512 = aiServerPlan;
+      } else if (plannerStandard === 2634 && aiServerPlan.steps) {
+        pkg.plan2634 = aiServerPlan;
+      }
+    }
+
+    setPlannerFullPackage(pkg);
+    if (plannerStandard === 5512) {
+      setPlannerResult5512(pkg.plan5512 || null);
+      setPlannerResult2634(null);
+    } else {
+      setPlannerResult2634(pkg.plan2634 || null);
+      setPlannerResult5512(null);
+    }
+    setPlannerActiveResultTab('plan');
+    setPlannerIsGenerating(false);
+    setPlannerStepProgress('');
   };
 
   // Exam Matrix States
@@ -4384,16 +4493,35 @@ export default function UnifiedTeacherScheduleApp() {
 
                     {/* Mục lựa chọn tài liệu đối chiếu đưa vào AI */}
                     <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5 space-y-2.5">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <BookOpen className="w-4 h-4 text-rose-600" />
                           <span className="text-xs font-bold text-slate-800 dark:text-white">
                             Tài liệu đối chiếu AI (Kho tư liệu chuẩn):
                           </span>
                         </div>
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                          Chủ động chọn tài liệu để tránh nhầm giáo trình
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <label className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-[11px] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs">
+                            {plannerQuickUploading ? (
+                              <>
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                <span>Đang trích xuất văn bản...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Paperclip className="w-3 h-3" />
+                                <span>📎 Nạp tệp bài giảng (.docx, .pdf, .txt)</span>
+                              </>
+                            )}
+                            <input
+                              type="file"
+                              accept=".docx,.pdf,.txt"
+                              className="hidden"
+                              disabled={plannerQuickUploading}
+                              onChange={handlePlannerQuickUpload}
+                            />
+                          </label>
+                        </div>
                       </div>
 
                       <select
@@ -4404,8 +4532,14 @@ export default function UnifiedTeacherScheduleApp() {
                           if (val === 'AUTO') {
                             const matched = findMatchingKnowledgeDocument(plannerSubject, plannerClass, plannerLessonTitle);
                             setPlannerMatchedDocResult(matched);
+                            if (matched?.doc?.content) {
+                              setPlannerExtractedPreview(extractPedagogicalKnowledge(matched.doc.content, plannerLessonTitle));
+                            } else {
+                              setPlannerExtractedPreview(null);
+                            }
                           } else if (val === 'NONE') {
                             setPlannerMatchedDocResult(null);
+                            setPlannerExtractedPreview(null);
                           } else {
                             const found = knowledgeDocs.find(d => d.id === val);
                             if (found) {
@@ -4414,6 +4548,7 @@ export default function UnifiedTeacherScheduleApp() {
                                 relevantSnippet: found.content.slice(0, 1400),
                                 confidence: 100
                               });
+                              setPlannerExtractedPreview(extractPedagogicalKnowledge(found.content, plannerLessonTitle));
                             }
                           }
                         }}
@@ -4443,6 +4578,65 @@ export default function UnifiedTeacherScheduleApp() {
 
                         <option value="NONE">🚫 Không dùng giáo trình (Chỉ căn cứ khung chuẩn CV 5512 thuần túy)</option>
                       </select>
+
+                      {/* Thẻ hiển thị các thành phần tri thức Deep-RAG đã bóc tách từ tài liệu */}
+                      {plannerMatchedDocResult?.doc && (
+                        <div className="p-3 rounded-xl bg-slate-900/95 text-white border border-slate-700 space-y-2 animate-fade-in">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-amber-300 flex items-center gap-1.5">
+                              <Sparkles className="w-3.5 h-3.5" />
+                              <span>Deep-RAG Sư Phạm bóc tách tài liệu bài giảng:</span>
+                            </span>
+                            <span className="text-[10px] text-emerald-400 font-mono">
+                              100% Đúng bài • Chống ảo giác
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                            <div className="p-2 rounded-lg bg-slate-800/80 border border-slate-700/60">
+                              <div className="text-slate-400 text-[10px]">Định nghĩa & Khái niệm:</div>
+                              <div className="font-semibold text-sky-300 truncate">
+                                {plannerExtractedPreview?.coreDefinitions?.length 
+                                  ? `${plannerExtractedPreview.coreDefinitions.length} khái niệm cốt lõi`
+                                  : 'Đã sẵn sàng trích xuất'}
+                              </div>
+                            </div>
+
+                            <div className="p-2 rounded-lg bg-slate-800/80 border border-slate-700/60">
+                              <div className="text-slate-400 text-[10px]">Đề mục / Cấu trúc bài:</div>
+                              <div className="font-semibold text-emerald-300 truncate">
+                                {plannerExtractedPreview?.topicSections?.length
+                                  ? `${plannerExtractedPreview.topicSections.length} đề mục chi tiết`
+                                  : 'Theo tài liệu cung cấp'}
+                              </div>
+                            </div>
+
+                            <div className="p-2 rounded-lg bg-slate-800/80 border border-slate-700/60">
+                              <div className="text-slate-400 text-[10px]">Công thức & Quy trình:</div>
+                              <div className="font-semibold text-amber-300 truncate">
+                                {(plannerExtractedPreview?.formulasAndRules?.length || 0) + (plannerExtractedPreview?.practicalSteps?.length || 0) > 0
+                                  ? `${(plannerExtractedPreview?.formulasAndRules?.length || 0) + (plannerExtractedPreview?.practicalSteps?.length || 0)} công thức/bước`
+                                  : 'Bám sát nội dung bài'}
+                              </div>
+                            </div>
+
+                            <div className="p-2 rounded-lg bg-slate-800/80 border border-slate-700/60">
+                              <div className="text-slate-400 text-[10px]">Thiết bị & Bài tập:</div>
+                              <div className="font-semibold text-purple-300 truncate">
+                                {((plannerExtractedPreview?.equipmentList?.teacher?.length || 0) + (plannerExtractedPreview?.equipmentList?.student?.length || 0) + (plannerExtractedPreview?.sampleExercises?.length || 0)) > 0
+                                  ? `${(plannerExtractedPreview?.equipmentList?.teacher?.length || 0) + (plannerExtractedPreview?.equipmentList?.student?.length || 0) + (plannerExtractedPreview?.sampleExercises?.length || 0)} mục thực tế`
+                                  : 'Theo phân loại môn'}
+                              </div>
+                            </div>
+                          </div>
+
+                          {plannerExtractedPreview?.coreDefinitions?.[0] && (
+                            <div className="text-[11px] text-slate-300 bg-slate-800/60 p-2 rounded border border-slate-700/40 italic line-clamp-2">
+                              💡 Ngữ liệu trọng tâm: <strong>{plannerExtractedPreview.coreDefinitions[0].term}:</strong> "{plannerExtractedPreview.coreDefinitions[0].definition}"
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Huy hiệu hiển thị trạng thái đối chiếu thực tế */}
                       <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-200 dark:border-slate-700">

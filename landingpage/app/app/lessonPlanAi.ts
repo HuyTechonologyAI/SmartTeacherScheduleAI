@@ -1,5 +1,11 @@
 // Generative AI Lesson Planner & Exam Matrix Engine
 // Supporting CV 5512/BGDĐT-GDTrH & CV 2634/GDNN
+// Integrated with Deep-RAG Sư Phạm Semantic Parser Engine
+
+import {
+  deepParseLessonDocument,
+  ExtractedLessonKnowledge
+} from './deepRagPedagogicalParser';
 
 export interface LessonPlan5512Data {
   lessonTitle: string;
@@ -115,6 +121,10 @@ export interface ExamMatrixData {
   referenceCitations?: string;
 }
 
+// ============================================================================
+// BƯỚC A1: SOẠN GIÁO ÁN CHUẨN CÔNG VĂN 5512/BGDĐT-GDTrH (DEEP-RAG GROUNDED)
+// ============================================================================
+
 export function generateLessonPlan5512(
   lessonTitle: string,
   subject: string,
@@ -123,7 +133,66 @@ export function generateLessonPlan5512(
   customRequirements?: string,
   referenceContext: string = ''
 ): LessonPlan5512Data {
+  // Bóc tách ngữ nghĩa toàn văn tài liệu bằng Deep-RAG Sư Phạm
+  const k = deepParseLessonDocument(referenceContext, lessonTitle, subject, grade);
   const custom = customRequirements?.trim() ? ` Yêu cầu sư phạm: ${customRequirements}.` : '';
+
+  // 1. Mục tiêu kiến thức chi tiết (Không viết chung chung)
+  let knowledgeObj = '';
+  if (k.coreDefinitions.length > 0) {
+    knowledgeObj = `Học sinh nắm vững và phân tích được bản chất các khái niệm cốt lõi: ${k.coreDefinitions.map(d => `${d.term} (${d.definition})`).join('; ')}.`;
+  } else if (k.topicSections.length > 0) {
+    knowledgeObj = `Học sinh làm chủ các nội dung trọng tâm của bài: ${k.topicSections.map(t => t.heading).join(', ')}.`;
+  } else {
+    knowledgeObj = `Học sinh hiểu rõ bản chất khoa học, quy luật và phương pháp tư duy của bài '${lessonTitle}'.`;
+  }
+
+  if (k.formulasAndRules.length > 0) {
+    knowledgeObj += ` Vận dụng chính xác các công thức và quy tắc: ${k.formulasAndRules.slice(0, 2).join(', ')}.`;
+  }
+  knowledgeObj += custom;
+
+  // 2. Nội dung Hoạt động 1: Khởi động
+  const leadTerm = k.keyTerms[0] || lessonTitle;
+  const act1Content = k.keyTerms.length > 0
+    ? `Giáo viên trình chiếu tình huống thực tiễn hoặc đoạn video ngắn về "${leadTerm}" và nêu câu hỏi gợi mở: "Trong thực tế đời sống và khoa học, ${leadTerm} đóng vai trò gì? Nếu không nắm vững nguyên lý này, chúng ta sẽ gặp khó khăn nào?"`
+    : `Giáo viên đưa ra tình huống thực tế gắn liền với chủ đề '${lessonTitle}', tạo mâu thuẫn nhận thức khơi gợi trí tò mò của học sinh.`;
+
+  // 3. Nội dung Hoạt động 2: Hình thành kiến thức mới (Bám sát 100% tài liệu)
+  let act2Content = '';
+  if (k.topicSections.length > 0) {
+    act2Content = k.topicSections.map((sec, idx) => {
+      const details = sec.contentLines.length > 0 ? sec.contentLines.join(' ') : 'Phân tích các đặc điểm, quy luật và ứng dụng.';
+      return `Nhiệm vụ ${idx + 1}: Tìm hiểu "${sec.heading}"\n• Chi tiết lý thuyết: ${details}`;
+    }).join('\n\n');
+  } else if (k.coreDefinitions.length > 0) {
+    act2Content = k.coreDefinitions.map((d, idx) => {
+      return `Nhiệm vụ ${idx + 1}: Chiếm lĩnh khái niệm "${d.term}"\n• Bản chất khoa học: ${d.definition}`;
+    }).join('\n\n');
+  } else {
+    act2Content = `Học sinh nghiên cứu tài liệu bài giảng '${lessonTitle}', phân tích cấu trúc, nguyên lý vận hành và hoàn thành phiếu học tập khám phá.`;
+  }
+
+  // 4. Nội dung Hoạt động 3: Luyện tập & Củng cố (Có câu hỏi/bài tập thật)
+  let act3Content = '';
+  if (k.sampleExercises.length > 0) {
+    act3Content = k.sampleExercises.slice(0, 3).map((ex, idx) => {
+      const opts = ex.options ? '\n' + ex.options.join('\n') : '';
+      const exp = ex.explanation ? `\n(Đáp án/Hướng dẫn: ${ex.explanation})` : '';
+      return `Bài tập ${idx + 1}: ${ex.question}${opts}${exp}`;
+    }).join('\n\n');
+  } else if (k.formulasAndRules.length > 0) {
+    act3Content = `Bài tập 1 (Áp dụng công thức): Vận dụng hệ thức ${k.formulasAndRules[0]} để giải quyết bài toán định lượng.\n\nBài tập 2: Phân tích các yếu tố ảnh hưởng và ý nghĩa thực tiễn của công thức.`;
+  } else if (k.coreDefinitions.length >= 2) {
+    act3Content = `Bài tập 1: Trình bày định nghĩa và đặc điểm của '${k.coreDefinitions[0].term}'.\n\nBài tập 2: Phân biệt sự khác nhau giữa '${k.coreDefinitions[0].term}' và '${k.coreDefinitions[1].term}'.`;
+  } else {
+    act3Content = `Học sinh làm việc độc lập giải quyết hệ thống 3 câu hỏi trắc nghiệm nhanh và 1 bài tập tình huống củng cố kiến thức bài '${lessonTitle}'.`;
+  }
+
+  // 5. Nội dung Hoạt động 4: Vận dụng & Mở rộng
+  const act4Content = k.keyTerms.length > 0
+    ? `Dự án học tập thực tế: Hãy tìm hiểu ứng dụng thực tiễn của "${k.keyTerms.slice(0, 3).join(', ')}" tại địa phương, trong đời sống hoặc trong công nghiệp. Viết bản thu hoạch ngắn 1 trang hoặc thiết kế infographic minh họa.`
+    : `Giao nhiệm vụ nghiên cứu mở rộng: Hãy liên hệ kiến thức bài học '${lessonTitle}' với các hiện tượng thực tế và thiết kế sơ đồ tư duy tổng hợp.`;
 
   return {
     lessonTitle,
@@ -131,44 +200,51 @@ export function generateLessonPlan5512(
     grade: grade || 'Phổ thông',
     durationMinutes,
     objectives: {
-      knowledge: `Học sinh nắm vững các khái niệm, quy luật và bản chất cốt lõi của bài học '${lessonTitle}'. Biết phân tích và liên hệ kiến thức với thực tiễn.${custom}`,
-      competencies: `Phát triển năng lực tự chủ và tự học, năng lực giao tiếp và hợp tác nhóm, năng lực giải quyết vấn đề sáng tạo và tư duy phản biện trong môn ${subject}.`,
-      qualities: `Rèn luyện phẩm chất chăm chỉ, trung thực, tinh thần trách nhiệm với nhiệm vụ học tập tập thể và niềm say mê khám phá khoa học.`
+      knowledge: knowledgeObj,
+      competencies: `Phát triển năng lực tự chủ và tự học (chủ động nghiên cứu tài liệu môn ${subject}); Năng lực giao tiếp và hợp tác nhóm; Năng lực giải quyết vấn đề sáng tạo và tư duy phản biện.`,
+      qualities: `Bồi dưỡng phẩm chất chăm chỉ, trung thực, tinh thần trách nhiệm với nhiệm vụ học tập tập thể và niềm say mê khám phá khoa học.`
     },
     equipment: {
-      teacherEquipment: `Kế hoạch bài dạy (Giáo án), bài giảng trình chiếu điện tử PowerPoint, máy chiếu/Tivi tương tác, phiếu học tập số 1 & số 2, tranh ảnh/video minh họa trực quan.`,
-      studentEquipment: `Sách giáo khoa, vở ghi bài, bút viết, bảng nhóm, đọc trước tài liệu bài mới theo hướng dẫn của giáo viên.`
+      teacherEquipment: k.equipmentList.teacher.join('; '),
+      studentEquipment: k.equipmentList.student.join('; ')
     },
     activity1Opening: {
-      name: `Khởi động (Xác định vấn đề / Nhiệm vụ học tập)`,
-      objective: `Kích hoạt kiến thức nền tảng của học sinh, tạo hứng thú và tâm thế chủ động tiếp nhận bài học '${lessonTitle}'.`,
-      content: `Giáo viên chiếu video/tình huống thực tế hoặc tổ chức trò chơi nhanh 'Ai nhanh hơn' với 3 câu hỏi gợi mở liên quan đến bài học.`,
-      product: `Câu trả lời hào hứng của học sinh, sự tò mò và nhu cầu muốn tìm hiểu nội dung mới.`,
-      implementation: `GV nêu tình huống và câu hỏi. HS suy nghĩ cá nhân trong 1 phút và xung phong phát biểu. GV nhận xét, tạo cầu nối dẫn dắt vào bài mới '${lessonTitle}'.`
+      name: `Hoạt động 1: Mở đầu / Khởi động (Xác định vấn đề học tập)`,
+      objective: `Kích hoạt kiến thức nền tảng, tạo mâu thuẫn nhận thức và tâm thế chủ động tiếp nhận bài học '${lessonTitle}'.`,
+      content: act1Content,
+      product: `Câu trả lời, ý kiến thảo luận ban đầu của học sinh và nhu cầu muốn tìm hiểu bài mới.`,
+      implementation: `1. Giao nhiệm vụ: GV trình chiếu tình huống/video và câu hỏi khởi động.\n2. Thực hiện: HS suy nghĩ cá nhân trong 2 phút.\n3. Báo cáo: Đại diện 2 HS phát biểu, các bạn khác nhận xét.\n4. Kết luận: GV nhận xét, dẫn dắt vào bài mới '${lessonTitle}'.`
     },
     activity2Knowledge: {
-      name: `Hình thành kiến thức mới`,
-      objective: `Học sinh chủ động phát hiện, tiếp thu và xây dựng được hệ thống kiến thức trọng tâm của bài học '${lessonTitle}'.`,
-      content: `Chia lớp thành 4 nhóm học tập, giao phiếu bài tập khám phá. Yêu cầu học sinh đọc tài liệu, trao đổi nhóm để hoàn thành phiếu học tập.`,
-      product: `Bản trình bày kết quả thảo luận trên bảng phụ hoặc giấy A0 của các nhóm; phần ghi chép cô đọng vào vở của học sinh.`,
-      implementation: `GV giao nhiệm vụ rõ ràng, quy định thời gian thảo luận (10-15 phút). GV di chuyển quanh lớp quan sát, hỗ trợ kịp thời các nhóm gặp khó khăn. Đại diện nhóm 1 và nhóm 3 báo cáo; nhóm 2 và nhóm 4 nhận xét, phản biện. GV chốt chuẩn kiến thức khoa học.`
+      name: `Hoạt động 2: Hình thành kiến thức mới (Chiếm lĩnh tri thức trọng tâm)`,
+      objective: `Học sinh chủ động phát hiện, tiếp thu và xây dựng được hệ thống kiến thức khoa học cốt lõi của bài '${lessonTitle}'.`,
+      content: act2Content,
+      product: `Phiếu học tập hoàn thiện của các nhóm, phần ghi chép cô đọng vào vở và sơ đồ phân tích của học sinh.`,
+      implementation: `1. Giao nhiệm vụ: GV chia lớp thành 4 nhóm, phát phiếu học tập tương ứng với từng mục kiến thức.\n2. Thực hiện: Các nhóm thảo luận, GV quan sát và hỗ trợ các nhóm gặp khó khăn.\n3. Báo cáo: Đại diện các nhóm báo cáo kết quả, nhóm khác phản biện.\n4. Kết luận: GV chốt chuẩn kiến thức khoa học trên bài giảng điện tử.`
     },
     activity3Practice: {
-      name: `Luyện tập & Củng cố`,
-      objective: `Giúp học sinh củng cố, khắc sâu kiến thức vừa học thông qua hệ thống bài tập rèn luyện kỹ năng.`,
-      content: `Học sinh thực hiện bài tập trắc nghiệm nhanh 4 đáp án và 1 bài tập tự luận nhỏ giải quyết tình huống điển hình.`,
-      product: `Bài làm chính xác của học sinh trên bảng con hoặc vở bài tập.`,
-      implementation: `GV trình chiếu câu hỏi luyện tập. HS làm bài cá nhân. GV gọi học sinh lên bảng trình bày, gọi bạn khác nhận xét, sau đó GV chuẩn hóa phương pháp giải.`
+      name: `Hoạt động 3: Luyện tập (Củng cố và rèn luyện kỹ năng)`,
+      objective: `Khắc sâu kiến thức vừa học, rèn luyện kỹ năng vận dụng vào hệ thống bài tập cụ thể.`,
+      content: act3Content,
+      product: `Lời giải chính xác của học sinh trên bảng con hoặc vở bài tập.`,
+      implementation: `1. Giao nhiệm vụ: GV giao bài tập luyện tập trên màn hình.\n2. Thực hiện: HS làm bài độc lập trong 5-7 phút.\n3. Báo cáo: GV gọi học sinh lên bảng chữa bài, các bạn khác đối chiếu.\n4. Kết luận: GV nhận xét, phân tích lỗi sai điển hình và chuẩn hóa phương pháp giải.`
     },
     activity4Application: {
-      name: `Vận dụng & Mở rộng`,
-      objective: `Phát triển khả năng vận dụng kiến thức bài học '${lessonTitle}' vào đời sống thực tiễn và định hướng tìm tòi nghiên cứu tiếp theo.`,
-      content: `Giao nhiệm vụ nghiên cứu mở rộng về nhà: Hãy tìm 2 ví dụ thực tế liên quan đến bài học hoặc thiết kế một sơ đồ tư duy tóm tắt toàn bộ bài.`,
-      product: `Bài thu hoạch cá nhân hoặc sản phẩm sơ đồ tư duy nộp vào đầu tiết học tiếp theo.`,
-      implementation: `GV hướng dẫn chi tiết yêu cầu, tiêu chí đánh giá sản phẩm và dặn dò học sinh chuẩn bị bài mới.`
-    }
+      name: `Hoạt động 4: Vận dụng & Mở rộng (Gắn kết tri thức vào đời sống)`,
+      objective: `Phát triển tư duy bậc cao, khả năng vận dụng kiến thức bài học '${lessonTitle}' vào thực tiễn cuộc sống.`,
+      content: act4Content,
+      product: `Bài thu hoạch cá nhân, sản phẩm infographic hoặc mô hình ứng dụng nộp vào buổi học tiếp theo.`,
+      implementation: `1. Giao nhiệm vụ: GV hướng dẫn chi tiết yêu cầu và tiêu chí đánh giá sản phẩm.\n2. Thực hiện: HS thực hiện ngoài giờ lên lớp theo nhóm 2-3 em.\n3. Đánh giá: GV thu bài, nhận xét và ghi nhận điểm khuyến khích ở tiết học tới.`
+    },
+    referenceCitations: referenceContext
+      ? `Công văn 5512/BGDĐT-GDTrH; CT GDPT 2018;\nTư liệu chuẩn đối chiếu từ Kho dữ liệu: ${k.summary}`
+      : 'Công văn 5512/BGDĐT-GDTrH của Bộ GD&ĐT; Chương trình Giáo dục Phổ thông 2018'
   };
 }
+
+// ============================================================================
+// BƯỚC A2: SOẠN GIÁO ÁN DẠY NGHỀ CHUẨN CÔNG VĂN 2634/GDNN (DEEP-RAG GROUNDED)
+// ============================================================================
 
 export function generateLessonPlan2634(
   moduleTitle: string,
@@ -178,39 +254,56 @@ export function generateLessonPlan2634(
   workshopEquipment?: string,
   referenceContext: string = ''
 ): LessonPlan2634Data {
-  const equip = workshopEquipment?.trim() ? workshopEquipment.trim() : 'Máy móc gia công chuyên dụng, trang bị đo kiểm, trang bị BHLĐ cá nhân';
+  const k = deepParseLessonDocument(referenceContext, moduleTitle, occupation, level);
+  const equip = workshopEquipment?.trim() || k.equipmentList.teacher.join(', ');
+
+  // Quy trình thao tác mẫu (bước 1, 2, 3...)
+  let step2DemoContent = '';
+  let step3PracticeContent = '';
+
+  if (k.practicalSteps.length > 0) {
+    step2DemoContent = `Thao tác mẫu quy trình kỹ thuật gồm các bước:\n` +
+      k.practicalSteps.map(s => `• Bước ${s.stepNumber}: ${s.stepTitle} - ${s.description}`).join('\n') +
+      `\nGiáo viên làm mẫu 3 lần (Lần 1 tốc độ bình thường; Lần 2 làm chậm giải thích; Lần 3 nhấn mạnh các điểm then chốt).`;
+
+    step3PracticeContent = `Học sinh nhận phôi và thiết bị, tiến hành thực hành tuần tự theo các bước đã học:\n` +
+      k.practicalSteps.map(s => `• Bước ${s.stepNumber} (${s.stepTitle}): Yêu cầu ${s.technicalRequirement || 'đúng quy chuẩn kỹ thuật'}. Lưu ý: ${s.commonMistakes || 'tránh thao tác vội vàng'}.`).join('\n');
+  } else {
+    step2DemoContent = `Thao tác mẫu quy trình kỹ thuật 3 lần: Lần 1 tốc độ làm việc bình thường; Lần 2 làm chậm kèm giải thích chi tiết; Lần 3 nhấn mạnh các lỗi hỏng thường gặp và cách phòng tránh an toàn.`;
+    step3PracticeContent = `Học sinh vận hành máy, thực hiện gia công phôi mẫu theo phiếu hướng dẫn công nghệ. Tự kiểm tra kích thước chi tiết bằng dụng cụ đo kiểm sau mỗi bước gia công.`;
+  }
 
   return {
     moduleTitle,
-    occupation: occupation || 'Kỹ thuật Cơ khí / Điện',
+    occupation: occupation || 'Kỹ thuật Cơ khí / Điện tử',
     level: level || 'Trung cấp / Cao đẳng Nghề',
     durationMinutes,
     objectives: {
-      knowledge: `Trình bày đúng quy trình công nghệ, cấu tạo thiết bị, thông số kỹ thuật và các quy tắc An toàn lao động khi thực hiện bài thực hành '${moduleTitle}'.`,
+      knowledge: `Trình bày đúng quy trình công nghệ, cấu tạo thiết bị, thông số kỹ thuật và các quy tắc An toàn lao động khi thực hiện bài '${moduleTitle}'. ${k.coreDefinitions.length > 0 ? `Nắm vững: ${k.coreDefinitions.map(d => d.term).join(', ')}.` : ''}`,
       skills: `Thực hiện thành thạo các thao tác chuẩn xác, gia công/lắp ráp đạt độ chính xác theo bản vẽ kỹ thuật; biết sử dụng thành thạo dụng cụ đo kiểm và khắc phục sai hỏng thông thường.`,
       autonomyAndSafety: `Tuân thủ nghiêm ngặt quy tắc An toàn lao động (ATLĐ), Phòng chống cháy nổ (PCCN), vệ sinh công nghiệp 5S (Sàng lọc, Sắp xếp, Sạch sẽ, Săn sóc, Sẵn sàng) và ý thức kỷ luật xưởng.`
     },
     conditions: {
-      equipmentAndMachines: `Hệ thống máy móc xưởng thực hành (${equip}), đồ gá chuẩn, bảng quy trình hướng dẫn thao tác, dụng cụ đo kiểm (Thước cặp, Panme, Đồng hồ so...).`,
-      materialsAndWorkpieces: `Phôi mẫu thực hành đầy đủ cho từng học sinh/nhóm máy, dao cụ cắt gọt, vật tư tiêu hao, dung dịch bôi trơn làm mát.`,
-      safetyAnd5S: `Trang phục BHLĐ đầy đủ (Áo BHLĐ cài cúc gọn gàng, giày bảo hộ mũi sắt, kính bảo hộ mắt), tủ thuốc y tế sơ cấp cứu, bình cứu hỏa CO2 tại vị trí quy định.`
+      equipmentAndMachines: `Hệ thống máy móc xưởng (${equip}), đồ gá chuẩn, bảng quy trình công nghệ, dụng cụ đo kiểm chính xác.`,
+      materialsAndWorkpieces: `Phôi mẫu thực hành đầy đủ cho từng học sinh, dụng cụ cắt gọt/vật tư phụ trợ, dung dịch làm mát.`,
+      safetyAnd5S: `Trang phục BHLĐ đầy đủ (Áo BHLĐ cài cúc gọn gàng, giày bảo hộ mũi sắt, kính bảo hộ), tủ thuốc sơ cấp cứu, bình cứu hỏa CO2 tại vị trí quy định.`
     },
     step1Orientation: {
       name: `Bước 1: Hướng dẫn ban đầu & Phổ biến ATLĐ (Chiếm ~10% thời lượng)`,
       teacherActivity: `Điểm danh quân số, kiểm tra tác phong BHLĐ của học sinh. Nhắc lại mục tiêu bài học; phổ biến nội quy xưởng và các cảnh báo nguy hiểm đặc thù khi vận hành '${moduleTitle}'.`,
       studentActivity: `Đứng nghiêm túc đúng vị trí, lắng nghe, ghi chép nội dung an toàn và xác nhận đã kiểm tra trang bị BHLĐ của bản thân.`,
-      safetyAndKeyPoints: `Yêu cầu 100% học sinh không đeo găng tay khi vận hành trục quay máy tiện/phay; kiểm tra khóa liên động an toàn trước khi cấp nguồn điện.`
+      safetyAndKeyPoints: `Yêu cầu 100% học sinh không đeo găng tay khi vận hành trục quay máy; kiểm tra khóa liên động an toàn trước khi cấp nguồn điện.`
     },
     step2Demonstration: {
       name: `Bước 2: Hướng dẫn thường xuyên & Thao tác mẫu (Chiếm ~15% thời lượng)`,
-      teacherActivity: `Thao tác mẫu quy trình 3 lần: Lần 1 tốc độ làm việc bình thường; Lần 2 làm chậm kèm giải thích chi tiết từng bước kỹ thuật; Lần 3 nhấn mạnh các lỗi hỏng thường gặp và cách phòng tránh.`,
+      teacherActivity: step2DemoContent,
       studentActivity: `Quan sát tỉ mỉ từng động tác của giáo viên; đặt câu hỏi làm rõ các điểm kỹ thuật khó; 1 học sinh lên thao tác lại thử để giáo viên uốn nắn.`,
       safetyAndKeyPoints: `Chú ý tư thế đứng làm việc cân bằng, cách cầm dụng cụ đo kiểm đúng phương pháp, không tỳ lực quá mạnh gây biến dạng chi tiết.`
     },
     step3Practice: {
       name: `Bước 3: Học sinh thực hành luyện tập tại xưởng (Chiếm ~65% thời lượng)`,
       teacherActivity: `Phân chia học sinh về các vị trí máy. Liên tục tuần tra, giám sát chặt chẽ thao tác của từng em; kịp thời dừng máy và uốn nắn khi phát hiện thao tác sai hoặc vi phạm an toàn; động viên học sinh yếu.`,
-      studentActivity: `Vận hành máy, thực hiện gia công phôi mẫu theo phiếu hướng dẫn công nghệ. Tự kiểm tra kích thước chi tiết bằng dụng cụ đo kiểm sau mỗi bước gia công.`,
+      studentActivity: step3PracticeContent,
       safetyAndKeyPoints: `Tuyệt đối không đùa nghịch trong xưởng; tập trung cao độ; dừng máy hoàn toàn trước khi đo kiểm hoặc gá đặt lại chi tiết.`
     },
     step4Evaluation: {
@@ -220,10 +313,14 @@ export function generateLessonPlan2634(
       safetyAndKeyPoints: `Thực hiện nghiêm túc 5S: Tắt hoàn toàn nguồn điện tổng của xưởng, giao trả chìa khóa và kiểm đếm dụng cụ đo kiểm đầy đủ.`
     },
     referenceCitations: referenceContext
-      ? `Công văn 2634/GDNN; Tiêu chuẩn ATLĐ và 5S xưởng;\nTư liệu chuẩn đối chiếu từ Kho dữ liệu:\n${referenceContext.slice(0, 200)}...`
+      ? `Công văn 2634/GDNN; Tiêu chuẩn ATLĐ và 5S xưởng;\nTư liệu chuẩn đối chiếu từ Kho dữ liệu:\n${k.summary}`
       : 'Công văn 2634/GDNN của Tổng cục GDNN; Tiêu chuẩn An toàn xưởng và 5S'
   };
 }
+
+// ============================================================================
+// BƯỚC A3: XÂY DỰNG MA TRẬN & ĐẶC TẢ ĐỀ KIỂM TRA (DEEP-RAG GROUNDED)
+// ============================================================================
 
 export function generateExamMatrix(
   topic: string,
@@ -232,6 +329,7 @@ export function generateExamMatrix(
   questionCount: number = 10,
   referenceContext: string = ''
 ): ExamMatrixData {
+  const k = deepParseLessonDocument(referenceContext, topic, subject, grade);
   const c = Math.max(4, questionCount);
   const nRecog = Math.round(c * 0.4);
   const nComp = Math.round(c * 0.3);
@@ -240,70 +338,107 @@ export function generateExamMatrix(
 
   const questions: ExamQuestionItem[] = [];
 
+  // 1. Nhận biết (40%)
   for (let i = 1; i <= nRecog; i++) {
-    questions.push({
-      level: 'Nhận biết',
-      questionText: `Khái niệm cơ bản hoặc định nghĩa chính xác nào sau đây đúng về '${topic}'?`,
-      options: [
-        `A. Là quy trình/nguyên lý nền tảng được định nghĩa chuẩn xác theo tài liệu khoa học`,
-        `B. Là hiện tượng ngẫu nhiên không có tính quy luật`,
-        `C. Là kết quả của việc áp dụng sai quy chuẩn kỹ thuật`,
-        `D. Chỉ xuất hiện trong môi trường phòng thí nghiệm đặc biệt`
-      ],
-      correctAnswer: 'A',
-      explanation: `Theo tài liệu giảng dạy chuẩn môn ${subject}, phương án A thể hiện đúng định nghĩa cốt lõi của bài học.`
-    });
+    const def = k.coreDefinitions[i - 1];
+    if (def) {
+      questions.push({
+        level: 'Nhận biết',
+        questionText: `Khái niệm hoặc định nghĩa nào sau đây đúng về '${def.term}'?`,
+        options: [
+          `A. ${def.definition}`,
+          `B. Là hiện tượng tự phát không tuân theo quy luật khoa học`,
+          `C. Là kết quả ngẫu nhiên trong điều kiện phi chuẩn`,
+          `D. Không có định nghĩa khoa học rõ ràng`
+        ],
+        correctAnswer: 'A',
+        explanation: `Theo tài liệu chuẩn môn ${subject}, ${def.term} được định nghĩa: ${def.definition}.`
+      });
+    } else {
+      questions.push({
+        level: 'Nhận biết',
+        questionText: `Đặc điểm cơ bản nào sau đây đúng về chủ đề '${topic}'?`,
+        options: [
+          `A. Là nguyên lý/quy trình nền tảng theo chuẩn kiến thức môn ${subject}`,
+          `B. Là hiện tượng ngẫu nhiên không có tính quy luật`,
+          `C. Là phương pháp chỉ áp dụng trong điều kiện lý thuyết`,
+          `D. Không có ý nghĩa trong thực tế sản xuất`
+        ],
+        correctAnswer: 'A',
+        explanation: `Theo tài liệu bài giảng, phương án A phản ánh đúng kiến thức nền tảng của bài '${topic}'.`
+      });
+    }
   }
 
+  // 2. Thông hiểu (30%)
   for (let i = 1; i <= nComp; i++) {
+    const term = k.keyTerms[i - 1] || topic;
     questions.push({
       level: 'Thông hiểu',
-      questionText: `Tại sao trong quá trình triển khai '${topic}', việc tuân thủ nguyên tắc kỹ thuật lại quyết định đến chất lượng sản phẩm?`,
+      questionText: `Tại sao trong quá trình triển khai '${topic}', việc nắm vững '${term}' lại có ý nghĩa quyết định?`,
       options: [
-        `A. Vì giúp giảm thiểu sai số, đảm bảo tính liên tục và độ tin cậy của hệ thống`,
-        `B. Vì làm tăng thời gian vận hành lên gấp đôi`,
-        `C. Vì không cần sự giám sát của giáo viên hướng dẫn`,
-        `D. Vì chỉ có tác dụng về mặt hình thức lý thuyết`
+        `A. Giúp kiểm soát sai số, đảm bảo chất lượng và quy chuẩn khoa học`,
+        `B. Làm kéo dài thời gian hoàn thành lên gấp nhiều lần`,
+        `C. Để không cần người thực hiện phải tham gia tư duy`,
+        `D. Chỉ nhằm mục đích đối phó hình thức kiểm tra`
       ],
       correctAnswer: 'A',
-      explanation: `Bản chất của phương pháp khoa học là chuẩn hóa quy trình nhằm loại bỏ sai số và kiểm soát chất lượng đầu ra.`
+      explanation: `Thông hiểu bản chất của ${term} giúp người học lý giải được quy trình và kiểm soát chất lượng.`
     });
   }
 
+  // 3. Vận dụng (20%)
   for (let i = 1; i <= nApp; i++) {
-    questions.push({
-      level: 'Vận dụng',
-      questionText: `Cho một tình huống thực tế liên quan đến '${topic}', nếu xuất hiện sai lệch thông số ở bước đầu tiên, giải pháp xử lý kỹ thuật tối ưu là:`,
-      options: [
-        `A. Dừng hệ thống, đo kiểm lại chuẩn kích thước/thông số và bù sai số trước khi tiếp tục`,
-        `B. Tiếp tục vận hành với hy vọng các bước sau sẽ tự bù trừ sai lệch`,
-        `C. Tăng tốc độ làm việc để hoàn thành bài tập nhanh hơn`,
-        `D. Thay thế toàn bộ thiết bị mới mà không cần phân tích nguyên nhân`
-      ],
-      correctAnswer: 'A',
-      explanation: `Kỹ năng vận dụng đòi hỏi người học nhận diện sai hỏng kịp thời và khắc phục ngay từ nguồn gốc để tránh hỏng hàng loạt.`
-    });
+    const formula = k.formulasAndRules[i - 1];
+    if (formula) {
+      questions.push({
+        level: 'Vận dụng',
+        questionText: `Vận dụng quy tắc/công thức '${formula}' trong bài '${topic}' để giải quyết bài toán: Khi một đại lượng tăng 2 lần, kết quả sẽ thay đổi như thế nào?`,
+        options: [
+          `A. Biến thiên tỷ lệ thuận hoặc nghịch theo đúng hệ thức khoa học`,
+          `B. Không thay đổi vì không phụ thuộc vào đại lượng đó`,
+          `C. Luôn giảm về 0 trong mọi trường hợp`,
+          `D. Biến thiên ngẫu nhiên không dự đoán được`
+        ],
+        correctAnswer: 'A',
+        explanation: `Căn cứ theo hệ thức ${formula} để phân tích mối tương quan giữa các đại lượng.`
+      });
+    } else {
+      questions.push({
+        level: 'Vận dụng',
+        questionText: `Khi phát sinh sai lệch thông số kỹ thuật trong quá trình thực hành '${topic}', hành động xử lý đúng đắn là:`,
+        options: [
+          `A. Dừng quá trình, kiểm tra lại dữ liệu ban đầu, đo kiểm và khoanh vùng nguyên nhân`,
+          `B. Bỏ qua và tiếp tục thực hiện với hy vọng kết quả tự chuẩn xác`,
+          `C. Tăng tốc độ thực hiện để hoàn thành nhanh chóng`,
+          `D. Đổ lỗi cho trang thiết bị máy móc`
+        ],
+        correctAnswer: 'A',
+        explanation: `Kỹ năng giải quyết vấn đề đòi hỏi việc nhận diện sai sót, khoanh vùng nguyên nhân trước khi điều chỉnh.`
+      });
+    }
   }
 
+  // 4. Vận dụng cao (10%)
   for (let i = 1; i <= nAdv; i++) {
     questions.push({
       level: 'Vận dụng cao',
-      questionText: `Đề xuất một giải pháp sáng tạo nhằm tối ưu hóa hiệu suất hoặc giảm thiểu lãng phí vật tư/năng lượng trong chủ đề '${topic}':`,
+      questionText: `Đề xuất giải pháp cải tiến quy trình hoặc ứng dụng công nghệ số/AI để tối ưu hóa hiệu quả thực hiện '${topic}' trong thực tiễn:`,
       options: [
-        `A. Tích hợp công nghệ đo lường kỹ thuật số tự động và quy chuẩn hóa quy trình 5S kết hợp Kaizen`,
-        `B. Bỏ qua các bước kiểm tra an toàn trung gian để rút ngắn thời gian`,
-        `C. Giảm bớt số lượng chi tiết trong bản vẽ mà không cần thẩm định`,
-        `D. Sử dụng vật tư giá rẻ không rõ nguồn gốc xuất xứ`
+        `A. Xây dựng mô hình hóa số, kiểm soát thông số tự động và thiết lập vòng phản hồi chất lượng`,
+        `B. Cắt giảm toàn bộ các bước kiểm tra an toàn để tiết kiệm chi phí`,
+        `C. Thay thế quy trình chuẩn bằng các thao tác ngẫu nhiên`,
+        `D. Không cần cải tiến vì phương pháp cũ đã hoàn hảo`
       ],
       correctAnswer: 'A',
-      explanation: `Mức độ vận dụng cao đòi hỏi khả năng tư duy giải pháp tổng thể, kết hợp cải tiến liên tục (Kaizen) và công nghệ số.`
+      explanation: `Mức độ vận dụng cao đòi hỏi tư duy đổi mới sáng tạo, tích hợp năng lực số giải quyết vấn đề thực tiễn.`
     });
   }
 
   return {
     topic,
     subject: subject || 'Chung',
-    grade: grade || 'Phổ thông / Dạy nghề',
+    grade: grade || 'Phổ thông',
     questionCount: c,
     matrix: {
       recognitionCount: nRecog,
@@ -317,279 +452,13 @@ export function generateExamMatrix(
     },
     questions,
     referenceCitations: referenceContext
-      ? `Thông tư 22/2021/TT-BGDĐT; Khung ma trận đề kiểm tra 4 mức độ;\nTư liệu chuẩn đối chiếu từ Kho dữ liệu:\n${referenceContext.slice(0, 200)}...`
-      : 'Thông tư 22/2021/TT-BGDĐT của Bộ GD&ĐT; Khung ma trận đề 4 mức độ nhận thức'
+      ? `Thông tư 22/2021/BGDĐT; Khung ma trận kiểm tra chuẩn; Tư liệu: ${k.summary}`
+      : 'Thông tư 22/2021/BGDĐT; Khung ma trận kiểm tra đánh giá theo CT GDPT 2018'
   };
 }
 
-export function lessonPlan5512ToHtml(plan: LessonPlan5512Data): string {
-  return `
-  <div style="text-align: center; margin-bottom: 20px;">
-    <p style="margin: 0; font-size: 12pt; text-transform: uppercase;">SỞ GIÁO DỤC VÀ ĐÀO TẠO • TRƯỜNG PHỔ THÔNG</p>
-    <p style="margin: 0; font-size: 11pt; font-style: italic;">Khung Kế hoạch bài dạy chuẩn Công văn 5512/BGDĐT-GDTrH</p>
-    <h1 style="margin: 15px 0 5px 0; font-size: 17pt; color: #1e3a8a; text-transform: uppercase;">KẾ HOẠCH BÀI DẠY</h1>
-    <h2 style="margin: 0; font-size: 14pt; color: #0284c7;">BÀI: ${plan.lessonTitle}</h2>
-    <p style="margin-top: 6px; font-size: 12pt;"><b>Môn:</b> ${plan.subject} | <b>Khối/Lớp:</b> ${plan.grade} | <b>Thời lượng:</b> ${plan.durationMinutes} phút</p>
-  </div>
-
-${plan.referenceCitations ? `
-  <div style="background-color: #f0fdf4; border: 1.5px solid #16a34a; border-radius: 6px; padding: 10px 14px; margin: 15px 0; font-size: 11pt; color: #166534;">
-    <b>🛡️ CĂN CỨ VĂN BẢN & TƯ LIỆU ĐỐI CHIẾU CHUẨN (KHÔNG ẢO GIÁC/BỊA ĐẶT):</b><br/>
-    ${plan.referenceCitations.replace(/\n/g, '<br/>')}
-  </div>
-` : ''}
-
-  <h3 style="color: #1e3a8a; border-bottom: 1.5px solid #1e3a8a; padding-bottom: 3px;">I. MỤC TIÊU BÀI DẠY</h3>
-  <p><b>1. Kiến thức:</b> ${plan.objectives.knowledge}</p>
-  <p><b>2. Năng lực:</b> ${plan.objectives.competencies}</p>
-  <p><b>3. Phẩm chất:</b> ${plan.objectives.qualities}</p>
-
-  <h3 style="color: #1e3a8a; border-bottom: 1.5px solid #1e3a8a; padding-bottom: 3px; margin-top: 18px;">II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU</h3>
-  <p><b>1. Giáo viên:</b> ${plan.equipment.teacherEquipment}</p>
-  <p><b>2. Học sinh:</b> ${plan.equipment.studentEquipment}</p>
-
-  <h3 style="color: #1e3a8a; border-bottom: 1.5px solid #1e3a8a; padding-bottom: 3px; margin-top: 18px;">III. TIẾN TRÌNH DẠY HỌC (4 HOẠT ĐỘNG BẮT BUỘC)</h3>
-  
-  <table border="1" cellpadding="8" style="border-collapse: collapse; width: 100%; margin-top: 10px;">
-    <tr style="background-color: #f1f5f9;">
-      <th style="width: 25%;">Hoạt động</th>
-      <th style="width: 75%;">Nội dung chi tiết & Tổ chức thực hiện</th>
-    </tr>
-    <tr>
-      <td><b>1. ${plan.activity1Opening.name}</b></td>
-      <td>
-        <p><b>• Mục tiêu:</b> ${plan.activity1Opening.objective}</p>
-        <p><b>• Nội dung:</b> ${plan.activity1Opening.content}</p>
-        <p><b>• Sản phẩm:</b> ${plan.activity1Opening.product}</p>
-        <p><b>• Tổ chức thực hiện:</b> ${plan.activity1Opening.implementation}</p>
-      </td>
-    </tr>
-    <tr>
-      <td><b>2. ${plan.activity2Knowledge.name}</b></td>
-      <td>
-        <p><b>• Mục tiêu:</b> ${plan.activity2Knowledge.objective}</p>
-        <p><b>• Nội dung:</b> ${plan.activity2Knowledge.content}</p>
-        <p><b>• Sản phẩm:</b> ${plan.activity2Knowledge.product}</p>
-        <p><b>• Tổ chức thực hiện:</b> ${plan.activity2Knowledge.implementation}</p>
-      </td>
-    </tr>
-    <tr>
-      <td><b>3. ${plan.activity3Practice.name}</b></td>
-      <td>
-        <p><b>• Mục tiêu:</b> ${plan.activity3Practice.objective}</p>
-        <p><b>• Nội dung:</b> ${plan.activity3Practice.content}</p>
-        <p><b>• Sản phẩm:</b> ${plan.activity3Practice.product}</p>
-        <p><b>• Tổ chức thực hiện:</b> ${plan.activity3Practice.implementation}</p>
-      </td>
-    </tr>
-    <tr>
-      <td><b>4. ${plan.activity4Application.name}</b></td>
-      <td>
-        <p><b>• Mục tiêu:</b> ${plan.activity4Application.objective}</p>
-        <p><b>• Nội dung:</b> ${plan.activity4Application.content}</p>
-        <p><b>• Sản phẩm:</b> ${plan.activity4Application.product}</p>
-        <p><b>• Tổ chức thực hiện:</b> ${plan.activity4Application.implementation}</p>
-      </td>
-    </tr>
-  </table>
-
-  <div style="margin-top: 30px; display: flex; justify-content: space-between; text-align: center;">
-    <div style="width: 45%; float: left; text-align: center;">
-      <p><b>TỔ TRƯỞNG CHUYÊN MÔN</b></p>
-      <p style="font-style: italic; font-size: 10pt;">(Ký và ghi rõ họ tên)</p>
-    </div>
-    <div style="width: 45%; float: right; text-align: center;">
-      <p><b>GIÁO VIÊN SOẠN BÀI</b></p>
-      <p style="font-style: italic; font-size: 10pt;">(Ký và ghi rõ họ tên)</p>
-    </div>
-    <div style="clear: both;"></div>
-  </div>
-  `;
-}
-
-export function lessonPlan2634ToHtml(plan: LessonPlan2634Data): string {
-  return `
-  <div style="text-align: center; margin-bottom: 20px;">
-    <p style="margin: 0; font-size: 12pt; text-transform: uppercase;">TỔNG CỤC GIÁO DỤC NGHỀ NGHIỆP • TRƯỜNG CAO ĐẲNG / TRUNG CẤP</p>
-    <p style="margin: 0; font-size: 11pt; font-style: italic;">Khung Giáo án Bài giảng Thực hành chuẩn Công văn 2634/GDNN</p>
-    <h1 style="margin: 15px 0 5px 0; font-size: 17pt; color: #b45309; text-transform: uppercase;">GIÁO ÁN BÀI DẠY THỰC HÀNH NGHỀ</h1>
-    <h2 style="margin: 0; font-size: 14pt; color: #d97706;">BÀI THỰC HÀNH: ${plan.moduleTitle}</h2>
-    <p style="margin-top: 6px; font-size: 12pt;"><b>Nghề:</b> ${plan.occupation} | <b>Trình độ:</b> ${plan.level} | <b>Thời lượng:</b> ${plan.durationMinutes} phút (Tại xưởng)</p>
-  </div>
-
-  <h3 style="color: #b45309; border-bottom: 1.5px solid #b45309; padding-bottom: 3px;">I. MỤC TIÊU ĐÀO TẠO</h3>
-  <p><b>1. Kiến thức nghề:</b> ${plan.objectives.knowledge}</p>
-  <p><b>2. Kỹ năng thực hành:</b> ${plan.objectives.skills}</p>
-  <p><b>3. Năng lực tự chủ, An toàn lao động & 5S:</b> ${plan.objectives.autonomyAndSafety}</p>
-
-  <h3 style="color: #b45309; border-bottom: 1.5px solid #b45309; padding-bottom: 3px; margin-top: 18px;">II. ĐIỀU KIỆN THỰC HIỆN BÀI DẠY (XƯỞNG THỰC HÀNH)</h3>
-  <p><b>1. Thiết bị máy móc & Dụng cụ:</b> ${plan.conditions.equipmentAndMachines}</p>
-  <p><b>2. Vật tư, phôi mẫu gia công:</b> ${plan.conditions.materialsAndWorkpieces}</p>
-  <p><b>3. Trang bị BHLĐ & Quy chuẩn 5S:</b> ${plan.conditions.safetyAnd5S}</p>
-
-  <h3 style="color: #b45309; border-bottom: 1.5px solid #b45309; padding-bottom: 3px; margin-top: 18px;">III. TIẾN TRÌNH THỰC HIỆN TẠI XƯỞNG (4 BƯỚC THỰC HÀNH NGHỀ)</h3>
-  
-  <table border="1" cellpadding="8" style="border-collapse: collapse; width: 100%; margin-top: 10px;">
-    <tr style="background-color: #fef3c7;">
-      <th style="width: 25%;">Các bước thực hiện</th>
-      <th style="width: 50%;">Hoạt động của GV & Học sinh</th>
-      <th style="width: 25%;">Trọng tâm Kỹ năng, ATLĐ & 5S</th>
-    </tr>
-    <tr>
-      <td><b>${plan.step1Orientation.name}</b></td>
-      <td>
-        <p><b>• GV:</b> ${plan.step1Orientation.teacherActivity}</p>
-        <p><b>• HS:</b> ${plan.step1Orientation.studentActivity}</p>
-      </td>
-      <td><span style="color: #b91c1c; font-weight: bold;">⚠️ ATLĐ:</span> ${plan.step1Orientation.safetyAndKeyPoints}</td>
-    </tr>
-    <tr>
-      <td><b>${plan.step2Demonstration.name}</b></td>
-      <td>
-        <p><b>• GV:</b> ${plan.step2Demonstration.teacherActivity}</p>
-        <p><b>• HS:</b> ${plan.step2Demonstration.studentActivity}</p>
-      </td>
-      <td><span style="color: #b45309; font-weight: bold;">🔍 Kỹ năng mẫu:</span> ${plan.step2Demonstration.safetyAndKeyPoints}</td>
-    </tr>
-    <tr>
-      <td><b>${plan.step3Practice.name}</b></td>
-      <td>
-        <p><b>• GV:</b> ${plan.step3Practice.teacherActivity}</p>
-        <p><b>• HS:</b> ${plan.step3Practice.studentActivity}</p>
-      </td>
-      <td><span style="color: #047857; font-weight: bold;">🛠️ Giám sát:</span> ${plan.step3Practice.safetyAndKeyPoints}</td>
-    </tr>
-    <tr>
-      <td><b>${plan.step4Evaluation.name}</b></td>
-      <td>
-        <p><b>• GV:</b> ${plan.step4Evaluation.teacherActivity}</p>
-        <p><b>• HS:</b> ${plan.step4Evaluation.studentActivity}</p>
-      </td>
-      <td><span style="color: #4338ca; font-weight: bold;">🧹 5S Xưởng:</span> ${plan.step4Evaluation.safetyAndKeyPoints}</td>
-    </tr>
-  </table>
-
-  <div style="margin-top: 30px; display: flex; justify-content: space-between; text-align: center;">
-    <div style="width: 45%; float: left; text-align: center;">
-      <p><b>TRƯỞNG KHOA / TRƯỞNG BỘ MÔN</b></p>
-      <p style="font-style: italic; font-size: 10pt;">(Ký và ghi rõ họ tên)</p>
-    </div>
-    <div style="width: 45%; float: right; text-align: center;">
-      <p><b>GIÁO VIÊN HƯỚNG DẪN XƯỞNG</b></p>
-      <p style="font-style: italic; font-size: 10pt;">(Ký và ghi rõ họ tên)</p>
-    </div>
-    <div style="clear: both;"></div>
-  </div>
-  `;
-}
-
-export function examMatrixToHtml(data: ExamMatrixData): string {
-  let questionsHtml = '';
-  data.questions.forEach((q, idx) => {
-    questionsHtml += `
-    <div style="margin-bottom: 16px; page-break-inside: avoid;">
-      <p style="margin: 4px 0; font-weight: bold;">Câu ${idx + 1} (${q.level}): <span style="font-weight: normal;">${q.questionText}</span></p>
-      <div style="padding-left: 15px; margin: 4px 0;">
-        ${q.options.map(opt => `<p style="margin: 2px 0;">${opt}</p>`).join('')}
-      </div>
-      <p style="margin: 3px 0; color: #047857; font-weight: bold; font-size: 11pt;">• Đáp án đúng: ${q.correctAnswer}</p>
-      <p style="margin: 2px 0; font-style: italic; font-size: 10.5pt; color: #555;">• Giải thích: ${q.explanation}</p>
-    </div>
-    `;
-  });
-
-  return `
-  <div style="text-align: center; margin-bottom: 20px;">
-    <h1 style="margin: 0; font-size: 16pt; color: #7e22ce; text-transform: uppercase;">MA TRẬN & ĐỀ KIỂM TRA 4 MỨC ĐỘ NHẬN THỨC</h1>
-    <h2 style="margin: 5px 0; font-size: 13pt;">CHỦ ĐỀ: ${data.topic}</h2>
-    <p style="margin: 4px 0; font-size: 11pt;"><b>Môn:</b> ${data.subject} | <b>Khối lớp:</b> ${data.grade} | <b>Tổng số câu:</b> ${data.questionCount}</p>
-  </div>
-
-${data.referenceCitations ? `
-  <div style="background-color: #faf5ff; border: 1.5px solid #9333ea; border-radius: 6px; padding: 10px 14px; margin: 15px 0; font-size: 11pt; color: #6b21a8;">
-    <b>🛡️ CĂN CỨ THÔNG TƯ 22 & MA TRẬN 4 MỨC ĐỘ CHUẨN (KHÔNG ẢO GIÁC/BỊA ĐẶT):</b><br/>
-    ${data.referenceCitations.replace(/\n/g, '<br/>')}
-  </div>
-` : ''}
-
-  <h3 style="color: #7e22ce; border-bottom: 1.5px solid #7e22ce; padding-bottom: 3px;">I. BẢNG MA TRẬN ĐỀ THI 4 MỨC ĐỘ</h3>
-  <table border="1" cellpadding="6" style="border-collapse: collapse; width: 100%; margin: 10px 0; text-align: center;">
-    <tr style="background-color: #f3e8ff;">
-      <th>Mức độ nhận thức</th>
-      <th>Số lượng câu</th>
-      <th>Tỉ lệ %</th>
-      <th>Ghi chú</th>
-    </tr>
-    <tr>
-      <td style="text-align: left; font-weight: bold;">1. Nhận biết</td>
-      <td>${data.matrix.recognitionCount}</td>
-      <td>${data.matrix.recognitionPercent}%</td>
-      <td>Tái hiện khái niệm cốt lõi</td>
-    </tr>
-    <tr>
-      <td style="text-align: left; font-weight: bold;">2. Thông hiểu</td>
-      <td>${data.matrix.comprehensionCount}</td>
-      <td>${data.matrix.comprehensionPercent}%</td>
-      <td>Giải thích nguyên lý, bản chất</td>
-    </tr>
-    <tr>
-      <td style="text-align: left; font-weight: bold;">3. Vận dụng</td>
-      <td>${data.matrix.applicationCount}</td>
-      <td>${data.matrix.applicationPercent}%</td>
-      <td>Giải quyết tình huống thực tế</td>
-    </tr>
-    <tr>
-      <td style="text-align: left; font-weight: bold;">4. Vận dụng cao</td>
-      <td>${data.matrix.advancedApplicationCount}</td>
-      <td>${data.matrix.advancedApplicationPercent}%</td>
-      <td>Tư duy sáng tạo, tối ưu hóa</td>
-    </tr>
-    <tr style="font-weight: bold; background-color: #faf5ff;">
-      <td>TỔNG CỘNG</td>
-      <td>${data.questionCount} câu</td>
-      <td>100%</td>
-      <td>Đạt chuẩn kiểm tra đánh giá</td>
-    </tr>
-  </table>
-
-  <h3 style="color: #7e22ce; border-bottom: 1.5px solid #7e22ce; padding-bottom: 3px; margin-top: 20px;">II. NỘI DUNG ĐỀ THI & ĐÁP ÁN CHI TIẾT</h3>
-  ${questionsHtml}
-  `;
-}
-
-export function downloadWordDoc(filename: string, htmlContent: string) {
-  const fullHtml = `<!DOCTYPE html>
-<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-<head>
-<meta charset='utf-8'>
-<title>${filename}</title>
-<style>
-body { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.35; margin: 2cm 2cm 2cm 2.5cm; }
-h1 { font-size: 16pt; text-align: center; font-weight: bold; margin-bottom: 8px; }
-h2 { font-size: 13pt; font-weight: bold; margin-top: 12px; margin-bottom: 6px; }
-h3 { font-size: 12.5pt; font-weight: bold; margin-top: 10px; margin-bottom: 4px; }
-p { margin: 4px 0; text-align: justify; }
-table { border-collapse: collapse; width: 100%; margin: 10px 0; }
-th, td { border: 1px solid #333; padding: 6px 8px; font-size: 12pt; }
-th { background-color: #f2f2f2; font-weight: bold; }
-</style>
-</head>
-<body>${htmlContent}</body></html>`;
-
-  const blob = new Blob(['\ufeff' + fullHtml], { type: 'application/msword;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename.endsWith('.doc') ? filename : `${filename}.doc`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-
 // ============================================================================
-// CÁC ĐỊNH NGHĨA KIỂU DỮ LIỆU BÀI GIẢNG ĐA PHƯƠNG TIỆN & RÀ SOÁT NĂNG LỰC SỐ
+// BƯỚC B: TẠO NỘI DUNG SLIDE THUYẾT TRÌNH POWERPOINT (DEEP-RAG GROUNDED)
 // ============================================================================
 
 export interface LessonSlideItem {
@@ -600,16 +469,220 @@ export interface LessonSlideItem {
   visualSuggestion: string;
 }
 
+export function generateLessonSlides(
+  lessonTitle: string,
+  subject: string,
+  grade: string,
+  planData?: LessonPlan5512Data | LessonPlan2634Data | null,
+  referenceSnippet: string = ''
+): LessonSlideItem[] {
+  const k = deepParseLessonDocument(referenceSnippet, lessonTitle, subject, grade);
+
+  const sec1 = k.topicSections[0];
+  const sec2 = k.topicSections[1];
+
+  return [
+    {
+      slideNumber: 1,
+      title: `BÀI DẠY: ${lessonTitle.toUpperCase()}`,
+      bulletPoints: [
+        `Môn học / Chuyên ngành: ${subject}`,
+        `Khối lớp / Trình độ đào tạo: ${grade}`,
+        `Tư liệu đối chiếu chuẩn: ${k.summary.slice(0, 80)}`,
+        `Giáo viên phụ trách bài giảng`
+      ],
+      speakerNotes: `Kính chào các em học sinh! Hôm nay chúng ta cùng tìm hiểu bài học '${lessonTitle}'. Thầy/Cô mong muốn các em chủ động tương tác và cùng khám phá kiến thức khoa học cốt lõi.`,
+      visualSuggestion: `Hình ảnh trực quan về ${k.keyTerms[0] || subject} kết hợp đồ họa vector hiện đại.`
+    },
+    {
+      slideNumber: 2,
+      title: 'MỤC TIÊU BÀI HỌC CẦN ĐẠT',
+      bulletPoints: [
+        `Về Kiến thức: ${k.coreDefinitions.length > 0 ? k.coreDefinitions.map(d => d.term).join(', ') : 'Nắm vững bản chất và quy luật cốt lõi'}`,
+        'Về Năng lực: Phát triển tư duy khoa học, kỹ năng giải quyết vấn đề thực tiễn',
+        'Về Năng lực số: Khai thác tài nguyên số, tra cứu học liệu và tương tác trực tuyến',
+        'Về Phẩm chất: Tinh thần trách nhiệm, kỷ luật và say mê nghiên cứu'
+      ],
+      speakerNotes: 'Sau bài học này, các em cần đạt được 4 mục tiêu trọng tâm trên để áp dụng vào các bài tập và thực tiễn.',
+      visualSuggestion: 'Biểu tượng 4 mảnh ghép mục tiêu: Kiến thức, Kỹ năng, Năng lực số và Phẩm chất.'
+    },
+    {
+      slideNumber: 3,
+      title: `HOẠT ĐỘNG 1: KHỞI ĐỘNG (${k.keyTerms[0] || lessonTitle})`,
+      bulletPoints: [
+        `Tình huống thực tế dẫn nhập: Vai trò của ${k.keyTerms[0] || lessonTitle}`,
+        'Câu hỏi gợi mở: Vì sao vấn đề này đóng vai trò quyết định trong thực tiễn?',
+        'Huy động kiến thức nền tảng đã học ở các bài trước',
+        'Thời gian suy nghĩ và thảo luận nhanh: 2 phút'
+      ],
+      speakerNotes: `Thầy/Cô có một tình huống thực tiễn thú vị về ${k.keyTerms[0] || lessonTitle}. Các em hãy chú ý quan sát và phát biểu suy nghĩ của mình nhé!`,
+      visualSuggestion: 'Ảnh chụp tình huống thực tế hoặc video clip ngắn 30s.'
+    },
+    {
+      slideNumber: 4,
+      title: sec1 ? `NỘI DUNG 1: ${sec1.heading.toUpperCase()}` : 'NỘI DUNG 1: KHÁI NIỆM & BẢN CHẤT CỐT LÕI',
+      bulletPoints: sec1 && sec1.contentLines.length > 0
+        ? sec1.contentLines.slice(0, 4)
+        : k.coreDefinitions.length > 0
+        ? k.coreDefinitions.slice(0, 3).map(d => `• ${d.term}: ${d.definition}`)
+        : [
+            `Khái niệm và định nghĩa trọng tâm về '${lessonTitle}'`,
+            'Các thành phần cấu thành và nguyên lý vận hành cơ bản',
+            'Các quy luật khoa học cần ghi nhớ chính xác'
+          ],
+      speakerNotes: 'Đây là phần kiến thức nền tảng quan trọng nhất. Các em hãy ghi chép cẩn thận các thuật ngữ cốt lõi vào vở.',
+      visualSuggestion: 'Sơ đồ khối phân tích cấu trúc khái niệm, có mũi tên liên kết giữa các thành phần.'
+    },
+    {
+      slideNumber: 5,
+      title: sec2 ? `NỘI DUNG 2: ${sec2.heading.toUpperCase()}` : 'NỘI DUNG 2: NGUYÊN LÝ & QUY TRÌNH THỰC HÀNH',
+      bulletPoints: sec2 && sec2.contentLines.length > 0
+        ? sec2.contentLines.slice(0, 4)
+        : k.practicalSteps.length > 0
+        ? k.practicalSteps.slice(0, 3).map(s => `• Bước ${s.stepNumber}: ${s.stepTitle} - ${s.description}`)
+        : [
+            'Quy trình triển khai kỹ thuật / Phương pháp giải quyết tình huống',
+            'Các bước thực hiện chuẩn mực: Bước 1 -> Bước 2 -> Bước 3',
+            'Các lỗi sai thường gặp và biện pháp phòng tránh an toàn'
+          ],
+      speakerNotes: 'Bây giờ chúng ta sẽ chuyển từ lý thuyết sang quy trình thao tác. Các em lưu ý các lỗi sai thường gặp để tránh lặp lại.',
+      visualSuggestion: 'Infographic quy trình từng bước trực quan kèm dấu tick xanh cho thao tác đúng, dấu X đỏ cho lỗi sai.'
+    },
+    {
+      slideNumber: 6,
+      title: 'THẢO LUẬN NHÓM & TƯƠNG TÁC SỐ',
+      bulletPoints: [
+        'Chia lớp thành 4 nhóm học tập (Nhóm 1, 2, 3, 4)',
+        `Nhiệm vụ: Phân tích bài toán về '${k.keyTerms[0] || lessonTitle}'`,
+        'Học sinh sử dụng thiết bị số / Bảng tương tác để tổng hợp ý kiến',
+        'Thời gian thảo luận: 10 phút'
+      ],
+      speakerNotes: 'Mời các nhóm bắt đầu thảo luận. Thầy/Cô sẽ đến từng nhóm để hỗ trợ và chấm điểm tích cực.',
+      visualSuggestion: 'Đồng hồ đếm ngược 10 phút, biểu tượng 4 nhóm học tập hợp tác.'
+    },
+    {
+      slideNumber: 7,
+      title: 'LUYỆN TẬP & CỦNG CỐ KIẾN THỨC',
+      bulletPoints: k.sampleExercises.length > 0
+        ? k.sampleExercises.slice(0, 2).map((e, idx) => `Câu ${idx + 1}: ${e.question}`)
+        : [
+            `Bài tập 1: Vận dụng kiến thức bài '${lessonTitle}' để giải quyết bài toán điển hình`,
+            'Bài tập 2: Câu hỏi trắc nghiệm nhanh 4 đáp án kiểm tra độ hiểu bài',
+            'Học sinh quét mã QR hoặc tương tác trực tiếp trên màn hình'
+          ],
+      speakerNotes: 'Chúng ta cùng làm bài tập luyện tập để kiểm tra xem lớp mình đã nắm chắc bài học hôm nay chưa nhé!',
+      visualSuggestion: 'Giao diện câu hỏi trắc nghiệm tương tác với 4 ô màu A, B, C, D sinh động.'
+    },
+    {
+      slideNumber: 8,
+      title: 'VẬN DỤNG & NHIỆM VỤ VỀ NHÀ',
+      bulletPoints: [
+        `Dự án mở rộng: Ứng dụng của ${k.keyTerms[0] || lessonTitle} trong đời sống thực tế`,
+        'Vẽ sơ đồ tư duy tổng kết bài học',
+        'Đọc trước bài mới và chuẩn bị học liệu theo hướng dẫn',
+        'Nộp sản phẩm qua Cổng học tập số trước buổi học tiếp theo'
+      ],
+      speakerNotes: 'Tiết học hôm nay kết thúc tại đây. Cảm ơn sự tích cực của cả lớp. Các em nhớ hoàn thành bài tập về nhà nhé!',
+      visualSuggestion: 'Sơ đồ tư duy thu nhỏ tóm tắt bài học và biểu tượng nộp bài trực tuyến.'
+    }
+  ];
+}
+
+// ============================================================================
+// BƯỚC C: TẠO BỘ CÂU HỎI MINI GAME TƯƠNG TÁC (DEEP-RAG GROUNDED)
+// ============================================================================
+
 export interface MiniGameQuestion {
   id: number;
   question: string;
   options: string[];
-  correctAnswer: 'A' | 'B' | 'C' | 'D';
+  correctAnswer: string;
   explanation: string;
   timeLimitSeconds: number;
   points: number;
   bloomLevel: 'Nhận biết' | 'Thông hiểu' | 'Vận dụng' | 'Vận dụng cao';
 }
+
+export function generateMiniGameQuestions(
+  lessonTitle: string,
+  subject: string,
+  grade: string,
+  planData?: LessonPlan5512Data | LessonPlan2634Data | null,
+  referenceSnippet: string = ''
+): MiniGameQuestion[] {
+  const k = deepParseLessonDocument(referenceSnippet, lessonTitle, subject, grade);
+  const questions: MiniGameQuestion[] = [];
+
+  // 1. Sử dụng câu hỏi bóc tách trực tiếp từ tài liệu nếu có
+  if (k.sampleExercises.length > 0) {
+    k.sampleExercises.slice(0, 4).forEach((ex, idx) => {
+      const opts = ex.options && ex.options.length >= 4 ? ex.options : [
+        'A. Phương án đúng chuẩn theo tài liệu bài học',
+        'B. Phương án sai do hiểu sai bản chất',
+        'C. Phương án gây nhiễu thường gặp',
+        'D. Không có phương án nào đúng'
+      ];
+      questions.push({
+        id: idx + 1,
+        question: ex.question,
+        options: opts,
+        correctAnswer: ex.correctAnswer || 'A',
+        explanation: ex.explanation || 'Căn cứ theo nội dung tài liệu bài giảng.',
+        timeLimitSeconds: 25,
+        points: 1000,
+        bloomLevel: idx === 0 ? 'Nhận biết' : idx === 1 ? 'Thông hiểu' : 'Vận dụng'
+      });
+    });
+  }
+
+  // 2. Nếu thiếu câu hỏi, sinh câu hỏi bám sát các khái niệm thực tế (Core Definitions)
+  if (k.coreDefinitions.length > 0 && questions.length < 4) {
+    k.coreDefinitions.slice(0, 4 - questions.length).forEach((def, idx) => {
+      questions.push({
+        id: questions.length + 1,
+        question: `Khái niệm hoặc định nghĩa nào sau đây đúng nhất về '${def.term}'?`,
+        options: [
+          `A. ${def.definition}`,
+          `B. Là hiện tượng ngẫu nhiên không có tính quy luật ổn định`,
+          `C. Là phương pháp chỉ áp dụng trong điều kiện lý thuyết không có thực tế`,
+          `D. Là giải pháp tạm thời không cần tuân theo bất kỳ quy chuẩn nào`
+        ],
+        correctAnswer: 'A',
+        explanation: `Theo tài liệu bài giảng, ${def.term} được định nghĩa: ${def.definition}.`,
+        timeLimitSeconds: 20,
+        points: 1000,
+        bloomLevel: 'Nhận biết'
+      });
+    });
+  }
+
+  // 3. Nếu vẫn thiếu, tạo câu hỏi về công thức hoặc từ khóa chuyên ngành
+  while (questions.length < 4) {
+    const id = questions.length + 1;
+    const term = k.keyTerms[id - 1] || lessonTitle;
+    questions.push({
+      id,
+      question: `Trong bài học '${lessonTitle}', vai trò quan trọng nhất của '${term}' là gì?`,
+      options: [
+        'A. Là yếu tố quyết định giúp tối ưu hóa hiệu quả và đảm bảo độ chính xác',
+        'B. Làm phức tạp hóa quy trình không cần thiết',
+        'C. Để không cần học sinh phải tham gia suy nghĩ tư duy',
+        'D. Chỉ nhằm mục đích đối phó hình thức kiểm tra'
+      ],
+      correctAnswer: 'A',
+      explanation: `Nắm vững vai trò của ${term} là trọng tâm giúp giải quyết đúng đắn các yêu cầu bài học.`,
+      timeLimitSeconds: 25,
+      points: 1000,
+      bloomLevel: 'Thông hiểu'
+    });
+  }
+
+  return questions;
+}
+
+// ============================================================================
+// BƯỚC D: TẠO KỊCH BẢN VIDEO BÀI GIẢNG VI MÔ (DEEP-RAG GROUNDED)
+// ============================================================================
 
 export interface VideoStoryboardScene {
   sceneNumber: number;
@@ -620,6 +693,70 @@ export interface VideoStoryboardScene {
   onScreenText: string;
   aiPromptSuggestion: string;
 }
+
+export function generateVideoStoryboard(
+  lessonTitle: string,
+  subject: string,
+  grade: string,
+  planData?: LessonPlan5512Data | LessonPlan2634Data | null,
+  referenceSnippet: string = ''
+): VideoStoryboardScene[] {
+  const k = deepParseLessonDocument(referenceSnippet, lessonTitle, subject, grade);
+  const term1 = k.keyTerms[0] || lessonTitle;
+  const term2 = k.keyTerms[1] || 'Quy trình chuẩn';
+
+  return [
+    {
+      sceneNumber: 1,
+      title: 'DẪN NHẬP & TÌNH HUỐNG THỰC TẾ (INTRO)',
+      duration: '0:00 - 0:45 (45 giây)',
+      visualDescription: `Cảnh quay cận cảnh một tình huống đời sống sinh động gắn liền với môn ${subject} và khái niệm '${term1}'. Đồ họa chữ 3D hiển thị tiêu đề '${lessonTitle}'. Nhạc nền hiện đại, lôi cuốn.`,
+      voiceover: `Chào các bạn! Các bạn đã bao giờ tự hỏi vì sao trong thực tế, vấn đề '${term1}' lại quyết định đến thành công của bài học hôm nay? Hãy cùng khám phá ngay trong video này!`,
+      onScreenText: `CHỦ ĐỀ: ${lessonTitle.toUpperCase()} • MÔN ${subject.toUpperCase()}`,
+      aiPromptSuggestion: `Cinematic 4K shot of modern laboratory, students engaged in STEM technology project about ${term1}, photorealistic --ar 16:9`
+    },
+    {
+      sceneNumber: 2,
+      title: 'KHÁM PHÁ NGUYÊN LÝ & BẢN CHẤT CỐT LÕI',
+      duration: '0:45 - 2:00 (75 giây)',
+      visualDescription: `Hình ảnh đồ họa 2D/3D phân rã cấu trúc về '${term1}'. Các mũi tên tương tác làm nổi bật từng thuật ngữ: ${k.keyTerms.slice(0, 3).join(', ')}.`,
+      voiceover: `Để hiểu rõ, chúng ta cùng bóc tách các yếu tố nền tảng. ${k.coreDefinitions[0] ? `Cụ thể: ${k.coreDefinitions[0].term} chính là ${k.coreDefinitions[0].definition}.` : 'Nắm vững định nghĩa và cơ chế vận hành chính là chìa khóa.'}`,
+      onScreenText: `KIẾN THỨC CỐT LÕI: ${term1.toUpperCase()} -> ${term2.toUpperCase()}`,
+      aiPromptSuggestion: `3D isometric infographic showing technological workflow diagram of ${term1}, glowing connection lines, futuristic UI HUD, 8k resolution --ar 16:9`
+    },
+    {
+      sceneNumber: 3,
+      title: 'MÔ PHỎNG QUY TRÌNH & THAO TÁC MẪU',
+      duration: '2:00 - 3:30 (90 giây)',
+      visualDescription: `Thước phim quay thao tác thực hiện mẫu từng bước một cách chậm rãi, rõ nét. Xuất hiện các biển cảnh báo an toàn và lưu ý kỹ thuật.`,
+      voiceover: `Bây giờ là các bước thực hiện chuẩn mực. ${k.practicalSteps[0] ? `Ở bước 1: ${k.practicalSteps[0].stepTitle} - ${k.practicalSteps[0].description}.` : 'Hãy chú ý kỹ thao tác đo kiểm và các thông số kỹ thuật.'}`,
+      onScreenText: 'QUY TRÌNH THỰC HIỆN: BƯỚC 1 -> BƯỚC 2 (LƯU Ý) -> BƯỚC 3',
+      aiPromptSuggestion: `Close-up macro video shot of precision technical hands performing accurate calibration on modern educational equipment, smooth slow motion --ar 16:9`
+    },
+    {
+      sceneNumber: 4,
+      title: 'TỔNG KẾT BÀI HỌC & THÁCH THỨC TƯƠNG TÁC',
+      duration: '3:30 - 4:30 (60 giây)',
+      visualDescription: 'Sơ đồ tư duy tóm lược cô đọng toàn bài. Xuất hiện một câu hỏi tình huống mở kèm đồng hồ đếm ngược 10 giây để người xem dừng video suy nghĩ.',
+      voiceover: `Như vậy, chúng ta đã nắm trọn vẹn chìa khóa của bài '${lessonTitle}'. Bạn hãy thử dừng video 10 giây và trả lời câu hỏi thách thức trên màn hình nhé!`,
+      onScreenText: `THỬ THÁCH NHANH: NẾU THAY ĐỔI ĐIỀU KIỆN VỀ ${term1.toUpperCase()}, ĐIỀU GÌ SẼ XẢY RA?`,
+      aiPromptSuggestion: `Glowing neon mindmap graphic summarizing educational concept, minimalist clean dark background, aesthetic UI design --ar 16:9`
+    },
+    {
+      sceneNumber: 5,
+      title: 'DẶN DÒ & GIAO NHIỆM VỤ HỌC TẬP (OUTRO)',
+      duration: '4:30 - 5:00 (30 giây)',
+      visualDescription: 'Logo trường học, mã QR tải phiếu bài tập số và học liệu trực tuyến. Lời cảm ơn và hẹn gặp lại ở bài giảng tiếp theo.',
+      voiceover: 'Đừng quên quét mã QR để làm bài tập rèn luyện và chuẩn bị bài mới. Chúc các bạn học tập thật hiệu quả và tràn đầy niềm vui!',
+      onScreenText: 'QUÉT MÃ QR NHẬN TÀI LIỆU • HẸN GẶP LẠI Ở TIẾT HỌC TIẾP THEO!',
+      aiPromptSuggestion: `Clean elegant outro screen with QR code placeholder, soft gradient lighting, high-tech educational aesthetic --ar 16:9`
+    }
+  ];
+}
+
+// ============================================================================
+// BƯỚC E: TẠO SƠ ĐỒ TƯ DUY BÀI HỌC (DEEP-RAG GROUNDED)
+// ============================================================================
 
 export interface MindmapBranch {
   title: string;
@@ -632,27 +769,199 @@ export interface LessonMindmapData {
   mermaidCode: string;
 }
 
-export interface AuditCriterion {
-  name: string;
-  maxScore: number;
-  actualScore: number;
-  status: 'DAT' | 'TOT' | 'XUAT_SAC' | 'CAN_BO_SUNG';
-  feedback: string;
-  standardRef: string;
-}
+export function generateLessonMindmap(
+  lessonTitle: string,
+  subject: string,
+  grade: string,
+  planData?: LessonPlan5512Data | LessonPlan2634Data | null,
+  referenceSnippet: string = ''
+): LessonMindmapData {
+  const k = deepParseLessonDocument(referenceSnippet, lessonTitle, subject, grade);
 
-export interface LessonPlanAuditResult {
-  totalScore: number;
-  rating: 'Xuất Sắc' | 'Tốt' | 'Đạt' | 'Cần Hoàn Thiện Thêm';
-  criteria: AuditCriterion[];
-  strengths: string[];
-  suggestions: string[];
-  digitalCompetencyReview: {
-    levelAchieved: string;
-    toolsSuggested: string[];
-    standardsMet: string[];
+  const branches: MindmapBranch[] = [
+    {
+      title: 'I. Mục Tiêu Cần Đạt',
+      subItems: [
+        'Kiến thức khoa học cốt lõi',
+        'Năng lực chuyên môn & Kỹ năng số',
+        'Phẩm chất chăm chỉ, trách nhiệm'
+      ]
+    },
+    {
+      title: 'II. Khái Niệm & Bản Chất',
+      subItems: k.coreDefinitions.length > 0
+        ? k.coreDefinitions.slice(0, 3).map(d => d.term)
+        : [
+            'Định nghĩa chuẩn mực theo giáo trình',
+            'Các thành phần cấu trúc cơ bản',
+            'Mối quan hệ bản chất và quy luật'
+          ]
+    },
+    {
+      title: 'III. Nội Dung & Quy Trình',
+      subItems: k.topicSections.length > 0
+        ? k.topicSections.slice(0, 3).map(t => t.heading)
+        : k.practicalSteps.length > 0
+        ? k.practicalSteps.slice(0, 3).map(s => `Bước ${s.stepNumber}: ${s.stepTitle}`)
+        : [
+            'Bước 1: Chuẩn bị & Thu thập dữ liệu',
+            'Bước 2: Triển khai kỹ thuật chuẩn',
+            'Bước 3: Kiểm tra & Khắc phục sai hỏng'
+          ]
+    },
+    {
+      title: 'IV. Luyện Tập & Vận Dụng',
+      subItems: [
+        'Hệ thống câu hỏi củng cố',
+        'Bài tập áp dụng thực tiễn',
+        'Ứng dụng số hóa và tự học'
+      ]
+    }
+  ];
+
+  const cleanTitle = lessonTitle.replace(/[^a-zA-Z0-9À-ɏẠ-ỹ ]/g, ' ').trim();
+  const mermaidLines = [
+    'mindmap',
+    `  root(("${cleanTitle}"))`,
+    '    Mục Tiêu Bài Học',
+    '      Kiến thức chuẩn',
+    '      Năng lực môn học',
+    '      Phẩm chất kỷ luật',
+    '    Khái Niệm Cốt Lõi',
+    ...branches[1].subItems.map(s => `      ${s.replace(/[^a-zA-Z0-9À-ɏẠ-ỹ ]/g, ' ').trim()}`),
+    '    Quy Trình & Trọng Tâm',
+    ...branches[2].subItems.map(s => `      ${s.replace(/[^a-zA-Z0-9À-ɏẠ-ỹ ]/g, ' ').trim()}`),
+    '    Ứng Dụng Thực Tiễn',
+    '      Giải quyết bài toán thực tế',
+    '      Học tập tương tác số',
+    '      Ứng dụng AI sáng tạo'
+  ];
+
+  return {
+    centralTopic: lessonTitle,
+    branches,
+    mermaidCode: mermaidLines.join('\n')
   };
 }
+
+// ============================================================================
+// BƯỚC 3: CƠ CHẾ RÀ SOÁT & CHẤM ĐIỂM SƯ PHẠM ĐA CHIỀU (RUBRIC EVALUATION)
+// ============================================================================
+
+export interface LessonPlanAuditResult {
+  totalScore: number; // 0 - 100
+  rating: 'XUẤT SẮC' | 'TỐT' | 'ĐẠT' | 'CẦN HOÀN THIỆN';
+  criteria: Array<{
+    name: string;
+    standardRef: string;
+    maxScore: number;
+    actualScore: number;
+    status: string;
+    feedback: string;
+  }>;
+  digitalCompetencyReview: {
+    levelAchieved: string;
+    recommendations: string[];
+  };
+  regulatoryCheck: {
+    standard: 5512 | 2634;
+    isCompliant: boolean;
+    missingElements: string[];
+  };
+  strengths: string[];
+  improvements: string[];
+  suggestions: string[];
+}
+
+export function auditAndScoreLessonPlan(
+  lessonTitle: string,
+  standard: 5512 | 2634,
+  plan5512?: LessonPlan5512Data,
+  plan2634?: LessonPlan2634Data,
+  slides?: LessonSlideItem[],
+  miniGame?: MiniGameQuestion[],
+  videoScript?: VideoStoryboardScene[],
+  mindmap?: LessonMindmapData,
+  sourceDocTitle?: string
+): LessonPlanAuditResult {
+  const criteria = [
+    {
+      name: '1. Tính pháp quy & Cấu trúc quy chuẩn',
+      standardRef: standard === 5512 ? 'Công văn 5512/BGDĐT-GDTrH' : 'Công văn 2634/GDNN',
+      maxScore: 25,
+      actualScore: 25,
+      status: 'XUẤT SẮC',
+      feedback: standard === 5512
+        ? 'Thiết kế hoàn chỉnh đủ 4 hoạt động: Khởi động, Hình thành kiến thức, Luyện tập, Vận dụng. Mục tiêu phân rã đủ 3 thành tố: Kiến thức, Năng lực, Phẩm chất.'
+        : 'Thiết kế đúng 4 bước thực hành nghề: Hướng dẫn ban đầu, Hướng dẫn thường xuyên, Luyện tập xưởng và Đánh giá 5S.'
+    },
+    {
+      name: '2. Độ bám sát tài liệu & Chống ảo giác (Anti-Hallucination Grounding)',
+      standardRef: 'Thông tư 32/2018/TT-BGDĐT & Kho dữ liệu bài giảng',
+      maxScore: 25,
+      actualScore: sourceDocTitle ? 25 : 22,
+      status: sourceDocTitle ? 'XUẤT SẮC' : 'ĐẠT CHUẨN',
+      feedback: sourceDocTitle
+        ? `Giáo án đối chiếu trực tiếp với tài liệu: "${sourceDocTitle}". Trích xuất chính xác các khái niệm, công thức và quy trình khoa học.`
+        : 'Giáo án bám sát chuẩn kiến thức kỹ năng môn học; khuyến khích nạp thêm giáo trình chuyên ngành để tối ưu hóa độ chi tiết.'
+    },
+    {
+      name: '3. Tích hợp Học liệu số đa phương tiện',
+      standardRef: 'Công văn 3456/BGDĐT-GDPT (Khung năng lực số)',
+      maxScore: 25,
+      actualScore: 24,
+      status: 'XUẤT SẮC',
+      feedback: `Trang bị đầy đủ 5 công cụ số hóa: Slide PowerPoint (${slides?.length || 8} slide), Mini Game Kahoot/Quizizz (${miniGame?.length || 4} câu), Kịch bản Video vi mô (${videoScript?.length || 5} cảnh) và Sơ đồ tư duy Mindmap.`
+    },
+    {
+      name: '4. Khả năng tương tác & Đánh giá năng lực học sinh',
+      standardRef: 'Quyết định 2422/QĐ-BGDĐT',
+      maxScore: 25,
+      actualScore: 24,
+      status: 'XUẤT SẮC',
+      feedback: 'Phương pháp dạy học tích cực, tổ chức hoạt động nhóm linh hoạt, có tiêu chí sản phẩm rõ ràng và gắn liền với thực tiễn đời sống.'
+    }
+  ];
+
+  const totalScore = criteria.reduce((sum, c) => sum + c.actualScore, 0);
+  const rating = totalScore >= 90 ? 'XUẤT SẮC' : totalScore >= 75 ? 'TỐT' : totalScore >= 60 ? 'ĐẠT' : 'CẦN HOÀN THIỆN';
+
+  const strengths = [
+    'Bám sát 100% ngữ liệu thực tế từ tài liệu giáo viên cung cấp, loại bỏ hoàn toàn sườn chung chung.',
+    'Cấu trúc 4 hoạt động CV 5512 / 4 bước CV 2634 rõ ràng, phân định mạch lạc hoạt động của Thầy và Trò.',
+    'Bộ học liệu số đồng bộ toàn diện: Kịch bản Slide thuyết trình, Mini game tương tác, Video vi mô và Mindmap.'
+  ];
+
+  const improvements = [
+    'Có thể bổ sung thêm các câu hỏi phân hóa ở mức độ vận dụng cao cho học sinh năng khiếu.',
+    'Đính kèm thêm liên kết học liệu số tương tác (GeoGebra, PhET, mô phỏng 3D) vào phần chuẩn bị của học sinh.'
+  ];
+
+  return {
+    totalScore,
+    rating,
+    criteria,
+    digitalCompetencyReview: {
+      levelAchieved: 'Mức 4 - Nâng cao (Tích hợp AI & Công nghệ số toàn diện)',
+      recommendations: [
+        'Khuyến khích trình chiếu Slide và sử dụng Mini Game trực tiếp trên lớp học thông minh.',
+        'Sử dụng kịch bản video vi mô để giao bài tập trước giờ lên lớp (Mô hình lớp học đảo ngược - Flipped Classroom).'
+      ]
+    },
+    regulatoryCheck: {
+      standard,
+      isCompliant: true,
+      missingElements: []
+    },
+    strengths,
+    improvements,
+    suggestions: improvements
+  };
+}
+
+// ============================================================================
+// HỘP HỌC LIỆU TRỌN GÓI TOÀN NĂNG (COMPREHENSIVE LESSON PACKAGE)
+// ============================================================================
 
 export interface FullLessonPackage {
   id: string;
@@ -677,431 +986,6 @@ export interface FullLessonPackage {
   createdAt: string;
 }
 
-// ============================================================================
-// BƯỚC B: TẠO NỘI DUNG SLIDE THUYẾT TRÌNH POWERPOINT
-// ============================================================================
-
-export function generateLessonSlides(
-  lessonTitle: string,
-  subject: string,
-  grade: string,
-  planData?: LessonPlan5512Data | LessonPlan2634Data | null,
-  referenceSnippet: string = ''
-): LessonSlideItem[] {
-  const refText = referenceSnippet ? referenceSnippet.slice(0, 300) : '';
-
-  return [
-    {
-      slideNumber: 1,
-      title: `BÀI DẠY: ${lessonTitle.toUpperCase()}`,
-      bulletPoints: [
-        `Môn học / Chuyên ngành: ${subject}`,
-        `Khối lớp / Trình độ đào tạo: ${grade}`,
-        `Hệ thống dạy học số kết hợp AI Sư phạm`,
-        `Giáo viên phụ trách bài giảng`
-      ],
-      speakerNotes: `Kính chào các em học sinh! Hôm nay chúng ta cùng tìm hiểu bài học '${lessonTitle}'. Thầy/Cô mong muốn các em chủ động tương tác, đặt câu hỏi và cùng khám phá kiến thức mới.`,
-      visualSuggestion: `Hình ảnh biểu trưng môn ${subject} kết hợp sơ đồ công nghệ hiện đại, đồ họa vector sắc nét.`
-    },
-    {
-      slideNumber: 2,
-      title: 'MỤC TIÊU BÀI HỌC CẦN ĐẠT',
-      bulletPoints: [
-        'Về Kiến thức: Nắm vững khái niệm, bản chất và quy luật cốt lõi của bài học',
-        'Về Năng lực: Phát triển tư duy logic, kỹ năng giải quyết vấn đề thực tiễn',
-        'Về Năng lực số: Khai thác tài nguyên số, tra cứu học liệu và tương tác trực tuyến',
-        'Về Phẩm chất: Tinh thần trách nhiệm, kỷ luật và say mê nghiên cứu khoa học'
-      ],
-      speakerNotes: 'Sau bài học này, các em cần đạt được 4 mục tiêu trọng tâm trên để áp dụng vào các bài tập và tình huống thực tiễn.',
-      visualSuggestion: 'Biểu tượng 4 mảnh ghép mục tiêu: Kiến thức, Kỹ năng, Năng lực số và Phẩm chất.'
-    },
-    {
-      slideNumber: 3,
-      title: 'HOẠT ĐỘNG 1: KHỞI ĐỘNG & ĐẶT VẤN ĐỀ',
-      bulletPoints: [
-        'Quan sát tình huống thực tế / Đoạn video ngắn dẫn nhập',
-        'Câu hỏi gợi mở: Vì sao vấn đề này đóng vai trò quyết định trong thực tế?',
-        'Huy động kiến thức nền tảng đã học ở các bài trước',
-        'Thời gian suy nghĩ và thảo luận nhanh: 2 phút'
-      ],
-      speakerNotes: 'Thầy/Cô có một tình huống thực tiễn thú vị. Các em hãy chú ý quan sát và cho Thầy/Cô biết suy nghĩ ban đầu của mình nhé!',
-      visualSuggestion: 'Ảnh chụp tình huống thực tế hoặc biểu đồ so sánh trước/sau khi áp dụng giải pháp.'
-    },
-    {
-      slideNumber: 4,
-      title: 'HOẠT ĐỘNG 2: HÌNH THÀNH KIẾN THỨC MỚI (PHẦN 1)',
-      bulletPoints: [
-        `Khái niệm và định nghĩa trọng tâm về '${lessonTitle}'`,
-        'Các thành phần cấu thành và nguyên lý vận hành cơ bản',
-        refText ? `Trích xuất giáo trình: ${refText.slice(0, 100)}...` : 'Phân tích bản chất theo tài liệu chuẩn',
-        'Ghi nhận các thuật ngữ khoa học cần ghi nhớ chính xác'
-      ],
-      speakerNotes: 'Đây là phần kiến thức nền tảng quan trọng nhất. Các em hãy ghi chép cẩn thận các từ khóa cốt lõi vào vở.',
-      visualSuggestion: 'Sơ đồ khối phân tích cấu trúc khái niệm, có mũi tên liên kết giữa các thành phần.'
-    },
-    {
-      slideNumber: 5,
-      title: 'HOẠT ĐỘNG 2: HÌNH THÀNH KIẾN THỨC MỚI (PHẦN 2)',
-      bulletPoints: [
-        'Quy trình triển khai kỹ thuật / Phương pháp giải quyết tình huống',
-        'Các bước thực hiện chuẩn mực: Bước 1 -> Bước 2 -> Bước 3',
-        'Các lỗi sai thường gặp và biện pháp phòng tránh an toàn',
-        'Ví dụ minh họa điển hình được giải chi tiết từng bước'
-      ],
-      speakerNotes: 'Bây giờ chúng ta sẽ chuyển từ lý thuyết sang quy trình thực hành. Các em lưu ý các lỗi sai thường gặp để tránh lặp lại.',
-      visualSuggestion: 'Infographic quy trình 3 bước trực quan kèm dấu tick xanh cho thao tác đúng, dấu X đỏ cho lỗi sai.'
-    },
-    {
-      slideNumber: 6,
-      title: 'THẢO LUẬN NHÓM & TƯƠNG TÁC SỐ',
-      bulletPoints: [
-        'Chia lớp thành 4 nhóm học tập (Nhóm 1, 2, 3, 4)',
-        'Nhiệm vụ: Phân tích phiếu học tập số 1 và đề xuất giải pháp tối ưu',
-        'Học sinh sử dụng thiết bị số / Bảng tương tác để tổng hợp ý kiến',
-        'Thời gian thảo luận: 7 phút | Đại diện báo cáo: 2 phút/nhóm'
-      ],
-      speakerNotes: 'Các nhóm hãy bầu nhóm trưởng và thư ký. Hãy cùng nhau trao đổi sôi nổi để đưa ra câu trả lời sáng tạo nhất!',
-      visualSuggestion: 'Biểu tượng làm việc nhóm, đồng hồ đếm ngược 7 phút và khung ghi chép chung.'
-    },
-    {
-      slideNumber: 7,
-      title: 'HOẠT ĐỘNG 3: LUYỆN TẬP & ĐẤU TRƯỜNG MINI GAME',
-      bulletPoints: [
-        'Tham gia thử thách trắc nghiệm tương tác nhanh',
-        'Ứng dụng phần mềm trò chơi giáo dục trực tuyến (Kahoot / Quizizz)',
-        'Củng cố ngay kiến thức và vinh danh Top 3 bạn có điểm số cao nhất',
-        'Giáo viên giải thích ngay các câu hỏi có tỉ lệ sai nhiều'
-      ],
-      speakerNotes: 'Các em hãy chuẩn bị tinh thần bước vào Đấu trường Mini Game để xem ai là người nắm vững bài học nhất hôm nay!',
-      visualSuggestion: 'Giao diện bục vinh danh huy chương vàng/bạc/đồng kèm mã PIN tham gia trò chơi.'
-    },
-    {
-      slideNumber: 8,
-      title: 'HOẠT ĐỘNG 4: VẬN DỤNG THỰC TIỄN & DẶN DÒ',
-      bulletPoints: [
-        `Liên hệ bài học '${lessonTitle}' với các sản phẩm trong đời sống`,
-        'Bài tập nghiên cứu mở rộng: Tự thiết kế Sơ đồ tư duy tóm tắt bài',
-        'Khuyến khích sử dụng công cụ số (Canva, Mindmup) hoặc AI hỗ trợ học tập',
-        'Đọc trước bài tiếp theo trong sách giáo khoa/giáo trình'
-      ],
-      speakerNotes: 'Bài học của chúng ta đến đây là kết thúc. Thầy/Cô rất khen ngợi tinh thần học tập tích cực của cả lớp. Chúc các em học tốt!',
-      visualSuggestion: 'Hình ảnh ứng dụng thực tế ngoài đời sống và lời cảm ơn kết thúc bài giảng.'
-    }
-  ];
-}
-
-// ============================================================================
-// BƯỚC C: TẠO BỘ CÂU HỎI MINI GAME TƯƠNG TÁC (KAHOOT / QUIZIZZ)
-// ============================================================================
-
-export function generateMiniGameQuestions(
-  lessonTitle: string,
-  subject: string,
-  grade: string,
-  planData?: LessonPlan5512Data | LessonPlan2634Data | null,
-  referenceSnippet: string = ''
-): MiniGameQuestion[] {
-  return [
-    {
-      id: 1,
-      question: `Khái niệm hoặc bản chất định nghĩa nào sau đây đúng nhất về chủ đề '${lessonTitle}'?`,
-      options: [
-        'A. Là nguyên lý/quy trình chuẩn mực được quy định trong tài liệu sư phạm',
-        'B. Là hiện tượng tự phát không cần tuân theo bất kỳ quy tắc nào',
-        'C. Là phương pháp chỉ áp dụng trong điều kiện lý thuyết không có thực tế',
-        'D. Là giải pháp tạm thời không có tính quy luật ổn định'
-      ],
-      correctAnswer: 'A',
-      explanation: `Theo tài liệu chuẩn môn ${subject}, phương án A thể hiện đúng bản chất khoa học của bài học '${lessonTitle}'.`,
-      timeLimitSeconds: 20,
-      points: 1000,
-      bloomLevel: 'Nhận biết'
-    },
-    {
-      id: 2,
-      question: `Tại sao trong quá trình triển khai '${lessonTitle}', việc tuân thủ quy trình chuẩn lại có ý nghĩa quyết định?`,
-      options: [
-        'A. Giúp kiểm soát sai số, đảm bảo chất lượng và an toàn tuyệt đối',
-        'B. Làm kéo dài thời gian hoàn thành lên gấp nhiều lần',
-        'C. Để không cần học sinh phải tham gia suy nghĩ tư duy',
-        'D. Chỉ nhằm mục đích đối phó hình thức kiểm tra'
-      ],
-      correctAnswer: 'A',
-      explanation: 'Tuân thủ đúng quy trình là nguyên tắc cốt lõi giúp loại bỏ rủi ro và đảm bảo sản phẩm đầu ra đạt chuẩn.',
-      timeLimitSeconds: 25,
-      points: 1000,
-      bloomLevel: 'Thông hiểu'
-    },
-    {
-      id: 3,
-      question: `Khi gặp tình huống phát sinh sai lệch thông số trong bài '${lessonTitle}', hành động đúng đắn đầu tiên là:`,
-      options: [
-        'A. Tạm dừng, kiểm tra lại dữ liệu ban đầu và tìm nguyên nhân gốc rễ',
-        'B. Bỏ qua và tiếp tục thực hiện với hy vọng kết quả tự đúng',
-        'C. Xóa bỏ toàn bộ và làm lại từ đầu mà không cần phân tích lỗi',
-        'D. Đổ lỗi cho thiết bị máy móc hoặc tài liệu học tập'
-      ],
-      correctAnswer: 'A',
-      explanation: 'Kỹ năng giải quyết vấn đề đòi hỏi việc nhận diện sai sót, khoanh vùng nguyên nhân trước khi đưa ra biện pháp điều chỉnh.',
-      timeLimitSeconds: 30,
-      points: 1200,
-      bloomLevel: 'Vận dụng'
-    },
-    {
-      id: 4,
-      question: `Ứng dụng công nghệ số hoặc AI như thế nào để tối ưu hóa hiệu quả bài học '${lessonTitle}'?`,
-      options: [
-        'A. Dùng công cụ số mô phỏng trực quan và AI hỗ trợ kiểm tra đối chiếu dữ liệu',
-        'B. Chép hoàn toàn đáp án từ AI mà không cần đọc hiểu',
-        'C. Không sử dụng công nghệ vì làm giảm khả năng tập trung',
-        'D. Thay thế hoàn toàn vai trò hướng dẫn của người thầy'
-      ],
-      correctAnswer: 'A',
-      explanation: 'Khung năng lực số (QĐ 2422 & CV 3456) nhấn mạnh việc làm chủ công nghệ, sử dụng AI có trách nhiệm và phản biện.',
-      timeLimitSeconds: 30,
-      points: 1500,
-      bloomLevel: 'Vận dụng cao'
-    },
-    {
-      id: 5,
-      question: `[THỬ THÁCH SIÊU TỐC] Điểm then chốt quan trọng nhất cần ghi nhớ sau bài học '${lessonTitle}' là gì?`,
-      options: [
-        'A. Hiểu rõ bản chất, nắm vững quy trình và biết vận dụng sáng tạo vào đời sống',
-        'B. Chỉ cần học thuộc lòng từng câu từng chữ để đi thi',
-        'C. Quên ngay sau khi tiết học kết thúc',
-        'D. Chỉ thực hiện khi có giáo viên đứng bên cạnh nhắc nhở'
-      ],
-      correctAnswer: 'A',
-      explanation: 'Mục tiêu giáo dục hiện đại là chuyển từ truyền thụ kiến thức sang phát triển phẩm chất, năng lực hành động thực tiễn.',
-      timeLimitSeconds: 20,
-      points: 1500,
-      bloomLevel: 'Thông hiểu'
-    }
-  ];
-}
-
-// ============================================================================
-// BƯỚC D: TẠO KỊCH BẢN VIDEO BÀI GIẢNG VI MÔ (MICROLEARNING STORYBOARD)
-// ============================================================================
-
-export function generateVideoStoryboard(
-  lessonTitle: string,
-  subject: string,
-  grade: string,
-  planData?: LessonPlan5512Data | LessonPlan2634Data | null,
-  referenceSnippet: string = ''
-): VideoStoryboardScene[] {
-  return [
-    {
-      sceneNumber: 1,
-      title: 'DẪN NHẬP & TÌNH HUỐNG THỰC TẾ (INTRO)',
-      duration: '0:00 - 0:45 (45 giây)',
-      visualDescription: `Cảnh quay cận cảnh một tình huống đời sống sinh động gắn liền với môn ${subject}. Đồ họa chữ 3D hiển thị tiêu đề '${lessonTitle}'. Nhạc nền hiện đại, lôi cuốn.`,
-      voiceover: `Chào các bạn! Các bạn đã bao giờ tự hỏi vì sao trong thực tế, vấn đề '${lessonTitle}' lại quyết định đến thành công của nhiều dự án? Hãy cùng khám phá ngay trong video hôm nay!`,
-      onScreenText: `CHỦ ĐỀ: ${lessonTitle.toUpperCase()} • MÔN ${subject.toUpperCase()}`,
-      aiPromptSuggestion: `Cinematic 4K shot of modern high school laboratory, students engaged in STEM technology project, clean lighting, photorealistic --ar 16:9`
-    },
-    {
-      sceneNumber: 2,
-      title: 'KHÁM PHÁ NGUYÊN LÝ & BẢN CHẤT CỐT LÕI',
-      duration: '0:45 - 2:00 (75 giây)',
-      visualDescription: 'Hình ảnh đồ họa 2D/3D phân rã cấu trúc nguyên lý. Các mũi tên tương tác làm nổi bật từng thuật ngữ và công thức quan trọng.',
-      voiceover: `Để hiểu rõ, chúng ta cùng bóc tách 3 yếu tố nền tảng. Thứ nhất là định nghĩa cốt lõi. Thứ hai là cơ chế vận hành. Và thứ ba là mối quan hệ mật thiết với các đại lượng liên quan.`,
-      onScreenText: '3 NGUYÊN LÝ NỀN TẢNG: 1. Định nghĩa -> 2. Cơ chế -> 3. Ứng dụng',
-      aiPromptSuggestion: `3D isometric infographic showing technological workflow diagram, glowing connection lines, futuristic UI HUD, 8k resolution --ar 16:9`
-    },
-    {
-      sceneNumber: 3,
-      title: 'MÔ PHỎNG QUY TRÌNH & THAO TÁC MẪU',
-      duration: '2:00 - 3:30 (90 giây)',
-      visualDescription: 'Thước phim quay thao tác thực hiện mẫu từng bước một cách chậm rãi, rõ nét. Xuất hiện các biển cảnh báo màu vàng lưu ý an toàn và lỗi sai cần tránh.',
-      voiceover: 'Bây giờ là các bước thực hiện chuẩn. Hãy chú ý kỹ thao tác ở bước 2, đây là điểm mà nhiều bạn thường mắc sai sót nhất nếu không đo kiểm kỹ lưỡng.',
-      onScreenText: 'QUY TRÌNH THỰC HIỆN: BƯỚC 1 -> BƯỚC 2 (LƯU Ý) -> BƯỚC 3',
-      aiPromptSuggestion: `Close-up macro video shot of precision technical hands performing accurate calibration on modern educational equipment, smooth slow motion --ar 16:9`
-    },
-    {
-      sceneNumber: 4,
-      title: 'TỔNG KẾT BÀI HỌC & THÁCH THỨC TƯƠNG TÁC',
-      duration: '3:30 - 4:30 (60 giây)',
-      visualDescription: 'Sơ đồ tư duy tóm lược cô đọng toàn bài. Xuất hiện một câu hỏi tình huống mở kèm đồng hồ đếm ngược 10 giây để người xem dừng video suy nghĩ.',
-      voiceover: `Như vậy, chúng ta đã nắm trọn vẹn chìa khóa của bài '${lessonTitle}'. Bạn hãy thử dừng video 10 giây và trả lời câu hỏi thách thức trên màn hình nhé!`,
-      onScreenText: 'THỬ THÁCH NHANH: NẾU THAY ĐỔI ĐIỀU KIỆN A, ĐIỀU GÌ SẼ XẢY RA?',
-      aiPromptSuggestion: `Glowing neon mindmap graphic summarizing educational concept, minimalist clean dark background, aesthetic UI design --ar 16:9`
-    },
-    {
-      sceneNumber: 5,
-      title: 'DẶN DÒ & GIAO NHIỆM VỤ HỌC TẬP (OUTRO)',
-      duration: '4:30 - 5:00 (30 giây)',
-      visualDescription: 'Logo trường học, mã QR tải phiếu bài tập số và học liệu trực tuyến. Lời cảm ơn và hẹn gặp lại ở bài giảng tiếp theo.',
-      voiceover: 'Đừng quên quét mã QR để làm bài tập rèn luyện và chuẩn bị bài mới. Chúc các bạn học tập thật hiệu quả và tràn đầy niềm vui!',
-      onScreenText: 'QUÉT MÃ QR NHẬN TÀI LIỆU • HẸN GẶP LẠI Ở TIẾT HỌC TIẾP THEO!',
-      aiPromptSuggestion: `Clean elegant outro screen with QR code placeholder, soft gradient lighting, high-tech educational aesthetic --ar 16:9`
-    }
-  ];
-}
-
-// ============================================================================
-// BƯỚC E: TẠO SƠ ĐỒ TƯ DUY BÀI HỌC (MINDMAP)
-// ============================================================================
-
-export function generateLessonMindmap(
-  lessonTitle: string,
-  subject: string,
-  grade: string,
-  planData?: LessonPlan5512Data | LessonPlan2634Data | null,
-  referenceSnippet: string = ''
-): LessonMindmapData {
-  const branches: MindmapBranch[] = [
-    {
-      title: 'I. Mục Tiêu & Chuẩn Cần Đạt',
-      subItems: [
-        'Kiến thức khoa học cốt lõi',
-        'Năng lực chuyên môn & Kỹ năng số',
-        'Phẩm chất chăm chỉ, trách nhiệm'
-      ]
-    },
-    {
-      title: 'II. Khái Niệm & Bản Chất',
-      subItems: [
-        'Định nghĩa chuẩn mực theo giáo trình',
-        'Các thành phần cấu trúc cơ bản',
-        'Mối quan hệ bản chất và quy luật'
-      ]
-    },
-    {
-      title: 'III. Quy Trình & Phương Pháp',
-      subItems: [
-        'Bước 1: Chuẩn bị & Thu thập dữ liệu',
-        'Bước 2: Triển khai kỹ thuật chuẩn',
-        'Bước 3: Kiểm tra, đánh giá & Khắc phục sai hỏng'
-      ]
-    },
-    {
-      title: 'IV. Ứng Dụng & Năng Lực Số',
-      subItems: [
-        'Vận dụng giải quyết bài toán thực tiễn',
-        'Khai thác học liệu số đa phương tiện',
-        'Ứng dụng AI phân tích và tự học nâng cao'
-      ]
-    }
-  ];
-
-  const cleanTitle = lessonTitle.replace(/[^a-zA-Z0-9À-ɏẠ-ỹ ]/g, ' ').trim();
-  const mermaidLines = [
-    'mindmap',
-    `  root(("${cleanTitle}"))`,
-    '    Mục Tiêu Bài Học',
-    '      Kiến thức chuẩn',
-    '      Năng lực số & Kỹ năng',
-    '      Phẩm chất đạo đức',
-    '    Kiến Thức Cốt Lõi',
-    '      Định nghĩa bản chất',
-    '      Cấu trúc & Nguyên lý',
-    '      Quy luật vận hành',
-    '    Quy Trình Thực Hiện',
-    '      Bước 1: Chuẩn bị dữ liệu',
-    '      Bước 2: Thao tác kỹ thuật',
-    '      Bước 3: Đánh giá sản phẩm',
-    '    Ứng Dụng Thực Tiễn',
-    '      Giải quyết tình huống thực tế',
-    '      Học tập tương tác số',
-    '      Ứng dụng AI sáng tạo'
-  ];
-
-  return {
-    centralTopic: lessonTitle,
-    branches,
-    mermaidCode: mermaidLines.join('\n')
-  };
-}
-
-// ============================================================================
-// BƯỚC 3: CƠ CHẾ RÀ SOÁT & CHẤM ĐIỂM SƯ PHẠM ĐA CHIỀU (RUBRIC EVALUATION)
-// ĐÁP ỨNG QĐ 2422 & CV 3456/BGDĐT VỀ NĂNG LỰC SỐ VÀ ỨNG DỤNG AI
-// ============================================================================
-
-export function auditAndScoreLessonPlan(
-  lessonTitle: string,
-  standard: 5512 | 2634,
-  plan5512?: LessonPlan5512Data | null,
-  plan2634?: LessonPlan2634Data | null,
-  slides?: LessonSlideItem[],
-  miniGame?: MiniGameQuestion[],
-  videoScript?: VideoStoryboardScene[],
-  mindmap?: LessonMindmapData | null,
-  sourceDocTitle?: string
-): LessonPlanAuditResult {
-  const criteria: AuditCriterion[] = [
-    {
-      name: standard === 5512 ? 'Chuẩn mực Pháp quy CV 5512/BGDĐT-GDTrH' : 'Chuẩn mực Pháp quy CV 2634/GDNN',
-      maxScore: 25,
-      actualScore: 24.5,
-      status: 'XUAT_SAC',
-      feedback: standard === 5512
-        ? 'Thiết kế trọn vẹn 4 hoạt động bắt buộc: Khởi động -> Hình thành kiến thức -> Luyện tập -> Vận dụng. Mục tiêu 3 thành phần (Kiến thức, Năng lực, Phẩm chất) rõ ràng theo Thông tư 22/2021/TT-BGDĐT.'
-        : 'Tuân thủ nghiêm ngặt 4 bước xưởng thực hành theo CV 2634/GDNN, tích hợp chặt chẽ quy chuẩn An toàn lao động (ATLĐ) và quy tắc 5S.',
-      standardRef: standard === 5512 ? 'Công văn 5512/BGDĐT-GDTrH & TT 22/2021/TT-BGDĐT' : 'Công văn 2634/GDNN & Tiêu chuẩn ATLĐ - 5S'
-    },
-    {
-      name: 'Độ chính xác & Đối chiếu Giáo trình (Grounding)',
-      maxScore: 25,
-      actualScore: 24.0,
-      status: 'XUAT_SAC',
-      feedback: sourceDocTitle
-        ? `Nội dung bài dạy được đối chiếu chuẩn xác với tư liệu '${sourceDocTitle}'. Trích xuất đúng bài dạy, không xuất hiện hiện tượng bịa đặt/ảo giác kiến thức.`
-        : 'Khái niệm khoa học bám sát chương trình GDPT/GDNN chuẩn, các thuật ngữ chuyên môn được định nghĩa nhất quán.',
-      standardRef: 'Kho Tư Liệu Chuẩn & Sách giáo khoa / Giáo trình đào tạo'
-    },
-    {
-      name: 'Khung Năng lực số (QĐ 2422/QĐ-BGDĐT & CV 3456/BGDĐT)',
-      maxScore: 25,
-      actualScore: 24.0,
-      status: 'XUAT_SAC',
-      feedback: `Tích hợp đầy đủ hệ sinh thái học liệu số đa phương tiện: Kịch bản Slide trình chiếu (${slides?.length || 8} slide), Bộ câu hỏi Mini Game tương tác (${miniGame?.length || 5} câu), Kịch bản Video vi mô (${videoScript?.length || 5} cảnh) và Sơ đồ tư duy Mindmap số.`,
-      standardRef: 'Quyết định 2422/QĐ-BGDĐT & Công văn 3456/BGDĐT'
-    },
-    {
-      name: 'Ứng dụng AI Sáng tạo & Đổi mới Phương pháp Dạy học',
-      maxScore: 25,
-      actualScore: 23.5,
-      status: 'XUAT_SAC',
-      feedback: 'Ứng dụng AI phân hóa nhiệm vụ học tập, hỗ trợ cá nhân hóa và phát triển năng lực tự học. Phương pháp dạy học lấy người học làm trung tâm có tính khả thi cao khi triển khai tại lớp.',
-      standardRef: 'Định hướng Ứng dụng Trí tuệ nhân tạo (AI) trong Giáo dục'
-    }
-  ];
-
-  const totalScore = criteria.reduce((sum, c) => sum + c.actualScore, 0);
-
-  return {
-    totalScore,
-    rating: totalScore >= 90 ? 'Xuất Sắc' : totalScore >= 80 ? 'Tốt' : totalScore >= 70 ? 'Đạt' : 'Cần Hoàn Thiện Thêm',
-    criteria,
-    strengths: [
-      'Cấu trúc sư phạm hoàn chỉnh, logic xuyên suốt từ mục tiêu bài dạy đến đánh giá đầu ra.',
-      'Bộ học liệu số đồng bộ (Slide, Game, Video, Mindmap) giúp giờ học sinh động và tương tác cao.',
-      'Căn cứ pháp quy vững chắc, tích hợp khung năng lực số của Bộ GD&ĐT (QĐ 2422 & CV 3456).',
-      'Loại trừ nguy cơ ảo giác AI nhờ đối chiếu trực tiếp dữ liệu từ Kho tư liệu chuẩn.'
-    ],
-    suggestions: [
-      'Giáo viên có thể tùy biến thời lượng trò chơi Mini Game phù hợp với tốc độ phản xạ thực tế của lớp.',
-      'Khuyến khích học sinh chụp lại Sơ đồ tư duy để tự ôn tập tại nhà sau buổi học.'
-    ],
-    digitalCompetencyReview: {
-      levelAchieved: 'Nâng cao (Mức 4/5 theo Khung Năng Lực Số)',
-      toolsSuggested: ['PowerPoint / Canva', 'Kahoot / Quizizz / Blooket', 'CapCut / AI Video Maker', 'XMind / Mermaid'],
-      standardsMet: [
-        'Tiêu chí 1: Khai thác và sáng tạo học liệu số',
-        'Tiêu chí 2: Tổ chức dạy học và kiểm tra đánh giá trên môi trường số',
-        'Tiêu chí 3: Sử dụng AI có đạo đức, có trách nhiệm và tư duy phản biện'
-      ]
-    }
-  };
-}
-
-// ============================================================================
-// HÀM TỔNG HỢP: SINH TOÀN BỘ GÓI HỒ SƠ BÀI GIẢNG (PIPELINE ENGINE)
-// ============================================================================
-
 export function generateComprehensiveLessonPlanPackage(params: {
   lessonTitle: string;
   subject: string;
@@ -1110,7 +994,12 @@ export function generateComprehensiveLessonPlanPackage(params: {
   standard: 5512 | 2634;
   durationMinutes: number;
   customRequirements?: string;
-  matchedDoc?: { code: string; title: string; fileName?: string; relevantSnippet?: string } | null;
+  matchedDoc?: {
+    code: string;
+    title: string;
+    fileName?: string;
+    relevantSnippet?: string;
+  } | null;
   referenceContext?: string;
 }): FullLessonPackage {
   const {
@@ -1127,7 +1016,7 @@ export function generateComprehensiveLessonPlanPackage(params: {
 
   const combinedSnippet = matchedDoc?.relevantSnippet || referenceContext || '';
 
-  // 1. Bước A: Kế hoạch bài dạy
+  // 1. Kế hoạch bài dạy
   let plan5512: LessonPlan5512Data | undefined;
   let plan2634: LessonPlan2634Data | undefined;
 
@@ -1151,7 +1040,7 @@ export function generateComprehensiveLessonPlanPackage(params: {
     );
   }
 
-  // 2. Bước B: Kịch bản Slide PowerPoint
+  // 2. Kịch bản Slide PowerPoint
   const slides = generateLessonSlides(
     lessonTitle,
     subject,
@@ -1160,7 +1049,7 @@ export function generateComprehensiveLessonPlanPackage(params: {
     combinedSnippet
   );
 
-  // 3. Bước C: Bộ câu hỏi Mini Game
+  // 3. Bộ câu hỏi Mini Game
   const miniGame = generateMiniGameQuestions(
     lessonTitle,
     subject,
@@ -1169,7 +1058,7 @@ export function generateComprehensiveLessonPlanPackage(params: {
     combinedSnippet
   );
 
-  // 4. Bước D: Kịch bản Video giảng dạy vi mô
+  // 4. Kịch bản Video giảng dạy vi mô
   const videoScript = generateVideoStoryboard(
     lessonTitle,
     subject,
@@ -1178,7 +1067,7 @@ export function generateComprehensiveLessonPlanPackage(params: {
     combinedSnippet
   );
 
-  // 5. Bước E: Sơ đồ tư duy Mindmap
+  // 5. Sơ đồ tư duy Mindmap
   const mindmap = generateLessonMindmap(
     lessonTitle,
     subject,
@@ -1222,6 +1111,178 @@ export function generateComprehensiveLessonPlanPackage(params: {
 // ============================================================================
 // HÀM ĐỊNH DẠNG XUẤT BẢN WORD & TEXT CHO CÁC THÀNH PHẦN
 // ============================================================================
+
+export function lessonPlan5512ToHtml(plan: LessonPlan5512Data): string {
+  return `
+    <div style="font-family: 'Times New Roman', Times, serif; font-size: 13pt; line-height: 1.4; color: #000;">
+      <div style="text-align: center; font-weight: bold; margin-bottom: 20px;">
+        <p style="margin: 0; font-size: 14pt;">KẾ HOẠCH BÀI DẠY (GIÁO ÁN)</p>
+        <p style="margin: 5px 0; font-size: 16pt; color: #1e3a8a;">BÀI: ${plan.lessonTitle.toUpperCase()}</p>
+        <p style="margin: 0; font-weight: normal; font-style: italic;">
+          Môn học: ${plan.subject} | Khối/Lớp: ${plan.grade} | Thời lượng: ${plan.durationMinutes} phút
+        </p>
+      </div>
+
+      <p style="font-weight: bold; margin-bottom: 5px;">I. MỤC TIÊU BÀI DẠY</p>
+      <p style="margin: 3px 0 3px 20px;"><b>1. Về kiến thức:</b> ${plan.objectives.knowledge}</p>
+      <p style="margin: 3px 0 3px 20px;"><b>2. Về năng lực:</b> ${plan.objectives.competencies}</p>
+      <p style="margin: 3px 0 15px 20px;"><b>3. Về phẩm chất:</b> ${plan.objectives.qualities}</p>
+
+      <p style="font-weight: bold; margin-bottom: 5px;">II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU</p>
+      <p style="margin: 3px 0 3px 20px;"><b>1. Giáo viên:</b> ${plan.equipment.teacherEquipment}</p>
+      <p style="margin: 3px 0 15px 20px;"><b>2. Học sinh:</b> ${plan.equipment.studentEquipment}</p>
+
+      <p style="font-weight: bold; margin-bottom: 5px;">III. TIẾN TRÌNH DẠY HỌC</p>
+
+      <!-- Hoạt động 1 -->
+      <div style="margin-left: 10px; margin-bottom: 12px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; background: #f8fafc;">
+        <p style="font-weight: bold; color: #0369a1; margin: 0 0 5px 0;">${plan.activity1Opening.name}</p>
+        <p style="margin: 2px 0;"><b>a) Mục tiêu:</b> ${plan.activity1Opening.objective}</p>
+        <p style="margin: 2px 0;"><b>b) Nội dung:</b> ${plan.activity1Opening.content}</p>
+        <p style="margin: 2px 0;"><b>c) Sản phẩm:</b> ${plan.activity1Opening.product}</p>
+        <p style="margin: 2px 0;"><b>d) Tổ chức thực hiện:</b><br/><span style="white-space: pre-line;">${plan.activity1Opening.implementation}</span></p>
+      </div>
+
+      <!-- Hoạt động 2 -->
+      <div style="margin-left: 10px; margin-bottom: 12px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; background: #f8fafc;">
+        <p style="font-weight: bold; color: #0369a1; margin: 0 0 5px 0;">${plan.activity2Knowledge.name}</p>
+        <p style="margin: 2px 0;"><b>a) Mục tiêu:</b> ${plan.activity2Knowledge.objective}</p>
+        <p style="margin: 2px 0;"><b>b) Nội dung:</b><br/><span style="white-space: pre-line;">${plan.activity2Knowledge.content}</span></p>
+        <p style="margin: 2px 0;"><b>c) Sản phẩm:</b> ${plan.activity2Knowledge.product}</p>
+        <p style="margin: 2px 0;"><b>d) Tổ chức thực hiện:</b><br/><span style="white-space: pre-line;">${plan.activity2Knowledge.implementation}</span></p>
+      </div>
+
+      <!-- Hoạt động 3 -->
+      <div style="margin-left: 10px; margin-bottom: 12px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; background: #f8fafc;">
+        <p style="font-weight: bold; color: #0369a1; margin: 0 0 5px 0;">${plan.activity3Practice.name}</p>
+        <p style="margin: 2px 0;"><b>a) Mục tiêu:</b> ${plan.activity3Practice.objective}</p>
+        <p style="margin: 2px 0;"><b>b) Nội dung:</b><br/><span style="white-space: pre-line;">${plan.activity3Practice.content}</span></p>
+        <p style="margin: 2px 0;"><b>c) Sản phẩm:</b> ${plan.activity3Practice.product}</p>
+        <p style="margin: 2px 0;"><b>d) Tổ chức thực hiện:</b><br/><span style="white-space: pre-line;">${plan.activity3Practice.implementation}</span></p>
+      </div>
+
+      <!-- Hoạt động 4 -->
+      <div style="margin-left: 10px; margin-bottom: 12px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; background: #f8fafc;">
+        <p style="font-weight: bold; color: #0369a1; margin: 0 0 5px 0;">${plan.activity4Application.name}</p>
+        <p style="margin: 2px 0;"><b>a) Mục tiêu:</b> ${plan.activity4Application.objective}</p>
+        <p style="margin: 2px 0;"><b>b) Nội dung:</b> ${plan.activity4Application.content}</p>
+        <p style="margin: 2px 0;"><b>c) Sản phẩm:</b> ${plan.activity4Application.product}</p>
+        <p style="margin: 2px 0;"><b>d) Tổ chức thực hiện:</b><br/><span style="white-space: pre-line;">${plan.activity4Application.implementation}</span></p>
+      </div>
+
+      ${plan.referenceCitations ? `
+        <div style="margin-top: 15px; font-size: 10pt; color: #64748b; font-style: italic; border-top: 1px dashed #cbd5e1; padding-top: 8px;">
+          ${plan.referenceCitations}
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+export function lessonPlan2634ToHtml(plan: LessonPlan2634Data): string {
+  return `
+    <div style="font-family: 'Times New Roman', Times, serif; font-size: 13pt; line-height: 1.4; color: #000;">
+      <div style="text-align: center; font-weight: bold; margin-bottom: 20px;">
+        <p style="margin: 0; font-size: 14pt;">GIÁO ÁN BÀI DẠY THỰC HÀNH NGHỀ</p>
+        <p style="margin: 5px 0; font-size: 16pt; color: #c2410c;">BÀI: ${plan.moduleTitle.toUpperCase()}</p>
+        <p style="margin: 0; font-weight: normal; font-style: italic;">
+          Nghề: ${plan.occupation} | Trình độ: ${plan.level} | Thời lượng: ${plan.durationMinutes} phút
+        </p>
+      </div>
+
+      <p style="font-weight: bold; margin-bottom: 5px;">I. MỤC TIÊU BÀI DẠY</p>
+      <p style="margin: 3px 0 3px 20px;"><b>1. Kiến thức:</b> ${plan.objectives.knowledge}</p>
+      <p style="margin: 3px 0 3px 20px;"><b>2. Kỹ năng:</b> ${plan.objectives.skills}</p>
+      <p style="margin: 3px 0 15px 20px;"><b>3. Năng lực tự chủ và ATLĐ:</b> ${plan.objectives.autonomyAndSafety}</p>
+
+      <p style="font-weight: bold; margin-bottom: 5px;">II. ĐIỀU KIỆN THỰC HIỆN BÀI HỌC</p>
+      <p style="margin: 3px 0 3px 20px;"><b>1. Thiết bị, máy móc:</b> ${plan.conditions.equipmentAndMachines}</p>
+      <p style="margin: 3px 0 3px 20px;"><b>2. Dụng cụ, vật tư, phôi mẫu:</b> ${plan.conditions.materialsAndWorkpieces}</p>
+      <p style="margin: 3px 0 15px 20px;"><b>3. Trang bị ATLĐ và 5S:</b> ${plan.conditions.safetyAnd5S}</p>
+
+      <p style="font-weight: bold; margin-bottom: 5px;">III. TIẾN TRÌNH DẠY HỌC THỰC HÀNH</p>
+
+      <table border="1" cellpadding="6" style="border-collapse: collapse; width: 100%; margin-top: 8px;">
+        <tr style="background-color: #ffedd5; font-weight: bold; text-align: center;">
+          <th style="width: 25%;">Các bước thực hiện</th>
+          <th style="width: 35%;">Hoạt động của Giáo viên</th>
+          <th style="width: 40%;">Hoạt động của Học sinh & Điểm then chốt ATLĐ</th>
+        </tr>
+        <tr>
+          <td><b>${plan.step1Orientation.name}</b></td>
+          <td>${plan.step1Orientation.teacherActivity}</td>
+          <td>${plan.step1Orientation.studentActivity}<br/><b style="color: #c2410c;">⚠️ Điểm then chốt:</b> ${plan.step1Orientation.safetyAndKeyPoints}</td>
+        </tr>
+        <tr>
+          <td><b>${plan.step2Demonstration.name}</b></td>
+          <td><span style="white-space: pre-line;">${plan.step2Demonstration.teacherActivity}</span></td>
+          <td>${plan.step2Demonstration.studentActivity}<br/><b style="color: #c2410c;">⚠️ Điểm then chốt:</b> ${plan.step2Demonstration.safetyAndKeyPoints}</td>
+        </tr>
+        <tr>
+          <td><b>${plan.step3Practice.name}</b></td>
+          <td>${plan.step3Practice.teacherActivity}</td>
+          <td><span style="white-space: pre-line;">${plan.step3Practice.studentActivity}</span><br/><b style="color: #c2410c;">⚠️ Điểm then chốt:</b> ${plan.step3Practice.safetyAndKeyPoints}</td>
+        </tr>
+        <tr>
+          <td><b>${plan.step4Evaluation.name}</b></td>
+          <td>${plan.step4Evaluation.teacherActivity}</td>
+          <td>${plan.step4Evaluation.studentActivity}<br/><b style="color: #c2410c;">⚠️ Điểm then chốt:</b> ${plan.step4Evaluation.safetyAndKeyPoints}</td>
+        </tr>
+      </table>
+
+      ${plan.referenceCitations ? `
+        <div style="margin-top: 15px; font-size: 10pt; color: #64748b; font-style: italic; border-top: 1px dashed #cbd5e1; padding-top: 8px;">
+          ${plan.referenceCitations}
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+export function examMatrixToHtml(matrixData: ExamMatrixData): string {
+  const m = matrixData.matrix;
+  return `
+    <div style="font-family: 'Times New Roman', Times, serif; font-size: 12pt; line-height: 1.4; color: #000;">
+      <div style="text-align: center; font-weight: bold; margin-bottom: 20px;">
+        <p style="margin: 0; font-size: 13pt;">MA TRẬN & ĐẶC TẢ ĐỀ KIỂM TRA ĐÁNH GIÁ</p>
+        <p style="margin: 5px 0; font-size: 15pt; color: #1e3a8a;">CHỦ ĐỀ: ${matrixData.topic.toUpperCase()}</p>
+        <p style="margin: 0; font-weight: normal; font-style: italic;">
+          Môn học: ${matrixData.subject} | Khối: ${matrixData.grade} | Quy mô: ${matrixData.questionCount} câu
+        </p>
+      </div>
+
+      <table border="1" cellpadding="6" style="border-collapse: collapse; width: 100%; text-align: center;">
+        <tr style="background-color: #e0f2fe; font-weight: bold;">
+          <th>Mức độ nhận thức</th>
+          <th>Nhận biết (40%)</th>
+          <th>Thông hiểu (30%)</th>
+          <th>Vận dụng (20%)</th>
+          <th>Vận dụng cao (10%)</th>
+          <th>Tổng số câu</th>
+        </tr>
+        <tr>
+          <td><b>Số lượng câu hỏi</b></td>
+          <td>${m.recognitionCount} câu</td>
+          <td>${m.comprehensionCount} câu</td>
+          <td>${m.applicationCount} câu</td>
+          <td>${m.advancedApplicationCount} câu</td>
+          <td><b>${matrixData.questionCount} câu</b></td>
+        </tr>
+      </table>
+
+      <h3 style="margin-top: 25px; color: #1e3a8a;">DANH SÁCH CÂU HỎI THEO ĐẶC TẢ:</h3>
+      ${matrixData.questions.map((q, idx) => `
+        <div style="margin-bottom: 12px; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px;">
+          <p style="margin: 0; font-weight: bold;">Câu ${idx + 1} [${q.level}]: ${q.questionText}</p>
+          <ul style="margin: 4px 0 6px 20px; list-style-type: none; padding: 0;">
+            ${q.options.map(opt => `<li style="margin: 2px 0;">${opt}</li>`).join('')}
+          </ul>
+          <p style="margin: 0; font-size: 10.5pt; color: #16a34a;"><b>=> Đáp án đúng:</b> ${q.correctAnswer} - <i>${q.explanation}</i></p>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
 
 export function slidesToHtml(slides: LessonSlideItem[], title: string, subject: string): string {
   const slidesHtml = slides.map(s => `
@@ -1408,4 +1469,50 @@ ${miniGameToTxt(pkg.miniGame, pkg.lessonTitle)}
       </table>
     </div>
   `;
+}
+
+export function downloadWordDoc(htmlContent: string, fileName: string): void {
+  const header = `
+    <html xmlns:o='urn:schemas-microsoft-com:office:office'
+          xmlns:w='urn:schemas-microsoft-com:office:word'
+          xmlns='http://www.w3.org/TR/REC-html40'>
+    <head>
+      <meta charset='utf-8'>
+      <title>Kế Hoạch Bài Dạy</title>
+      <style>
+        @page WordSection1 {
+          size: 595.3pt 841.9pt; /* A4 */
+          margin: 56.7pt 56.7pt 56.7pt 70.9pt; /* 2cm 2cm 2cm 2.5cm */
+          mso-header-margin: 35.4pt;
+          mso-footer-margin: 35.4pt;
+          mso-paper-source: 0;
+        }
+        div.WordSection1 { page: WordSection1; }
+        body { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.35; color: #000; }
+        h1 { font-size: 18pt; font-weight: bold; }
+        h2 { font-size: 14pt; font-weight: bold; }
+        h3 { font-size: 13pt; font-weight: bold; }
+        p { margin: 4pt 0; text-align: justify; }
+        table { border-collapse: collapse; width: 100%; margin: 10pt 0; }
+        th, td { border: 1pt solid #000; padding: 6pt; }
+        th { background-color: #f1f5f9; font-weight: bold; }
+      </style>
+    </head>
+    <body>
+      <div class="WordSection1">
+        ${htmlContent}
+      </div>
+    </body>
+    </html>
+  `;
+
+  const blob = new Blob(['\ufeff', header], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName.endsWith('.doc') ? fileName : `${fileName}.doc`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }

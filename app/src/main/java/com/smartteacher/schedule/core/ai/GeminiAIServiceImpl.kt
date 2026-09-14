@@ -835,6 +835,54 @@ class GeminiAIServiceImpl(
         }
     }
 
+    private data class ExtractedPedagogy(
+        val definitions: List<String>,
+        val sections: List<String>,
+        val formulas: List<String>,
+        val equipment: List<String>,
+        val exercises: List<String>
+    )
+
+    private fun extractPedagogyFromContext(contextText: String, lessonName: String): ExtractedPedagogy {
+        if (contextText.isBlank()) {
+            return ExtractedPedagogy(emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
+        }
+
+        val lines = contextText.lines().map { it.trim() }.filter { it.length > 5 }
+        val defs = mutableListOf<String>()
+        val secs = mutableListOf<String>()
+        val forms = mutableListOf<String>()
+        val equips = mutableListOf<String>()
+        val exers = mutableListOf<String>()
+
+        for (line in lines) {
+            val lower = line.lowercase()
+            if (line.matches(Regex("^(?:[I|V|X]+|\\d+)[\\.\\:]\\s*.*")) || lower.contains("phần ") || lower.contains("chủ đề ")) {
+                secs.add(line.replace(Regex("^[\\W_]+"), "").take(120))
+            }
+            if (lower.contains(" là ") || lower.contains("khái niệm") || lower.contains("được định nghĩa") || lower.contains("nguyên tắc")) {
+                defs.add(line)
+            }
+            if (lower.contains("công thức") || lower.contains("quy tắc") || lower.contains("tính:") || line.contains("=") || lower.contains("thông số")) {
+                forms.add(line)
+            }
+            if (lower.contains("máy ") || lower.contains("thiết bị") || lower.contains("dụng cụ") || lower.contains("thước") || lower.contains("phần mềm") || lower.contains("phiếu học tập")) {
+                equips.add(line)
+            }
+            if (lower.contains("bài tập") || lower.contains("câu hỏi") || lower.contains("yêu cầu") || lower.contains("thực hành:") || lower.contains("vận dụng")) {
+                exers.add(line)
+            }
+        }
+
+        return ExtractedPedagogy(
+            definitions = defs.distinct().take(6),
+            sections = secs.distinct().take(6),
+            formulas = forms.distinct().take(6),
+            equipment = equips.distinct().take(6),
+            exercises = exers.distinct().take(6)
+        )
+    }
+
     private fun generateOffline5512(
         lessonName: String,
         subject: String,
@@ -855,23 +903,62 @@ class GeminiAIServiceImpl(
             "Công văn 5512/BGDĐT-GDTrH của Bộ GD&ĐT; Chương trình Giáo dục Phổ thông 2018"
         }
 
+        val ped = extractPedagogyFromContext(referenceContext, lessonName)
+
+        val mainDef = ped.definitions.firstOrNull()
+        val knowledgeObj = if (customObjectives.isNotBlank()) {
+            customObjectives
+        } else if (mainDef != null) {
+            "Học sinh nắm vững và giải thích được nội dung trọng tâm: $mainDef"
+        } else {
+            "Học sinh hiểu và trình bày được bản chất, quy luật, các khái niệm trọng tâm của bài '$lessonName'."
+        }
+
+        val teacherEquip = if (ped.equipment.isNotEmpty()) {
+            "Giáo án điện tử, Tivi/máy chiếu, phiếu học tập số; Thiết bị chuyên môn đối chiếu: ${ped.equipment.take(3).joinToString("; ")}"
+        } else {
+            "Giáo án điện tử, máy chiếu/Tivi, phiếu học tập số 1 & 2, tranh ảnh/video thí nghiệm minh họa."
+        }
+
+        val act1Content = if (mainDef != null) {
+            "Giáo viên nêu câu hỏi tình huống thực tế liên quan đến: \"${mainDef.take(120)}\". Yêu cầu học sinh suy nghĩ phát hiện mâu thuẫn nhận thức."
+        } else {
+            "Giáo viên đưa ra tình huống thực tế hoặc video ngắn liên quan đến $lessonName và đặt câu hỏi mở."
+        }
+
+        val act2Content = if (ped.sections.isNotEmpty() || ped.definitions.isNotEmpty()) {
+            val secList = (ped.sections + ped.definitions.take(2)).distinct().take(3).joinToString("; ")
+            "Tổ chức cho học sinh nghiên cứu tài liệu, bóc tách và phân tích các đề mục trọng tâm: $secList."
+        } else {
+            "Nghiên cứu tài liệu SGK, phân tích các ví dụ mẫu, làm việc theo nhóm 4 học sinh."
+        }
+
+        val act3Content = if (ped.exercises.isNotEmpty() || ped.formulas.isNotEmpty()) {
+            val taskItem = ped.exercises.firstOrNull() ?: ped.formulas.firstOrNull() ?: "Giải quyết bài toán áp dụng"
+            "Học sinh vận dụng công thức và lý thuyết bài học để giải quyết nhiệm vụ: \"${taskItem.take(150)}\"."
+        } else {
+            "Học sinh làm việc độc lập giải quyết bài tập luyện tập 1, 2 trong phiếu học tập số 2."
+        }
+
+        val act4Content = "Vận dụng kiến thức bài '$lessonName' để phân tích hiện tượng thực tiễn, đề xuất giải pháp công nghệ hoặc hoàn thành dự án học tập số."
+
         return LessonPlan5512Result(
             lessonName = lessonName,
             subject = subject,
             grade = grade,
             durationPeriods = durationPeriods,
-            knowledgeObjective = if (customObjectives.isNotBlank()) customObjectives else "Học sinh hiểu và trình bày được bản chất, quy luật, các khái niệm trọng tâm của bài '$lessonName'.",
+            knowledgeObjective = knowledgeObj,
             generalCompetence = "Năng lực tự chủ và tự học (chủ động tìm hiểu tài liệu); Năng lực giao tiếp và hợp tác (thảo luận nhóm tích cực); Năng lực giải quyết vấn đề và sáng tạo.",
             specificCompetence = "Năng lực nhận thức, vận dụng phương pháp khoa học của môn $subject để giải quyết các tình huống học tập và bài tập thực hành.",
             qualitiesObjective = "Rèn luyện đức tính cẩn thận, trung thực, tính kỷ luật và tinh thần trách nhiệm trong học tập.",
-            teacherEquipment = "Giáo án điện tử, máy chiếu/Tivi, phiếu học tập số 1 & 2, tranh ảnh/video thí nghiệm minh họa.",
+            teacherEquipment = teacherEquip,
             studentEquipment = "Sách giáo khoa, vở ghi bài, bút viết, phiếu học tập cá nhân và nhóm.",
             activities = listOf(
                 Activity5512(
                     title = "Hoạt động 1: Mở đầu / Khởi động (Tạo tình huống có vấn đề)",
                     durationMinutes = warmMin,
                     objective = "Kích thích tư duy, tạo mâu thuẫn nhận thức để học sinh sẵn sàng tiếp thu bài '$lessonName'.",
-                    content = "Giáo viên đưa ra tình huống thực tế hoặc video ngắn liên quan đến $lessonName và đặt câu hỏi mở.",
+                    content = act1Content,
                     product = "Câu trả lời, ý kiến thảo luận sôi nổi của học sinh ghi trên bảng phụ.",
                     implementation = "1. Giao nhiệm vụ: GV trình chiếu câu hỏi khởi động.\n2. Thực hiện: HS suy nghĩ cá nhân trong 2 phút.\n3. Báo cáo: Đại diện 2 HS phát biểu ý kiến.\n4. Kết luận: GV nhận xét, dẫn dắt vào bài mới."
                 ),
@@ -879,7 +966,7 @@ class GeminiAIServiceImpl(
                     title = "Hoạt động 2: Hình thành kiến thức mới (Chiếm lĩnh tri thức trọng tâm)",
                     durationMinutes = newMin,
                     objective = "Học sinh hiểu rõ nội dung, định nghĩa, công thức và quy trình của bài '$lessonName'.",
-                    content = "Nghiên cứu tài liệu SGK, phân tích các ví dụ mẫu, làm việc theo nhóm 4 học sinh.",
+                    content = act2Content,
                     product = "Bản tổng hợp kiến thức đã hoàn thành trên phiếu học tập số 1 của các nhóm.",
                     implementation = "1. Giao nhiệm vụ: Chia lớp thành các nhóm, giao phiếu học tập.\n2. Thực hiện: Các nhóm thảo luận, GV quan sát hỗ trợ.\n3. Báo cáo: Nhóm 1 báo cáo, các nhóm khác phản biện.\n4. Kết luận: GV chuẩn hóa kiến thức trên slide."
                 ),
@@ -887,7 +974,7 @@ class GeminiAIServiceImpl(
                     title = "Hoạt động 3: Luyện tập (Củng cố và rèn luyện kỹ năng)",
                     durationMinutes = pracMin,
                     objective = "Khắc sâu kiến thức, vận dụng trực tiếp vào bài tập hoặc câu hỏi tình huống.",
-                    content = "Học sinh làm việc độc lập giải quyết bài tập luyện tập 1, 2 trong phiếu học tập số 2.",
+                    content = act3Content,
                     product = "Bài giải chi tiết của học sinh trong vở ghi.",
                     implementation = "1. Giao nhiệm vụ: GV giao bài tập tự luyện trên màn hình.\n2. Thực hiện: HS độc lập làm bài.\n3. Báo cáo: Gọi 2 HS lên bảng chữa bài.\n4. Kết luận: GV nhận xét, chốt đáp án đúng và phân tích lỗi sai."
                 ),
@@ -895,7 +982,7 @@ class GeminiAIServiceImpl(
                     title = "Hoạt động 4: Vận dụng (Gắn liền bài học với thực tiễn)",
                     durationMinutes = appMin,
                     objective = "Vận dụng kiến thức bài '$lessonName' để giải thích hiện tượng hoặc làm sản phẩm thực tiễn.",
-                    content = "Tìm hiểu ứng dụng thực tế của bài học trong đời sống, công nghệ hoặc sản xuất.",
+                    content = act4Content,
                     product = "Bản báo cáo ngắn gọn hoặc sản phẩm sáng tạo nộp vào tiết học sau.",
                     implementation = "1. Giao nhiệm vụ: GV hướng dẫn câu hỏi vận dụng mở rộng.\n2. Thực hiện: HS thực hiện ngoài giờ lên lớp.\n3. Đánh giá: Thu sản phẩm đánh giá vào buổi học tới."
                 )
@@ -1040,16 +1127,38 @@ class GeminiAIServiceImpl(
             "Công văn 2634/GDNN của Tổng cục GDNN; Tiêu chuẩn An toàn xưởng và 5S"
         }
 
+        val ped = extractPedagogyFromContext(referenceContext, lessonName)
+
+        val mainDef = ped.definitions.firstOrNull()
+        val knowledgeObj = if (mainDef != null) {
+            "Trình bày được cấu tạo thiết bị, chế độ công nghệ và nguyên lý gia công bài '$lessonName' (Căn cứ tài liệu: $mainDef)."
+        } else {
+            "Trình bày được cấu tạo thiết bị, chế độ cắt gọt, trình tự các bước công nghệ và các dạng sai hỏng thường gặp khi gia công bài '$lessonName'."
+        }
+
+        val machEquip = if (ped.equipment.isNotEmpty()) {
+            ped.equipment.take(4).joinToString("; ")
+        } else {
+            "Máy gia công chuyên dụng (Tiện, Phay, CNC), tủ dụng cụ, đồ gá vạn năng, hệ thống làm mát."
+        }
+
+        val step2Teacher = if (ped.sections.isNotEmpty() || ped.formulas.isNotEmpty()) {
+            val keyInfo = (ped.sections.take(2) + ped.formulas.take(1)).joinToString("; ")
+            "Phân tích bản vẽ kỹ thuật, hướng dẫn các thông số công nghệ cốt lõi: $keyInfo. Thao tác mẫu tỉ mỉ từng bước gá đặt và rà dao."
+        } else {
+            "Phân tích bản vẽ kỹ thuật, chọn dao và chế độ cắt (vận tốc trục chính S, bước tiến F). Thao tác mẫu 1 lần với tốc độ bình thường và 1 lần phân tích từng bước gá đặt, set gốc tọa độ."
+        }
+
         return LessonPlan2634Result(
             moduleName = moduleName,
             lessonName = lessonName,
             profession = profession,
             trainingLevel = trainingLevel,
             durationHours = durationHours,
-            knowledgeObjective = "Trình bày được cấu tạo thiết bị, chế độ cắt gọt, trình tự các bước công nghệ và các dạng sai hỏng thường gặp khi gia công bài '$lessonName'.",
+            knowledgeObjective = knowledgeObj,
             skillObjective = "Vận hành thiết bị chuẩn xác, thực hiện gia công chi tiết đạt dung sai kích thước ±0.02mm và độ nhám bề mặt theo đúng bản vẽ kỹ thuật.",
             autonomyAndResponsibility = "Rèn luyện tác phong công nghiệp, tinh thần tiết kiệm vật tư, ý thức bảo quản tài sản xưởng và tuân thủ nghiêm ngặt quy định 5S.",
-            machineryAndEquipment = "Máy gia công chuyên dụng (Tiện, Phay, CNC), tủ dụng cụ, đồ gá vạn năng, hệ thống làm mát.",
+            machineryAndEquipment = machEquip,
             materialsAndDrawings = "Phôi nhôm/thép đã được cắt phôi chuẩn, dao tiện/dao phay, thước kẹp điện tử 0.01mm, panme, bản vẽ gia công chi tiết.",
             safetyGear = if (customSafety.isNotBlank()) customSafety else "Quần áo bảo hộ xưởng cơ khí, kính bảo hộ chống phoi bắn, giày bảo hộ mũi lót thép, không đeo găng tay khi vận hành trục chính.",
             steps = listOf(
@@ -1063,7 +1172,7 @@ class GeminiAIServiceImpl(
                 Step2634(
                     stepName = "2. Hướng dẫn ban đầu",
                     durationMinutes = 20,
-                    teacherActivity = "Phân tích bản vẽ kỹ thuật, chọn dao và chế độ cắt (vận tốc trục chính S, bước tiến F). Thao tác mẫu 1 lần với tốc độ bình thường và 1 lần phân tích từng bước gá đặt, set gốc tọa độ.",
+                    teacherActivity = step2Teacher,
                     studentActivity = "Quan sát tỉ mỉ từng thao tác của giáo viên, ghi chép thông số công nghệ vào phiếu thực tập.",
                     notesAndSafety = "Đứng cách máy tối thiểu 0.8m trong khi giáo viên thao tác mẫu."
                 ),

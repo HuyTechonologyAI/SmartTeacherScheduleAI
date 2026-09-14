@@ -29,7 +29,8 @@ import {
   Check,
   Download,
   ExternalLink,
-  RefreshCw
+  RefreshCw,
+  ArrowLeftRight
 } from "lucide-react";
 import {
   AiPedagogyMode,
@@ -66,11 +67,41 @@ interface ChatMessage {
 export default function AIAssistantWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [positionSide, setPositionSide] = useState<'right' | 'left'>('right');
+  const [isDocked, setIsDocked] = useState(false);
+  const [showBadge, setShowBadge] = useState(false);
   const [selectedMode, setSelectedMode] = useState<AiPedagogyMode>("ALL");
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedSide = localStorage.getItem('smart_teacher_ai_widget_side');
+      if (savedSide === 'left' || savedSide === 'right') setPositionSide(savedSide);
+      const savedDocked = localStorage.getItem('smart_teacher_ai_widget_docked');
+      if (savedDocked === 'true') setIsDocked(true);
+    }
+  }, []);
+
+  const togglePositionSide = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const nextSide = positionSide === 'right' ? 'left' : 'right';
+    setPositionSide(nextSide);
+    try {
+      localStorage.setItem('smart_teacher_ai_widget_side', nextSide);
+    } catch (_) {}
+  };
+
+  const toggleDocked = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const nextDocked = !isDocked;
+    setIsDocked(nextDocked);
+    try {
+      localStorage.setItem('smart_teacher_ai_widget_docked', String(nextDocked));
+    } catch (_) {}
+  };
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -260,42 +291,101 @@ Thầy/Cô hãy chọn nhanh chức năng bên dưới hoặc đặt câu hỏi 
 
   return (
     <>
-      {/* 1. NÚT NỔI GÓC DƯỚI PHẢI */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end space-y-2">
-        {!isOpen && (
-          <div
-            onClick={() => setIsOpen(true)}
-            className="cursor-pointer mb-1 hidden sm:flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-indigo-500/40 text-xs text-white shadow-xl backdrop-blur-md hover:scale-105 transition-all group animate-bounce"
-          >
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span className="font-semibold text-indigo-300 group-hover:text-white">
-              Trợ lý AI Sư phạm 24/7 (7 Chức năng)
-            </span>
-          </div>
-        )}
-
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className={`relative group flex items-center justify-center p-4 rounded-full shadow-2xl transition-all duration-300 ${
-            isOpen
-              ? "bg-slate-800 text-slate-300 rotate-90 scale-95 border border-white/20"
-              : "bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 text-white hover:scale-110 shadow-indigo-500/50 hover:shadow-cyan-500/50"
-          }`}
-          aria-label="Mở Trợ lý AI Sư phạm 24/7"
+      {/* NÚT THU GỌN VÀO MÉP MÀN HÌNH (DOCK MODE - GIẢI PHÓNG 100% GÓC MÀN HÌNH) */}
+      {isDocked && !isOpen && (
+        <div
+          className={`fixed top-1/2 -translate-y-1/2 z-40 ${positionSide === 'right' ? 'right-0' : 'left-0'} pointer-events-auto transition-all`}
         >
-          {isOpen ? (
-            <X className="w-6 h-6" />
-          ) : (
-            <div className="relative">
-              <Sparkles className="w-7 h-7 animate-pulse" />
-              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-slate-900 rounded-full" />
+          <button
+            onClick={() => setIsDocked(false)}
+            className={`group flex items-center gap-1 py-3.5 px-2 bg-gradient-to-b from-indigo-700 via-indigo-600 to-cyan-600 text-white shadow-2xl hover:scale-105 transition-all border border-indigo-400/40 cursor-pointer ${
+              positionSide === 'right' ? 'rounded-l-2xl' : 'rounded-r-2xl'
+            }`}
+            title="Bấm để mở rộng Trợ lý AI Sư phạm (Đang thu gọn ở mép màn hình)"
+          >
+            <Sparkles className="w-4 h-4 text-cyan-200 animate-pulse" />
+            <span className="[writing-mode:vertical-lr] text-[10px] tracking-wider font-bold">AI SƯ PHẠM</span>
+          </button>
+        </div>
+      )}
+
+      {/* 1. NÚT NỔI THÔNG MINH (CHO PHÉP ĐỔI BÊN, THU GỌN VÀ TẮT BANNER CHE NÚT) */}
+      {!isDocked && (
+        <div
+          className={`fixed bottom-6 ${positionSide === 'right' ? 'right-6' : 'left-6'} z-40 flex flex-col ${positionSide === 'right' ? 'items-end' : 'items-start'} space-y-2 pointer-events-none transition-all duration-200`}
+        >
+          {!isOpen && showBadge && (
+            <div
+              className="pointer-events-auto cursor-pointer mb-1 hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/95 border border-indigo-500/40 text-xs text-white shadow-xl backdrop-blur-md hover:scale-102 transition-all animate-fade-in group"
+            >
+              <div className="flex items-center gap-1.5" onClick={() => setIsOpen(true)}>
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span className="font-semibold text-indigo-300 group-hover:text-white">
+                  Trợ lý AI Sư phạm 24/7
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowBadge(false);
+                }}
+                className="p-0.5 rounded-full hover:bg-white/20 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                title="Đóng thông báo này"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
-        </button>
-      </div>
+
+          <div className="flex items-center gap-1.5 pointer-events-auto">
+            {/* Cụm công cụ điều khiển vị trí & thu gọn */}
+            {!isOpen && (
+              <div className="flex items-center gap-1 bg-slate-900/90 backdrop-blur-md p-1 rounded-full border border-slate-700/80 shadow-lg">
+                <button
+                  type="button"
+                  onClick={togglePositionSide}
+                  className="p-1.5 rounded-full text-slate-300 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
+                  title={positionSide === 'right' ? "Chuyển AI sang góc trái" : "Chuyển AI sang góc phải"}
+                >
+                  <ArrowLeftRight className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleDocked}
+                  className="p-1.5 rounded-full text-slate-300 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
+                  title="Thu gọn nút AI vào mép màn hình (Không che nút)"
+                >
+                  <Minimize2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className={`relative group flex items-center justify-center p-3 sm:p-3.5 rounded-full shadow-2xl transition-all duration-300 cursor-pointer ${
+                isOpen
+                  ? "bg-slate-800 text-slate-300 rotate-90 scale-95 border border-white/20"
+                  : "bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 text-white hover:scale-105 shadow-indigo-500/40 hover:shadow-cyan-500/40"
+              }`}
+              aria-label="Mở Trợ lý AI Sư phạm 24/7"
+              title={isOpen ? "Đóng trợ lý AI" : "Mở Trợ lý AI Sư phạm 24/7 (Có thể đổi vị trí hoặc thu gọn)"}
+            >
+              {isOpen ? (
+                <X className="w-5 h-5" />
+              ) : (
+                <div className="relative">
+                  <Sparkles className="w-6 h-6 animate-pulse" />
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 border-2 border-slate-900 rounded-full" />
+                </div>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 2. CỬA SỔ CHAT ĐA NĂNG */}
       {isOpen && (
@@ -303,7 +393,7 @@ Thầy/Cô hãy chọn nhanh chức năng bên dưới hoặc đặt câu hỏi 
           className={`fixed z-50 rounded-3xl glass-panel border-2 border-indigo-500/40 bg-gradient-to-b from-slate-900/95 via-slate-950/98 to-black shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 ${
             isExpanded
               ? "bottom-4 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-[720px] h-[85vh]"
-              : "bottom-24 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-[480px] h-[640px] max-h-[85vh]"
+              : `bottom-20 ${positionSide === 'right' ? 'right-4 sm:right-6' : 'left-4 sm:left-6'} w-[calc(100vw-2rem)] sm:w-[480px] h-[640px] max-h-[85vh]`
           }`}
         >
           {/* Header */}

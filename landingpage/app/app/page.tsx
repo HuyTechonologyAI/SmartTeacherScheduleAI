@@ -2984,7 +2984,7 @@ export default function UnifiedTeacherScheduleApp() {
       )}
 
       {/* 3. MAIN CONTENT AREA */}
-      <main className={activeTab === "eduviet" ? "w-full" : "flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 space-y-6"}>
+      <main className={activeTab === "eduviet" ? "w-full pb-32" : "flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 pb-36 space-y-6"}>
 
         {/* ================= TAB 0: EDUVIET TRANG CHỦ (VIETNAMESE DESIGN) ================= */}
         {activeTab === 'eduviet' && (
@@ -3539,7 +3539,7 @@ export default function UnifiedTeacherScheduleApp() {
                   <p className="text-xs text-slate-500 dark:text-slate-400">Thầy/Cô có thể đổi ngày hoặc chọn chế độ "Xem toàn bộ 288 ca" ở trên.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-28">
                   {filteredEvents.map((ev) => {
                     const dayInfo = getDayInfo(ev.date);
                     const isPractice = ev.sessionType.toLowerCase().includes('hành');

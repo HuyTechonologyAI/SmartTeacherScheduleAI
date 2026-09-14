@@ -1,5 +1,7 @@
 "use client";
 
+import EcosystemMegaBar from '@/components/EcosystemMegaBar';
+
 import React, { useState } from 'react';
 import { 
   Search, 
@@ -88,6 +90,8 @@ export default function EduVietHeader({
   };
 
   return (
+    <>
+      <EcosystemMegaBar />
     <header className="w-full bg-white/95 dark:bg-[#0F172A]/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 sticky top-0 z-40 px-4 sm:px-6 py-3 transition-colors duration-200">
       <div className="max-w-4xl mx-auto space-y-3">
         {/* Top bar: Brand + Actions */}
@@ -369,5 +373,6 @@ export default function EduVietHeader({
         </div>
       </div>
     </header>
+    </>
   );
 }

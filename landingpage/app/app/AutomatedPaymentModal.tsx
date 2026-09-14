@@ -1382,6 +1382,20 @@ export const AutomatedPaymentModal: React.FC<AutomatedPaymentModalProps> = ({
                     <span>Đăng Ký Xuất Hóa Đơn Điện Tử (VAT)</span>
                   </h5>
                   <p className="text-xs text-slate-500">Phục vụ công tác thanh quyết toán kinh phí cơ quan / trường học</p>
+                  <div className="mt-2 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between text-[11px] text-emerald-800 dark:text-emerald-300">
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <span>⚡</span>
+                      <span>Liên thông xuất Hóa đơn GTGT tự động qua cổng <strong>SmartTax AI</strong></span>
+                    </span>
+                    <a
+                      href="https://smarttax-ai.vercel.app"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2 py-0.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] shrink-0"
+                    >
+                      smarttax-ai.vercel.app ↗
+                    </a>
+                  </div>
                 </div>
                 <button
                   type="button"

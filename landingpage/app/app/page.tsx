@@ -27,6 +27,7 @@ export function recordDeletedEventIds(ids: (string | number)[]): void {
 }
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import EcosystemMegaBar from '@/components/EcosystemMegaBar';
 import Link from 'next/link';
 import TodayCommandCenter from '@/components/dashboard/TodayCommandCenter';
 import SyncSecurityModal from '@/components/dashboard/SyncSecurityModal';

@@ -29,7 +29,8 @@ import {
   Mail,
   Calendar,
   Eye,
-  RefreshCw
+  RefreshCw,
+  ExternalLink
 } from 'lucide-react';
 import { PRICING_PLANS, PAYMENT_BENEFICIARY, DetailedQuoteResult } from '@/app/lib/paymentConfig';
 
@@ -750,6 +751,127 @@ export const FinancialAiTab: React.FC = () => {
               <span className="text-[10px] text-indigo-300 uppercase font-bold block">Biên Lợi Nhuận Ròng</span>
               <span className="text-xl font-black text-teal-300">{profitMargin}% ({breakEvenMultiplier}x Hòa Vốn)</span>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* PHẦN 4: CHIẾN LƯỢC TÍCH HỢP HỆ SINH THÁI 3 WEBSITE (TRI-ECOSYSTEM SYNERGY) */}
+      {/* ========================================================================= */}
+      <section className="space-y-6 pt-4 border-t border-slate-800">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-500 to-indigo-500 text-white flex items-center justify-center font-bold">
+              ⚡
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white">Chiến Lược Tích Hợp Hệ Sinh Thái 3 Website Huy Technology AI</h3>
+              <p className="text-xs text-slate-400">Đồng bộ chéo trên 3 phương diện: Kinh Doanh, Truyền Thông và Vận Hành</p>
+            </div>
+          </div>
+          <span className="text-xs font-black text-emerald-400 bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-800">
+            Hệ Sinh Thái Hợp Nhất
+          </span>
+        </div>
+
+        {/* 3 Trụ Cột Đồng Bộ Chéo */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Trụ Cột 1: Kinh Doanh */}
+          <div className="p-5 rounded-3xl bg-slate-900 border border-rose-500/30 space-y-3">
+            <div className="flex items-center gap-2 text-rose-400 font-bold text-sm">
+              <span className="w-7 h-7 rounded-lg bg-rose-500/20 flex items-center justify-center font-black">1</span>
+              <span>Kinh Doanh & Doanh Thu</span>
+            </div>
+            <ul className="space-y-2 text-xs text-slate-300">
+              <li className="flex items-start gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
+                <span><strong>Gói Bundle Combo:</strong> Mua License Nhà trường tặng kèm 1 năm phần mềm Kê khai Thuế SmartTax AI cho kế toán trường.</span>
+              </li>
+              <li className="flex items-start gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
+                <span><strong>Cross-Selling Chéo:</strong> Giới thiệu giáo viên dạy thêm đăng ký SmartTax AI để kê khai thuế TNCN thu nhập vãng lai dễ dàng.</span>
+              </li>
+              <li className="flex items-start gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
+                <span><strong>Cổng Thanh Toán Chung:</strong> Thống nhất 1 tài khoản thụ hưởng ACB 37780997 giúp dòng tiền quy tụ an toàn và minh bạch.</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Trụ Cột 2: Truyền Thông */}
+          <div className="p-5 rounded-3xl bg-slate-900 border border-amber-500/30 space-y-3">
+            <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
+              <span className="w-7 h-7 rounded-lg bg-amber-500/20 flex items-center justify-center font-black">2</span>
+              <span>Truyền Thông & Thương Hiệu</span>
+            </div>
+            <ul className="space-y-2 text-xs text-slate-300">
+              <li className="flex items-start gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                <span><strong>Master Hub Authority:</strong> Huycncdsai.io.vn định vị là viện công nghệ AI đa ngành, bảo chứng niềm tin và pháp lý cho 2 nền tảng con.</span>
+              </li>
+              <li className="flex items-start gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                <span><strong>Backlink & SEO Ma Trận:</strong> Liên kết chéo 3 chiều tạo authority domain vững chắc, tăng điểm SEO Google tự nhiên vượt trội.</span>
+              </li>
+              <li className="flex items-start gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                <span><strong>Chiến Dịch Song Hành:</strong> Chiến dịch "Chuyển Đổi Số Toàn Diện Trường Học" kết hợp cả Giáo án số & Hóa đơn điện tử số.</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Trụ Cột 3: Vận Hành */}
+          <div className="p-5 rounded-3xl bg-slate-900 border border-emerald-500/30 space-y-3">
+            <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+              <span className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center font-black">3</span>
+              <span>Vận Hành & Công Nghệ</span>
+            </div>
+            <ul className="space-y-2 text-xs text-slate-300">
+              <li className="flex items-start gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                <span><strong>Hợp Nhất SSO:</strong> Một tài khoản Huy Technology ID đăng nhập và đồng bộ dữ liệu thông suốt qua cả 3 nền tảng.</span>
+              </li>
+              <li className="flex items-start gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                <span><strong>API Webhook Tự Động:</strong> Đơn hàng VIP/School yêu cầu xuất VAT tự động bắn dữ liệu sang SmartTax AI sinh hóa đơn có mã Thuế.</span>
+              </li>
+              <li className="flex items-start gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                <span><strong>Tiết Kiệm 65% Chi Phí:</strong> Tái sử dụng hạ tầng hosting Vercel, Supabase DB và cùng chung đội ngũ CSKH kỹ thuật.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        {/* 3 Websites Quick Access */}
+        <div className="p-5 rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h4 className="font-bold text-white text-sm flex items-center gap-2">
+              <span>Hệ Thống 3 Nền Tảng Đã Sẵn Sàng Kết Nối Hoạt Động</span>
+            </h4>
+            <p className="text-xs text-slate-400">
+              Truy cập nhanh và kiểm tra liên thông dữ liệu giữa các cổng dịch vụ
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <a
+              href="https://huycncdsai.io.vn"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+            >
+              <span>🏢 huycncdsai.io.vn</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+            <a
+              href="https://smarttax-ai.vercel.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+            >
+              <span>📊 smarttax-ai.vercel.app</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
           </div>
         </div>
       </section>

@@ -9,148 +9,236 @@ import JSZip from 'jszip';
 import { LessonSlideItem } from './lessonPlanAi';
 
 /**
- * Tạo hình ảnh minh họa vector thuần đồ họa (Icons & Visual Art - KHÔNG chứa chữ tĩnh)
+ * Vẽ Khối Đồ Họa & Minh Họa Sư Phạm 100% Native PowerPoint Shapes & Editable Text
+ * Đặc điểm tối thượng:
+ * 1. KHÔNG dùng SVG, Image DOM hay Canvas: Triệt tiêu 100% nguy cơ lỗi image.onerror, tainted canvas, CSP hay treo trình duyệt.
+ * 2. 100% Vector sắc nét chuẩn OpenXML: Hiển thị hoàn hảo trên máy chiếu 4K/8K mà không bị vỡ ảnh.
+ * 3. 100% Văn bản chỉnh sửa được: Giáo viên có thể click vào bất kỳ ô chữ, hình khối nào trên PowerPoint để biên tập lại.
  */
-function createPureGraphicIllustrationSvg(type: string, subject: string): string {
+function renderNativeVisualCard(
+  pptx: any,
+  slide: any,
+  type: string,
+  subject: string,
+  visualSuggestion?: string
+) {
   const cleanSub = (subject || '').toLowerCase();
   const isElectricOrTech = cleanSub.includes('điện') || cleanSub.includes('công nghệ') || cleanSub.includes('kỹ thuật') || cleanSub.includes('vật lí');
 
   switch (type) {
-    case 'cover':
-      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 450" width="500" height="450">
-        <defs>
-          <linearGradient id="g2" x1="0%" y1="100%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#0284c7" stop-opacity="0.1"/>
-            <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.3"/>
-          </linearGradient>
-        </defs>
-        <circle cx="250" cy="225" r="180" fill="url(#g2)"/>
-        <circle cx="250" cy="225" r="130" fill="none" stroke="#38bdf8" stroke-width="3" stroke-dasharray="8 6"/>
-        <path d="M250 80 L350 135 L250 190 L150 135 Z" fill="#0369a1" stroke="#38bdf8" stroke-width="4"/>
-        <path d="M190 157 L190 230 C190 260 310 260 310 230 L310 157" fill="none" stroke="#38bdf8" stroke-width="4"/>
-        <path d="M340 145 L360 220" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>
-        <circle cx="360" cy="230" r="8" fill="#f59e0b"/>
-        <circle cx="250" cy="320" r="45" fill="#ffffff" stroke="#0284c7" stroke-width="4"/>
-        <path d="M250 295 C235 295 225 305 225 320 C225 330 235 340 242 345 L258 345 C265 340 275 330 275 320 C275 305 265 295 250 295 Z" fill="#fbbf24"/>
-        <line x1="250" y1="280" x2="250" y2="290" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>
-        <line x1="220" y1="290" x2="230" y2="298" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>
-        <line x1="280" y1="290" x2="270" y2="298" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>
-        <circle cx="120" cy="180" r="15" fill="#0284c7" opacity="0.6"/>
-        <circle cx="380" cy="290" r="18" fill="#10b981" opacity="0.6"/>
-        <circle cx="150" cy="330" r="12" fill="#8b5cf6" opacity="0.6"/>
-      </svg>`;
+    case 'cover': {
+      // Bìa bài giảng: Thẻ thông tin công nghệ & chuyển đổi số sang trọng
+      slide.addShape(pptx.ShapeType.roundRect, {
+        x: 6.6, y: 1.1, w: 2.9, h: 3.7, rectRadius: 0.15,
+        fill: { color: '1E293B' }, line: { color: '38BDF8', width: 2 }
+      });
 
-    case 'objectives':
-      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 450" width="500" height="450">
-        <circle cx="250" cy="225" r="170" fill="#f0f9ff" stroke="#bae6fd" stroke-width="3"/>
-        <circle cx="250" cy="225" r="130" fill="#e0f2fe" stroke="#38bdf8" stroke-width="3"/>
-        <circle cx="250" cy="225" r="85" fill="#bae6fd" stroke="#0284c7" stroke-width="4"/>
-        <circle cx="250" cy="225" r="45" fill="#0284c7"/>
-        <path d="M250 140 L250 310 M165 225 L335 225" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
-        <circle cx="250" cy="225" r="18" fill="#fbbf24"/>
-        <path d="M290 90 L390 50 L350 150 Z" fill="#ef4444" stroke="#b91c1c" stroke-width="2"/>
-        <line x1="250" y1="225" x2="370" y2="80" stroke="#ef4444" stroke-width="4" stroke-dasharray="6 4"/>
-      </svg>`;
+      slide.addShape(pptx.ShapeType.roundRect, {
+        x: 6.8, y: 1.3, w: 2.5, h: 0.45, rectRadius: 0.1,
+        fill: { color: '0284C7' }
+      });
+      slide.addText('CHUẨN GDPT 2018', {
+        x: 6.8, y: 1.3, w: 2.5, h: 0.45,
+        fontSize: 11, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle', fontFace: 'Arial'
+      });
+
+      slide.addShape(pptx.ShapeType.ellipse, {
+        x: 7.45, y: 1.9, w: 1.2, h: 1.2,
+        fill: { color: '0F172A' }, line: { color: '38BDF8', width: 2 }
+      });
+      slide.addText(isElectricOrTech ? '⚡' : '🎓', {
+        x: 7.45, y: 1.9, w: 1.2, h: 1.2,
+        fontSize: 32, align: 'center', valign: 'middle'
+      });
+
+      const pills = [
+        { text: '✨ Trực quan & Sinh động', color: '38BDF8' },
+        { text: '💡 Phát triển năng lực HS', color: '34D399' },
+        { text: '🚀 Chuyển đổi số giáo dục', color: 'FBBF24' }
+      ];
+      for (let pIdx = 0; pIdx < pills.length; pIdx++) {
+        const py = 3.25 + pIdx * 0.48;
+        slide.addShape(pptx.ShapeType.roundRect, {
+          x: 6.8, y: py, w: 2.5, h: 0.4, rectRadius: 0.08,
+          fill: { color: '0F172A' }, line: { color: '334155', width: 1 }
+        });
+        slide.addText(pills[pIdx].text, {
+          x: 6.8, y: py, w: 2.5, h: 0.4,
+          fontSize: 10, bold: true, color: pills[pIdx].color, align: 'center', valign: 'middle', fontFace: 'Calibri'
+        });
+      }
+      break;
+    }
+
+    case 'procedure': {
+      // Slide quy trình thực hành: Card các bước chuẩn an toàn
+      slide.addShape(pptx.ShapeType.roundRect, {
+        x: 7.0, y: 1.15, w: 2.5, h: 3.9, rectRadius: 0.15,
+        fill: { color: 'ECFDF5' }, line: { color: '10B981', width: 1.5 }
+      });
+
+      slide.addShape(pptx.ShapeType.roundRect, {
+        x: 7.15, y: 1.3, w: 2.2, h: 0.45, rectRadius: 0.08,
+        fill: { color: '059669' }
+      });
+      slide.addText('📋 QUY TRÌNH THỰC HIỆN', {
+        x: 7.15, y: 1.3, w: 2.2, h: 0.45,
+        fontSize: 10.5, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle', fontFace: 'Arial'
+      });
+
+      const steps = [
+        '1️⃣ Chuẩn bị & Kiểm tra dụng cụ',
+        '2️⃣ Kết nối & Thao tác đúng quy chuẩn',
+        '3️⃣ Vận hành & Đo đạc thông số',
+        '4️⃣ Nghiệm thu & Thu dọn vị trí'
+      ];
+      for (let sIdx = 0; sIdx < steps.length; sIdx++) {
+        const sy = 1.9 + sIdx * 0.58;
+        slide.addShape(pptx.ShapeType.roundRect, {
+          x: 7.15, y: sy, w: 2.2, h: 0.5, rectRadius: 0.08,
+          fill: { color: 'FFFFFF' }, line: { color: 'A7F3D0', width: 1 }
+        });
+        slide.addText(steps[sIdx], {
+          x: 7.2, y: sy, w: 2.1, h: 0.5,
+          fontSize: 9.5, color: '065F46', fontFace: 'Calibri', valign: 'middle'
+        });
+      }
+
+      slide.addShape(pptx.ShapeType.roundRect, {
+        x: 7.15, y: 4.35, w: 2.2, h: 0.55, rectRadius: 0.08,
+        fill: { color: 'FEF2F2' }, line: { color: 'EF4444', width: 1.5 }
+      });
+      slide.addText('🛡️ TUÂN THỦ AN TOÀN 100%', {
+        x: 7.15, y: 4.35, w: 2.2, h: 0.55,
+        fontSize: 10, bold: true, color: 'B91C1C', align: 'center', valign: 'middle', fontFace: 'Arial'
+      });
+      break;
+    }
+
+    case 'quiz': {
+      // Slide trắc nghiệm: Card cúp vinh danh và thể lệ
+      slide.addShape(pptx.ShapeType.roundRect, {
+        x: 7.0, y: 1.15, w: 2.5, h: 3.9, rectRadius: 0.15,
+        fill: { color: 'FFFBEB' }, line: { color: 'F59E0B', width: 1.5 }
+      });
+
+      slide.addShape(pptx.ShapeType.roundRect, {
+        x: 7.15, y: 1.3, w: 2.2, h: 0.45, rectRadius: 0.08,
+        fill: { color: 'D97706' }
+      });
+      slide.addText('🏆 GÓC ĐẤU TRÍ NHANH', {
+        x: 7.15, y: 1.3, w: 2.2, h: 0.45,
+        fontSize: 11, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle', fontFace: 'Arial'
+      });
+
+      slide.addShape(pptx.ShapeType.ellipse, {
+        x: 7.7, y: 1.9, w: 1.1, h: 1.1,
+        fill: { color: 'FEF3C7' }, line: { color: 'F59E0B', width: 2 }
+      });
+      slide.addText('⭐', {
+        x: 7.7, y: 1.9, w: 1.1, h: 1.1,
+        fontSize: 32, align: 'center', valign: 'middle'
+      });
+
+      const rules = [
+        '⏱️ Thời gian: 30s/câu',
+        '🎁 +1 Điểm tích lũy cho đội nhanh',
+        '🙋 Giơ thẻ chọn đáp án đúng'
+      ];
+      for (let rIdx = 0; rIdx < rules.length; rIdx++) {
+        const ry = 3.15 + rIdx * 0.42;
+        slide.addShape(pptx.ShapeType.roundRect, {
+          x: 7.15, y: ry, w: 2.2, h: 0.38, rectRadius: 0.08,
+          fill: { color: 'FFFFFF' }, line: { color: 'FDE68A', width: 1 }
+        });
+        slide.addText(rules[rIdx], {
+          x: 7.2, y: ry, w: 2.1, h: 0.38,
+          fontSize: 9.5, color: '92400E', fontFace: 'Calibri', valign: 'middle'
+        });
+      }
+
+      slide.addText('Tự tin chọn đáp án chính xác!', {
+        x: 7.1, y: 4.45, w: 2.3, h: 0.4,
+        fontSize: 10, italic: true, color: 'B45309', align: 'center', fontFace: 'Calibri', valign: 'middle'
+      });
+      break;
+    }
 
     case 'warmup':
-      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 450" width="500" height="450">
-        <circle cx="250" cy="200" r="120" fill="#fef3c7" stroke="#f59e0b" stroke-width="4" stroke-dasharray="8 6"/>
-        <path d="M250 110 C210 110 180 140 180 180 C180 215 205 240 225 255 L275 255 C295 240 320 215 320 180 C320 140 290 110 250 110 Z" fill="#fbbf24" stroke="#d97706" stroke-width="4"/>
-        <rect x="230" y="255" width="40" height="25" rx="5" fill="#94a3b8" stroke="#64748b" stroke-width="2"/>
-        <rect x="238" y="280" width="24" height="12" rx="4" fill="#64748b"/>
-        <line x1="250" y1="70" x2="250" y2="95" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
-        <line x1="160" y1="100" x2="180" y2="120" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
-        <line x1="340" y1="100" x2="320" y2="120" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
-        <circle cx="340" cy="290" r="55" fill="none" stroke="#0284c7" stroke-width="8"/>
-        <line x1="380" y1="330" x2="430" y2="380" stroke="#0284c7" stroke-width="12" stroke-linecap="round"/>
-      </svg>`;
-
     case 'theory':
-      if (isElectricOrTech) {
-        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 450" width="500" height="450">
-          <rect x="50" y="80" width="400" height="280" rx="20" fill="#f0fdf4" stroke="#16a34a" stroke-width="3"/>
-          <circle cx="130" cy="180" r="45" fill="#ffffff" stroke="#0284c7" stroke-width="4"/>
-          <path d="M110 180 C110 160 130 160 130 180 C130 200 150 200 150 180" fill="none" stroke="#0284c7" stroke-width="4" stroke-linecap="round"/>
-          <line x1="175" y1="180" x2="240" y2="180" stroke="#0f172a" stroke-width="4"/>
-          <rect x="240" y="155" width="80" height="50" rx="8" fill="#ffffff" stroke="#f59e0b" stroke-width="4"/>
-          <path d="M260 180 L270 165 L280 195 L290 170 L300 180" fill="none" stroke="#f59e0b" stroke-width="3"/>
-          <line x1="320" y1="180" x2="390" y2="180" stroke="#0f172a" stroke-width="4"/>
-          <line x1="390" y1="180" x2="390" y2="280" stroke="#0f172a" stroke-width="4"/>
-          <line x1="390" y1="280" x2="130" y2="280" stroke="#0f172a" stroke-width="4"/>
-          <line x1="130" y1="280" x2="130" y2="225" stroke="#0f172a" stroke-width="4"/>
-          <circle cx="280" cy="280" r="10" fill="#ef4444"/>
-        </svg>`;
-      }
-      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 450" width="500" height="450">
-        <circle cx="250" cy="225" r="160" fill="#f8fafc" stroke="#cbd5e1" stroke-width="3"/>
-        <circle cx="250" cy="225" r="60" fill="#0284c7"/>
-        <circle cx="130" cy="140" r="40" fill="#38bdf8"/>
-        <circle cx="370" cy="140" r="40" fill="#10b981"/>
-        <circle cx="160" cy="330" r="40" fill="#f59e0b"/>
-        <circle cx="340" cy="330" r="40" fill="#8b5cf6"/>
-        <line x1="250" y1="225" x2="130" y2="140" stroke="#0284c7" stroke-width="3"/>
-        <line x1="250" y1="225" x2="370" y2="140" stroke="#0284c7" stroke-width="3"/>
-        <line x1="250" y1="225" x2="160" y2="330" stroke="#0284c7" stroke-width="3"/>
-        <line x1="250" y1="225" x2="340" y2="330" stroke="#0284c7" stroke-width="3"/>
-      </svg>`;
-
-    case 'procedure':
-      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 450" width="500" height="450">
-        <path d="M250 70 L380 120 L380 260 C380 330 250 380 250 380 C250 380 120 330 120 260 L120 120 Z" fill="#ecfdf5" stroke="#10b981" stroke-width="5"/>
-        <path d="M200 220 L235 255 L305 185" fill="none" stroke="#16a34a" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="150" cy="340" r="35" fill="#fef3c7" stroke="#f59e0b" stroke-width="4"/>
-        <path d="M140 335 L160 335 M150 325 L150 355" stroke="#d97706" stroke-width="4" stroke-linecap="round"/>
-        <circle cx="350" cy="340" r="35" fill="#eff6ff" stroke="#3b82f6" stroke-width="4"/>
-        <circle cx="350" cy="340" r="15" fill="#3b82f6"/>
-      </svg>`;
-
     case 'discussion':
-      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 450" width="500" height="450">
-        <circle cx="250" cy="225" r="140" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="3" stroke-dasharray="8 6"/>
-        <circle cx="250" cy="225" r="60" fill="#ffffff" stroke="#8b5cf6" stroke-width="4"/>
-        <g transform="translate(140, 100)"><circle cx="25" cy="25" r="25" fill="#3b82f6"/></g>
-        <g transform="translate(310, 100)"><circle cx="25" cy="25" r="25" fill="#10b981"/></g>
-        <g transform="translate(140, 270)"><circle cx="25" cy="25" r="25" fill="#f59e0b"/></g>
-        <g transform="translate(310, 270)"><circle cx="25" cy="25" r="25" fill="#ec4899"/></g>
-        <path d="M190 135 L225 180 M275 180 L310 135 M190 290 L225 260 M275 260 L310 290" stroke="#a78bfa" stroke-width="3" stroke-linecap="round"/>
-      </svg>`;
-
-    case 'quiz':
-      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 450" width="500" height="450">
-        <circle cx="250" cy="225" r="150" fill="#fff7ed" stroke="#fed7aa" stroke-width="3"/>
-        <path d="M180 140 L320 140 L300 240 C300 280 200 280 200 240 Z" fill="#fbbf24" stroke="#d97706" stroke-width="4"/>
-        <path d="M180 160 C140 160 140 200 185 200" fill="none" stroke="#d97706" stroke-width="4"/>
-        <path d="M320 160 C360 160 360 200 315 200" fill="none" stroke="#d97706" stroke-width="4"/>
-        <rect x="235" y="270" width="30" height="40" fill="#d97706"/>
-        <rect x="200" y="310" width="100" height="25" rx="6" fill="#78350f"/>
-        <polygon points="250,165 257,185 277,185 261,197 267,217 250,205 233,217 239,197 223,185 243,185" fill="#ffffff"/>
-      </svg>`;
-
     case 'summary':
-    default:
-      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 450" width="500" height="450">
-        <circle cx="250" cy="225" r="150" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="3"/>
-        <path d="M250 80 C270 120 290 180 280 230 L220 230 C210 180 230 120 250 80 Z" fill="#ef4444" stroke="#b91c1c" stroke-width="3"/>
-        <circle cx="250" cy="150" r="16" fill="#ffffff" stroke="#0284c7" stroke-width="3"/>
-        <path d="M220 200 L180 230 L220 235 Z" fill="#0284c7"/>
-        <path d="M280 200 L320 230 L280 235 Z" fill="#0284c7"/>
-        <polygon points="230,235 250,290 270,235" fill="#f59e0b"/>
-      </svg>`;
-  }
-}
+    default: {
+      const config = {
+        warmup: {
+          bg: 'EFF6FF', border: '3B82F6', titleBg: '1D4ED8', title: '⚡ KHỞI ĐỘNG TƯ DUY', icon: '💡',
+          items: ['❓ Đặt vấn đề từ thực tiễn', '🤝 Thảo luận trao đổi cặp đôi', '⏱️ Thời gian: 3 - 5 phút']
+        },
+        theory: {
+          bg: 'F8FAFC', border: '0284C7', titleBg: '0369A1', title: '🔬 KHÁI NIỆM TRỌNG TÂM', icon: '📊',
+          items: ['1️⃣ Nắm chắc định nghĩa gốc', '2️⃣ Khảo sát đặc tính kỹ thuật', '3️⃣ Liên hệ hệ thống thực tế']
+        },
+        discussion: {
+          bg: 'FAF5FF', border: '8B5CF6', titleBg: '6D28D9', title: '👥 THẢO LUẬN NHÓM', icon: '🤝',
+          items: ['👑 Nhóm trưởng: Điều phối', '✍️ Thư ký: Ghi chép tổng hợp', '🎤 Báo cáo viên: Thuyết trình']
+        },
+        summary: {
+          bg: 'F0FDF4', border: '16A34A', titleBg: '15803D', title: '🚀 VẬN DỤNG & MỞ RỘNG', icon: '🎯',
+          items: ['📚 Củng cố kiến thức trọng tâm', '📝 Làm bài tập ứng dụng SGK', '🔍 Đọc trước bài học mới']
+        }
+      }[type] || {
+        bg: 'EFF6FF', border: '3B82F6', titleBg: '0284C7', title: '📌 ĐIỂM NHẤN BÀI HỌC', icon: '💡',
+        items: ['Nắm vững kiến thức trọng tâm', 'Rèn luyện kỹ năng thực hành', 'Tích cực chủ động sáng tạo']
+      };
 
-/**
- * Chuyển SVG thành Base64 Data URL (Hoàn toàn đồng bộ, tức thì 0ms, không phụ thuộc Canvas hay Image DOM)
- */
-function svgToDataUrl(svgString: string): string {
-  try {
-    if (typeof window !== 'undefined' && typeof window.btoa === 'function') {
-      return 'image/svg+xml;base64,' + window.btoa(unescape(encodeURIComponent(svgString)));
+      slide.addShape(pptx.ShapeType.roundRect, {
+        x: 6.5, y: 1.15, w: 3.0, h: 3.8, rectRadius: 0.15,
+        fill: { color: 'FFFFFF' }, line: { color: config.border, width: 1.5 }
+      });
+
+      slide.addShape(pptx.ShapeType.roundRect, {
+        x: 6.65, y: 1.3, w: 2.7, h: 0.45, rectRadius: 0.08,
+        fill: { color: config.titleBg }
+      });
+      slide.addText(config.title, {
+        x: 6.65, y: 1.3, w: 2.7, h: 0.45,
+        fontSize: 11, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle', fontFace: 'Arial'
+      });
+
+      slide.addShape(pptx.ShapeType.ellipse, {
+        x: 7.6, y: 1.85, w: 0.8, h: 0.8,
+        fill: { color: config.bg }, line: { color: config.border, width: 1.5 }
+      });
+      slide.addText(config.icon, {
+        x: 7.6, y: 1.85, w: 0.8, h: 0.8,
+        fontSize: 24, align: 'center', valign: 'middle'
+      });
+
+      for (let itIdx = 0; itIdx < config.items.length; itIdx++) {
+        const iy = 2.75 + itIdx * 0.38;
+        slide.addShape(pptx.ShapeType.roundRect, {
+          x: 6.65, y: iy, w: 2.7, h: 0.34, rectRadius: 0.06,
+          fill: { color: config.bg }, line: { color: config.border, width: 0.8 }
+        });
+        slide.addText(config.items[itIdx], {
+          x: 6.75, y: iy, w: 2.5, h: 0.34,
+          fontSize: 9.5, color: '1E293B', fontFace: 'Calibri', valign: 'middle'
+        });
+      }
+
+      slide.addShape(pptx.ShapeType.roundRect, {
+        x: 6.65, y: 3.95, w: 2.7, h: 0.85, rectRadius: 0.08,
+        fill: { color: 'F8FAFC' }, line: { color: 'CBD5E1', width: 1 }
+      });
+      slide.addText([
+        { text: '💡 Gợi ý sư phạm: ', options: { bold: true, color: '0284C7', fontSize: 9.5 } },
+        { text: visualSuggestion || 'Kết nối nội dung với bài tập và câu hỏi thực tế cho học sinh.', options: { color: '334155', fontSize: 9.0 } }
+      ], {
+        x: 6.75, y: 3.98, w: 2.5, h: 0.78,
+        fontFace: 'Calibri', valign: 'middle', wrap: true
+      });
+      break;
     }
-    return 'image/svg+xml;base64,' + Buffer.from(svgString).toString('base64');
-  } catch (err) {
-    console.warn('Base64 encoding fallback:', err);
-    return 'image/svg+xml;utf8,' + encodeURIComponent(svgString);
   }
 }
 
@@ -302,9 +390,7 @@ export async function generateAndDownloadPptx(params: {
         x: 1.0, y: 3.1, w: 5.1, h: 1.6, fontFace: 'Calibri', valign: 'middle'
       });
 
-      const svg = createPureGraphicIllustrationSvg('cover', subject);
-      const imgData = svgToDataUrl(svg);
-      slide.addImage({ data: imgData, x: 6.6, y: 1.1, w: 2.9, h: 3.6 });
+      renderNativeVisualCard(pptx, slide, 'cover', subject);
 
       continue;
     }
@@ -439,9 +525,7 @@ export async function generateAndDownloadPptx(params: {
         fontSize: 10.5, color: '7F1D1D', fontFace: 'Calibri', wrap: true
       });
 
-      const svg = createPureGraphicIllustrationSvg('procedure', subject);
-      const imgData = svgToDataUrl(svg);
-      slide.addImage({ data: imgData, x: 7.1, y: 1.2, w: 2.4, h: 3.8 });
+      renderNativeVisualCard(pptx, slide, 'procedure', subject);
 
       slide.addShape(pptx.ShapeType.rect, { x: 0, y: 5.25, w: 10, h: 0.375, fill: { color: 'F1F5F9' }, line: { color: 'E2E8F0', width: 1 } });
       slide.addText(`📖 ${subject} - ${lessonTitle} | ${className} | Văn bản chỉnh sửa được 100%`, {
@@ -512,9 +596,7 @@ export async function generateAndDownloadPptx(params: {
         });
       }
 
-      const svg = createPureGraphicIllustrationSvg('quiz', subject);
-      const imgData = svgToDataUrl(svg);
-      slide.addImage({ data: imgData, x: 7.1, y: 1.2, w: 2.4, h: 3.8 });
+      renderNativeVisualCard(pptx, slide, 'quiz', subject);
 
       slide.addShape(pptx.ShapeType.rect, { x: 0, y: 5.25, w: 10, h: 0.375, fill: { color: 'F1F5F9' }, line: { color: 'E2E8F0', width: 1 } });
       slide.addText(`📖 ${subject} - ${lessonTitle} | ${className} | Văn bản chỉnh sửa được 100%`, {
@@ -574,29 +656,7 @@ export async function generateAndDownloadPptx(params: {
       valign: 'top', wrap: true
     });
 
-    slide.addShape(pptx.ShapeType.roundRect, {
-      x: 6.5, y: 1.15, w: 3.0, h: 3.8, rectRadius: 0.15,
-      fill: { color: 'FFFFFF' }, line: { color: '38BDF8', width: 1.5 }
-    });
-
-    const svg = createPureGraphicIllustrationSvg(type, subject);
-    const imgData = svgToDataUrl(svg);
-    slide.addImage({
-      data: imgData,
-      x: 6.6, y: 1.25, w: 2.8, h: 2.4
-    });
-
-    slide.addShape(pptx.ShapeType.roundRect, {
-      x: 6.6, y: 3.75, w: 2.8, h: 1.1, rectRadius: 0.1,
-      fill: { color: 'F0F9FF' }, line: { color: 'BAE6FD', width: 1 }
-    });
-    slide.addText([
-      { text: '💡 Ghi chú sư phạm: ', options: { bold: true, color: '0284C7', fontSize: 10 } },
-      { text: s.visualSuggestion || 'Hình ảnh trực quan hóa khái niệm, hỗ trợ học sinh tư duy.', options: { color: '0369A1', fontSize: 9.5 } }
-    ], {
-      x: 6.7, y: 3.8, w: 2.6, h: 1.0,
-      fontFace: 'Calibri', valign: 'middle', wrap: true
-    });
+    renderNativeVisualCard(pptx, slide, type, subject, s.visualSuggestion);
 
     slide.addShape(pptx.ShapeType.rect, { x: 0, y: 5.25, w: 10, h: 0.375, fill: { color: 'F1F5F9' }, line: { color: 'E2E8F0', width: 1 } });
     slide.addText(`📖 ${subject} - ${lessonTitle} | ${className} | Văn bản chỉnh sửa được 100%`, {

@@ -9856,7 +9856,7 @@ export default function UnifiedTeacherScheduleApp() {
         onClose={() => setShowUpgradeModal(false)}
         syncCode={syncCode || 'GV-202688'}
         teacherName={teacherProfile?.fullName || 'Thầy/Cô'}
-        initialPlanId={upgradeSelectedTier === 'school' ? 'SCHOOL1Y' : 'PRO1Y'}
+        initialPlanId={upgradeSelectedTier === 'school' ? 'SCHOOL' : 'VIP1_1Y'}
         onPaymentSuccess={(tier, expiresAt) => {
           setTeacherProfile(prev => {
             const updated = {

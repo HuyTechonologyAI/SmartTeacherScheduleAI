@@ -15,7 +15,7 @@ export interface TeacherProfile {
   bioQuote?: string; // Châm ngôn sư phạm
   isLoggedIn: boolean; // Trạng thái đăng nhập
   lastLoginAt?: string; // Thời gian đăng nhập gần nhất
-  licenseTier?: 'STARTER' | 'PRO' | 'SCHOOL'; // Hạng mức bản quyền dịch vụ
+  licenseTier?: 'STARTER' | 'VIP1' | 'VIP2' | 'PRO' | 'SCHOOL'; // Hạng mức bản quyền dịch vụ (VIP 1 cá nhân, VIP 2 lớp học, Trường học)
   licenseExpiresAt?: string; // Ngày hết hạn bản quyền
 }
 

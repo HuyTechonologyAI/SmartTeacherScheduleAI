@@ -123,7 +123,7 @@ export async function GET() {
             id: tx.id,
             teacher: `Giáo viên (${tx.syncCode})`,
             school: 'ACB Napas 24/7',
-            plan: tx.planId === 'SCHOOL1Y' ? 'Gói Trường Học' : (tx.planId === 'PRO1M' ? 'Gói Pro (1 Tháng)' : 'Gói Pro (1 Năm)'),
+            plan: tx.planId?.includes('SCHOOL') ? 'Gói Nhà Trường' : (tx.planId?.includes('VIP2') ? 'Gói VIP 2 (Lớp Học)' : (tx.planId?.includes('1M') ? 'VIP 1 (1 Tháng)' : 'VIP 1 (1 Năm)')),
             amount: Number(tx.amount || 0),
             status: 'THÀNH CÔNG',
             time: tx.paidAt ? new Date(tx.paidAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 'Vừa xong'

@@ -50,15 +50,19 @@ export async function POST(req: NextRequest) {
     const syncCode = match[1].trim().toUpperCase();
     const rawPlanCode = (match[2] || 'PRO1Y').trim().toUpperCase();
 
-    let planId: 'PRO1M' | 'PRO1Y' | 'SCHOOL1Y' = 'PRO1Y';
+    let planId: string = 'VIP1_1Y';
     if (rawPlanCode.startsWith('SCHOOL')) {
-      planId = 'SCHOOL1Y';
+      planId = 'SCHOOL';
+    } else if (rawPlanCode.startsWith('VIP2')) {
+      planId = 'VIP2';
     } else if (rawPlanCode.includes('1M') || rawPlanCode.includes('THANG')) {
-      planId = 'PRO1M';
+      planId = 'VIP1_1M';
+    } else {
+      planId = 'VIP1_1Y';
     }
 
     const expectedPlan = PRICING_PLANS.find(p => p.id === planId) || PRICING_PLANS[1];
-    const finalAmount = transferAmount > 0 ? transferAmount : expectedPlan.price;
+    const finalAmount = transferAmount > 0 ? transferAmount : (expectedPlan.price || 399000);
 
     // Tự động kích hoạt & Nâng hạng License ngay lập tức
     const { order, license } = PaymentStore.markOrderPaid(

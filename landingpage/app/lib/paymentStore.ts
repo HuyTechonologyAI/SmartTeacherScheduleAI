@@ -5,8 +5,8 @@ import path from 'path';
 export interface PaymentOrder {
   id: string;
   syncCode: string;
-  planId: 'PRO1M' | 'PRO1Y' | 'SCHOOL1Y';
-  tier: 'PRO' | 'SCHOOL';
+  planId: string;
+  tier: 'VIP1' | 'VIP2' | 'SCHOOL' | 'PRO';
   amount: number;
   syntax: string;
   status: 'PENDING' | 'SUCCESS' | 'CANCELLED';
@@ -33,9 +33,25 @@ export interface VATInvoiceRequest {
   issuedAt?: string;
 }
 
+export interface QuoteRequest {
+  id: string;
+  type: 'VIP2_CLASS' | 'SCHOOL_SCALE';
+  syncCode: string;
+  contactName: string;
+  phone: string;
+  email: string;
+  organizationName: string; // Tên trường hoặc Tên lớp
+  teacherCount?: number; // Số lượng Giáo viên
+  studentCount?: number; // Số lượng Học sinh
+  parentCount?: number; // Số lượng Phụ huynh
+  notes?: string;
+  status: 'PENDING' | 'CONTACTED' | 'QUOTED';
+  createdAt: string;
+}
+
 export interface LicenseRecord {
   syncCode: string;
-  tier: 'PRO' | 'SCHOOL';
+  tier: 'VIP1' | 'VIP2' | 'SCHOOL' | 'PRO';
   planId: string;
   activatedAt: string;
   expiresAt: string;
@@ -50,18 +66,25 @@ interface StoreData {
   orders: Record<string, PaymentOrder>;
   licenses: Record<string, LicenseRecord>;
   vatRequests: Record<string, VATInvoiceRequest>;
+  quoteRequests: Record<string, QuoteRequest>;
 }
 
 function loadStore(): StoreData {
   try {
     if (fs.existsSync(DATA_FILE)) {
       const content = fs.readFileSync(DATA_FILE, 'utf8');
-      return JSON.parse(content);
+      const parsed = JSON.parse(content);
+      return {
+        orders: parsed.orders || {},
+        licenses: parsed.licenses || {},
+        vatRequests: parsed.vatRequests || {},
+        quoteRequests: parsed.quoteRequests || {}
+      };
     }
   } catch (err) {
     console.warn('Cannot read payment_records.json, using fallback:', err);
   }
-  return { orders: {}, licenses: {}, vatRequests: {} };
+  return { orders: {}, licenses: {}, vatRequests: {}, quoteRequests: {} };
 }
 
 function saveStore(data: StoreData) {
@@ -110,7 +133,9 @@ export const PaymentStore = {
     const cleanPlan = planId.trim().toUpperCase();
 
     const isSchool = cleanPlan.startsWith('SCHOOL');
-    const tier: 'PRO' | 'SCHOOL' = isSchool ? 'SCHOOL' : 'PRO';
+    const isVip2 = cleanPlan.startsWith('VIP2');
+    const isVip1 = cleanPlan.startsWith('VIP1') || cleanPlan.startsWith('PRO');
+    const tier: 'VIP1' | 'VIP2' | 'SCHOOL' | 'PRO' = isSchool ? 'SCHOOL' : (isVip2 ? 'VIP2' : 'VIP1');
     const isOneMonth = cleanPlan.includes('1M') || cleanPlan.includes('MONTH');
     const durationDays = isOneMonth ? 30 : 365;
 
@@ -129,7 +154,7 @@ export const PaymentStore = {
       order = {
         id: `ORD_${Date.now()}_${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
         syncCode: cleanSync,
-        planId: (cleanPlan as any) || (isSchool ? 'SCHOOL1Y' : 'PRO1Y'),
+        planId: (cleanPlan as any) || (isSchool ? 'SCHOOL' : (isVip2 ? 'VIP2' : 'VIP1_1Y')),
         tier,
         amount,
         syntax: `ST ${cleanSync} ${cleanPlan}`,
@@ -190,6 +215,20 @@ export const PaymentStore = {
     return record;
   },
 
+  saveQuoteRequest(req: Omit<QuoteRequest, 'id' | 'status' | 'createdAt'>): QuoteRequest {
+    memoryStore = loadStore();
+    const id = `QUOTE-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    const record: QuoteRequest = {
+      ...req,
+      id,
+      status: 'PENDING',
+      createdAt: new Date().toISOString()
+    };
+    memoryStore.quoteRequests[id] = record;
+    saveStore(memoryStore);
+    return record;
+  },
+
   getAllTransactions(): PaymentOrder[] {
     memoryStore = loadStore();
     return Object.values(memoryStore.orders).reverse();
@@ -198,5 +237,10 @@ export const PaymentStore = {
   getAllVatRequests(): VATInvoiceRequest[] {
     memoryStore = loadStore();
     return Object.values(memoryStore.vatRequests).reverse();
+  },
+
+  getAllQuoteRequests(): QuoteRequest[] {
+    memoryStore = loadStore();
+    return Object.values(memoryStore.quoteRequests).reverse();
   }
 };

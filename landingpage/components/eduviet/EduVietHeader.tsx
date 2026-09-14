@@ -4,7 +4,8 @@ import EcosystemMegaBar from '@/components/EcosystemMegaBar';
 
 import React, { useState } from 'react';
 import { 
-  Search, 
+  Search,
+  Download, 
   Bell, 
   Scan, 
   ChevronDown, 
@@ -52,6 +53,7 @@ interface EduVietHeaderProps {
   onOpenLogin?: () => void;
   onLogout?: () => void;
   onOpenSettings?: () => void;
+  onOpenDownload?: () => void;
 }
 
 export default function EduVietHeader({
@@ -79,7 +81,8 @@ export default function EduVietHeader({
   onOpenProfile,
   onOpenLogin,
   onLogout,
-  onOpenSettings
+  onOpenSettings,
+  onOpenDownload
 }: EduVietHeaderProps) {
   const [searchVal, setSearchVal] = useState('');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -187,6 +190,20 @@ export default function EduVietHeader({
               </button>
             )}
 
+                        {/* Nút Tải Cài Đặt Ứng Dụng Đa Nền Tảng */}
+            {onOpenDownload && (
+              <button
+                type="button"
+                onClick={onOpenDownload}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-sm hover:shadow-md transition-all cursor-pointer shrink-0 animate-pulse"
+                title={lang === 'vi' ? 'Tải ứng dụng Android APK & Windows PC (.EXE)' : 'Download App (APK & PC)'}
+              >
+                <Download className="w-3.5 h-3.5 text-white" />
+                <span className="hidden sm:inline font-semibold">{lang === 'vi' ? 'Tải App' : 'Get App'}</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/20 font-mono">v2.0</span>
+              </button>
+            )}
+
             {/* Notification Bell: CHỈ BÁO KHI CÓ ĐƠN YÊU CẦU TỪ PHỤ HUYNH */}
             <button
               onClick={onOpenNotifications}
@@ -290,6 +307,25 @@ export default function EduVietHeader({
                         </button>
                       )}
 
+                                            {onOpenDownload && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            onOpenDownload();
+                          }}
+                          className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-emerald-800 dark:text-emerald-200 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900 transition-colors cursor-pointer text-left border border-emerald-200/60 dark:border-emerald-800/60"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                            <span>{lang === 'vi' ? 'Tải App (APK / Windows)' : 'Download App (APK / PC)'}</span>
+                          </div>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-600 text-white font-bold">
+                            v2.0.0
+                          </span>
+                        </button>
+                      )}
+
                       {onOpenSettings && (
                         <button
                           type="button"
@@ -304,7 +340,7 @@ export default function EduVietHeader({
                             <span>{lang === 'vi' ? 'Cài đặt & Gói cước' : 'Settings & Plans'}</span>
                           </div>
                           <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 font-bold border border-rose-200 dark:border-rose-800">
-                            v1.8.0
+                            v2.0.0
                           </span>
                         </button>
                       )}

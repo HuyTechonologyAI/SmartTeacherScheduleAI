@@ -32,6 +32,7 @@ interface EduVietHomeViewProps {
     exercises: string;
     topics: string;
   };
+  onOpenDownload?: () => void;
   onSelectAction: (actionId: string) => void;
   onOpenSync?: () => void;
   onOpenPortalShare?: () => void;
@@ -70,6 +71,7 @@ export default function EduVietHomeView({
     exercises: "6/8",
     topics: "4/5"
   },
+  onOpenDownload,
   onSelectAction,
   onOpenSync,
   onOpenPortalShare,
@@ -127,6 +129,7 @@ export default function EduVietHomeView({
         onToggleTheme={onToggleTheme}
         lang={lang}
         onToggleLanguage={onToggleLanguage}
+        onOpenDownload={onOpenDownload}
         onOpenSettings={onOpenSettings || (() => onSelectAction('settings'))}
       />
 
@@ -136,6 +139,7 @@ export default function EduVietHomeView({
         <EduVietHeroBanner
           onActionClick={() => onSelectAction('lesson_package')}
           lang={lang}
+          onDownloadClick={onOpenDownload}
         />
 
         {/* 3. Identity Card */}

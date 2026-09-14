@@ -411,6 +411,17 @@ export default function SchoolManagementPage() {
               <span className="hidden md:inline">{isEn ? "Parent" : "Phụ huynh"}</span>
             </Link>
 
+            {/* Quick Link: Tải App */}
+            <a
+              href="/downloads/SmartTeacherSchedule_Setup_v2.0.0.exe"
+              download="SmartTeacherSchedule_Setup_v2.0.0.exe"
+              className="px-2.5 sm:px-3 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all flex items-center gap-1 shadow-xs"
+              title="Tải Bản Cài Đặt Máy Tính (Windows Setup .EXE)"
+            >
+              <span>📲</span>
+              <span className="hidden md:inline">{isEn ? "Get App" : "Tải App"}</span>
+            </a>
+
             {/* Hồ Sơ Năng Lực AI & Hệ Sinh Thái 4.0 */}
             <button
               onClick={() => setIsBrochureOpen(true)}

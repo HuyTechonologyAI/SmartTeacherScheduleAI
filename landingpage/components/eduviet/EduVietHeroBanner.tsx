@@ -1,15 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Star, Award, Heart } from 'lucide-react';
+import { ArrowRight, Download, Star, Award, Heart } from 'lucide-react';
 import { Language } from '@/app/app/i18n';
 
 interface EduVietHeroBannerProps {
+  onDownloadClick?: () => void;
   onActionClick?: () => void;
   lang?: Language;
 }
 
-export default function EduVietHeroBanner({ onActionClick, lang = 'vi' }: EduVietHeroBannerProps) {
+export default function EduVietHeroBanner({ onActionClick, onDownloadClick, lang = 'vi' }: EduVietHeroBannerProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const isEn = lang === 'en';
 
@@ -106,6 +107,16 @@ export default function EduVietHeroBanner({ onActionClick, lang = 'vi' }: EduVie
               <span>{slide.cta}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
+            {onDownloadClick && (
+              <button
+                type="button"
+                onClick={onDownloadClick}
+                className="px-4 py-2.5 rounded-full bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs sm:text-sm font-bold flex items-center gap-2 shadow-md border border-slate-200 dark:border-slate-700 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              >
+                <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span>{isEn ? "Download App (APK/PC)" : "📲 Tải App (APK / PC)"}</span>
+              </button>
+            )}
           </div>
         </div>
 

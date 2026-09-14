@@ -26,11 +26,11 @@ export default function HeroSection() {
   const [showIosGuide, setShowIosGuide] = useState(false);
 
   const apkUrl =
-    "https://gvcncdsai.io.vn/SmartTeacherSchedule_v1.8.0_Release.apk";
+    "/downloads/SmartTeacherSchedule_v2.0.0_Release.apk";
   const aabUrl =
-    "https://gvcncdsai.io.vn/releases/SmartTeacherSchedule_v1.8.0_Release.aab";
+    "/releases/SmartTeacherSchedule_v2.0.0_Release.aab";
   const desktopUrl =
-    "https://gvcncdsai.io.vn/releases/SmartTeacherSchedule_v1.8.0_Desktop.zip";
+    "/downloads/SmartTeacherSchedule_Setup_v2.0.0.exe";
 
   return (
     <section
@@ -51,7 +51,7 @@ export default function HeroSection() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              <span>Phiên bản v1.8.0 chính thức phát hành</span>
+              <span>Phiên bản v2.0.0 chính thức phát hành</span>
               <span className="text-slate-500">•</span>
               <span className="text-cyan-300">Hệ Sinh Thái Đa Nền Tảng & Sổ Điểm TT 22</span>
             </div>
@@ -90,7 +90,7 @@ export default function HeroSection() {
                   </div>
                 </div>
                 <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">
-                  Bản v1.8.0 Đa Nền Tảng
+                  Bản v2.0.0 Đa Nền Tảng
                 </span>
               </div>
 
@@ -99,8 +99,8 @@ export default function HeroSection() {
                 {/* Primary APK Download for Android */}
                 <a
                   href={apkUrl}
-                  download="SmartTeacherSchedule_v1.8.0_Release.apk"
-                  onClick={() => trackDownload('android', '1.8.0', 'Hero Android Download')}
+                  download="SmartTeacherSchedule_v2.0.0_Release.apk"
+                  onClick={() => trackDownload('android', '2.0.0', 'Hero Android Download')}
                   className="flex items-center justify-center space-x-2.5 px-4 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 hover:from-emerald-400 hover:to-indigo-500 text-white font-bold shadow-xl shadow-emerald-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all group"
                 >
                   <Smartphone className="w-5 h-5 group-hover:scale-110 transition-transform text-emerald-100 shrink-0" />
@@ -108,7 +108,7 @@ export default function HeroSection() {
                     <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-100">
                       Điện thoại Android
                     </div>
-                    <div className="text-xs font-bold leading-tight">TẢI APK v1.8.0</div>
+                    <div className="text-xs font-bold leading-tight">TẢI APK v2.0.0</div>
                   </div>
                 </a>
 
@@ -190,7 +190,7 @@ export default function HeroSection() {
                       <p className="font-bold text-emerald-400 flex items-center gap-1">
                         <Smartphone className="w-3.5 h-3.5" /> Quét Tải APK (Android)
                       </p>
-                      <p className="text-[11px] text-slate-400">Mở Camera quét để tải file APK v1.8.0 trực tiếp về máy.</p>
+                      <p className="text-[11px] text-slate-400">Mở Camera quét để tải file APK v2.0.0 trực tiếp về máy.</p>
                     </div>
                   </div>
 

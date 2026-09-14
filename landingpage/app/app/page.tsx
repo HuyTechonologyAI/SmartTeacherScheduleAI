@@ -3208,6 +3208,7 @@ export default function UnifiedTeacherScheduleApp() {
               else if (actionId === 'profile') setShowTeacherProfileModal(true);
               else if (actionId === 'settings') setActiveTab('settings');
             }}
+            onOpenDownload={() => { setSelectedGuidePlatform('android'); setShowPlatformGuideModal(true); }}
             onOpenSettings={() => setActiveTab('settings')}
             onOpenSync={() => setShowSyncModal(true)}
             onOpenPortalShare={() => setShowPortalShareModal(true)}
@@ -6799,7 +6800,7 @@ export default function UnifiedTeacherScheduleApp() {
                         download="SmartTeacherSchedule_v2.0.0_Release.apk"
                         onClick={(e) => {
                           e.stopPropagation();
-                          trackDownload('android', '1.8.0', 'Settings Android APK');
+                          trackDownload('android', '2.0.0', 'Settings Android APK');
                         }}
                         title="Tải trực tiếp file APK"
                         className="p-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950 dark:hover:bg-emerald-900 text-emerald-800 dark:text-emerald-200 text-xs transition-colors shrink-0"
@@ -6933,7 +6934,7 @@ export default function UnifiedTeacherScheduleApp() {
                         download="SmartTeacherSchedule_Setup_v2.0.0.exe"
                         onClick={(e) => {
                           e.stopPropagation();
-                          trackDownload('windows_setup', '1.8.0', 'Settings Windows Setup');
+                          trackDownload('windows_setup', '2.0.0', 'Settings Windows Setup');
                         }}
                         title="Tải bộ cài đặt Windows Setup .exe có logo"
                         className="p-1.5 rounded-lg bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-950 dark:hover:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-xs transition-colors shrink-0"

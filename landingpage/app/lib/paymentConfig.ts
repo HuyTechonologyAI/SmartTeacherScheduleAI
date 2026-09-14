@@ -20,6 +20,8 @@ export interface PlanPackage {
   pricingType: 'FIXED' | 'QUOTE';
   pricingNote?: string;
   features: string[];
+  ecosystemBonus?: string;
+  ecosystemPerkTitle?: string;
   userScope: string;
 }
 
@@ -77,7 +79,9 @@ export const PRICING_PLANS: PlanPackage[] = [
       'Tặng kho tài liệu bài giảng & ngân hàng câu hỏi chuẩn',
       'Hỗ trợ kỹ thuật 1-1 ưu tiên suốt năm học',
       'Cấp chứng nhận Bản quyền Giáo viên Tiên phong Số'
-    ]
+    ],
+    ecosystemPerkTitle: 'Tặng Voucher SmartTax AI',
+    ecosystemBonus: 'Tặng voucher giảm 30% gói Kê khai Thuế cá nhân & Lớp dạy thêm trên SmartTax AI (Mã: HUYTECH-EDU)'
   },
 
   // 2. GÓI CHO GIÁO VIÊN: VIP 2 (DÀNH CHO LỚP HỌC: GIÁO VIÊN + HỌC SINH + PHỤ HUYNH)
@@ -101,7 +105,9 @@ export const PRICING_PLANS: PlanPackage[] = [
       'Kênh bảng tin & thông báo lớp học tương tác 3 chiều tức thì',
       'AI Đánh giá tiến độ học tập & gợi ý bài tập nâng cao cho từng học sinh',
       'Báo cáo tổng kết học kỳ lớp học tự động xuất PDF/Excel'
-    ]
+    ],
+    ecosystemPerkTitle: 'Voucher Kê Khai Thuế Dạy Thêm 30%',
+    ecosystemBonus: 'Tặng voucher ưu đãi 30% bản quyền SmartTax AI phục vụ thu học phí & xuất hóa đơn điện tử cho phụ huynh'
   },
 
   // 3. GÓI NHÀ TRƯỜNG: QUY MÔ THEO USER (GIÁO VIÊN, HỌC SINH, PHỤ HUYNH)
@@ -125,7 +131,9 @@ export const PRICING_PLANS: PlanPackage[] = [
       'Cấp tài khoản Học sinh & Phụ huynh theo danh sách trường (không giới hạn)',
       'AI Phân tích dữ liệu học tập & cảnh báo sớm học sinh có nguy cơ học lực yếu',
       'Hỗ trợ hợp đồng kinh tế, thủ tục Kho bạc & xuất hóa đơn GTGT (VAT) đầy đủ'
-    ]
+    ],
+    ecosystemPerkTitle: 'Tài Trợ 1 Năm SmartTax AI (3.500.000 đ)',
+    ecosystemBonus: 'ĐẶC QUYỀN HỆ SINH THÁI: Tặng kèm 01 năm Phần mềm Kê khai Thuế & Hóa đơn điện tử SmartTax AI Pro (trị giá 3.500.000 đ) cho Phòng Kế toán / Tài vụ nhà trường'
   }
 ];
 
@@ -361,6 +369,14 @@ export function calculateDetailedQuote(params: {
         unitPrice: 0,
         totalPrice: 0,
         note: 'Tích hợp miễn phí theo hợp đồng giải pháp số toàn trường'
+      },
+      {
+        name: '[ĐẶC QUYỀN HỆ SINH THÁI] Bản Quyền 01 Năm Phần Mềm Kê Khai Thuế & Hóa Đơn Điện Tử SmartTax AI (smarttax-ai.vercel.app)',
+        quantity: 1,
+        unit: 'Gói Kế toán',
+        unitPrice: 3500000,
+        totalPrice: 0,
+        note: 'Tài trợ 100% bản quyền SmartTax AI Pro trị giá 3.500.000 đ/năm cho Phòng Kế toán / Tài vụ nhà trường'
       }
     ];
 
@@ -395,7 +411,8 @@ export function calculateDetailedQuote(params: {
         'Hợp đồng kinh tế và hóa đơn điện tử GTGT (VAT) đầy đủ theo quy định của Bộ Tài chính.',
         'Hỗ trợ thanh toán qua Kho bạc Nhà nước hoặc chuyển khoản Ngân hàng theo học kỳ / cả năm.',
         'Miễn phí cài đặt, tập huấn trực tuyến cho toàn bộ Ban Giám hiệu và Giáo viên.',
-        'Cam kết an toàn dữ liệu và hỗ trợ kỹ thuật bảo đảm 24/7 suốt năm học.'
+        'Cam kết an toàn dữ liệu và hỗ trợ kỹ thuật bảo đảm 24/7 suốt năm học.',
+        'ĐẶC QUYỀN HỆ SINH THÁI: Tặng kèm 01 năm bản quyền phần mềm SmartTax AI (smarttax-ai.vercel.app) hỗ trợ kê khai thuế và phát hành hóa đơn điện tử cho bộ phận Kế toán nhà trường.'
       ]
     };
   }

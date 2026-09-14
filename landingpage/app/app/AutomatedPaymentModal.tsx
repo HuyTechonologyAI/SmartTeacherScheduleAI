@@ -931,6 +931,22 @@ export const AutomatedPaymentModal: React.FC<AutomatedPaymentModalProps> = ({
                   📌 <strong>Quy định báo giá theo Trụ Cột 5:</strong> Gói nhà trường phụ thuộc vào số lượng user người dùng bao gồm <strong>Giáo viên</strong>, <strong>Học sinh</strong>, <strong>Phụ huynh</strong> (từ 4.500 - 8.000 đ/user/tháng). Hệ thống tự động sinh bảng dự toán chi tiết ngay lập tức!
                 </div>
 
+                {/* Combo Banner */}
+                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-indigo-900/80 via-emerald-950/80 to-slate-900 border border-emerald-500/40 text-xs text-white space-y-1.5 shadow-md">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-emerald-300 flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-amber-300" />
+                      <span>🎁 ĐẶC QUYỀN HỆ SINH THÁI: TẶNG KÈM 01 NĂM SMARTTAX AI (3.500.000 Đ)</span>
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500 text-slate-950">
+                      TÀI TRỢ 100%
+                    </span>
+                  </div>
+                  <p className="text-slate-300 text-[11px] leading-relaxed">
+                    Mọi hợp đồng bản quyền Gói Nhà Trường đều được tặng kèm 01 năm phần mềm Kê khai Thuế & Xuất Hóa đơn điện tử <strong>SmartTax AI</strong> (smarttax-ai.vercel.app) dành riêng cho Ban Giám Hiệu & Phòng Kế toán / Tài vụ nhà trường.
+                  </p>
+                </div>
+
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2 text-center text-xs">
                   <div className="bg-white/10 rounded-xl p-2.5 backdrop-blur-sm">
                     <Crown className="w-5 h-5 mx-auto text-amber-300 mb-1" />

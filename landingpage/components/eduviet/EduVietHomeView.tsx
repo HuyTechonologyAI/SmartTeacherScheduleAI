@@ -10,6 +10,7 @@ import EduVietProgressCard from './EduVietProgressCard';
 import EduVietFeaturedCards from './EduVietFeaturedCards';
 import EduVietFooterDecoration from './EduVietFooterDecoration';
 import EduVietBottomNav, { EduVietNavTab } from './EduVietBottomNav';
+import EduVietEcosystemCard from './EduVietEcosystemCard';
 import { Language } from '@/app/app/i18n';
 
 interface EduVietHomeViewProps {
@@ -191,6 +192,9 @@ export default function EduVietHomeView({
           onSelectClass={() => onSelectAction('calendar')}
           lang={lang}
         />
+
+        {/* 6.5. Hệ Sinh Thái Huy Tech AI Đặc Quyền & Bán Chéo SmartTax */}
+        <EduVietEcosystemCard onOpenSchoolQuote={() => onSelectAction('settings')} />
 
         {/* 7. Footer Cultural Decoration */}
         <EduVietFooterDecoration />

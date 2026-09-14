@@ -75,6 +75,7 @@ import {
   fullPackageToDocHtml,
   downloadWordDoc
 } from './lessonPlanAi';
+import { generateAndDownloadPptx } from './lessonPlanPptx';
 import { extractPedagogicalKnowledge, PedagogicalKnowledge } from './deepRagPedagogicalParser';
 import { isTestData, cleanAllTestData, countTestData } from './testDataSanitizer';
 import {
@@ -146,6 +147,7 @@ import {
   CheckCircle2,
   ChevronRight,
   Download,
+  Presentation,
   Share2,
   AlertCircle,
   ArrowLeft,
@@ -5215,21 +5217,47 @@ export default function UnifiedTeacherScheduleApp() {
                     {/* ================= TAB 2: KỊCH BẢN SLIDE THUYẾT TRÌNH ================= */}
                     {plannerActiveResultTab === 'slides' && plannerFullPackage && (
                       <div className="space-y-4 animate-fade-in">
-                        <div className="flex items-center justify-between p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 text-xs">
-                          <span className="text-sky-300 font-semibold">
-                            🖥️ Kịch bản bài giảng gồm {plannerFullPackage.slides.length} slide trình chiếu PowerPoint đồng bộ.
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const html = slidesToHtml(plannerFullPackage.slides, plannerFullPackage.lessonTitle, plannerFullPackage.subject);
-                              downloadWordDoc(`Slide_${plannerFullPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`, html);
-                            }}
-                            className="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold flex items-center gap-1 cursor-pointer"
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                            <span>Tải Kịch Bản Slide (.doc)</span>
-                          </button>
+                        <div className="flex items-center justify-between p-3.5 rounded-xl bg-gradient-to-r from-sky-500/15 via-blue-500/10 to-indigo-500/15 border border-sky-500/30 text-xs flex-wrap gap-2.5">
+                          <div className="space-y-0.5">
+                            <span className="text-sky-300 font-bold flex items-center gap-1.5 text-xs sm:text-sm">
+                              🖥️ Bài giảng điện tử gồm {plannerFullPackage.slides.length} slide PowerPoint tiêu chuẩn 16:9
+                            </span>
+                            <p className="text-[11px] text-slate-400">
+                              Đã tích hợp đầy đủ nội dung bài dạy, hình ảnh minh họa vector và hiệu ứng chuyển slide (Fade, Push, Wipe)
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                generateAndDownloadPptx({
+                                  slides: plannerFullPackage.slides,
+                                  lessonTitle: plannerFullPackage.lessonTitle,
+                                  subject: plannerFullPackage.subject,
+                                  className: plannerClass || '12A1',
+                                  teacherName: teacherProfile.fullName || 'Giáo viên bộ môn',
+                                  schoolName: teacherProfile.schools?.[0] || 'Trường THPT'
+                                });
+                              }}
+                              className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition-all active:scale-95 cursor-pointer"
+                              title="Tải trực tiếp file PowerPoint (.pptx) trình chiếu ngay trên lớp"
+                            >
+                              <Presentation className="w-4 h-4" />
+                              <span>Tải File PowerPoint (.pptx)</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const html = slidesToHtml(plannerFullPackage.slides, plannerFullPackage.lessonTitle, plannerFullPackage.subject);
+                                downloadWordDoc(`Slide_${plannerFullPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`, html);
+                              }}
+                              className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-medium text-xs flex items-center gap-1.5 border border-slate-700 transition-all cursor-pointer"
+                              title="Tải kịch bản dạng tài liệu Word"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              <span>Kịch bản (.doc)</span>
+                            </button>
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
@@ -9470,21 +9498,47 @@ export default function UnifiedTeacherScheduleApp() {
               {/* ===== TAB 2: SLIDE THUYẾT TRÌNH POWERPOINT ===== */}
               {lessonPackageActiveTab === 'slides' && (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-100">
-                    <p className="text-xs sm:text-sm text-sky-300 font-medium">
-                      🖥️ Kịch bản bài giảng gồm <strong>{viewingLessonPackage.slides.length} slide trình chiếu</strong> PowerPoint chuẩn trực quan.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const html = slidesToHtml(viewingLessonPackage.slides, viewingLessonPackage.lessonTitle, viewingLessonPackage.subject);
-                        downloadWordDoc(`Slide_${viewingLessonPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`, html);
-                      }}
-                      className="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold flex items-center gap-1.5 shadow transition-all cursor-pointer"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>Tải Kịch Bản Slide (.doc)</span>
-                    </button>
+                  <div className="flex items-center justify-between flex-wrap gap-2.5 pb-3 border-b border-slate-700/60">
+                    <div className="space-y-0.5">
+                      <p className="text-xs sm:text-sm text-sky-300 font-bold flex items-center gap-1.5">
+                        🖥️ Bài giảng trình chiếu gồm <strong>{viewingLessonPackage.slides.length} slide PowerPoint</strong> chuẩn 16:9
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        Đã tích hợp đầy đủ nội dung bài dạy, hình ảnh minh họa vector và hiệu ứng chuyển slide (Fade, Push, Wipe)
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          generateAndDownloadPptx({
+                            slides: viewingLessonPackage.slides,
+                            lessonTitle: viewingLessonPackage.lessonTitle,
+                            subject: viewingLessonPackage.subject,
+                            className: viewingLessonEvent?.className || 'Lớp học',
+                            teacherName: teacherProfile.fullName || 'Giáo viên bộ môn',
+                            schoolName: teacherProfile.schools?.[0] || 'Trường THPT'
+                          });
+                        }}
+                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition-all active:scale-95 cursor-pointer"
+                        title="Tải trực tiếp file PowerPoint (.pptx) trình chiếu ngay trên lớp"
+                      >
+                        <Presentation className="w-4 h-4" />
+                        <span>Tải File PowerPoint (.pptx)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const html = slidesToHtml(viewingLessonPackage.slides, viewingLessonPackage.lessonTitle, viewingLessonPackage.subject);
+                          downloadWordDoc(`Slide_${viewingLessonPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`, html);
+                        }}
+                        className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-medium flex items-center gap-1.5 border border-slate-700 transition-all cursor-pointer"
+                        title="Tải kịch bản dạng tài liệu Word"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Kịch bản (.doc)</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

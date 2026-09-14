@@ -14,7 +14,15 @@ export const metadata: Metadata = {
     "Widget lịch dạy",
     "AI giáo viên",
   ],
-  authors: [{ name: "Huy Technology AI", url: "https://github.com/HuyTechonologyAI" }],
+  authors: [
+    { name: "Huy Technology AI Hub", url: "https://huycncdsai.io.vn" },
+    { name: "SmartTax AI", url: "https://smarttax-ai.vercel.app" }
+  ],
+  creator: "Ngô Quốc Huy - Huy Technology AI",
+  publisher: "Huy Technology AI Hub",
+  alternates: {
+    canonical: "https://huycncdsai.io.vn",
+  },
   openGraph: {
     title: "Smart Teacher Schedule AI - Trợ lý Sư Phạm & Lịch Dạy Giáo Viên v1.8.0",
     description:
@@ -38,6 +46,59 @@ export default function RootLayout({
   return (
     <html lang="vi" className="scroll-smooth">
       <head>
+        {/* Structured Data: Google Schema JSON-LD for Tri-Ecosystem Authority */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "Organization",
+                  "@id": "https://huycncdsai.io.vn/#organization",
+                  "name": "Huy Technology AI Hub",
+                  "url": "https://huycncdsai.io.vn",
+                  "logo": "https://huycncdsai.io.vn/logo.png",
+                  "founder": {
+                    "@type": "Person",
+                    "name": "Ngô Quốc Huy"
+                  },
+                  "sameAs": [
+                    "https://smarttax-ai.vercel.app",
+                    "https://github.com/HuyTechonologyAI"
+                  ],
+                  "description": "Viện Công nghệ & Chuyển đổi số đa ngành: Trí tuệ nhân tạo Sư phạm Giáo dục và Kê khai Thuế Doanh nghiệp."
+                },
+                {
+                  "@type": "SoftwareApplication",
+                  "@id": "https://huycncdsai.io.vn/#software-teacher",
+                  "name": "Smart Teacher Schedule AI (EduViet)",
+                  "applicationCategory": "EducationalApplication",
+                  "operatingSystem": "Web, Android, Windows Desktop, iOS PWA",
+                  "offers": {
+                    "@type": "Offer",
+                    "price": "399000",
+                    "priceCurrency": "VND"
+                  },
+                  "parentOrganization": {
+                    "@id": "https://huycncdsai.io.vn/#organization"
+                  }
+                },
+                {
+                  "@type": "SoftwareApplication",
+                  "@id": "https://smarttax-ai.vercel.app/#software-tax",
+                  "name": "SmartTax AI",
+                  "url": "https://smarttax-ai.vercel.app",
+                  "applicationCategory": "BusinessApplication",
+                  "parentOrganization": {
+                    "@id": "https://huycncdsai.io.vn/#organization"
+                  }
+                }
+              ]
+            })
+          }}
+        />
+
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
         <link rel="icon" type="image/png" sizes="512x512" href="/app_logo.png" />

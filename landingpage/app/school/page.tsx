@@ -1,5 +1,8 @@
 "use client";
 
+import EcosystemMegaBar from '@/components/EcosystemMegaBar';
+import EcosystemBrochureModal from '@/components/EcosystemBrochureModal';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
@@ -110,6 +113,7 @@ export default function SchoolManagementPage() {
 
   // Modals State
   const [selectedPlanForReview, setSelectedPlanForReview] = useState<SchoolLessonPlanItem | null>(null);
+  const [isBrochureOpen, setIsBrochureOpen] = useState<boolean>(false);
   const [showStorageModal, setShowStorageModal] = useState<boolean>(false);
   const [principalSession, setPrincipalSession] = useState<AuthSession | null>(null);
   const [showAuthGate, setShowAuthGate] = useState<boolean>(false);
@@ -316,6 +320,8 @@ export default function SchoolManagementPage() {
   }, [lessonPlans]);
 
   return (
+    <>
+      <EcosystemMegaBar />
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#080D1A] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200 selection:bg-indigo-200 selection:text-indigo-900 pb-16">
       
       {/* 1. Header Điều Hành Nhà Trường */}
@@ -404,6 +410,16 @@ export default function SchoolManagementPage() {
               <span>🏡</span>
               <span className="hidden md:inline">{isEn ? "Parent" : "Phụ huynh"}</span>
             </Link>
+
+            {/* Hồ Sơ Năng Lực AI & Hệ Sinh Thái 4.0 */}
+            <button
+              onClick={() => setIsBrochureOpen(true)}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-full bg-gradient-to-r from-rose-600 via-amber-600 to-indigo-600 hover:opacity-90 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+              title={isEn ? "View & Print AI Capacity Profile & Ecosystem 4.0" : "Xem & In Hồ Sơ Năng Lực AI & Hệ Sinh Thái 4.0"}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>{isEn ? "Capacity Profile" : "Hồ Sơ Năng Lực 4.0"}</span>
+            </button>
 
             {/* Storage Quota Diagnostics Badge */}
             <button
@@ -1411,6 +1427,11 @@ export default function SchoolManagementPage() {
         onClose={() => setShowStorageModal(false)}
         isEn={isEn}
       />
+      <EcosystemBrochureModal
+        isOpen={isBrochureOpen}
+        onClose={() => setIsBrochureOpen(false)}
+      />
     </div>
+    </>
   );
 }

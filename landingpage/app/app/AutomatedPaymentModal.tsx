@@ -28,7 +28,8 @@ import {
   GraduationCap,
   HeartHandshake,
   Calculator,
-  ChevronRight
+  ChevronRight,
+  Receipt
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -36,6 +37,7 @@ import {
   PAYMENT_BENEFICIARY,
   PlanPackage,
   PlanId,
+  DetailedQuoteResult,
   generateTransferSyntax,
   generateVietQrImageUrl
 } from '@/app/lib/paymentConfig';
@@ -88,6 +90,7 @@ export const AutomatedPaymentModal: React.FC<AutomatedPaymentModalProps> = ({
     notes: ''
   });
   const [vip2QuoteSubmitted, setVip2QuoteSubmitted] = useState<boolean>(false);
+  const [vip2CalculatedQuote, setVip2CalculatedQuote] = useState<DetailedQuoteResult | null>(null);
   const [isSubmittingVip2, setIsSubmittingVip2] = useState<boolean>(false);
 
   // Form Báo giá Gói Nhà Trường (Enterprise)
@@ -101,9 +104,11 @@ export const AutomatedPaymentModal: React.FC<AutomatedPaymentModalProps> = ({
     position: 'Ban Giám Hiệu',
     phone: '',
     email: '',
-    notes: ''
+    notes: '',
+    hasVat: true
   });
   const [schoolQuoteSubmitted, setSchoolQuoteSubmitted] = useState<boolean>(false);
+  const [schoolCalculatedQuote, setSchoolCalculatedQuote] = useState<DetailedQuoteResult | null>(null);
   const [isSubmittingSchool, setIsSubmittingSchool] = useState<boolean>(false);
 
   // Form Hóa đơn GTGT (VAT)
@@ -233,6 +238,9 @@ export const AutomatedPaymentModal: React.FC<AutomatedPaymentModalProps> = ({
       const data = await res.json();
       if (data.success) {
         setVip2QuoteSubmitted(true);
+        if (data.quoteDetails) {
+          setVip2CalculatedQuote(data.quoteDetails);
+        }
       }
     } catch (err) {
       console.error('Lỗi gửi báo giá VIP 2:', err);
@@ -259,12 +267,16 @@ export const AutomatedPaymentModal: React.FC<AutomatedPaymentModalProps> = ({
           teacherCount: schoolScale.teacherCount,
           studentCount: schoolScale.studentCount,
           parentCount: schoolScale.parentCount,
+          hasVat: schoolScale.hasVat,
           notes: `Chức vụ: ${schoolScale.position}. Tỉnh/TP: ${schoolScale.province}. Ghi chú: ${schoolScale.notes}`
         })
       });
       const data = await res.json();
       if (data.success) {
         setSchoolQuoteSubmitted(true);
+        if (data.quoteDetails) {
+          setSchoolCalculatedQuote(data.quoteDetails);
+        }
       }
     } catch (err) {
       console.error('Lỗi gửi báo giá Nhà Trường:', err);
@@ -300,6 +312,168 @@ export const AutomatedPaymentModal: React.FC<AutomatedPaymentModalProps> = ({
     } finally {
       setIsSubmittingVat(false);
     }
+  };
+
+  // In / Tải PDF Bảng Báo Giá Dự Toán (AI Detailed Quote)
+  const handlePrintQuote = (quote: DetailedQuoteResult) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const itemsHtml = quote.items
+      .map(
+        (it, idx) => `
+        <tr>
+          <td style="text-align: center; padding: 10px; border: 1px solid #cbd5e1;">${idx + 1}</td>
+          <td style="padding: 10px; border: 1px solid #cbd5e1;">
+            <strong>${it.name}</strong>
+            <div style="font-size: 11px; color: #64748b; margin-top: 3px;">${it.note}</div>
+          </td>
+          <td style="text-align: center; padding: 10px; border: 1px solid #cbd5e1;">${it.quantity.toLocaleString('vi-VN')}</td>
+          <td style="text-align: center; padding: 10px; border: 1px solid #cbd5e1;">${it.unit}</td>
+          <td style="text-align: right; padding: 10px; border: 1px solid #cbd5e1;">${it.unitPrice > 0 ? it.unitPrice.toLocaleString('vi-VN') + ' đ' : 'Tài trợ 100%'}</td>
+          <td style="text-align: right; padding: 10px; border: 1px solid #cbd5e1; font-weight: bold;">${it.totalPrice > 0 ? it.totalPrice.toLocaleString('vi-VN') + ' đ' : '0 đ'}</td>
+        </tr>
+      `
+      )
+      .join('');
+
+    const termsHtml = quote.terms
+      .map((t) => `<li style="margin-bottom: 5px;">${t}</li>`)
+      .join('');
+
+    const docHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Bảng Báo Giá Dự Toán - ${quote.quoteCode}</title>
+        <style>
+          body { font-family: 'Segoe UI', Arial, sans-serif; margin: 30px; color: #0f172a; line-height: 1.5; }
+          .container { max-width: 800px; margin: auto; border: 1px solid #cbd5e1; border-radius: 16px; padding: 35px; }
+          .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0284c7; padding-bottom: 20px; }
+          .company-name { font-size: 20px; font-weight: 900; color: #0284c7; }
+          .company-sub { font-size: 12px; color: #475569; margin-top: 4px; }
+          .quote-title { text-align: center; font-size: 22px; font-weight: 900; color: #0f172a; margin: 25px 0 5px; text-transform: uppercase; }
+          .quote-code { text-align: center; font-size: 12px; font-weight: bold; color: #e11d48; margin-bottom: 25px; }
+          .client-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px 20px; margin-bottom: 25px; font-size: 13px; }
+          .client-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }
+          th { background-color: #f1f5f9; padding: 10px; border: 1px solid #cbd5e1; font-weight: bold; text-align: left; }
+          .summary-box { float: right; width: 340px; margin-bottom: 25px; font-size: 13px; }
+          .summary-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #cbd5e1; }
+          .grand-total { font-size: 16px; font-weight: 900; color: #e11d48; border-top: 2px solid #0f172a; border-bottom: none; margin-top: 5px; padding-top: 8px; }
+          .clear { clear: both; }
+          .bank-box { background-color: #f0fdf4; border: 1px solid #86efac; border-radius: 12px; padding: 15px; margin: 20px 0; font-size: 12px; }
+          .terms { font-size: 11px; color: #475569; margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 15px; }
+          .seal-section { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 40px; }
+          .seal { border: 2px dashed #e11d48; border-radius: 50%; width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; text-align: center; color: #e11d48; font-size: 10px; font-weight: bold; transform: rotate(-8deg); }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div>
+              <div class="company-name">⚡ CÔNG TY CÔNG NGHỆ HUY TECHNOLOGY AI</div>
+              <div class="company-sub">Nền Tảng Giáo Dục Thông Minh Smart Teacher Schedule AI</div>
+              <div class="company-sub">Hotline & Zalo: 0961.364.600 • Email: contact@huytech.ai</div>
+            </div>
+            <div style="text-align: right; font-size: 12px; color: #475569;">
+              <div><strong>Mã dự toán:</strong> ${quote.quoteCode}</div>
+              <div><strong>Ngày lập:</strong> ${quote.quoteDate}</div>
+              <div><strong>Hiệu lực:</strong> ${quote.validUntil} (30 ngày)</div>
+            </div>
+          </div>
+
+          <div class="quote-title">BẢNG BÁO GIÁ DỰ TOÁN KINH PHÍ</div>
+          <div class="quote-code">DỰ ÁN SỐ HÓA GIÁO DỤC THEO MÔ HÌNH TRỤ CỘT 5</div>
+
+          <div class="client-box">
+            <div class="client-row">
+              <span>Đơn vị / Cơ sở giáo dục: <strong>${quote.organizationName}</strong></span>
+              <span>Người đại diện: <strong>${quote.contactName}</strong></span>
+            </div>
+            <div class="client-row">
+              <span>Số điện thoại: <strong>${quote.phone}</strong></span>
+              <span>Email: <strong>${quote.email || 'Chưa cung cấp'}</strong></span>
+            </div>
+            <div class="client-row" style="margin-bottom: 0;">
+              <span>Phân loại giải pháp: <strong style="color: #0284c7;">${quote.type === 'VIP2_CLASS' ? 'Gói VIP 2 (Lớp học toàn diện)' : 'Gói Nhà Trường (School Enterprise)'}</strong></span>
+              <span>Tổng quy mô: <strong>${quote.userCounts.totalUsers} người dùng</strong></span>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 40px; text-align: center;">STT</th>
+                <th>Hạng Mục Giải Pháp & Quyền Lợi Bản Quyền</th>
+                <th style="width: 60px; text-align: center;">SL</th>
+                <th style="width: 60px; text-align: center;">ĐVT</th>
+                <th style="width: 100px; text-align: right;">Đơn Giá</th>
+                <th style="width: 120px; text-align: right;">Thành Tiền</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+
+          <div class="summary-box">
+            <div class="summary-row">
+              <span>Tổng kinh phí niêm yết:</span>
+              <span>${(quote.subtotal + quote.discountAmount).toLocaleString('vi-VN')} đ</span>
+            </div>
+            <div class="summary-row" style="color: #059669;">
+              <span>Chiết khấu quy mô (${quote.discountRate}%):</span>
+              <span>- ${quote.discountAmount.toLocaleString('vi-VN')} đ</span>
+            </div>
+            <div class="summary-row">
+              <span>Chi phí bình quân / học sinh:</span>
+              <strong style="color: #0284c7;">~${quote.monthlyAveragePerStudent.toLocaleString('vi-VN')} đ/tháng</strong>
+            </div>
+            <div class="summary-row">
+              <span>Thuế GTGT (VAT ${quote.vatRate}%):</span>
+              <span>${quote.vatAmount > 0 ? quote.vatAmount.toLocaleString('vi-VN') + ' đ' : 'Miễn thuế PM'}</span>
+            </div>
+            <div class="summary-row grand-total">
+              <span>TỔNG THANH TOÁN (1 Năm):</span>
+              <span>${quote.grandTotal.toLocaleString('vi-VN')} đ</span>
+            </div>
+          </div>
+          <div class="clear"></div>
+
+          <div class="bank-box">
+            <strong>THÔNG TIN THANH TOÁN & THỤ HƯỞNG CHÍNH THỨC:</strong><br/>
+            • Ngân hàng: <strong>Ngân hàng TMCP Á Châu (ACB)</strong> • Chi nhánh: <strong>Tân Mai</strong><br/>
+            • Số tài khoản: <strong style="font-family: monospace; font-size: 14px; color: #b91c1c;">37780997</strong> • Chủ tài khoản: <strong>NGO QUOC HUY</strong><br/>
+            • Cú pháp chuyển khoản: <strong style="font-family: monospace; color: #0284c7;">ST ${quote.quoteCode.replace(/[^A-Za-z0-9]/g, '')}</strong>
+          </div>
+
+          <div class="terms">
+            <strong>ĐIỀU KHOẢN HỢP ĐỒNG & BẢO HÀNH DỊCH VỤ:</strong>
+            <ul>${termsHtml}</ul>
+          </div>
+
+          <div class="seal-section">
+            <div style="font-size: 12px;">
+              <div>Người lập bảng dự toán: <strong>AI Smart Financial System</strong></div>
+              <div>Đại diện kinh doanh: <strong>Huy Technology AI</strong></div>
+              <div style="font-size: 11px; color: #64748b; margin-top: 5px;">Bản quyền phần mềm giáo dục hợp lệ</div>
+            </div>
+            <div class="seal">
+              XÁC THỰC<br/>DỰ TOÁN HỢP LỆ<br/>★ HUY TECH AI ★
+            </div>
+          </div>
+        </div>
+        <script>
+          window.onload = function() { window.print(); }
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(docHtml);
+    printWindow.document.close();
   };
 
   // In / Tải PDF Biên lai thu tiền điện tử
@@ -627,14 +801,40 @@ export const AutomatedPaymentModal: React.FC<AutomatedPaymentModalProps> = ({
                     </h6>
 
                     {vip2QuoteSubmitted ? (
-                      <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center space-y-2">
+                      <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center space-y-3">
                         <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto" />
                         <h6 className="font-bold text-emerald-800 dark:text-emerald-300 text-xs">
-                          Đã Gửi Yêu Cầu Báo Giá Thành Công!
+                          AI Đã Tính Toán & Xuất Bản Báo Giá Dự Toán!
                         </h6>
+                        {vip2CalculatedQuote && (
+                          <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800/80 text-left text-[11px] space-y-1 font-sans">
+                            <div className="flex justify-between">
+                              <span className="text-slate-500">Mã dự toán:</span>
+                              <strong className="font-mono text-indigo-600">{vip2CalculatedQuote.quoteCode}</strong>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-500">Tổng kinh phí trọn năm:</span>
+                              <strong className="text-rose-600 font-bold">{vip2CalculatedQuote.grandTotal.toLocaleString('vi-VN')} đ</strong>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-500">Bình quân / học sinh:</span>
+                              <span className="text-emerald-600 font-semibold">~{vip2CalculatedQuote.monthlyAveragePerStudent.toLocaleString('vi-VN')} đ / tháng</span>
+                            </div>
+                          </div>
+                        )}
                         <p className="text-[11px] text-slate-600 dark:text-slate-300">
-                          Chuyên viên Huy Technology AI sẽ liên hệ gửi bảng báo giá chi tiết theo sĩ số lớp qua Số điện thoại/Zalo trong 15 phút.
+                          Thầy/Cô có thể in hoặc tải file PDF Bảng Dự Toán ngay dưới đây để trình họp phụ huynh hoặc ban cán sự lớp.
                         </p>
+                        {vip2CalculatedQuote && (
+                          <button
+                            type="button"
+                            onClick={() => handlePrintQuote(vip2CalculatedQuote)}
+                            className="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow cursor-pointer transition-colors"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                            <span>In / Tải Bảng Báo Giá Dự Toán PDF</span>
+                          </button>
+                        )}
                       </div>
                     ) : (
                       <form onSubmit={handleSubmitVip2Quote} className="space-y-2.5">
@@ -701,7 +901,7 @@ export const AutomatedPaymentModal: React.FC<AutomatedPaymentModalProps> = ({
                           className="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-xs shadow transition-all cursor-pointer flex items-center justify-center gap-1.5"
                         >
                           <Send className="w-3.5 h-3.5" />
-                          <span>{isSubmittingVip2 ? 'Đang gửi...' : 'Nhận Báo Giá Chi Tiết Gói VIP 2'}</span>
+                          <span>{isSubmittingVip2 ? 'Đang tính toán dự toán...' : 'Nhận Báo Giá Chi Tiết Gói VIP 2'}</span>
                         </button>
                       </form>
                     )}
@@ -728,14 +928,14 @@ export const AutomatedPaymentModal: React.FC<AutomatedPaymentModalProps> = ({
                 </h4>
 
                 <div className="p-3.5 rounded-2xl bg-amber-500/20 border border-amber-400/30 text-amber-200 text-xs leading-relaxed font-semibold">
-                  📌 <strong>Quy định báo giá:</strong> Gói nhà trường sẽ phụ thuộc vào số lượng user người dùng bao gồm số lượng <strong>Giáo viên</strong>, <strong>Học sinh</strong>, <strong>Phụ huynh</strong>. Hệ thống sẽ có bảng báo giá chi tiết theo quy mô thực tế của từng đơn vị!
+                  📌 <strong>Quy định báo giá theo Trụ Cột 5:</strong> Gói nhà trường phụ thuộc vào số lượng user người dùng bao gồm <strong>Giáo viên</strong>, <strong>Học sinh</strong>, <strong>Phụ huynh</strong> (từ 4.500 - 8.000 đ/user/tháng). Hệ thống tự động sinh bảng dự toán chi tiết ngay lập tức!
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2 text-center text-xs">
                   <div className="bg-white/10 rounded-xl p-2.5 backdrop-blur-sm">
                     <Crown className="w-5 h-5 mx-auto text-amber-300 mb-1" />
                     <span className="font-bold block">100% Giáo Viên</span>
-                    <span className="text-[10px] text-slate-300">Kích hoạt Pro trọn đời</span>
+                    <span className="text-[10px] text-slate-300">Tài trợ Pro trọn năm</span>
                   </div>
                   <div className="bg-white/10 rounded-xl p-2.5 backdrop-blur-sm">
                     <Building className="w-5 h-5 mx-auto text-teal-300 mb-1" />
@@ -835,16 +1035,46 @@ export const AutomatedPaymentModal: React.FC<AutomatedPaymentModalProps> = ({
                   </h6>
 
                   {schoolQuoteSubmitted ? (
-                    <div className="p-5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center space-y-2">
+                    <div className="p-5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center space-y-3">
                       <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto" />
                       <h6 className="font-bold text-emerald-800 dark:text-emerald-300 text-sm">
-                        Đã Tiếp Nhận Yêu Cầu Báo Giá Thành Công!
+                        AI Đã Xuất Bản Bảng Báo Giá Dự Toán Thành Công!
                       </h6>
+                      {schoolCalculatedQuote && (
+                        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800/80 text-left text-xs space-y-1.5 font-sans">
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Mã số dự toán:</span>
+                            <strong className="font-mono text-teal-600">{schoolCalculatedQuote.quoteCode}</strong>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Đơn vị thụ hưởng:</span>
+                            <strong className="text-slate-900 dark:text-white">{schoolCalculatedQuote.organizationName}</strong>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Khung định giá quy mô:</span>
+                            <span className="text-indigo-600 font-semibold">{schoolCalculatedQuote.pricingTier}</span>
+                          </div>
+                          <div className="flex justify-between border-t border-slate-100 dark:border-slate-800 pt-1.5">
+                            <span className="text-slate-700 font-bold">Tổng dự toán 1 năm học:</span>
+                            <strong className="text-base text-rose-600 font-black">{schoolCalculatedQuote.grandTotal.toLocaleString('vi-VN')} đ</strong>
+                          </div>
+                        </div>
+                      )}
                       <p className="text-xs text-slate-600 dark:text-slate-300 max-w-md mx-auto">
-                        Đội ngũ chuyên viên tư vấn chuyển đổi số của <strong>Huy Technology AI</strong> sẽ liên hệ Thầy/Cô để gửi bảng dự toán kinh phí, hợp đồng kinh tế mẫu và hồ sơ thẩm định qua Email & Zalo.
+                        Thầy/Cô có thể <strong>In hoặc Tải trực tiếp file PDF Bảng Báo Giá Dự Toán</strong> bên dưới để trình Ban Giám Hiệu, Hội đồng trường hoặc Phòng GD&ĐT phê duyệt kinh phí.
                       </p>
+                      {schoolCalculatedQuote && (
+                        <button
+                          type="button"
+                          onClick={() => handlePrintQuote(schoolCalculatedQuote)}
+                          className="w-full py-3 rounded-xl bg-gradient-to-r from-teal-600 to-indigo-600 hover:from-teal-700 hover:to-indigo-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow cursor-pointer transition-all"
+                        >
+                          <Printer className="w-4 h-4" />
+                          <span>In / Tải Bảng Báo Giá Dự Toán PDF (Chuẩn Trình Ký)</span>
+                        </button>
+                      )}
                       <div className="pt-2 text-xs font-bold text-slate-700 dark:text-slate-200">
-                        Hotline Ban Giám Hiệu: <strong className="text-rose-600">0961.364.600</strong>
+                        Hotline Hỗ trợ Ký hợp đồng & Kho bạc: <strong className="text-rose-600">0961.364.600</strong>
                       </div>
                     </div>
                   ) : (
@@ -938,7 +1168,7 @@ export const AutomatedPaymentModal: React.FC<AutomatedPaymentModalProps> = ({
                         className="w-full py-3 rounded-xl bg-gradient-to-r from-teal-600 via-indigo-600 to-indigo-700 hover:from-teal-700 hover:to-indigo-800 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
                       >
                         <Send className="w-4 h-4" />
-                        <span>{isSubmittingSchool ? 'Đang gửi...' : 'Gửi Yêu Cầu Nhận Báo Giá Chi Tiết Theo Quy Mô Trường'}</span>
+                        <span>{isSubmittingSchool ? 'AI Đang tính toán dự toán...' : 'AI Tính Toán & Xuất Bản Báo Giá Dự Toán Ngay'}</span>
                       </button>
                     </form>
                   )}

@@ -142,3 +142,261 @@ export function generateVietQrImageUrl(amount: number, syntax: string, accountNa
   const accNum = PAYMENT_BENEFICIARY.accountNumber; // 37780997
   return `https://img.vietqr.io/image/${bankCode}-${accNum}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(syntax)}&accountName=${encodeURIComponent(accountName)}`;
 }
+
+// =========================================================================
+// CƠ CHẾ SINH DỰ TOÁN BÁO GIÁ TỰ ĐỘNG (AI DETAILED QUOTATION ENGINE)
+// =========================================================================
+
+export interface QuoteLineItem {
+  name: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  totalPrice: number;
+  note: string;
+}
+
+export interface DetailedQuoteResult {
+  quoteCode: string;
+  quoteDate: string;
+  validUntil: string;
+  type: 'VIP2_CLASS' | 'SCHOOL_SCALE';
+  organizationName: string;
+  contactName: string;
+  phone: string;
+  email: string;
+  userCounts: {
+    teachers: number;
+    students: number;
+    parents: number;
+    totalUsers: number;
+  };
+  pricingTier: string;
+  unitPricePerUserMonth: number;
+  unitPricePerUserYear: number;
+  items: QuoteLineItem[];
+  subtotal: number;
+  discountRate: number; // %
+  discountAmount: number;
+  totalAmount: number;
+  monthlyAveragePerStudent: number;
+  vatRate: number; // 0% hoặc 8%
+  vatAmount: number;
+  grandTotal: number;
+  terms: string[];
+}
+
+export function calculateDetailedQuote(params: {
+  type: 'VIP2_CLASS' | 'SCHOOL_SCALE';
+  organizationName?: string;
+  contactName?: string;
+  phone?: string;
+  email?: string;
+  teacherCount?: number;
+  studentCount?: number;
+  parentCount?: number;
+  hasVat?: boolean;
+}): DetailedQuoteResult {
+  const now = new Date();
+  const validUntilDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // Hiệu lực 30 ngày
+  const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+  const quoteCode = `DT-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}-${randomSuffix}`;
+
+  const hasVat = !!params.hasVat;
+  const vatRate = hasVat ? 0.08 : 0; // 8% VAT dịch vụ phần mềm
+
+  if (params.type === 'VIP2_CLASS') {
+    const students = Math.max(1, params.studentCount || 40);
+    const parents = Math.max(1, params.parentCount || students);
+    const teachers = 1;
+    const totalUsers = teachers + students + parents;
+
+    // Định giá theo lớp chuẩn:
+    // Dưới 35 HS: 1.490.000 đ
+    // 35 - 45 HS: 1.890.000 đ
+    // Trên 45 HS: 1.890.000 + (HS - 45) * 35.000 đ
+    let packageBasePrice = 1890000;
+    if (students <= 30) {
+      packageBasePrice = 1490000;
+    } else if (students > 45) {
+      packageBasePrice = 1890000 + (students - 45) * 35000;
+    }
+
+    // Giá niêm yết lẻ nếu mua riêng (để tính mức tiết kiệm cho lớp)
+    const originalTeacherValue = 399000; // VIP 1
+    const originalStudentValue = students * 120000; // 120k/HS/năm
+    const originalParentValue = parents * 99000; // 99k/PH/năm
+    const listedSubtotal = originalTeacherValue + originalStudentValue + originalParentValue;
+
+    const discountAmount = listedSubtotal - packageBasePrice;
+    const discountRate = Math.round((discountAmount / listedSubtotal) * 100);
+
+    const vatAmount = Math.round(packageBasePrice * vatRate);
+    const grandTotal = packageBasePrice + vatAmount;
+    const monthlyAveragePerStudent = Math.round(packageBasePrice / students / 9); // 9 tháng học
+
+    const items: QuoteLineItem[] = [
+      {
+        name: 'Tài khoản Giáo viên Chủ nhiệm (Bản quyền VIP 1 Trọn năm)',
+        quantity: 1,
+        unit: 'Tài khoản',
+        unitPrice: 399000,
+        totalPrice: 0,
+        note: 'Đã bao gồm trọn gói trong giải pháp lớp học'
+      },
+      {
+        name: `Tài khoản Học sinh Lớp học (${students} em làm bài tập & thi online)`,
+        quantity: students,
+        unit: 'Học sinh',
+        unitPrice: Math.round(packageBasePrice / students),
+        totalPrice: packageBasePrice,
+        note: `Bình quân chỉ ~${monthlyAveragePerStudent.toLocaleString('vi-VN')} đ / học sinh / tháng`
+      },
+      {
+        name: `Tài khoản Phụ huynh Học sinh (${parents} phụ huynh - Sổ liên lạc số)`,
+        quantity: parents,
+        unit: 'Phụ huynh',
+        unitPrice: 0,
+        totalPrice: 0,
+        note: 'Tài trợ miễn phí 100% kèm theo tài khoản học sinh'
+      }
+    ];
+
+    return {
+      quoteCode,
+      quoteDate: now.toLocaleDateString('vi-VN'),
+      validUntil: validUntilDate.toLocaleDateString('vi-VN'),
+      type: 'VIP2_CLASS',
+      organizationName: params.organizationName || 'Lớp học tiêu chuẩn',
+      contactName: params.contactName || 'Thầy/Cô Chủ nhiệm',
+      phone: params.phone || '',
+      email: params.email || '',
+      userCounts: {
+        teachers,
+        students,
+        parents,
+        totalUsers
+      },
+      pricingTier: `Gói Lớp Học Toàn Diện (${students} Học sinh + ${parents} Phụ huynh)`,
+      unitPricePerUserMonth: monthlyAveragePerStudent,
+      unitPricePerUserYear: Math.round(packageBasePrice / students),
+      items,
+      subtotal: packageBasePrice,
+      discountRate,
+      discountAmount,
+      totalAmount: packageBasePrice,
+      monthlyAveragePerStudent,
+      vatRate: vatRate * 100,
+      vatAmount,
+      grandTotal,
+      terms: [
+        'Hiệu lực bản quyền: Trọn vẹn 1 năm học (12 tháng kể từ ngày kích hoạt).',
+        'Bao gồm hỗ trợ tạo danh sách lớp và cấp mã đăng nhập tự động cho học sinh/phụ huynh.',
+        'Hỗ trợ kỹ thuật 1-1 qua Zalo & Hotline trong suốt năm học.',
+        'Bảo lưu dữ liệu học tập và sổ điểm an toàn 100% trên đám mây.'
+      ]
+    };
+  } else {
+    // GÓI NHÀ TRƯỜNG (SCHOOL ENTERPRISE)
+    const teachers = Math.max(5, params.teacherCount || 40);
+    const students = Math.max(50, params.studentCount || 1000);
+    const parents = Math.max(50, params.parentCount || students);
+    const totalUsers = teachers + students + parents;
+
+    // Số user tính phí cấp phép (tính trên tổng số HS + GV toàn trường):
+    const billedUsers = teachers + students;
+
+    let unitMonthly = 6000;
+    let unitYearly = 55000;
+    let tierLabel = 'Quy mô Tiêu chuẩn (500 - 1.500 users)';
+
+    if (billedUsers < 500) {
+      unitMonthly = 8000;
+      unitYearly = 75000;
+      tierLabel = 'Quy mô Dưới 500 users';
+    } else if (billedUsers > 1500) {
+      unitMonthly = 4500;
+      unitYearly = 40000;
+      tierLabel = 'Quy mô Lớn (Trên 1.500 users)';
+    }
+
+    const listedAnnualPrice = billedUsers * (unitMonthly * 10); // 10 tháng năm học
+    const packageBasePrice = billedUsers * unitYearly;
+    const discountAmount = listedAnnualPrice - packageBasePrice;
+    const discountRate = Math.round((discountAmount / listedAnnualPrice) * 100);
+
+    const vatAmount = Math.round(packageBasePrice * vatRate);
+    const grandTotal = packageBasePrice + vatAmount;
+    const monthlyAveragePerStudent = Math.round(unitYearly / 9);
+
+    const items: QuoteLineItem[] = [
+      {
+        name: `Cấp bản quyền License PRO cho toàn bộ Hội đồng Giáo viên (${teachers} GV)`,
+        quantity: teachers,
+        unit: 'Giáo viên',
+        unitPrice: 0,
+        totalPrice: 0,
+        note: `Tài trợ 100% bản quyền PRO (Trị giá ${(teachers * 399000).toLocaleString('vi-VN')} đ)`
+      },
+      {
+        name: `Bản quyền Hệ sinh thái Học tập Toàn trường (${students} Học sinh)`,
+        quantity: billedUsers,
+        unit: 'User (HS + GV)',
+        unitPrice: unitYearly,
+        totalPrice: packageBasePrice,
+        note: `Đơn giá ${unitYearly.toLocaleString('vi-VN')} đ/user/năm (~${unitMonthly.toLocaleString('vi-VN')} đ/tháng)`
+      },
+      {
+        name: `Cổng Sổ Liên Lạc Số Toàn Diện Cho Phụ Huynh (${parents} Phụ huynh)`,
+        quantity: parents,
+        unit: 'Phụ huynh',
+        unitPrice: 0,
+        totalPrice: 0,
+        note: 'Miễn phí liên thông dữ liệu 4 cổng cho 100% phụ huynh học sinh'
+      },
+      {
+        name: 'Cổng Quản Trị Nhà Trường (/school) & Báo Cáo AI Dự Báo Học Lực',
+        quantity: 1,
+        unit: 'Gói trường',
+        unitPrice: 0,
+        totalPrice: 0,
+        note: 'Tích hợp miễn phí theo hợp đồng giải pháp số toàn trường'
+      }
+    ];
+
+    return {
+      quoteCode,
+      quoteDate: now.toLocaleDateString('vi-VN'),
+      validUntil: validUntilDate.toLocaleDateString('vi-VN'),
+      type: 'SCHOOL_SCALE',
+      organizationName: params.organizationName || 'Trường học đối tác',
+      contactName: params.contactName || 'Ban Giám Hiệu Nhà Trường',
+      phone: params.phone || '',
+      email: params.email || '',
+      userCounts: {
+        teachers,
+        students,
+        parents,
+        totalUsers
+      },
+      pricingTier: tierLabel,
+      unitPricePerUserMonth: unitMonthly,
+      unitPricePerUserYear: unitYearly,
+      items,
+      subtotal: packageBasePrice,
+      discountRate,
+      discountAmount,
+      totalAmount: packageBasePrice,
+      monthlyAveragePerStudent,
+      vatRate: vatRate * 100,
+      vatAmount,
+      grandTotal,
+      terms: [
+        'Hợp đồng kinh tế và hóa đơn điện tử GTGT (VAT) đầy đủ theo quy định của Bộ Tài chính.',
+        'Hỗ trợ thanh toán qua Kho bạc Nhà nước hoặc chuyển khoản Ngân hàng theo học kỳ / cả năm.',
+        'Miễn phí cài đặt, tập huấn trực tuyến cho toàn bộ Ban Giám hiệu và Giáo viên.',
+        'Cam kết an toàn dữ liệu và hỗ trợ kỹ thuật bảo đảm 24/7 suốt năm học.'
+      ]
+    };
+  }
+}

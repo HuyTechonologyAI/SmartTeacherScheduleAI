@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PaymentStore } from '@/app/lib/paymentStore';
+import { calculateDetailedQuote } from '@/app/lib/paymentConfig';
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,6 +15,7 @@ export async function POST(req: NextRequest) {
       teacherCount,
       studentCount,
       parentCount,
+      hasVat,
       notes
     } = body;
 
@@ -24,23 +26,38 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // AI Tính toán bảng dự toán chi tiết chuẩn Trụ cột 5
+    const quoteDetails = calculateDetailedQuote({
+      type: type || 'SCHOOL_SCALE',
+      organizationName: organizationName || (type === 'VIP2_CLASS' ? 'Lớp học tiêu chuẩn' : 'Trường học đối tác'),
+      contactName,
+      phone,
+      email: email || '',
+      teacherCount: Number(teacherCount || 0),
+      studentCount: Number(studentCount || 0),
+      parentCount: Number(parentCount || 0),
+      hasVat: !!hasVat
+    });
+
     const record = PaymentStore.saveQuoteRequest({
       type: type || 'SCHOOL_SCALE',
       syncCode: (syncCode || 'GV').toUpperCase(),
       contactName,
       phone,
       email: email || '',
-      organizationName: organizationName || 'Trường học / Lớp học',
+      organizationName: organizationName || (type === 'VIP2_CLASS' ? 'Lớp học tiêu chuẩn' : 'Trường học đối tác'),
       teacherCount: Number(teacherCount || 0),
       studentCount: Number(studentCount || 0),
       parentCount: Number(parentCount || 0),
-      notes: notes || ''
+      notes: notes || '',
+      quoteDetails
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Đã gửi yêu cầu báo giá thành công! Chuyên viên Huy Technology AI sẽ liên hệ gửi bảng báo giá chi tiết trong 15 phút.',
-      record
+      message: 'AI đã tính toán và xuất bản thành công Bảng Báo Giá Dự Toán chi tiết!',
+      record,
+      quoteDetails
     });
   } catch (err: any) {
     console.error('Lỗi quote request:', err);

@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
+import { DetailedQuoteResult } from './paymentConfig';
 
 export interface PaymentOrder {
   id: string;
@@ -47,6 +48,7 @@ export interface QuoteRequest {
   notes?: string;
   status: 'PENDING' | 'CONTACTED' | 'QUOTED';
   createdAt: string;
+  quoteDetails?: DetailedQuoteResult;
 }
 
 export interface LicenseRecord {

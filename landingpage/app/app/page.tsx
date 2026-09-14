@@ -585,6 +585,9 @@ export default function UnifiedTeacherScheduleApp() {
   const [attachingEvent, setAttachingEvent] = useState<CalendarEventItem | null>(null);
   const [attachFileName, setAttachFileName] = useState('');
   const [attachFileUrl, setAttachFileUrl] = useState('');
+  const [attachFileContent, setAttachFileContent] = useState('');
+  const [attachIsReading, setAttachIsReading] = useState(false);
+  const [attachCharCount, setAttachCharCount] = useState(0);
 
   // Audio & Notification States
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -908,10 +911,44 @@ export default function UnifiedTeacherScheduleApp() {
     setPlannerLessonTitle(inferredLesson);
     setPlannerModuleTitle(inferredLesson);
 
+    // ƯU TIÊN 1: Nếu ca dạy đã đính kèm tài liệu thực tế ev.attachmentContent
+    if (ev.attachmentContent && ev.attachmentContent.trim().length > 20) {
+      const customDocId = `event-att-${ev.id}`;
+      const attachedDoc: KnowledgeDocument = {
+        id: customDocId,
+        code: 'TL-' + (ev.className || 'EVENT').toUpperCase(),
+        title: (ev.attachmentName || inferredLesson).replace(/\.[^/.]+$/, ''),
+        category: 'GIAO_TRINH',
+        subject: ev.subject || 'ALL',
+        targetLevel: ev.className || 'ALL',
+        content: ev.attachmentContent,
+        fileName: ev.attachmentName,
+        isBuiltIn: false,
+        isActive: true,
+        createdAt: new Date().toISOString()
+      };
+      saveKnowledgeDocument(attachedDoc);
+      const updatedDocs = getResolvedKnowledgeDocuments();
+      setKnowledgeDocs(updatedDocs);
+      setPlannerSelectedDocId(customDocId);
+      setPlannerMatchedDocResult({
+        doc: attachedDoc,
+        relevantSnippet: ev.attachmentContent,
+        confidence: 100
+      });
+      const parsed = extractPedagogicalKnowledge(ev.attachmentContent, inferredLesson);
+      setPlannerExtractedPreview(parsed);
+      return;
+    }
+
     // Khớp nối tài liệu từ Kho tư liệu chuẩn nếu đang ở chế độ AUTO
     if (plannerSelectedDocId === 'AUTO') {
       const matched = findMatchingKnowledgeDocument(ev.subject, ev.className, inferredLesson);
       setPlannerMatchedDocResult(matched);
+      if (matched?.doc?.content) {
+        const parsed = extractPedagogicalKnowledge(matched.doc.content, inferredLesson);
+        setPlannerExtractedPreview(parsed);
+      }
     }
   };
 
@@ -954,7 +991,7 @@ export default function UnifiedTeacherScheduleApp() {
 
       const matchedResult: MatchedDocResult = {
         doc: newDoc,
-        relevantSnippet: extractedText.slice(0, 1400),
+        relevantSnippet: extractedText,
         confidence: 100
       };
       setPlannerMatchedDocResult(matchedResult);
@@ -1002,14 +1039,14 @@ export default function UnifiedTeacherScheduleApp() {
       if (explicitDoc) {
         freshMatched = {
           doc: explicitDoc,
-          relevantSnippet: explicitDoc.content.slice(0, 1400),
+          relevantSnippet: explicitDoc.content,
           confidence: 100
         };
       }
     }
     setPlannerMatchedDocResult(freshMatched);
 
-    const refCtx = freshMatched?.relevantSnippet || getActiveReferenceContext(plannerSubject, plannerStandard === 5512 ? 'PHAP_QUY' : 'ATLD_5S');
+    const refCtx = freshMatched?.doc?.content || freshMatched?.relevantSnippet || getActiveReferenceContext(plannerSubject, plannerStandard === 5512 ? 'PHAP_QUY' : 'ATLD_5S');
 
     // Cập nhật preview bóc tách Deep-RAG
     if (freshMatched?.doc?.content) {
@@ -1029,24 +1066,26 @@ export default function UnifiedTeacherScheduleApp() {
           lessonTitle: title,
           subject: plannerSubject || 'Chung',
           className: plannerClass || 'Toàn trường',
+          grade: plannerClass || 'Phổ thông',
           sessionInfo: sessionInfoStr,
           standard: plannerStandard,
           durationMinutes: durationNum * (plannerStandard === 5512 ? 45 : 60),
           customRequirements: plannerRequirements,
+          rawDocumentText: refCtx,
+          referenceContext: refCtx,
           matchedDoc: freshMatched?.doc ? {
             code: freshMatched.doc.code,
             title: freshMatched.doc.title,
             fileName: freshMatched.doc.fileName,
             relevantSnippet: freshMatched.relevantSnippet
-          } : null,
-          referenceContext: refCtx
+          } : null
         })
       });
 
       if (res.ok) {
         const json = await res.json();
-        if (json && json.plan) {
-          aiServerPlan = json.plan;
+        if (json && (json.plan || json.data)) {
+          aiServerPlan = json.plan || json.data;
         }
       }
     } catch (apiErr) {
@@ -1079,10 +1118,22 @@ export default function UnifiedTeacherScheduleApp() {
     });
 
     if (aiServerPlan) {
-      if (plannerStandard === 5512 && aiServerPlan.activities) {
-        pkg.plan5512 = aiServerPlan;
-      } else if (plannerStandard === 2634 && aiServerPlan.steps) {
-        pkg.plan2634 = aiServerPlan;
+      if (plannerStandard === 5512 && (aiServerPlan.activity1Opening || aiServerPlan.activities || aiServerPlan.objectives)) {
+        pkg.plan5512 = {
+          ...pkg.plan5512,
+          ...aiServerPlan,
+          lessonTitle: title,
+          subject: plannerSubject || 'Chung',
+          grade: plannerClass || 'Phổ thông'
+        };
+      } else if (plannerStandard === 2634 && (aiServerPlan.step1Orientation || aiServerPlan.steps || aiServerPlan.objectives)) {
+        pkg.plan2634 = {
+          ...pkg.plan2634,
+          ...aiServerPlan,
+          moduleTitle: title,
+          occupation: plannerSubject || 'Kỹ thuật',
+          level: plannerClass || 'Trung cấp'
+        };
       }
     }
 
@@ -2285,22 +2336,59 @@ export default function UnifiedTeacherScheduleApp() {
   // Save Attachment
   const handleSaveAttachment = () => {
     if (!attachingEvent) return;
+    const finalContent = attachFileContent || attachingEvent.attachmentContent || '';
+    const finalName = attachFileName || attachingEvent.attachmentName || 'Tài_liệu_bài_giảng.pdf';
+    const finalUrl = attachFileUrl || attachingEvent.attachmentUrl || '';
+
     const updated = events.map((e) => {
       if (e.id === attachingEvent.id) {
         return {
           ...e,
-          attachmentName: attachFileName || 'Giáo_án_bài_giảng.pdf',
-          attachmentUrl: attachFileUrl || 'https://drive.google.com'
+          attachmentName: finalName,
+          attachmentUrl: finalUrl,
+          attachmentContent: finalContent,
+          updatedAt: Date.now()
         };
       }
       return e;
     });
+
     setEvents(updated);
     localStorage.setItem('smart_teacher_events', JSON.stringify(updated));
+
+    // Nếu có nội dung tài liệu, đăng ký luôn vào KnowledgeDocument để Deep-RAG quản lý
+    if (finalContent && finalContent.trim().length > 20) {
+      const customDocId = `event-att-${attachingEvent.id}`;
+      const newDoc: KnowledgeDocument = {
+        id: customDocId,
+        code: 'TL-' + (attachingEvent.className || 'EVENT').toUpperCase(),
+        title: finalName.replace(/\.[^/.]+$/, ''),
+        category: 'GIAO_TRINH',
+        subject: attachingEvent.subject || 'ALL',
+        targetLevel: attachingEvent.className || 'ALL',
+        content: finalContent,
+        fileName: finalName,
+        isBuiltIn: false,
+        isActive: true,
+        createdAt: new Date().toISOString()
+      };
+      saveKnowledgeDocument(newDoc);
+      setKnowledgeDocs(getResolvedKnowledgeDocuments());
+    }
+
+    // Xóa cache gói học liệu cũ của ca dạy để AI sinh mới chuẩn xác theo tài liệu mới
+    try {
+      localStorage.removeItem(`smart_teacher_ai_pack_${attachingEvent.id}`);
+      localStorage.removeItem(`smart_teacher_ai_plan_${attachingEvent.id}`);
+      localStorage.removeItem(`smart_teacher_ai_pack_${finalName}`);
+    } catch (_) {}
+
     pushToCloud(updated, schedules, syncCode);
     setAttachingEvent(null);
     setAttachFileName('');
     setAttachFileUrl('');
+    setAttachFileContent('');
+    setAttachCharCount(0);
   };
 
   // Xoá / Gỡ bỏ hoàn toàn giáo án AI khỏi ca dạy
@@ -2551,6 +2639,20 @@ export default function UnifiedTeacherScheduleApp() {
           .trim();
 
         const is2634 = ev.attachmentName.includes('2634') || ev.sessionType === 'Thực hành';
+
+        let refContent = ev.attachmentContent || '';
+        if (!refContent) {
+          const matchDoc = knowledgeDocs.find(d => 
+            d.fileName === ev.attachmentName || 
+            d.id === `event-att-${ev.id}` || 
+            d.id === `kb_giaoan_${ev.id}` ||
+            (ev.attachmentName && d.title && d.title.toLowerCase().includes(ev.attachmentName.toLowerCase().replace('.doc', '').replace('giaoan_5512_', '').replace(/_/g, ' ')))
+          );
+          if (matchDoc && matchDoc.content) {
+            refContent = matchDoc.content;
+          }
+        }
+
         pkg = generateComprehensiveLessonPlanPackage({
           lessonTitle: cleanTitle,
           subject: ev.subject || 'Công nghệ',
@@ -2558,7 +2660,14 @@ export default function UnifiedTeacherScheduleApp() {
           sessionInfo: `${ev.date} (${ev.startTime || 'Ca dạy'} - ${ev.endTime || ''})`,
           standard: is2634 ? 2634 : 5512,
           durationMinutes: is2634 ? 3 : 45,
-          customRequirements: ev.notes || undefined
+          customRequirements: ev.notes || undefined,
+          referenceContext: refContent || undefined,
+          matchedDoc: refContent ? {
+            code: 'ATT-DOC',
+            title: ev.attachmentName || cleanTitle,
+            fileName: ev.attachmentName,
+            relevantSnippet: refContent
+          } : null
         });
 
         // Lưu lại để các lần sau mở siêu tốc
@@ -3265,6 +3374,8 @@ export default function UnifiedTeacherScheduleApp() {
                                 setAttachingEvent(ev);
                                 setAttachFileName(ev.attachmentName || '');
                                 setAttachFileUrl(ev.attachmentUrl || '');
+                                setAttachFileContent(ev.attachmentContent || '');
+                                setAttachCharCount(ev.attachmentContent ? ev.attachmentContent.length : 0);
                               }}
                               title="Đính kèm file giáo án"
                               className="p-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-all text-xs flex items-center gap-1 cursor-pointer shadow-xs"
@@ -3638,6 +3749,8 @@ export default function UnifiedTeacherScheduleApp() {
                                 setAttachingEvent(ev);
                                 setAttachFileName(ev.attachmentName || '');
                                 setAttachFileUrl(ev.attachmentUrl || '');
+                                setAttachFileContent(ev.attachmentContent || '');
+                                setAttachCharCount(ev.attachmentContent ? ev.attachmentContent.length : 0);
                               }}
                               className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-medium cursor-pointer shadow-xs"
                             >
@@ -4545,7 +4658,7 @@ export default function UnifiedTeacherScheduleApp() {
                             if (found) {
                               setPlannerMatchedDocResult({
                                 doc: found,
-                                relevantSnippet: found.content.slice(0, 1400),
+                                relevantSnippet: found.content,
                                 confidence: 100
                               });
                               setPlannerExtractedPreview(extractPedagogicalKnowledge(found.content, plannerLessonTitle));
@@ -7909,22 +8022,94 @@ export default function UnifiedTeacherScheduleApp() {
               </button>
             </div>
 
-            <div className="space-y-3 text-xs">
-              <p className="text-slate-700 dark:text-slate-200 font-medium">
-                Ca dạy: <span className="text-white font-bold">{attachingEvent.subject}</span> ({attachingEvent.className})
-              </p>
+            <div className="space-y-3.5 text-xs">
+              <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+                <p className="text-slate-700 dark:text-slate-200 font-medium">
+                  Ca dạy: <span className="text-blue-600 dark:text-blue-400 font-bold">{attachingEvent.subject}</span> ({attachingEvent.className})
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Ngày: {attachingEvent.date} ({attachingEvent.startTime} - {attachingEvent.endTime})
+                </p>
+              </div>
+
+              {/* Tải tệp tài liệu bài giảng trực tiếp từ máy tính */}
               <div>
-                <label className="text-slate-400 font-medium block mb-1">Tên tài liệu / Giáo án:</label>
+                <label className="text-slate-700 dark:text-slate-300 font-semibold block mb-1">
+                  1. Tải tệp bài giảng / giáo trình (.docx, .pdf, .txt):
+                </label>
+                <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-400 rounded-xl p-3 text-center transition-colors bg-slate-50/50 dark:bg-slate-800/40">
+                  <input
+                    type="file"
+                    id="attach-file-picker"
+                    accept=".docx,.pdf,.txt,.doc"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setAttachIsReading(true);
+                      try {
+                        const text = await extractFullTextFromFile(file);
+                        if (text && text.trim().length > 15) {
+                          setAttachFileName(file.name);
+                          setAttachFileContent(text);
+                          setAttachCharCount(text.length);
+                        } else {
+                          alert('Không thể trích xuất văn bản từ tệp này hoặc tệp trống. Vui lòng thử lại với tệp .docx, .pdf hoặc .txt hợp lệ!');
+                        }
+                      } catch (err) {
+                        console.error('Lỗi khi đọc tệp:', err);
+                        alert('Đã xảy ra lỗi khi đọc tệp!');
+                      } finally {
+                        setAttachIsReading(false);
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor="attach-file-picker"
+                    className="flex flex-col items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Upload className="w-5 h-5 text-blue-500 animate-bounce" />
+                    <span className="text-blue-600 dark:text-blue-400 font-bold text-xs hover:underline">
+                      {attachIsReading ? 'Đang đọc & bóc tách Deep-RAG...' : 'Bấm vào đây để chọn tệp từ máy tính'}
+                    </span>
+                    <span className="text-[10.5px] text-slate-400">
+                      Hỗ trợ Word (.docx), PDF (.pdf) hoặc Text (.txt)
+                    </span>
+                  </label>
+                </div>
+
+                {attachCharCount > 0 && (
+                  <div className="mt-2 p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[11px] text-emerald-800 dark:text-emerald-300 space-y-1 animate-fade-in">
+                    <div className="flex items-center gap-1.5 font-bold">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>Đã bóc tách thành công: {attachCharCount.toLocaleString()} ký tự</span>
+                    </div>
+                    {attachFileContent && (
+                      <p className="text-[10px] text-slate-600 dark:text-slate-400 italic line-clamp-2 bg-white/60 dark:bg-slate-900/60 p-1.5 rounded border border-emerald-100 dark:border-emerald-900/50">
+                        "{attachFileContent.slice(0, 160).trim()}..."
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="text-slate-700 dark:text-slate-300 font-semibold block mb-1">
+                  2. Tên tài liệu hiển thị:
+                </label>
                 <input
                   type="text"
-                  placeholder="VD: Giao_an_Module_Tien_CNC_Bai_1.pdf"
+                  placeholder="VD: Giao_an_Module_Tien_CNC_Bai_1.docx"
                   value={attachFileName}
                   onChange={(e) => setAttachFileName(e.target.value)}
                   className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
+
               <div>
-                <label className="text-slate-400 font-medium block mb-1">Đường dẫn tài liệu (Drive / Link file):</label>
+                <label className="text-slate-500 dark:text-slate-400 font-medium block mb-1">
+                  3. Đường dẫn trực tuyến (tùy chọn - Google Drive / OneDrive):
+                </label>
                 <input
                   type="text"
                   placeholder="https://drive.google.com/file/..."

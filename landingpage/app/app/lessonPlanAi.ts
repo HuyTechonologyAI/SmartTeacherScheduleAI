@@ -137,38 +137,58 @@ export function generateLessonPlan5512(
   const k = deepParseLessonDocument(referenceContext, lessonTitle, subject, grade);
   const custom = customRequirements?.trim() ? ` Yêu cầu sư phạm: ${customRequirements}.` : '';
 
-  // 1. Mục tiêu kiến thức chi tiết (Không viết chung chung)
+  // Trích xuất các câu thực chất từ tài liệu đính kèm (loại bỏ tiêu đề hoặc dòng phân cách)
+  const substantiveSentences = referenceContext
+    ? referenceContext
+        .split(/[.\n;]+/)
+        .map(s => s.trim().replace(/^[-*•0-9.]+\s*/, ''))
+        .filter(s => s.length >= 25 && !s.startsWith('===') && !s.startsWith('---') && !s.toLowerCase().includes('mục lục'))
+    : [];
+
+  // 1. Mục tiêu kiến thức chi tiết (Không viết chung chung, bám sát tài liệu)
   let knowledgeObj = '';
   if (k.coreDefinitions.length > 0) {
     knowledgeObj = `Học sinh nắm vững và phân tích được bản chất các khái niệm cốt lõi: ${k.coreDefinitions.map(d => `${d.term} (${d.definition})`).join('; ')}.`;
   } else if (k.topicSections.length > 0) {
     knowledgeObj = `Học sinh làm chủ các nội dung trọng tâm của bài: ${k.topicSections.map(t => t.heading).join(', ')}.`;
+  } else if (substantiveSentences.length > 0) {
+    knowledgeObj = `Học sinh làm chủ các kiến thức trọng tâm từ tài liệu bài giảng: ${substantiveSentences.slice(0, 3).join('. ')}.`;
   } else {
     knowledgeObj = `Học sinh hiểu rõ bản chất khoa học, quy luật và phương pháp tư duy của bài '${lessonTitle}'.`;
   }
 
   if (k.formulasAndRules.length > 0) {
-    knowledgeObj += ` Vận dụng chính xác các công thức và quy tắc: ${k.formulasAndRules.slice(0, 2).join(', ')}.`;
+    knowledgeObj += ` Vận dụng chính xác các công thức và quy tắc: ${k.formulasAndRules.slice(0, 3).join(', ')}.`;
   }
   knowledgeObj += custom;
 
   // 2. Nội dung Hoạt động 1: Khởi động
   const leadTerm = k.keyTerms[0] || lessonTitle;
-  const act1Content = k.keyTerms.length > 0
-    ? `Giáo viên trình chiếu tình huống thực tiễn hoặc đoạn video ngắn về "${leadTerm}" và nêu câu hỏi gợi mở: "Trong thực tế đời sống và khoa học, ${leadTerm} đóng vai trò gì? Nếu không nắm vững nguyên lý này, chúng ta sẽ gặp khó khăn nào?"`
-    : `Giáo viên đưa ra tình huống thực tế gắn liền với chủ đề '${lessonTitle}', tạo mâu thuẫn nhận thức khơi gợi trí tò mò của học sinh.`;
+  let act1Content = '';
+  if (k.keyTerms.length > 0) {
+    act1Content = `Giáo viên trình chiếu tình huống thực tiễn hoặc mẫu vật/video ngắn về "${leadTerm}" và nêu câu hỏi gợi mở: "Trong thực tế đời sống và khoa học kỹ thuật, ${leadTerm} đóng vai trò gì? Nếu không nắm vững nguyên lý này, chúng ta sẽ gặp khó khăn hay sai sót nào?"`;
+  } else if (substantiveSentences.length > 0) {
+    act1Content = `Giáo viên đưa ra tình huống thực tế xuất phát từ tài liệu bài giảng: "${substantiveSentences[0]}", khơi gợi mâu thuẫn nhận thức và dẫn dắt học sinh khám phá bài '${lessonTitle}'.`;
+  } else {
+    act1Content = `Giáo viên đưa ra tình huống thực tế gắn liền với chủ đề '${lessonTitle}', tạo mâu thuẫn nhận thức khơi gợi trí tò mò của học sinh.`;
+  }
 
   // 3. Nội dung Hoạt động 2: Hình thành kiến thức mới (Bám sát 100% tài liệu)
   let act2Content = '';
   if (k.topicSections.length > 0) {
     act2Content = k.topicSections.map((sec, idx) => {
-      const details = sec.contentLines.length > 0 ? sec.contentLines.join(' ') : 'Phân tích các đặc điểm, quy luật và ứng dụng.';
-      return `Nhiệm vụ ${idx + 1}: Tìm hiểu "${sec.heading}"\n• Chi tiết lý thuyết: ${details}`;
+      const details = sec.contentLines.length > 0 ? sec.contentLines.join(' ') : 'Phân tích các đặc điểm, quy luật, cấu tạo và ứng dụng thực tiễn.';
+      return `Nhiệm vụ ${idx + 1}: Chiếm lĩnh kiến thức "${sec.heading}"\n• Chi tiết lý thuyết trong bài: ${details}`;
     }).join('\n\n');
   } else if (k.coreDefinitions.length > 0) {
     act2Content = k.coreDefinitions.map((d, idx) => {
-      return `Nhiệm vụ ${idx + 1}: Chiếm lĩnh khái niệm "${d.term}"\n• Bản chất khoa học: ${d.definition}`;
+      return `Nhiệm vụ ${idx + 1}: Nghiên cứu bản chất "${d.term}"\n• Khái niệm & đặc tính: ${d.definition}`;
     }).join('\n\n');
+  } else if (substantiveSentences.length > 0) {
+    const chunk1 = substantiveSentences.slice(0, 2).join(' ');
+    const chunk2 = substantiveSentences.slice(2, 4).join(' ');
+    const chunk3 = substantiveSentences.slice(4, 6).join(' ');
+    act2Content = `Nhiệm vụ 1: Nghiên cứu cấu tạo và nguyên lý nền tảng\n• Nội dung: ${chunk1 || substantiveSentences[0]}\n\nNhiệm vụ 2: Phân tích quy trình kỹ thuật và thông số trọng tâm\n• Nội dung: ${chunk2 || 'Nắm vững các yêu cầu công nghệ và phương pháp vận hành.'}\n\nNhiệm vụ 3: Đánh giá tiêu chuẩn chất lượng và lưu ý an toàn\n• Nội dung: ${chunk3 || 'Tuân thủ đúng tiêu chuẩn an toàn lao động và bảo quản thiết bị.'}`;
   } else {
     act2Content = `Học sinh nghiên cứu tài liệu bài giảng '${lessonTitle}', phân tích cấu trúc, nguyên lý vận hành và hoàn thành phiếu học tập khám phá.`;
   }
@@ -176,22 +196,28 @@ export function generateLessonPlan5512(
   // 4. Nội dung Hoạt động 3: Luyện tập & Củng cố (Có câu hỏi/bài tập thật)
   let act3Content = '';
   if (k.sampleExercises.length > 0) {
-    act3Content = k.sampleExercises.slice(0, 3).map((ex, idx) => {
+    act3Content = k.sampleExercises.slice(0, 4).map((ex, idx) => {
       const opts = ex.options ? '\n' + ex.options.join('\n') : '';
       const exp = ex.explanation ? `\n(Đáp án/Hướng dẫn: ${ex.explanation})` : '';
       return `Bài tập ${idx + 1}: ${ex.question}${opts}${exp}`;
     }).join('\n\n');
   } else if (k.formulasAndRules.length > 0) {
-    act3Content = `Bài tập 1 (Áp dụng công thức): Vận dụng hệ thức ${k.formulasAndRules[0]} để giải quyết bài toán định lượng.\n\nBài tập 2: Phân tích các yếu tố ảnh hưởng và ý nghĩa thực tiễn của công thức.`;
+    act3Content = `Bài tập 1 (Vận dụng công thức/thông số): Áp dụng hệ thức "${k.formulasAndRules[0]}" trong bài để tính toán và giải thích sự biến thiên của các đại lượng.\n\nBài tập 2: Phân tích các yếu tố ảnh hưởng và ý nghĩa thực tiễn của quy tắc kỹ thuật này.`;
   } else if (k.coreDefinitions.length >= 2) {
-    act3Content = `Bài tập 1: Trình bày định nghĩa và đặc điểm của '${k.coreDefinitions[0].term}'.\n\nBài tập 2: Phân biệt sự khác nhau giữa '${k.coreDefinitions[0].term}' và '${k.coreDefinitions[1].term}'.`;
+    act3Content = `Bài tập 1: Trình bày định nghĩa và đặc điểm của '${k.coreDefinitions[0].term}'.\n\nBài tập 2: Phân biệt sự khác nhau giữa '${k.coreDefinitions[0].term}' và '${k.coreDefinitions[1].term}'. Cho ví dụ minh họa.`;
+  } else if (k.keyTerms.length >= 2) {
+    act3Content = `Bài tập 1: Căn cứ vào tài liệu bài học, hãy trình bày rõ bản chất và vai trò của '${k.keyTerms[0]}'.\n\nBài tập 2: Phân tích mối quan hệ tương tác giữa '${k.keyTerms[0]}' và '${k.keyTerms[1]}'.`;
+  } else if (substantiveSentences.length >= 2) {
+    act3Content = `Bài tập 1: Trình bày và giải thích nội dung: "${substantiveSentences[0]}".\n\nBài tập 2: Vận dụng kiến thức bài học để giải quyết bài toán tình huống thực tế môn ${subject || 'chuyên môn'}.`;
   } else {
     act3Content = `Học sinh làm việc độc lập giải quyết hệ thống 3 câu hỏi trắc nghiệm nhanh và 1 bài tập tình huống củng cố kiến thức bài '${lessonTitle}'.`;
   }
 
   // 5. Nội dung Hoạt động 4: Vận dụng & Mở rộng
   const act4Content = k.keyTerms.length > 0
-    ? `Dự án học tập thực tế: Hãy tìm hiểu ứng dụng thực tiễn của "${k.keyTerms.slice(0, 3).join(', ')}" tại địa phương, trong đời sống hoặc trong công nghiệp. Viết bản thu hoạch ngắn 1 trang hoặc thiết kế infographic minh họa.`
+    ? `Dự án học tập thực tế: Hãy tìm hiểu ứng dụng thực tiễn của "${k.keyTerms.slice(0, 3).join(', ')}" tại địa phương, trong sản xuất hoặc đời sống. Viết bản thu hoạch ngắn 1 trang hoặc thiết kế infographic minh họa.`
+    : substantiveSentences.length > 0
+    ? `Nhiệm vụ vận dụng: Liên hệ nội dung trọng tâm "${substantiveSentences[0].slice(0, 80)}..." với thực tế đời sống, tìm ra giải pháp tối ưu hóa hiệu quả thực hiện.`
     : `Giao nhiệm vụ nghiên cứu mở rộng: Hãy liên hệ kiến thức bài học '${lessonTitle}' với các hiện tượng thực tế và thiết kế sơ đồ tư duy tổng hợp.`;
 
   return {
@@ -257,6 +283,13 @@ export function generateLessonPlan2634(
   const k = deepParseLessonDocument(referenceContext, moduleTitle, occupation, level);
   const equip = workshopEquipment?.trim() || k.equipmentList.teacher.join(', ');
 
+  const substantiveSentences = referenceContext
+    ? referenceContext
+        .split(/[.\n;]+/)
+        .map(s => s.trim().replace(/^[-*•0-9.]+\s*/, ''))
+        .filter(s => s.length >= 25 && !s.startsWith('===') && !s.startsWith('---') && !s.toLowerCase().includes('mục lục'))
+    : [];
+
   // Quy trình thao tác mẫu (bước 1, 2, 3...)
   let step2DemoContent = '';
   let step3PracticeContent = '';
@@ -268,6 +301,17 @@ export function generateLessonPlan2634(
 
     step3PracticeContent = `Học sinh nhận phôi và thiết bị, tiến hành thực hành tuần tự theo các bước đã học:\n` +
       k.practicalSteps.map(s => `• Bước ${s.stepNumber} (${s.stepTitle}): Yêu cầu ${s.technicalRequirement || 'đúng quy chuẩn kỹ thuật'}. Lưu ý: ${s.commonMistakes || 'tránh thao tác vội vàng'}.`).join('\n');
+  } else if (k.topicSections.length > 0) {
+    step2DemoContent = `Thao tác mẫu quy trình kỹ thuật theo từng mục trọng tâm:\n` +
+      k.topicSections.slice(0, 4).map((sec, idx) => `• Bước ${idx + 1} (${sec.heading}): ${sec.contentLines[0] || 'Thao tác đúng trình tự kỹ thuật.'}`).join('\n') +
+      `\nGiáo viên thao tác mẫu 3 lần kết hợp giải thích các nguyên tắc cơ bản và an toàn.`;
+
+    step3PracticeContent = `Học sinh luyện tập tại các vị trí máy:\n` +
+      k.topicSections.slice(0, 4).map((sec, idx) => `• Nội dung ${idx + 1}: Thực hiện ${sec.heading}. Đảm bảo các thông số kích thước và an toàn.`).join('\n');
+  } else if (substantiveSentences.length > 0) {
+    step2DemoContent = `Thao tác mẫu quy trình kỹ thuật gồm các bước:\n• Bước 1: Chuẩn bị phôi, dụng cụ đo kiểm và kiểm tra an toàn thiết bị.\n• Bước 2: Thực hiện thao tác ban đầu: ${substantiveSentences[0]}\n• Bước 3: Gia công/thực hành theo đúng chế độ: ${substantiveSentences[1] || 'Đảm bảo thông số công nghệ.'}\n• Bước 4: Đo kiểm sản phẩm, đánh giá dung sai và độ chính xác.\nGiáo viên làm mẫu 3 lần kèm nhắc nhở các điểm then chốt.`;
+
+    step3PracticeContent = `Học sinh thực hành gia công theo quy trình:\n• Bước 1: Gá đặt phôi và dụng cụ chắc chắn.\n• Bước 2: Thao tác đúng quy chuẩn kỹ thuật theo hướng dẫn của giáo viên.\n• Bước 3: Tự kiểm tra kích thước chi tiết sau mỗi công đoạn gia công.`;
   } else {
     step2DemoContent = `Thao tác mẫu quy trình kỹ thuật 3 lần: Lần 1 tốc độ làm việc bình thường; Lần 2 làm chậm kèm giải thích chi tiết; Lần 3 nhấn mạnh các lỗi hỏng thường gặp và cách phòng tránh an toàn.`;
     step3PracticeContent = `Học sinh vận hành máy, thực hiện gia công phôi mẫu theo phiếu hướng dẫn công nghệ. Tự kiểm tra kích thước chi tiết bằng dụng cụ đo kiểm sau mỗi bước gia công.`;
@@ -279,7 +323,7 @@ export function generateLessonPlan2634(
     level: level || 'Trung cấp / Cao đẳng Nghề',
     durationMinutes,
     objectives: {
-      knowledge: `Trình bày đúng quy trình công nghệ, cấu tạo thiết bị, thông số kỹ thuật và các quy tắc An toàn lao động khi thực hiện bài '${moduleTitle}'. ${k.coreDefinitions.length > 0 ? `Nắm vững: ${k.coreDefinitions.map(d => d.term).join(', ')}.` : ''}`,
+      knowledge: `Trình bày đúng quy trình công nghệ, cấu tạo thiết bị, thông số kỹ thuật và các quy tắc An toàn lao động khi thực hiện bài '${moduleTitle}'. ${k.coreDefinitions.length > 0 ? `Nắm vững: ${k.coreDefinitions.map(d => d.term).join(', ')}.` : substantiveSentences.length > 0 ? `Nội dung cốt lõi: ${substantiveSentences.slice(0, 2).join('. ')}.` : ''}`,
       skills: `Thực hiện thành thạo các thao tác chuẩn xác, gia công/lắp ráp đạt độ chính xác theo bản vẽ kỹ thuật; biết sử dụng thành thạo dụng cụ đo kiểm và khắc phục sai hỏng thông thường.`,
       autonomyAndSafety: `Tuân thủ nghiêm ngặt quy tắc An toàn lao động (ATLĐ), Phòng chống cháy nổ (PCCN), vệ sinh công nghiệp 5S (Sàng lọc, Sắp xếp, Sạch sẽ, Săn sóc, Sẵn sàng) và ý thức kỷ luật xưởng.`
     },

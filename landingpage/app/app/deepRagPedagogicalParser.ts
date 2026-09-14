@@ -1,6 +1,6 @@
 /**
- * Deep-RAG Sư Phạm Semantic Parser Engine
- * Chuyên bóc tách và phân tích ngữ nghĩa tài liệu bài giảng giáo viên (.docx, .pdf, .txt, giáo trình)
+ * Deep-RAG Sư Phạm Semantic Parser Engine v2.0
+ * Chuyên bóc tách và phân tích ngữ nghĩa tài liệu bài giảng giáo viên (.docx, .pdf, .txt, giáo trình, chuyên đề)
  * Nhằm cung cấp dữ liệu thực tế cho AI soạn giáo án chuẩn CV 5512 và CV 2634, loại bỏ hoàn toàn khung sườn chung chung.
  */
 
@@ -65,100 +65,159 @@ export function cleanRawDocumentText(text: string): string {
 
 /**
  * Trích xuất phân đoạn văn bản bám sát nhất với bài học cần soạn
+ * Tối ưu hóa: Bỏ qua Mục lục (Table of Contents trap), mở rộng dung lượng bóc tách lên tới 40.000 ký tự.
  */
 export function extractRelevantLessonText(fullDocText: string, lessonTitle: string): string {
   const cleanDoc = cleanRawDocumentText(fullDocText);
   if (!cleanDoc) return '';
-  if (cleanDoc.length <= 4000) return cleanDoc;
+  // Nếu tài liệu có độ dài dưới 40.000 ký tự (~15-20 trang sách), giữ lại toàn văn để Deep-RAG phân tích toàn diện
+  if (cleanDoc.length <= 40000) return cleanDoc;
 
   const cleanTitle = lessonTitle.toLowerCase().trim();
-  const lessonNumMatch = cleanTitle.match(/(?:bài|tiết|chương|phần)\s*([0-9]+)/i);
+  const lessonNumMatch = cleanTitle.match(/(?:bài|tiết|chương|chủ đề|module|mục)\s*([0-9]+)/i);
+
+  // 1. Xác định vị trí kết thúc của Mục Lục (TOC) nếu có, tránh bẫy match trúng dòng mục lục
+  let tocCutoff = 0;
+  const tocMatches = [...cleanDoc.matchAll(/(?:mục\s*lục|table\s*of\s*contents)/gi)];
+  if (tocMatches.length > 0) {
+    const lastToc = tocMatches[tocMatches.length - 1];
+    if (lastToc.index !== undefined && lastToc.index < 12000) {
+      // Tìm điểm kết thúc của các dòng có chấm chấm ... trang số
+      const afterToc = cleanDoc.slice(lastToc.index);
+      const dotPageMatches = [...afterToc.matchAll(/\.{3,}\s*(?:trang)?\s*\d+/g)];
+      if (dotPageMatches.length > 0) {
+        const lastDot = dotPageMatches[dotPageMatches.length - 1];
+        if (lastDot.index !== undefined) {
+          tocCutoff = lastToc.index + lastDot.index + lastDot[0].length + 50;
+        }
+      } else {
+        tocCutoff = lastToc.index + 2000;
+      }
+    }
+  }
+
+  const searchableText = tocCutoff > 0 && tocCutoff < cleanDoc.length - 1000
+    ? cleanDoc.slice(tocCutoff)
+    : cleanDoc;
+  const offset = cleanDoc.length - searchableText.length;
 
   let targetIndex = -1;
-  // 1. Tìm theo số hiệu bài (ví dụ "Bài 5", "Bài số 5")
+
+  // 2. Tìm theo số hiệu bài cụ thể (ví dụ "Bài 5:", "Chương 2:", "Bài số 5") trong phần nội dung chính
   if (lessonNumMatch) {
-    const regex = new RegExp(`(?:bài|tiết|chương)\\s*${lessonNumMatch[1]}\\b`, 'i');
-    targetIndex = cleanDoc.search(regex);
+    const num = lessonNumMatch[1];
+    const regexList = [
+      new RegExp(`(?:bài|tiết|chương|chủ đề)\\s*${num}\\b[\\s:.-–—]`, 'i'),
+      new RegExp(`\\b${num}\\.\\s+[A-ZÀ-Ỹ]`, 'i')
+    ];
+    for (const rg of regexList) {
+      const idx = searchableText.search(rg);
+      if (idx >= 0) {
+        targetIndex = offset + idx;
+        break;
+      }
+    }
   }
 
-  // 2. Tìm theo tên bài nguyên bản
-  if (targetIndex < 0) {
-    targetIndex = cleanDoc.toLowerCase().indexOf(cleanTitle);
+  // 3. Tìm theo tên bài nguyên bản
+  if (targetIndex < 0 && cleanTitle.length > 4) {
+    const idx = searchableText.toLowerCase().indexOf(cleanTitle);
+    if (idx >= 0) {
+      targetIndex = offset + idx;
+    }
   }
 
-  // 3. Tìm theo các từ khóa then chốt của tên bài
+  // 4. Tìm theo cụm từ khóa then chốt của tên bài
   if (targetIndex < 0) {
     const words = cleanTitle
       .split(/[\s,.:;_\-]+/)
-      .filter(w => w.length > 3 && !w.match(/^(bài|tiết|chương|phần|khối|lớp|tìm|hiểu)$/i));
+      .filter(w => w.length > 3 && !w.match(/^(bài|tiết|chương|phần|khối|lớp|tìm|hiểu|tổng|quan)$/i));
 
     for (const w of words) {
-      const idx = cleanDoc.toLowerCase().indexOf(w);
+      const idx = searchableText.toLowerCase().indexOf(w);
       if (idx >= 0) {
-        targetIndex = idx;
+        targetIndex = offset + idx;
         break;
       }
     }
   }
 
   if (targetIndex >= 0) {
-    // Lấy ngữ cảnh mở rộng trước 150 ký tự và sau 3500 ký tự
-    const start = Math.max(0, targetIndex - 150);
-    const end = Math.min(cleanDoc.length, targetIndex + 3800);
+    // Lấy ngữ cảnh mở rộng trước 250 ký tự và sau 35.000 ký tự
+    const start = Math.max(0, targetIndex - 250);
+    const end = Math.min(cleanDoc.length, targetIndex + 35000);
     return cleanDoc.substring(start, end).trim();
   }
 
-  // Mặc định lấy 3500 ký tự đầu tiên nếu không xác định được vị trí cụ thể
-  return cleanDoc.slice(0, 3500).trim();
+  // Mặc định lấy 35.000 ký tự đầu tiên nếu không xác định được vị trí cụ thể
+  return cleanDoc.slice(0, 35000).trim();
 }
 
 /**
  * Trích xuất các khái niệm và câu định nghĩa cốt lõi trong văn bản
  */
-export function extractCoreDefinitions(text: string, lessonTitle: string): DefinitionItem[] {
+export function extractCoreDefinitions(text: string, lessonTitle: string = ''): DefinitionItem[] {
   const definitions: DefinitionItem[] = [];
+  if (!text) return definitions;
+
   const lines = text.split('\n');
 
-  // Mẫu câu định nghĩa tiếng Việt phổ biến trong sách giáo khoa & giáo trình
+  // Mẫu câu định nghĩa tiếng Việt phong phú trong SGK, tài liệu kỹ thuật & giáo trình
   const defPatterns = [
-    /^([A-ZÀ-Ỹa-zà-ỹ0-9\s\-_]{3,45})\s+(?:là|được gọi là|được hiểu là|chính là|định nghĩa là)\s+(.+)$/i,
-    /^(?:Khái niệm|Định nghĩa)\s*(?:về)?\s*([A-ZÀ-Ỹa-zà-ỹ0-9\s\-_]{3,45})[:\-]\s*(.+)$/i,
-    /^([A-ZÀ-Ỹa-zà-ỹ0-9\s\-_]{3,45})\s*[:]\s*(.+)$/
+    /^([A-ZÀ-Ỹa-zà-ỹ0-9\s\-_/()]{3,50})\s+(?:là|được gọi là|được hiểu là|chính là|định nghĩa là|nghĩa là|dùng để|có chức năng|bao gồm|được cấu tạo bởi)\s+(.+)$/i,
+    /^(?:Khái niệm|Định nghĩa|Ý nghĩa|Nguyên lý|Bản chất|Cấu tạo|Chức năng)\s*(?:về)?\s*([A-ZÀ-Ỹa-zà-ỹ0-9\s\-_/()]{3,50})[:\-]\s*(.+)$/i,
+    /^([A-ZÀ-Ỹa-zà-ỹ0-9\s\-_/()]{3,45})\s*[:]\s*(.+)$/,
+    /^[0-9•\-\*]+\.?\s*([A-ZÀ-Ỹa-zà-ỹ0-9\s\-_/()]{3,45})[:\-]\s*(.+)$/
   ];
 
   for (const rawLine of lines) {
     const line = rawLine.trim().replace(/^[-*•]\s*/, '');
-    if (line.length < 15 || line.length > 350) continue;
+    if (line.length < 12 || line.length > 400) continue;
 
     for (const pattern of defPatterns) {
       const match = line.match(pattern);
       if (match && match[1] && match[2]) {
-        const term = match[1].trim();
+        const term = match[1].trim().replace(/^[0-9.]+\s*/, '');
         const def = match[2].trim();
-        // Lọc bỏ nếu term quá dài hoặc mang tính tiêu đề chung chung
-        if (term.length >= 3 && term.length <= 40 && def.length >= 10 && !term.toLowerCase().startsWith('bài')) {
+        // Lọc bỏ nếu term quá dài hoặc mang tính tiêu đề hành chính chung chung
+        if (
+          term.length >= 3 &&
+          term.length <= 45 &&
+          def.length >= 10 &&
+          !term.toLowerCase().startsWith('bài') &&
+          !term.toLowerCase().startsWith('tiết') &&
+          !term.toLowerCase().startsWith('trang') &&
+          !term.toLowerCase().startsWith('câu hỏi')
+        ) {
           if (!definitions.some(d => d.term.toLowerCase() === term.toLowerCase())) {
             definitions.push({ term, definition: def });
-            if (definitions.length >= 6) return definitions;
+            if (definitions.length >= 8) return definitions;
           }
         }
       }
     }
   }
 
-  // Nếu không trích xuất được dạng chuẩn, tìm các câu chứa từ khóa "là" quan trọng
+  // Nếu không trích xuất được dạng chuẩn, tìm các câu chứa từ khóa quan trọng
   if (definitions.length === 0) {
     const sentences = text.split(/[.;\n]/);
     for (const s of sentences) {
       const trimmed = s.trim();
-      if (trimmed.length > 20 && trimmed.length < 200 && /\b(là|được dùng để|có tác dụng|gồm có)\b/i.test(trimmed)) {
-        const parts = trimmed.split(/\b(?:là|được dùng để|có tác dụng|gồm có)\b/i);
-        if (parts.length >= 2 && parts[0].trim().length < 35 && parts[1].trim().length > 10) {
-          definitions.push({
-            term: parts[0].trim().replace(/^[-*•]\s*/, ''),
-            definition: parts[1].trim()
-          });
-          if (definitions.length >= 4) break;
+      if (
+        trimmed.length > 20 &&
+        trimmed.length < 250 &&
+        /\b(là|được dùng để|có tác dụng|gồm có|có nhiệm vụ|hoạt động dựa trên)\b/i.test(trimmed)
+      ) {
+        const parts = trimmed.split(/\b(?:là|được dùng để|có tác dụng|gồm có|có nhiệm vụ|hoạt động dựa trên)\b/i);
+        if (parts.length >= 2 && parts[0].trim().length >= 3 && parts[0].trim().length < 40 && parts[1].trim().length > 10) {
+          const termCandidate = parts[0].trim().replace(/^[-*•0-9.]+\s*/, '');
+          if (!definitions.some(d => d.term.toLowerCase() === termCandidate.toLowerCase())) {
+            definitions.push({
+              term: termCandidate,
+              definition: parts[1].trim()
+            });
+            if (definitions.length >= 6) break;
+          }
         }
       }
     }
@@ -168,32 +227,43 @@ export function extractCoreDefinitions(text: string, lessonTitle: string): Defin
 }
 
 /**
- * Trích xuất các đề mục lớn/nhỏ của bài học (I., II., 1., 2., a., b.)
+ * Trích xuất các đề mục lớn/nhỏ của bài học (I., II., 1., 2., 1.1, A., B., a, b...)
  */
 export function extractTopicSections(text: string): TopicSection[] {
   const sections: TopicSection[] = [];
-  const lines = text.split('\n');
+  if (!text) return sections;
 
+  const lines = text.split('\n');
   let currentHeading = '';
   let currentLines: string[] = [];
 
-  const headingRegex = /^(?:[I|V|X]+\.|\d+\.|\bPhần\b|\bMục\b|\bChương\b|[A-D]\.)\s+(.+)$/i;
+  // Nhận diện linh hoạt các kiểu đề mục tiếng Việt
+  const headingRegex = /^(?:[I|V|X]+\.|\d+[\./]|\bPhần\b|\bMục\b|\bChương\b|\bChủ đề\b|[A-D]\.|\d+\.\d+|\b[a-d]\))\s+(.+)$/i;
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
     if (!line) continue;
 
-    if (headingRegex.test(line) && line.length < 90) {
+    const isMatch = headingRegex.test(line) || (
+      line.length >= 6 &&
+      line.length <= 70 &&
+      line === line.toUpperCase() &&
+      /[A-ZÀ-Ỹ]/.test(line) &&
+      !line.includes('CỘNG HÒA') &&
+      !line.includes('BỘ GIÁO DỤC')
+    );
+
+    if (isMatch && line.length < 100) {
       if (currentHeading) {
         sections.push({
           heading: currentHeading,
-          contentLines: currentLines.slice(0, 6)
+          contentLines: currentLines.slice(0, 10)
         });
       }
       currentHeading = line;
       currentLines = [];
     } else if (currentHeading) {
-      if (line.length > 8 && !line.startsWith('---')) {
+      if (line.length > 8 && !line.startsWith('---') && !line.startsWith('===') && !line.startsWith('...')) {
         currentLines.push(line);
       }
     }
@@ -202,37 +272,54 @@ export function extractTopicSections(text: string): TopicSection[] {
   if (currentHeading && currentLines.length > 0) {
     sections.push({
       heading: currentHeading,
-      contentLines: currentLines.slice(0, 6)
+      contentLines: currentLines.slice(0, 10)
     });
   }
 
-  return sections.slice(0, 5);
+  // Fallback nếu tài liệu không dùng heading chuẩn: gom các đoạn văn bản dài thành các chủ đề nội dung
+  if (sections.length === 0) {
+    const paragraphs = text
+      .split(/\n{2,}/)
+      .map(p => p.trim())
+      .filter(p => p.length > 40 && !p.startsWith('===') && !p.startsWith('---'));
+
+    paragraphs.slice(0, 4).forEach((p, idx) => {
+      const firstSentence = p.split(/[.:\n]/)[0].trim();
+      sections.push({
+        heading: `Nội dung ${idx + 1}: ${firstSentence.slice(0, 60)}...`,
+        contentLines: [p.slice(0, 300)]
+      });
+    });
+  }
+
+  return sections.slice(0, 8);
 }
 
 /**
- * Trích xuất công thức, nguyên lý, quy tắc toán học / khoa học
+ * Trích xuất công thức, nguyên lý, thông số kỹ thuật, quy tắc toán học / khoa học
  */
 export function extractFormulasAndRules(text: string): string[] {
   const formulas: string[] = [];
-  const lines = text.split('\n');
+  if (!text) return formulas;
 
-  // Tìm các dòng chứa dấu =, công thức, hoặc bắt đầu bằng Công thức, Định lý, Quy tắc
-  const formulaRegex = /(?:^|\s)(?:Công thức|Định lý|Quy tắc|Hệ thức|Đẳng thức)[:\-]?\s*(.+)$/i;
-  const mathSymbolsRegex = /[=+\-*/^√∑∏∫≤≥±]/;
+  const lines = text.split('\n');
+  const formulaRegex = /(?:^|\s)(?:Công thức|Định lý|Quy tắc|Hệ thức|Đẳng thức|Nguyên lý|Tiêu chuẩn|Dung sai|Thông số)[:\-]?\s*(.+)$/i;
+  const mathSymbolsRegex = /[=+\-*/^√∑∏∫≤≥±≈]/;
+  const techUnitsRegex = /\b(?:mm|cm|m\/s|vòng\/phút|RPM|MPa|kW|Hz|V|A|bar|kg|%)\b/i;
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
-    if (line.length < 5 || line.length > 200) continue;
+    if (line.length < 5 || line.length > 250) continue;
 
     if (formulaRegex.test(line)) {
-      formulas.push(line);
-    } else if (mathSymbolsRegex.test(line) && line.includes('=') && line.length < 100) {
-      if (!formulas.includes(line)) {
+      if (!formulas.includes(line)) formulas.push(line);
+    } else if ((mathSymbolsRegex.test(line) && line.includes('=')) || (techUnitsRegex.test(line) && /\d+/.test(line))) {
+      if (!formulas.includes(line) && line.length < 120) {
         formulas.push(line);
       }
     }
 
-    if (formulas.length >= 5) break;
+    if (formulas.length >= 8) break;
   }
 
   return formulas;
@@ -243,31 +330,41 @@ export function extractFormulasAndRules(text: string): string[] {
  */
 export function extractPracticalSteps(text: string): PracticalStepItem[] {
   const steps: PracticalStepItem[] = [];
+  if (!text) return steps;
+
   const lines = text.split('\n');
+  const stepRegex = /^(?:Bước\s*(\d+)|Thao tác\s*(\d+)|Giai đoạn\s*(\d+)|\b(\d+)[\.)]\s*(?:Tiến hành|Thực hiện|Chuẩn bị|Kiểm tra|Gia công|Vận hành|Đo|Cắt|Lắp|Cài đặt))[:.\-]?\s*(.+)$/i;
 
-  const stepRegex = /^(?:Bước\s*(\d+)|Thao tác\s*(\d+)|Giai đoạn\s*(\d+))[:.\-]?\s*(.+)$/i;
-
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
     const match = line.match(stepRegex);
     if (match) {
-      const stepNum = Number(match[1] || match[2] || match[3] || steps.length + 1);
-      const rest = match[4].trim();
+      const stepNum = Number(match[1] || match[2] || match[3] || match[4] || steps.length + 1);
+      const rest = (match[5] || line).trim();
 
-      // Tách title và chi tiết nếu có dấu gạch ngang hoặc hai chấm
       const parts = rest.split(/[:\-–—]/);
       const title = parts[0].trim();
       const desc = parts.slice(1).join(':').trim() || rest;
+
+      // Tìm câu lưu ý an toàn hoặc yêu cầu kỹ thuật ở dòng tiếp theo nếu có
+      let nextDetail = '';
+      if (i + 1 < lines.length) {
+        const nextLine = lines[i + 1].trim();
+        if (nextLine.startsWith('-') || nextLine.startsWith('•') || nextLine.startsWith('*')) {
+          nextDetail = nextLine.replace(/^[-*•]\s*/, '');
+        }
+      }
 
       steps.push({
         stepNumber: stepNum,
         stepTitle: title,
         description: desc,
-        technicalRequirement: 'Tuân thủ đúng dung sai và quy trình an toàn lao động.',
-        commonMistakes: 'Thao tác sai tư thế hoặc không kiểm tra thông số trước khi vận hành.'
+        technicalRequirement: nextDetail || 'Đảm bảo đúng kích thước, thông số công nghệ và yêu cầu kỹ thuật bản vẽ.',
+        commonMistakes: 'Thao tác sai trình tự hoặc không kiểm tra an toàn trước khi vận hành.',
+        safetyNote: 'Luôn mang đầy đủ BHLĐ, không đứng trực diện vùng văng phôi hoặc bộ phận chuyển động.'
       });
 
-      if (steps.length >= 6) break;
+      if (steps.length >= 8) break;
     }
   }
 
@@ -279,17 +376,17 @@ export function extractPracticalSteps(text: string): PracticalStepItem[] {
  */
 export function extractSampleExercises(text: string): ExtractedQuestionItem[] {
   const questions: ExtractedQuestionItem[] = [];
-  const lines = text.split('\n');
+  if (!text) return questions;
 
-  const qRegex = /^(?:Câu\s*(\d+)|Bài\s*tập\s*(\d+)|Câu\s*hỏi)[:.\-]?\s*(.+)$/i;
+  const lines = text.split('\n');
+  const qRegex = /^(?:Câu\s*(\d+)|Bài\s*tập\s*(\d+)|Câu\s*hỏi|Vấn\s*đề\s*thảo\s*luận)[:.\-]?\s*(.+)$/i;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     const match = line.match(qRegex);
     if (match) {
-      const qText = match[3].trim();
+      const qText = (match[3] || match[0]).trim();
       if (qText.length > 10) {
-        // Kiểm tra xem các dòng tiếp theo có phải đáp án trắc nghiệm A, B, C, D không
         const options: string[] = [];
         let j = i + 1;
         while (j < lines.length && j <= i + 5) {
@@ -308,18 +405,18 @@ export function extractSampleExercises(text: string): ExtractedQuestionItem[] {
             options,
             correctAnswer: options[0] ? options[0].charAt(0) : 'A',
             type: 'mcq',
-            explanation: 'Căn cứ theo nội dung trọng tâm bài học trong tài liệu.'
+            explanation: 'Căn cứ theo nội dung trọng tâm bài học trong tài liệu bài giảng.'
           });
           i = j - 1;
         } else {
           questions.push({
             question: qText,
             type: 'essay',
-            explanation: 'Vận dụng kiến thức bài học để phân tích và trả lời chi tiết.'
+            explanation: 'Vận dụng kiến thức bài học trong tài liệu để phân tích và trả lời chi tiết.'
           });
         }
 
-        if (questions.length >= 6) break;
+        if (questions.length >= 8) break;
       }
     }
   }
@@ -331,30 +428,32 @@ export function extractSampleExercises(text: string): ExtractedQuestionItem[] {
  * Trích xuất danh mục trang thiết bị, dụng cụ, máy móc từ tài liệu
  */
 export function extractEquipment(text: string, subject: string = ''): { teacher: string[]; student: string[] } {
-  const teacherEq: string[] = ['Kế hoạch bài dạy (Giáo án CV 5512)', 'Máy chiếu / Ti vi tương tác'];
-  const studentEq: string[] = ['Sách giáo khoa / Tài liệu học tập', 'Vở ghi bài, bút viết'];
+  const teacherEq: string[] = ['Kế hoạch bài dạy (Giáo án CV 5512/2634)', 'Máy chiếu / Ti vi tương tác'];
+  const studentEq: string[] = ['Sách giáo khoa / Tài liệu học tập chuyên ngành', 'Vở ghi chép, bút viết'];
+
+  if (!text) return { teacher: teacherEq, student: studentEq };
 
   const lines = text.split('\n');
   for (const rawLine of lines) {
     const line = rawLine.trim();
-    if (/(?:thiết bị|dụng cụ|phương tiện|trang thiết bị|vật tư|phôi|máy)[:\-]/i.test(line)) {
-      const items = line.split(/[:,;]/).slice(1).map(s => s.trim()).filter(s => s.length > 2 && s.length < 50);
+    if (/(?:thiết bị|dụng cụ|phương tiện|trang thiết bị|vật tư|phôi|máy|đồ gá)[:\-]/i.test(line)) {
+      const items = line.split(/[:,;]/).slice(1).map(s => s.trim()).filter(s => s.length > 2 && s.length < 60);
       for (const item of items) {
-        if (!teacherEq.includes(item) && teacherEq.length < 6) {
+        if (!teacherEq.includes(item) && teacherEq.length < 8) {
           teacherEq.push(item);
         }
       }
     }
   }
 
-  // Bổ sung thiết bị đặc trưng theo môn học nếu chưa có đủ
-  const subLower = subject.toLowerCase();
+  // Bổ sung thiết bị đặc thù môn học
+  const subLower = (subject || '').toLowerCase();
   if (subLower.includes('công nghệ') || subLower.includes('cơ khí') || subLower.includes('tiện') || subLower.includes('kỹ thuật')) {
-    if (!teacherEq.some(e => e.includes('mô hình') || e.includes('máy'))) {
-      teacherEq.push('Mô hình chi tiết máy, phôi mẫu thực tế, thước cặp/panme');
+    if (!teacherEq.some(e => e.includes('máy') || e.includes('mô hình'))) {
+      teacherEq.push('Mô hình chi tiết máy thực tế, phôi mẫu, dụng cụ đo kiểm (thước cặp/panme)');
     }
     if (!studentEq.some(e => e.includes('bảo hộ'))) {
-      studentEq.push('Trang phục bảo hộ lao động đạt chuẩn, phiếu học tập');
+      studentEq.push('Trang phục bảo hộ lao động đạt chuẩn xưởng, phiếu thực hành');
     }
   }
 
@@ -386,18 +485,18 @@ export function deepParseLessonDocument(
     if (!keyTerms.includes(d.term)) keyTerms.push(d.term);
   });
   topicSections.forEach(t => {
-    const cleanH = t.heading.replace(/^(?:[I|V|X]+\.|\d+\.|[A-D]\.)\s*/, '').trim();
-    if (cleanH && cleanH.length < 35 && !keyTerms.includes(cleanH)) keyTerms.push(cleanH);
+    const cleanH = t.heading.replace(/^(?:[I|V|X]+\.|\d+[\./]|\bPhần\b|\bMục\b|\bChương\b|[A-D]\.|\d+\.\d+|\b[a-d]\))\s*/, '').trim();
+    if (cleanH && cleanH.length < 40 && !keyTerms.includes(cleanH)) keyTerms.push(cleanH);
   });
 
   // Tóm tắt nội dung bài học
   let summary = '';
   if (coreDefinitions.length > 0) {
-    summary = `Bài học tập trung vào các nội dung trọng tâm: ${coreDefinitions.map(d => d.term).join(', ')}.`;
+    summary = `Bài học tập trung vào các nội dung trọng tâm: ${coreDefinitions.map(d => d.term).slice(0, 5).join(', ')}.`;
   } else if (topicSections.length > 0) {
-    summary = `Nội dung chính gồm các đề mục: ${topicSections.map(t => t.heading).join('; ')}.`;
+    summary = `Nội dung chính gồm các đề mục: ${topicSections.map(t => t.heading).slice(0, 4).join('; ')}.`;
   } else {
-    summary = `Nội dung bài học '${cleanTitle}' môn ${subject || 'khoa học'} được xây dựng dựa trên tài liệu bài giảng chuyên ngành.`;
+    summary = `Nội dung bài học '${cleanTitle}' môn ${subject || 'chuyên môn'} được trích xuất trực tiếp từ tài liệu bài giảng của giáo viên.`;
   }
 
   return {

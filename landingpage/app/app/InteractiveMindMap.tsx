@@ -86,7 +86,31 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
     }
   ];
 
-  // Tải trực tiếp dạng ảnh PNG (chụp từ SVG với độ phân giải cao 2x)
+  // Helper bẻ dòng SVG nhiều dòng tránh bị cắt chữ
+  const wrapSvgText = (text: string, maxCharsPerLine = 32): string[] => {
+    if (!text) return [];
+    const words = text.trim().split(/\s+/);
+    const lines: string[] = [];
+    let currentLine = '';
+
+    for (const word of words) {
+      if ((currentLine + ' ' + word).trim().length <= maxCharsPerLine) {
+        currentLine = (currentLine + ' ' + word).trim();
+      } else {
+        if (currentLine) lines.push(currentLine);
+        currentLine = word;
+      }
+    }
+    if (currentLine) lines.push(currentLine);
+
+    if (lines.length > 2) {
+      const line2 = lines.slice(1).join(' ');
+      lines.splice(1, lines.length - 1, line2.length > maxCharsPerLine ? line2.substring(0, maxCharsPerLine - 3) + '...' : line2);
+    }
+    return lines;
+  };
+
+  // Tải trực tiếp dạng ảnh PNG (chụp từ SVG với độ phân giải cao 2x: 3240 x 1840)
   const handleDownloadPng = () => {
     if (!svgRef.current) return;
     try {
@@ -99,12 +123,12 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        canvas.width = 2200;
-        canvas.height = 1360;
+        canvas.width = 3240;
+        canvas.height = 1840;
         const ctx = canvas.getContext('2d');
         if (ctx) {
           // Tạo nền gradient sang trọng chuẩn công nghệ giáo dục
-          const bgGrad = ctx.createLinearGradient(0, 0, 2200, 1360);
+          const bgGrad = ctx.createLinearGradient(0, 0, 3240, 1840);
           bgGrad.addColorStop(0, '#0a1526');
           bgGrad.addColorStop(1, '#0f172a');
           ctx.fillStyle = bgGrad;
@@ -321,8 +345,8 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
               <svg
                 ref={svgRef}
                 xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 1120 700"
-                className="w-[1120px] h-[700px] select-none"
+                viewBox="0 0 1620 920"
+                className="w-[1620px] h-[920px] select-none"
               >
                 <defs>
                   {/* Gradient trung tâm */}
@@ -355,37 +379,37 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
                   </filter>
                 </defs>
 
-                {/* 1. ĐƯỜNG NỐI BEZIER TỪ TRUNG TÂM RA 4 NHÁNH CHÍNH */}
-                {/* Đường nối sang Nhánh 0 (Top Left) */}
+                {/* 1. ĐƯỜNG NỐI BEZIER TỪ TRUNG TÂM RA 4 NHÁNH CHÍNH (CỘT 3 ĐẾN CỘT 2 VÀ CỘT 4) */}
+                {/* Đường nối sang Nhánh 0 (Top Left: (670,460) -> (630,227)) */}
                 <path
-                  d="M 420 350 C 340 350, 360 160, 280 160"
+                  d="M 670 460 C 645 460, 655 227, 630 227"
                   fill="none"
                   stroke="#38bdf8"
                   strokeWidth={activeBranchIdx === 0 || activeBranchIdx === null ? "3.5" : "1.5"}
                   strokeOpacity={activeBranchIdx === 0 || activeBranchIdx === null ? "0.9" : "0.2"}
                   strokeLinecap="round"
                 />
-                {/* Đường nối sang Nhánh 1 (Top Right) */}
+                {/* Đường nối sang Nhánh 1 (Top Right: (950,460) -> (990,227)) */}
                 <path
-                  d="M 700 350 C 780 350, 760 160, 840 160"
+                  d="M 950 460 C 975 460, 965 227, 990 227"
                   fill="none"
                   stroke="#c084fc"
                   strokeWidth={activeBranchIdx === 1 || activeBranchIdx === null ? "3.5" : "1.5"}
                   strokeOpacity={activeBranchIdx === 1 || activeBranchIdx === null ? "0.9" : "0.2"}
                   strokeLinecap="round"
                 />
-                {/* Đường nối sang Nhánh 2 (Bottom Left) */}
+                {/* Đường nối sang Nhánh 2 (Bottom Left: (670,460) -> (630,687)) */}
                 <path
-                  d="M 420 350 C 340 350, 360 540, 280 540"
+                  d="M 670 460 C 645 460, 655 687, 630 687"
                   fill="none"
                   stroke="#34d399"
                   strokeWidth={activeBranchIdx === 2 || activeBranchIdx === null ? "3.5" : "1.5"}
                   strokeOpacity={activeBranchIdx === 2 || activeBranchIdx === null ? "0.9" : "0.2"}
                   strokeLinecap="round"
                 />
-                {/* Đường nối sang Nhánh 3 (Bottom Right) */}
+                {/* Đường nối sang Nhánh 3 (Bottom Right: (950,460) -> (990,687)) */}
                 <path
-                  d="M 700 350 C 780 350, 760 540, 840 540"
+                  d="M 950 460 C 975 460, 965 687, 990 687"
                   fill="none"
                   stroke="#fbbf24"
                   strokeWidth={activeBranchIdx === 3 || activeBranchIdx === null ? "3.5" : "1.5"}
@@ -393,8 +417,8 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
                   strokeLinecap="round"
                 />
 
-                {/* 2. KHỐI TRUNG TÂM (CENTRAL NODE) */}
-                <g transform="translate(420, 305)" className="cursor-pointer" onClick={() => setActiveBranchIdx(null)}>
+                {/* 2. KHỐI TRUNG TÂM (CENTRAL NODE Ở CỘT 3: X=670..950, Y=415..505) */}
+                <g transform="translate(670, 415)" className="cursor-pointer" onClick={() => setActiveBranchIdx(null)}>
                   <rect
                     x="0"
                     y="0"
@@ -413,35 +437,92 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
                   </text>
 
                   {/* Icon & Tiêu đề bài học */}
-                  <text x="35" y="60" fill="#ffffff" fontSize="24">🧠</text>
-                  <text
-                    x="75"
-                    y="52"
-                    fill="#ffffff"
-                    fontSize="13"
-                    fontWeight="bold"
-                    fontFamily="Arial"
-                  >
-                    {centralTopic.length > 24 ? centralTopic.substring(0, 24) + '...' : centralTopic}
-                  </text>
-                  <text x="75" y="72" fill="#bae6fd" fontSize="10.5" fontFamily="Arial">
-                    SƠ ĐỒ TỔNG HỢP KIẾN THỨC
-                  </text>
+                  <text x="32" y="60" fill="#ffffff" fontSize="24">🧠</text>
+                  {(() => {
+                    const centerLines = wrapSvgText(centralTopic, 26);
+                    if (centerLines.length <= 1) {
+                      return (
+                        <>
+                          <text x="70" y="52" fill="#ffffff" fontSize="13.5" fontWeight="bold" fontFamily="Arial">
+                            {centerLines[0] || centralTopic}
+                          </text>
+                          <text x="70" y="70" fill="#bae6fd" fontSize="10" fontFamily="Arial">
+                            SƠ ĐỒ TỔNG HỢP KIẾN THỨC
+                          </text>
+                        </>
+                      );
+                    }
+                    return (
+                      <>
+                        <text x="70" y="46" fill="#ffffff" fontSize="12" fontWeight="bold" fontFamily="Arial">
+                          {centerLines[0]}
+                        </text>
+                        <text x="70" y="62" fill="#ffffff" fontSize="12" fontWeight="bold" fontFamily="Arial">
+                          {centerLines[1]}
+                        </text>
+                        <text x="70" y="76" fill="#bae6fd" fontSize="9.5" fontFamily="Arial">
+                          SƠ ĐỒ TỔNG HỢP KIẾN THỨC
+                        </text>
+                      </>
+                    );
+                  })()}
                 </g>
 
-                {/* 3. VẼ 4 NHÁNH VÀ CÁC ĐIỂM KIẾN THỨC CON (SUB-ITEMS) */}
+                {/* 3. VẼ 4 NHÁNH VÀ CÁC ĐIỂM KIẾN THỨC CON (5-COLUMN SPACIOUS LAYOUT) */}
                 {branches.slice(0, 4).map((b, idx) => {
                   const theme = branchThemes[idx % branchThemes.length];
                   const isDimmed = activeBranchIdx !== null && activeBranchIdx !== idx;
                   const isHighlighted = activeBranchIdx === idx;
 
-                  // Tọa độ gốc của nhánh
-                  const config = [
-                    { bx: 80, by: 125, subDir: 'left', subYStart: 70 },   // Nhánh 0: Top-Left
-                    { bx: 780, by: 125, subDir: 'right', subYStart: 70 }, // Nhánh 1: Top-Right
-                    { bx: 80, by: 505, subDir: 'left', subYStart: 450 },  // Nhánh 2: Bottom-Left
-                    { bx: 780, by: 505, subDir: 'right', subYStart: 450 } // Nhánh 3: Bottom-Right
-                  ][idx];
+                  // Tọa độ 5 cột tuyệt đối không chồng lấn:
+                  // Col 1: X=30..320 (Sub left) | Col 2: X=360..630 (Branch left) | Col 3: X=670..950 (Center) | Col 4: X=990..1260 (Branch right) | Col 5: X=1300..1590 (Sub right)
+                  const branchConfigs = [
+                    {
+                      bx: 360,
+                      by: 190,
+                      width: 270,
+                      height: 74,
+                      side: 'left',
+                      subX: 30,
+                      subWidth: 290,
+                      subHeight: 56,
+                      subYSlots: [70, 142, 214, 286]
+                    },
+                    {
+                      bx: 990,
+                      by: 190,
+                      width: 270,
+                      height: 74,
+                      side: 'right',
+                      subX: 1300,
+                      subWidth: 290,
+                      subHeight: 56,
+                      subYSlots: [70, 142, 214, 286]
+                    },
+                    {
+                      bx: 360,
+                      by: 650,
+                      width: 270,
+                      height: 74,
+                      side: 'left',
+                      subX: 30,
+                      subWidth: 290,
+                      subHeight: 56,
+                      subYSlots: [530, 602, 674, 746]
+                    },
+                    {
+                      bx: 990,
+                      by: 650,
+                      width: 270,
+                      height: 74,
+                      side: 'right',
+                      subX: 1300,
+                      subWidth: 290,
+                      subHeight: 56,
+                      subYSlots: [530, 602, 674, 746]
+                    }
+                  ];
+                  const cfg = branchConfigs[idx];
 
                   return (
                     <g
@@ -452,45 +533,58 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
                     >
                       {/* Thẻ Tiêu Đề Nhánh */}
                       <rect
-                        x={config.bx}
-                        y={config.by}
-                        width="260"
-                        height="65"
-                        rx="14"
+                        x={cfg.bx}
+                        y={cfg.by}
+                        width={cfg.width}
+                        height={cfg.height}
+                        rx="16"
                         fill={`url(#grad${idx})`}
                         stroke={theme.lightColor}
                         strokeWidth={isHighlighted ? "3" : "1.5"}
                         filter="url(#nodeGlow)"
                       />
+                      {/* Huy hiệu số nhánh */}
+                      <circle cx={cfg.bx + 26} cy={cfg.by + 37} r="14" fill="#0f172a" fillOpacity="0.4" />
                       <text
-                        x={config.bx + 20}
-                        y={config.by + 28}
+                        x={cfg.bx + 26}
+                        y={cfg.by + 42}
+                        textAnchor="middle"
                         fill="#ffffff"
-                        fontSize="12.5"
+                        fontSize="13"
                         fontWeight="bold"
                         fontFamily="Arial"
                       >
-                        {b.title}
+                        {idx + 1}
                       </text>
                       <text
-                        x={config.bx + 20}
-                        y={config.by + 48}
+                        x={cfg.bx + 48}
+                        y={cfg.by + 33}
+                        fill="#ffffff"
+                        fontSize="13"
+                        fontWeight="bold"
+                        fontFamily="Arial"
+                      >
+                        {b.title.length > 25 ? b.title.substring(0, 25) + '...' : b.title}
+                      </text>
+                      <text
+                        x={cfg.bx + 48}
+                        y={cfg.by + 53}
                         fill={theme.textCol}
-                        fontSize="10"
+                        fontSize="10.5"
                         fontFamily="Arial"
                       >
                         {b.subItems.length} nội dung trọng tâm cốt lõi
                       </text>
 
-                      {/* Các node con (Sub-items) */}
-                      {b.subItems.slice(0, 3).map((item, sIdx) => {
-                        const subY = config.subYStart + sIdx * 54;
-                        const subX = config.subDir === 'left' ? config.bx : config.bx + 40;
+                      {/* Các node con (Sub-items) bố trí riêng rẽ không đè lên nhánh chính */}
+                      {b.subItems.slice(0, 4).map((item, sIdx) => {
+                        const subY = cfg.subYSlots[sIdx] || (cfg.subYSlots[0] + sIdx * 72);
+                        const subLines = wrapSvgText(item, 32);
 
-                        // Đường nối từ nhánh chính tới từng node con
-                        const curvePath = config.subDir === 'left'
-                          ? `M ${config.bx + 200} ${config.by + 32} C ${config.bx + 230} ${config.by + 32}, ${subX + 230} ${subY + 20}, ${subX + 220} ${subY + 20}`
-                          : `M ${config.bx + 60} ${config.by + 32} C ${config.bx + 30} ${config.by + 32}, ${subX + 30} ${subY + 20}, ${subX + 40} ${subY + 20}`;
+                        // Đường nối cong thanh thoát giữa thẻ nhánh và từng thẻ con
+                        const curvePath = cfg.side === 'left'
+                          ? `M ${cfg.bx} ${cfg.by + 37} C ${cfg.bx - 20} ${cfg.by + 37}, ${cfg.subX + cfg.subWidth + 20} ${subY + 28}, ${cfg.subX + cfg.subWidth} ${subY + 28}`
+                          : `M ${cfg.bx + cfg.width} ${cfg.by + 37} C ${cfg.bx + cfg.width + 20} ${cfg.by + 37}, ${cfg.subX - 20} ${subY + 28}, ${cfg.subX} ${subY + 28}`;
 
                         return (
                           <g key={sIdx}>
@@ -499,31 +593,59 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
                               fill="none"
                               stroke={theme.lightColor}
                               strokeWidth="1.5"
-                              strokeOpacity="0.7"
+                              strokeOpacity="0.75"
                               strokeDasharray={isHighlighted ? undefined : "4 2"}
                             />
                             {/* Card Node Con */}
                             <rect
-                              x={subX}
+                              x={cfg.subX}
                               y={subY}
-                              width="220"
-                              height="40"
-                              rx="10"
+                              width={cfg.subWidth}
+                              height={cfg.subHeight}
+                              rx="12"
                               fill="#0f172a"
                               stroke={theme.border}
-                              strokeWidth={isHighlighted ? "1.5" : "1"}
+                              strokeWidth={isHighlighted ? "2" : "1"}
                             />
-                            {/* Chấm tròn chỉ số */}
-                            <circle cx={subX + 16} cy={subY + 20} r="6" fill={theme.lightColor} />
+                            {/* Chấm tròn số thứ tự */}
+                            <circle cx={cfg.subX + 18} cy={subY + 28} r="8" fill={theme.color} />
                             <text
-                              x={subX + 30}
-                              y={subY + 24}
-                              fill="#f1f5f9"
+                              x={cfg.subX + 18}
+                              y={subY + 32}
+                              textAnchor="middle"
+                              fill="#ffffff"
                               fontSize="10"
+                              fontWeight="bold"
                               fontFamily="Arial"
                             >
-                              {item.length > 28 ? item.substring(0, 28) + '...' : item}
+                              {sIdx + 1}
                             </text>
+
+                            {/* Văn bản hiển thị đầy đủ không bị cắt cụt */}
+                            {subLines.length <= 1 ? (
+                              <text
+                                x={cfg.subX + 34}
+                                y={subY + 33}
+                                fill="#f1f5f9"
+                                fontSize="11"
+                                fontWeight="500"
+                                fontFamily="Arial"
+                              >
+                                {subLines[0]}
+                              </text>
+                            ) : (
+                              <text
+                                x={cfg.subX + 34}
+                                y={subY + 23}
+                                fill="#f1f5f9"
+                                fontSize="10.5"
+                                fontWeight="500"
+                                fontFamily="Arial"
+                              >
+                                <tspan x={cfg.subX + 34} dy="0">{subLines[0]}</tspan>
+                                <tspan x={cfg.subX + 34} dy="16">{subLines[1]}</tspan>
+                              </text>
+                            )}
                           </g>
                         );
                       })}

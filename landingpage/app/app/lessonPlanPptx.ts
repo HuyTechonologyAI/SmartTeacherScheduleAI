@@ -1,265 +1,161 @@
-// Module Tạo và Xuất Bản File Thuyết Trình PowerPoint (.pptx) Trực Tiếp Dành Cho Giáo Viên
-// Hỗ trợ đầy đủ: Nội dung bài học, Hình ảnh minh họa chất lượng cao, Hiệu ứng chuyển slide (Transitions)
+// Module Tạo và Xuất Bản File Thuyết Trình PowerPoint (.pptx) Chuẩn 100% Văn Bản Chỉnh Sửa Được
+// Đáp ứng tiêu chuẩn:
+// 1. 100% nội dung chữ (tiêu đề, thẻ mục tiêu, quy trình, câu hỏi, đáp án, dặn dò) là Native PowerPoint Text có thể nhấp chuột chỉnh sửa trực tiếp.
+// 2. Hình ảnh minh họa vector sắc nét (thuần đồ họa, không chứa text tĩnh bị khóa).
+// 3. Đầy đủ hiệu ứng chuyển slide (Fade, Push, Wipe) chuẩn OpenXML.
+// 4. Tích hợp Speaker Notes trong chế độ Presenter View.
 import JSZip from 'jszip';
 import { LessonSlideItem } from './lessonPlanAi';
 
 /**
- * Tạo hình ảnh minh họa vector chuẩn sư phạm dạng SVG cho từng loại slide
+ * Tạo hình ảnh minh họa vector thuần đồ họa (Icons & Visual Art - KHÔNG chứa chữ tĩnh)
+ * Đảm bảo mọi nội dung chữ trên slide đều là Text Box riêng biệt, giáo viên tùy ý chỉnh sửa.
  */
-function createSlideIllustrationSvg(type: string, title: string, subject: string): string {
+function createPureGraphicIllustrationSvg(type: string, subject: string): string {
   const cleanSub = (subject || '').toLowerCase();
-  const isTechOrElectric = cleanSub.includes('điện') || cleanSub.includes('công nghệ') || cleanSub.includes('kỹ thuật') || cleanSub.includes('vật lí') || cleanSub.includes('tin học');
+  const isElectricOrTech = cleanSub.includes('điện') || cleanSub.includes('công nghệ') || cleanSub.includes('kỹ thuật') || cleanSub.includes('vật lí');
 
   switch (type) {
     case 'cover':
-      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450" width="600" height="450">
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 450" width="500" height="450">
         <defs>
-          <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#0369a1" stop-opacity="0.1"/>
-            <stop offset="100%" stop-color="#0284c7" stop-opacity="0.2"/>
-          </linearGradient>
-          <linearGradient id="circGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stop-color="#38bdf8"/>
             <stop offset="100%" stop-color="#0284c7"/>
           </linearGradient>
+          <linearGradient id="g2" x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#0284c7" stop-opacity="0.1"/>
+            <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.3"/>
+          </linearGradient>
         </defs>
-        <rect width="600" height="450" rx="24" fill="url(#bgGrad)" stroke="#38bdf8" stroke-width="2" stroke-dasharray="6 6"/>
-        <circle cx="300" cy="200" r="110" fill="url(#circGrad)" opacity="0.15"/>
-        <circle cx="300" cy="200" r="85" fill="#ffffff" stroke="#0284c7" stroke-width="4"/>
-        <path d="M260 170 L340 170 L300 240 Z" fill="#0284c7" opacity="0.2"/>
-        <circle cx="300" cy="180" r="24" fill="#0284c7"/>
-        <path d="M260 235 C260 205 340 205 340 235 Z" fill="#0369a1"/>
-        <path d="M240 140 L300 115 L360 140 L300 160 Z" fill="#0f172a"/>
-        <path d="M350 145 L350 175" stroke="#eab308" stroke-width="4" stroke-linecap="round"/>
-        <circle cx="350" cy="180" r="5" fill="#eab308"/>
-        <path d="M160 290 L440 290" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/>
-        <path d="M200 320 L400 320" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>
-        <rect x="170" y="345" width="260" height="36" rx="18" fill="#0284c7"/>
-        <text x="300" y="368" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">HỌC LIỆU SỐ GDPT 2018</text>
-        <path d="M100 100 L140 130 M460 120 L500 90 M110 320 L150 350 M450 350 L490 310" stroke="#38bdf8" stroke-width="2" opacity="0.6"/>
+        <circle cx="250" cy="225" r="180" fill="url(#g2)"/>
+        <circle cx="250" cy="225" r="130" fill="none" stroke="#38bdf8" stroke-width="3" stroke-dasharray="8 6"/>
+        <path d="M250 80 L350 135 L250 190 L150 135 Z" fill="#0369a1" stroke="#38bdf8" stroke-width="4"/>
+        <path d="M190 157 L190 230 C190 260 310 260 310 230 L310 157" fill="none" stroke="#38bdf8" stroke-width="4"/>
+        <path d="M340 145 L360 220" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="360" cy="230" r="8" fill="#f59e0b"/>
+        <circle cx="250" cy="320" r="45" fill="#ffffff" stroke="#0284c7" stroke-width="4"/>
+        <path d="M250 295 C235 295 225 305 225 320 C225 330 235 340 242 345 L258 345 C265 340 275 330 275 320 C275 305 265 295 250 295 Z" fill="#fbbf24"/>
+        <line x1="250" y1="280" x2="250" y2="290" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>
+        <line x1="220" y1="290" x2="230" y2="298" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>
+        <line x1="280" y1="290" x2="270" y2="298" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="120" cy="180" r="15" fill="#0284c7" opacity="0.6"/>
+        <circle cx="380" cy="290" r="18" fill="#10b981" opacity="0.6"/>
+        <circle cx="150" cy="330" r="12" fill="#8b5cf6" opacity="0.6"/>
       </svg>`;
 
     case 'objectives':
-      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450" width="600" height="450">
-        <rect width="600" height="450" rx="24" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
-        <g transform="translate(50, 40)">
-          <rect width="230" height="160" rx="16" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
-          <circle cx="50" cy="50" r="24" fill="#3b82f6"/>
-          <text x="50" y="56" font-family="Arial" font-size="20" fill="#ffffff" text-anchor="middle">📖</text>
-          <text x="90" y="45" font-family="Arial" font-size="16" font-weight="bold" fill="#1e40af">1. KIẾN THỨC</text>
-          <text x="90" y="70" font-family="Arial" font-size="12" fill="#3b82f6">Khái niệm cốt lõi</text>
-          <text x="30" y="110" font-family="Arial" font-size="12" fill="#1e3a8a">• Bản chất quy luật khoa học</text>
-          <text x="30" y="135" font-family="Arial" font-size="12" fill="#1e3a8a">• Nắm vững định nghĩa chuẩn</text>
-        </g>
-        <g transform="translate(320, 40)">
-          <rect width="230" height="160" rx="16" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
-          <circle cx="50" cy="50" r="24" fill="#10b981"/>
-          <text x="50" y="56" font-family="Arial" font-size="20" fill="#ffffff" text-anchor="middle">⚙️</text>
-          <text x="90" y="45" font-family="Arial" font-size="16" font-weight="bold" fill="#065f46">2. KỸ NĂNG</text>
-          <text x="90" y="70" font-family="Arial" font-size="12" fill="#059669">Thao tác thực hành</text>
-          <text x="30" y="110" font-family="Arial" font-size="12" fill="#064e3b">• Phân tích & giải quyết vấn đề</text>
-          <text x="30" y="135" font-family="Arial" font-size="12" fill="#064e3b">• Quy trình thao tác chuẩn xác</text>
-        </g>
-        <g transform="translate(50, 240)">
-          <rect width="230" height="160" rx="16" fill="#fefce8" stroke="#f59e0b" stroke-width="2"/>
-          <circle cx="50" cy="50" r="24" fill="#f59e0b"/>
-          <text x="50" y="56" font-family="Arial" font-size="20" fill="#ffffff" text-anchor="middle">⭐</text>
-          <text x="90" y="45" font-family="Arial" font-size="16" font-weight="bold" fill="#92400e">3. PHẨM CHẤT</text>
-          <text x="90" y="70" font-family="Arial" font-size="12" fill="#d97706">Kỷ luật & Đạo đức</text>
-          <text x="30" y="110" font-family="Arial" font-size="12" fill="#78350f">• Tinh thần trách nhiệm nghề</text>
-          <text x="30" y="135" font-family="Arial" font-size="12" fill="#78350f">• Tuân thủ an toàn tuyệt đối</text>
-        </g>
-        <g transform="translate(320, 240)">
-          <rect width="230" height="160" rx="16" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="2"/>
-          <circle cx="50" cy="50" r="24" fill="#8b5cf6"/>
-          <text x="50" y="56" font-family="Arial" font-size="20" fill="#ffffff" text-anchor="middle">💻</text>
-          <text x="90" y="45" font-family="Arial" font-size="16" font-weight="bold" fill="#5b21b6">4. NĂNG LỰC SỐ</text>
-          <text x="90" y="70" font-family="Arial" font-size="12" fill="#7c3aed">Chuyển đổi số giáo dục</text>
-          <text x="30" y="110" font-family="Arial" font-size="12" fill="#4c1d95">• Tra cứu dữ liệu số hóa</text>
-          <text x="30" y="135" font-family="Arial" font-size="12" fill="#4c1d95">• Tương tác học tập trực tuyến</text>
-        </g>
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 450" width="500" height="450">
+        <circle cx="250" cy="225" r="170" fill="#f0f9ff" stroke="#bae6fd" stroke-width="3"/>
+        <circle cx="250" cy="225" r="130" fill="#e0f2fe" stroke="#38bdf8" stroke-width="3"/>
+        <circle cx="250" cy="225" r="85" fill="#bae6fd" stroke="#0284c7" stroke-width="4"/>
+        <circle cx="250" cy="225" r="45" fill="#0284c7"/>
+        <path d="M250 140 L250 310 M165 225 L335 225" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="250" cy="225" r="18" fill="#fbbf24"/>
+        <path d="M290 90 L390 50 L350 150 Z" fill="#ef4444" stroke="#b91c1c" stroke-width="2"/>
+        <line x1="250" y1="225" x2="370" y2="80" stroke="#ef4444" stroke-width="4" stroke-dasharray="6 4"/>
       </svg>`;
 
     case 'warmup':
-      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450" width="600" height="450">
-        <rect width="600" height="450" rx="24" fill="#fffbeb" stroke="#fef08a" stroke-width="2"/>
-        <circle cx="300" cy="180" r="90" fill="#fef3c7" stroke="#f59e0b" stroke-width="3" stroke-dasharray="6 4"/>
-        <path d="M300 110 C265 110 240 135 240 170 C240 195 260 215 280 230 L320 230 C340 215 360 195 360 170 C360 135 335 110 300 110 Z" fill="#fbbf24" stroke="#d97706" stroke-width="4"/>
-        <rect x="285" y="230" width="30" height="20" rx="4" fill="#94a3b8"/>
-        <rect x="290" y="250" width="20" height="8" rx="3" fill="#64748b"/>
-        <line x1="300" y1="75" x2="300" y2="95" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"/>
-        <line x1="225" y1="105" x2="240" y2="120" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"/>
-        <line x1="375" y1="105" x2="360" y2="120" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"/>
-        <text x="300" y="190" font-family="Arial" font-size="48" font-weight="bold" fill="#b45309" text-anchor="middle">?</text>
-        <rect x="100" y="290" width="400" height="80" rx="16" fill="#ffffff" stroke="#f59e0b" stroke-width="2"/>
-        <text x="300" y="325" font-family="Arial" font-size="16" font-weight="bold" fill="#b45309" text-anchor="middle">TÌNH HUỐNG THỰC TIỄN DẪN NHẬP</text>
-        <text x="300" y="350" font-family="Arial" font-size="13" fill="#78350f" text-anchor="middle">Thời gian thảo luận mở đầu: 2 - 3 phút</text>
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 450" width="500" height="450">
+        <circle cx="250" cy="200" r="120" fill="#fef3c7" stroke="#f59e0b" stroke-width="4" stroke-dasharray="8 6"/>
+        <path d="M250 110 C210 110 180 140 180 180 C180 215 205 240 225 255 L275 255 C295 240 320 215 320 180 C320 140 290 110 250 110 Z" fill="#fbbf24" stroke="#d97706" stroke-width="4"/>
+        <rect x="230" y="255" width="40" height="25" rx="5" fill="#94a3b8" stroke="#64748b" stroke-width="2"/>
+        <rect x="238" y="280" width="24" height="12" rx="4" fill="#64748b"/>
+        <line x1="250" y1="70" x2="250" y2="95" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
+        <line x1="160" y1="100" x2="180" y2="120" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
+        <line x1="340" y1="100" x2="320" y2="120" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
+        <line x1="120" y1="180" x2="150" y2="180" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
+        <line x1="380" y1="180" x2="350" y2="180" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
+        <circle cx="340" cy="290" r="55" fill="none" stroke="#0284c7" stroke-width="8"/>
+        <line x1="380" y1="330" x2="430" y2="380" stroke="#0284c7" stroke-width="12" stroke-linecap="round"/>
       </svg>`;
 
     case 'theory':
-      if (isTechOrElectric) {
-        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450" width="600" height="450">
-          <rect width="600" height="450" rx="24" fill="#f0f9ff" stroke="#bae6fd" stroke-width="2"/>
-          <rect x="50" y="60" width="130" height="100" rx="12" fill="#0284c7"/>
-          <text x="115" y="105" font-family="Arial" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">NGUỒN ĐIỆN</text>
-          <text x="115" y="130" font-family="Arial" font-size="12" fill="#e0f2fe" text-anchor="middle">~ 220V / 380V</text>
-          <path d="M180 110 L260 110" stroke="#0284c7" stroke-width="4" stroke-linecap="round"/>
-          <polygon points="260,105 270,110 260,115" fill="#0284c7"/>
-          <rect x="270" y="60" width="140" height="100" rx="12" fill="#0369a1"/>
-          <text x="340" y="105" font-family="Arial" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">TRẠM PHÂN PHỐI</text>
-          <text x="340" y="130" font-family="Arial" font-size="12" fill="#e0f2fe" text-anchor="middle">Hệ thống bảo vệ</text>
-          <path d="M410 110 L470 110" stroke="#0284c7" stroke-width="4" stroke-linecap="round"/>
-          <polygon points="470,105 480,110 470,115" fill="#0284c7"/>
-          <rect x="480" y="60" width="90" height="100" rx="12" fill="#075985"/>
-          <text x="525" y="105" font-family="Arial" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">PHỤ TẢI</text>
-          <text x="525" y="130" font-family="Arial" font-size="12" fill="#e0f2fe" text-anchor="middle">Tiêu thụ</text>
-          <rect x="80" y="210" width="440" height="180" rx="16" fill="#ffffff" stroke="#0284c7" stroke-width="2"/>
-          <text x="300" y="245" font-family="Arial" font-size="16" font-weight="bold" fill="#0369a1" text-anchor="middle">QUY CHUẨN KỸ THUẬT & AN TOÀN ĐIỆN</text>
-          <line x1="120" y1="265" x2="480" y2="265" stroke="#e2e8f0" stroke-width="2"/>
-          <text x="120" y="295" font-family="Arial" font-size="13" fill="#0f172a">⚡ Tiêu chuẩn quốc gia: QCVN 01:2020/BCT</text>
-          <text x="120" y="325" font-family="Arial" font-size="13" fill="#0f172a">🔒 Quy tắc 5 bước cắt điện & cô lập an toàn</text>
-          <text x="120" y="355" font-family="Arial" font-size="13" fill="#0f172a">📐 Công thức: I = U / R | P = √3·U·I·cosφ</text>
+      if (isElectricOrTech) {
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 450" width="500" height="450">
+          <rect x="50" y="80" width="400" height="280" rx="20" fill="#f0fdf4" stroke="#16a34a" stroke-width="3"/>
+          <circle cx="130" cy="180" r="45" fill="#ffffff" stroke="#0284c7" stroke-width="4"/>
+          <path d="M110 180 C110 160 130 160 130 180 C130 200 150 200 150 180" fill="none" stroke="#0284c7" stroke-width="4" stroke-linecap="round"/>
+          <line x1="175" y1="180" x2="240" y2="180" stroke="#0f172a" stroke-width="4"/>
+          <rect x="240" y="155" width="80" height="50" rx="8" fill="#ffffff" stroke="#f59e0b" stroke-width="4"/>
+          <path d="M260 180 L270 165 L280 195 L290 170 L300 180" fill="none" stroke="#f59e0b" stroke-width="3"/>
+          <line x1="320" y1="180" x2="390" y2="180" stroke="#0f172a" stroke-width="4"/>
+          <line x1="390" y1="180" x2="390" y2="280" stroke="#0f172a" stroke-width="4"/>
+          <line x1="390" y1="280" x2="130" y2="280" stroke="#0f172a" stroke-width="4"/>
+          <line x1="130" y1="280" x2="130" y2="225" stroke="#0f172a" stroke-width="4"/>
+          <circle cx="280" cy="280" r="10" fill="#ef4444"/>
+          <polygon points="210,175 225,180 210,185" fill="#0284c7"/>
+          <polygon points="350,175 365,180 350,185" fill="#0284c7"/>
         </svg>`;
       }
-      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450" width="600" height="450">
-        <rect width="600" height="450" rx="24" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
-        <rect x="200" y="50" width="200" height="70" rx="14" fill="#0284c7"/>
-        <text x="300" y="92" font-family="Arial" font-size="16" font-weight="bold" fill="#ffffff" text-anchor="middle">KHÁI NIỆM TRỌNG TÂM</text>
-        <line x1="300" y1="120" x2="300" y2="160" stroke="#0284c7" stroke-width="3"/>
-        <line x1="140" y1="160" x2="460" y2="160" stroke="#0284c7" stroke-width="3"/>
-        <line x1="140" y1="160" x2="140" y2="200" stroke="#0284c7" stroke-width="3"/>
-        <line x1="460" y1="160" x2="460" y2="200" stroke="#0284c7" stroke-width="3"/>
-        <rect x="50" y="200" width="180" height="180" rx="14" fill="#ffffff" stroke="#38bdf8" stroke-width="2"/>
-        <text x="140" y="235" font-family="Arial" font-size="14" font-weight="bold" fill="#0369a1" text-anchor="middle">BẢN CHẤT KHOA HỌC</text>
-        <text x="70" y="275" font-family="Arial" font-size="12" fill="#334155">• Cơ chế hình thành</text>
-        <text x="70" y="305" font-family="Arial" font-size="12" fill="#334155">• Các thành phần cấu tạo</text>
-        <text x="70" y="335" font-family="Arial" font-size="12" fill="#334155">• Mối quan hệ tương tác</text>
-        <rect x="370" y="200" width="180" height="180" rx="14" fill="#ffffff" stroke="#38bdf8" stroke-width="2"/>
-        <text x="460" y="235" font-family="Arial" font-size="14" font-weight="bold" fill="#0369a1" text-anchor="middle">ỨNG DỤNG THỰC TẾ</text>
-        <text x="390" y="275" font-family="Arial" font-size="12" fill="#334155">• Triển khai công nghiệp</text>
-        <text x="390" y="305" font-family="Arial" font-size="12" fill="#334155">• Đời sống sinh hoạt</text>
-        <text x="390" y="335" font-family="Arial" font-size="12" fill="#334155">• Định hướng phát triển</text>
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 450" width="500" height="450">
+        <circle cx="250" cy="225" r="160" fill="#f8fafc" stroke="#cbd5e1" stroke-width="3"/>
+        <circle cx="250" cy="225" r="60" fill="#0284c7"/>
+        <circle cx="130" cy="140" r="40" fill="#38bdf8"/>
+        <circle cx="370" cy="140" r="40" fill="#10b981"/>
+        <circle cx="160" cy="330" r="40" fill="#f59e0b"/>
+        <circle cx="340" cy="330" r="40" fill="#8b5cf6"/>
+        <line x1="250" y1="225" x2="130" y2="140" stroke="#0284c7" stroke-width="3"/>
+        <line x1="250" y1="225" x2="370" y2="140" stroke="#0284c7" stroke-width="3"/>
+        <line x1="250" y1="225" x2="160" y2="330" stroke="#0284c7" stroke-width="3"/>
+        <line x1="250" y1="225" x2="340" y2="330" stroke="#0284c7" stroke-width="3"/>
       </svg>`;
 
     case 'procedure':
-      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450" width="600" height="450">
-        <rect width="600" height="450" rx="24" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="2"/>
-        <g transform="translate(50, 60)">
-          <circle cx="35" cy="35" r="28" fill="#16a34a"/>
-          <text x="35" y="43" font-family="Arial" font-size="20" font-weight="bold" fill="#ffffff" text-anchor="middle">1</text>
-          <rect x="80" y="5" width="420" height="60" rx="12" fill="#ffffff" stroke="#16a34a" stroke-width="1.5"/>
-          <text x="100" y="30" font-family="Arial" font-size="14" font-weight="bold" fill="#15803d">BƯỚC 1: CHUẨN BỊ & KHẢO SÁT</text>
-          <text x="100" y="50" font-family="Arial" font-size="12" fill="#334155">Kiểm tra dụng cụ đo kiểm, trang bị bảo hộ lao động đạt chuẩn.</text>
-        </g>
-        <g transform="translate(50, 160)">
-          <circle cx="35" cy="35" r="28" fill="#0284c7"/>
-          <text x="35" y="43" font-family="Arial" font-size="20" font-weight="bold" fill="#ffffff" text-anchor="middle">2</text>
-          <rect x="80" y="5" width="420" height="60" rx="12" fill="#ffffff" stroke="#0284c7" stroke-width="1.5"/>
-          <text x="100" y="30" font-family="Arial" font-size="14" font-weight="bold" fill="#0369a1">BƯỚC 2: THỰC HIỆN THAO TÁC KỸ THUẬT</text>
-          <text x="100" y="50" font-family="Arial" font-size="12" fill="#334155">Triển khai đúng sơ đồ, quy chuẩn kỹ thuật và giám sát thông số.</text>
-        </g>
-        <g transform="translate(50, 260)">
-          <circle cx="35" cy="35" r="28" fill="#d97706"/>
-          <text x="35" y="43" font-family="Arial" font-size="20" font-weight="bold" fill="#ffffff" text-anchor="middle">3</text>
-          <rect x="80" y="5" width="420" height="60" rx="12" fill="#ffffff" stroke="#d97706" stroke-width="1.5"/>
-          <text x="100" y="30" font-family="Arial" font-size="14" font-weight="bold" fill="#b45309">BƯỚC 3: KIỂM TRA & NGHIỆM THU</text>
-          <text x="100" y="50" font-family="Arial" font-size="12" fill="#334155">Đánh giá kết quả, thu dọn vệ sinh 5S và lưu hồ sơ kỹ thuật.</text>
-        </g>
-        <rect x="120" y="360" width="360" height="44" rx="10" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
-        <text x="300" y="388" font-family="Arial" font-size="13" font-weight="bold" fill="#b91c1c" text-anchor="middle">⚠️ NGUYÊN TẮC: TUYỆT ĐỐI TUÂN THỦ QUY TRÌNH AN TOÀN</text>
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 450" width="500" height="450">
+        <path d="M250 70 L380 120 L380 260 C380 330 250 380 250 380 C250 380 120 330 120 260 L120 120 Z" fill="#ecfdf5" stroke="#10b981" stroke-width="5"/>
+        <path d="M200 220 L235 255 L305 185" fill="none" stroke="#16a34a" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="150" cy="340" r="35" fill="#fef3c7" stroke="#f59e0b" stroke-width="4"/>
+        <path d="M140 335 L160 335 M150 325 L150 355" stroke="#d97706" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="350" cy="340" r="35" fill="#eff6ff" stroke="#3b82f6" stroke-width="4"/>
+        <circle cx="350" cy="340" r="15" fill="#3b82f6"/>
       </svg>`;
 
     case 'discussion':
-      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450" width="600" height="450">
-        <rect width="600" height="450" rx="24" fill="#f5f3ff" stroke="#ddd6fe" stroke-width="2"/>
-        <circle cx="300" cy="200" r="100" fill="#ffffff" stroke="#8b5cf6" stroke-width="3" stroke-dasharray="6 4"/>
-        <circle cx="300" cy="200" r="65" fill="#8b5cf6" opacity="0.1"/>
-        <text x="300" y="195" font-family="Arial" font-size="18" font-weight="bold" fill="#6d28d9" text-anchor="middle">HOẠT ĐỘNG</text>
-        <text x="300" y="220" font-family="Arial" font-size="14" fill="#7c3aed" text-anchor="middle">HỢP TÁC SỐ</text>
-        <g transform="translate(150, 80)">
-          <circle cx="30" cy="30" r="25" fill="#3b82f6"/>
-          <text x="30" y="36" font-family="Arial" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">N1</text>
-        </g>
-        <g transform="translate(390, 80)">
-          <circle cx="30" cy="30" r="25" fill="#10b981"/>
-          <text x="30" y="36" font-family="Arial" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">N2</text>
-        </g>
-        <g transform="translate(150, 260)">
-          <circle cx="30" cy="30" r="25" fill="#f59e0b"/>
-          <text x="30" y="36" font-family="Arial" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">N3</text>
-        </g>
-        <g transform="translate(390, 260)">
-          <circle cx="30" cy="30" r="25" fill="#ec4899"/>
-          <text x="30" y="36" font-family="Arial" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">N4</text>
-        </g>
-        <rect x="100" y="355" width="400" height="55" rx="14" fill="#ffffff" stroke="#8b5cf6" stroke-width="1.5"/>
-        <text x="300" y="388" font-family="Arial" font-size="14" font-weight="bold" fill="#5b21b6" text-anchor="middle">📱 Quét QR hoặc tương tác trên màn hình nhóm</text>
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 450" width="500" height="450">
+        <circle cx="250" cy="225" r="140" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="3" stroke-dasharray="8 6"/>
+        <circle cx="250" cy="225" r="60" fill="#ffffff" stroke="#8b5cf6" stroke-width="4"/>
+        <path d="M230 225 C230 210 270 210 270 225 L270 240 L230 240 Z" fill="#8b5cf6"/>
+        <circle cx="250" cy="205" r="12" fill="#8b5cf6"/>
+        <g transform="translate(140, 100)"><circle cx="25" cy="25" r="25" fill="#3b82f6"/></g>
+        <g transform="translate(310, 100)"><circle cx="25" cy="25" r="25" fill="#10b981"/></g>
+        <g transform="translate(140, 270)"><circle cx="25" cy="25" r="25" fill="#f59e0b"/></g>
+        <g transform="translate(310, 270)"><circle cx="25" cy="25" r="25" fill="#ec4899"/></g>
+        <path d="M190 135 L225 180 M275 180 L310 135 M190 290 L225 260 M275 260 L310 290" stroke="#a78bfa" stroke-width="3" stroke-linecap="round"/>
       </svg>`;
 
     case 'quiz':
-      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450" width="600" height="450">
-        <rect width="600" height="450" rx="24" fill="#fff7ed" stroke="#fed7aa" stroke-width="2"/>
-        <g transform="translate(60, 50)">
-          <rect width="220" height="120" rx="14" fill="#fee2e2" stroke="#ef4444" stroke-width="2"/>
-          <circle cx="40" cy="60" r="20" fill="#ef4444"/>
-          <text x="40" y="67" font-family="Arial" font-size="18" font-weight="bold" fill="#ffffff" text-anchor="middle">A</text>
-          <text x="80" y="65" font-family="Arial" font-size="15" font-weight="bold" fill="#991b1b">Lựa chọn A</text>
-        </g>
-        <g transform="translate(320, 50)">
-          <rect width="220" height="120" rx="14" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
-          <circle cx="40" cy="60" r="20" fill="#3b82f6"/>
-          <text x="40" y="67" font-family="Arial" font-size="18" font-weight="bold" fill="#ffffff" text-anchor="middle">B</text>
-          <text x="80" y="65" font-family="Arial" font-size="15" font-weight="bold" fill="#1e40af">Lựa chọn B</text>
-        </g>
-        <g transform="translate(60, 200)">
-          <rect width="220" height="120" rx="14" fill="#fef9c3" stroke="#eab308" stroke-width="2"/>
-          <circle cx="40" cy="60" r="20" fill="#eab308"/>
-          <text x="40" y="67" font-family="Arial" font-size="18" font-weight="bold" fill="#ffffff" text-anchor="middle">C</text>
-          <text x="80" y="65" font-family="Arial" font-size="15" font-weight="bold" fill="#854d0e">Lựa chọn C</text>
-        </g>
-        <g transform="translate(320, 200)">
-          <rect width="220" height="120" rx="14" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
-          <circle cx="40" cy="60" r="20" fill="#22c55e"/>
-          <text x="40" y="67" font-family="Arial" font-size="18" font-weight="bold" fill="#ffffff" text-anchor="middle">D</text>
-          <text x="80" y="65" font-family="Arial" font-size="15" font-weight="bold" fill="#166534">Lựa chọn D</text>
-        </g>
-        <rect x="130" y="350" width="340" height="50" rx="12" fill="#ffffff" stroke="#ea580c" stroke-width="2"/>
-        <text x="300" y="382" font-family="Arial" font-size="15" font-weight="bold" fill="#c2410c" text-anchor="middle">🏆 TRÒ CHƠI CỦNG CỐ TRẮC NGHIỆM</text>
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 450" width="500" height="450">
+        <circle cx="250" cy="225" r="150" fill="#fff7ed" stroke="#fed7aa" stroke-width="3"/>
+        <path d="M180 140 L320 140 L300 240 C300 280 200 280 200 240 Z" fill="#fbbf24" stroke="#d97706" stroke-width="4"/>
+        <path d="M180 160 C140 160 140 200 185 200" fill="none" stroke="#d97706" stroke-width="4"/>
+        <path d="M320 160 C360 160 360 200 315 200" fill="none" stroke="#d97706" stroke-width="4"/>
+        <rect x="235" y="270" width="30" height="40" fill="#d97706"/>
+        <rect x="200" y="310" width="100" height="25" rx="6" fill="#78350f"/>
+        <polygon points="250,165 257,185 277,185 261,197 267,217 250,205 233,217 239,197 223,185 243,185" fill="#ffffff"/>
       </svg>`;
 
     case 'summary':
     default:
-      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450" width="600" height="450">
-        <rect width="600" height="450" rx="24" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
-        <rect x="50" y="40" width="500" height="80" rx="16" fill="#0284c7"/>
-        <text x="300" y="78" font-family="Arial" font-size="18" font-weight="bold" fill="#ffffff" text-anchor="middle">TỔNG KẾT & GIAO NHIỆM VỤ TỰ HỌC</text>
-        <text x="300" y="102" font-family="Arial" font-size="13" fill="#e0f2fe" text-anchor="middle">Khắc sâu kiến thức - Vận dụng vào đời sống</text>
-        <g transform="translate(70, 150)">
-          <circle cx="20" cy="25" r="16" fill="#10b981"/>
-          <text x="20" y="31" font-family="Arial" font-size="16" fill="#ffffff" text-anchor="middle">✓</text>
-          <text x="50" y="30" font-family="Arial" font-size="14" font-weight="bold" fill="#0f172a">1. Ghi nhớ các khái niệm cốt lõi của bài học</text>
-        </g>
-        <g transform="translate(70, 210)">
-          <circle cx="20" cy="25" r="16" fill="#10b981"/>
-          <text x="20" y="31" font-family="Arial" font-size="16" fill="#ffffff" text-anchor="middle">✓</text>
-          <text x="50" y="30" font-family="Arial" font-size="14" font-weight="bold" fill="#0f172a">2. Hoàn thành bài tập trong SGK và Phiếu học tập số</text>
-        </g>
-        <g transform="translate(70, 270)">
-          <circle cx="20" cy="25" r="16" fill="#10b981"/>
-          <text x="20" y="31" font-family="Arial" font-size="16" fill="#ffffff" text-anchor="middle">✓</text>
-          <text x="50" y="30" font-family="Arial" font-size="14" font-weight="bold" fill="#0f172a">3. Đọc trước bài mới và chuẩn bị học liệu theo hướng dẫn</text>
-        </g>
-        <rect x="150" y="345" width="300" height="50" rx="25" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
-        <text x="300" y="376" font-family="Arial" font-size="15" font-weight="bold" fill="#1d4ed8" text-anchor="middle">CHÚC CÁC EM HỌC TẬP TỐT! 🎉</text>
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 450" width="500" height="450">
+        <circle cx="250" cy="225" r="150" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="3"/>
+        <path d="M250 80 C270 120 290 180 280 230 L220 230 C210 180 230 120 250 80 Z" fill="#ef4444" stroke="#b91c1c" stroke-width="3"/>
+        <circle cx="250" cy="150" r="16" fill="#ffffff" stroke="#0284c7" stroke-width="3"/>
+        <path d="M220 200 L180 230 L220 235 Z" fill="#0284c7"/>
+        <path d="M280 200 L320 230 L280 235 Z" fill="#0284c7"/>
+        <polygon points="230,235 250,290 270,235" fill="#f59e0b"/>
+        <polygon points="238,235 250,270 262,235" fill="#fef08a"/>
+        <path d="M150 110 L155 125 L170 125 L158 135 L162 150 L150 140 L138 150 L142 135 L130 125 L145 125 Z" fill="#f59e0b"/>
+        <path d="M350 110 L355 125 L370 125 L358 135 L362 150 L350 140 L338 150 L342 135 L330 125 L345 125 Z" fill="#f59e0b"/>
       </svg>`;
   }
 }
 
 /**
- * Chuyển đổi SVG thành PNG Data URL (nếu có Canvas trên trình duyệt),
- * hoặc trả về SVG Data URL dự phòng
+ * Chuyển SVG thành Data URL (PNG hoặc base64 SVG)
  */
-async function svgToDataUrl(svgString: string, width: number = 800, height: number = 600): Promise<string> {
+async function svgToDataUrl(svgString: string, width: number = 600, height: number = 450): Promise<string> {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
     return 'image/svg+xml;base64,' + Buffer.from(svgString).toString('base64');
   }
@@ -281,8 +177,7 @@ async function svgToDataUrl(svgString: string, width: number = 800, height: numb
             ctx.fillRect(0, 0, width, height);
             ctx.drawImage(img, 0, 0, width, height);
             URL.revokeObjectURL(url);
-            const dataUrl = canvas.toDataURL('image/png');
-            return resolve(dataUrl);
+            return resolve(canvas.toDataURL('image/png'));
           }
         } catch (_) {}
         URL.revokeObjectURL(url);
@@ -302,12 +197,11 @@ async function svgToDataUrl(svgString: string, width: number = 800, height: numb
 }
 
 /**
- * Nhúng hiệu ứng chuyển slide (Transitions) vào các tệp slide XML bên trong PPTX
+ * Nhúng hiệu ứng chuyển slide (Transitions) chuẩn OpenXML
  */
 async function injectSlideTransitions(rawPptxBuffer: ArrayBuffer | Uint8Array): Promise<Blob> {
   const zip = await JSZip.loadAsync(rawPptxBuffer);
 
-  // Danh mục các hiệu ứng chuyển slide chuyên nghiệp (Transitions)
   const transitions = [
     '<p:transition spd="med" advClick="1"><p:fade/></p:transition>',
     '<p:transition spd="med" advClick="1"><p:push dir="r"/></p:transition>',
@@ -335,7 +229,6 @@ async function injectSlideTransitions(rawPptxBuffer: ArrayBuffer | Uint8Array): 
     let xml = await file.async('text');
     const trans = transitions[i % transitions.length];
 
-    // Chỉ chèn nếu slide chưa có transition
     if (!xml.includes('<p:transition')) {
       if (xml.includes('</p:clrMapOvr>')) {
         xml = xml.replace('</p:clrMapOvr>', '</p:clrMapOvr>' + trans);
@@ -355,7 +248,7 @@ async function injectSlideTransitions(rawPptxBuffer: ArrayBuffer | Uint8Array): 
 }
 
 /**
- * Tạo và tải trực tiếp tệp PowerPoint (.pptx) chuẩn cho Giáo viên
+ * TẠO VÀ XUẤT BẢN FILE POWERPOINT (.PPTX) 100% VĂN BẢN CHỈNH SỬA ĐƯỢC
  */
 export async function generateAndDownloadPptx(params: {
   slides: LessonSlideItem[];
@@ -374,12 +267,10 @@ export async function generateAndDownloadPptx(params: {
     schoolName = 'Trường THPT'
   } = params;
 
-  // Import động PptxGenJS để đảm bảo tương thích tuyệt đối môi trường Next.js SSR
   const pptxgenModule = await import('pptxgenjs');
   const PptxGenJS = pptxgenModule.default || pptxgenModule;
   const pptx = new PptxGenJS();
 
-  // Định dạng màn hình rộng 16:9 hiện đại
   pptx.layout = 'LAYOUT_16x9';
   pptx.author = teacherName;
   pptx.company = schoolName;
@@ -388,272 +279,394 @@ export async function generateAndDownloadPptx(params: {
 
   const illustrationTypes = ['cover', 'objectives', 'warmup', 'theory', 'procedure', 'discussion', 'quiz', 'summary'];
 
-  // 1. DUYỆT TỪNG SLIDE ĐỂ THIẾT KẾ ĐỒ HỌA CHUYÊN NGHIỆP
   for (let i = 0; i < slides.length; i++) {
     const s = slides[i];
     const slide = pptx.addSlide();
     const type = illustrationTypes[i % illustrationTypes.length];
 
-    // Lời giảng của Giáo viên (Speaker Notes hiển thị trên chế độ Presenter)
+    // Lời giảng giáo viên (Presenter Notes)
     if (s.speakerNotes) {
       slide.addNotes(s.speakerNotes);
     }
 
-    // --- SLIDE 1: SLIDE TIÊU ĐỀ (COVER SLIDE ĐẲNG CẤP) ---
+    // =========================================================================
+    // SLIDE 1: SLIDE TIÊU ĐỀ (BÌA BÀI GIẢNG SANG TRỌNG & 100% EDITABLE TEXT)
+    // =========================================================================
     if (i === 0) {
-      slide.background = { color: '0A192F' }; // Nền xanh bóng tối sang trọng
+      slide.background = { color: '0A192F' };
 
-      // Dải màu trang trí phía trên
-      slide.addShape(pptx.ShapeType.rect, {
-        x: 0,
-        y: 0,
-        w: 10,
-        h: 0.15,
-        fill: { color: '0284C7' }
-      });
+      // Dải trang trí
+      slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 10, h: 0.15, fill: { color: '0284C7' } });
 
-      // Huy hiệu Chuyển đổi số GDPT 2018
+      // Huy hiệu GDPT 2018 (Native text editable)
       slide.addText('🌟 KẾ HOẠCH BÀI DẠY SỐ • CHUẨN GDPT 2018', {
-        x: 0.8,
-        y: 0.6,
-        w: 8.4,
-        h: 0.4,
-        fontSize: 12,
-        bold: true,
-        color: '38BDF8',
-        fontFace: 'Calibri'
+        x: 0.8, y: 0.55, w: 6.0, h: 0.35,
+        fontSize: 12, bold: true, color: '38BDF8', fontFace: 'Calibri'
       });
 
-      // Tên bài giảng lớn nổi bật
+      // Tên bài học (Native text editable lớn nổi bật)
       slide.addText(lessonTitle.toUpperCase(), {
-        x: 0.8,
-        y: 1.1,
-        w: 5.5,
-        h: 1.8,
-        fontSize: 26,
-        bold: true,
-        color: 'FFFFFF',
-        fontFace: 'Arial',
-        valign: 'top',
-        wrap: true
+        x: 0.8, y: 1.0, w: 5.6, h: 1.8,
+        fontSize: 26, bold: true, color: 'FFFFFF', fontFace: 'Arial',
+        valign: 'top', wrap: true
       });
 
-      // Thẻ thông tin Môn học & Lớp
+      // Hộp thông tin giảng dạy (Native Shape & Native Text)
       slide.addShape(pptx.ShapeType.roundRect, {
-        x: 0.8,
-        y: 3.1,
-        w: 5.4,
-        h: 1.6,
-        rectRadius: 0.15,
-        fill: { color: '1E293B' },
-        line: { color: '334155', width: 1 }
+        x: 0.8, y: 3.0, w: 5.5, h: 1.8, rectRadius: 0.15,
+        fill: { color: '1E293B' }, line: { color: '334155', width: 1.5 }
       });
 
       slide.addText([
         { text: '📚 Môn học: ', options: { bold: true, color: '38BDF8', fontSize: 13 } },
-        { text: `${subject}\\n`, options: { color: 'E2E8F0', fontSize: 13 } },
-        { text: '🏫 Đối tượng: ', options: { bold: true, color: '38BDF8', fontSize: 13 } },
-        { text: `${className} • ${schoolName}\\n`, options: { color: 'E2E8F0', fontSize: 13 } },
-        { text: '👨‍🏫 Người giảng dạy: ', options: { bold: true, color: '38BDF8', fontSize: 13 } },
-        { text: `${teacherName}`, options: { color: '34D399', fontSize: 13, bold: true } }
+        { text: `${subject}\\n`, options: { color: 'F1F5F9', fontSize: 13 } },
+        { text: '🏫 Lớp & Đơn vị: ', options: { bold: true, color: '38BDF8', fontSize: 13 } },
+        { text: `${className} • ${schoolName}\\n`, options: { color: 'F1F5F9', fontSize: 13 } },
+        { text: '👨‍🏫 Giáo viên phụ trách: ', options: { bold: true, color: '38BDF8', fontSize: 13 } },
+        { text: `${teacherName}\\n`, options: { color: '34D399', fontSize: 13, bold: true } },
+        { text: '⏱️ Thời lượng & Phân phối: ', options: { bold: true, color: '38BDF8', fontSize: 13 } },
+        { text: 'Tiết học chính khóa kết hợp chuyển đổi số', options: { color: '94A3B8', fontSize: 12 } }
       ], {
-        x: 1.0,
-        y: 3.2,
-        w: 5.0,
-        h: 1.4,
-        fontFace: 'Calibri',
-        valign: 'middle'
+        x: 1.0, y: 3.1, w: 5.1, h: 1.6, fontFace: 'Calibri', valign: 'middle'
       });
 
-      // Hình ảnh minh họa Cover bên phải
-      const svg = createSlideIllustrationSvg('cover', lessonTitle, subject);
-      const imgData = await svgToDataUrl(svg, 600, 450);
-      slide.addImage({
-        data: imgData,
-        x: 6.5,
-        y: 1.1,
-        w: 3.0,
-        h: 3.6
+      // Ảnh minh họa đồ họa thuần túy (không chứa text tĩnh)
+      const svg = createPureGraphicIllustrationSvg('cover', subject);
+      const imgData = await svgToDataUrl(svg, 500, 450);
+      slide.addImage({ data: imgData, x: 6.6, y: 1.1, w: 2.9, h: 3.6 });
+
+      continue;
+    }
+
+    // =========================================================================
+    // SLIDE 2: MỤC TIÊU BÀI HỌC CẦN ĐẠT (4 KHUNG NĂNG LỰC 100% EDITABLE TEXT)
+    // =========================================================================
+    if (i === 1) {
+      slide.background = { color: 'F8FAFC' };
+
+      // Header Banner
+      slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 10, h: 0.9, fill: { color: '0284C7' } });
+      slide.addText('MỤC TIÊU BÀI HỌC CẦN ĐẠT (CHUẨN GDPT 2018)', {
+        x: 0.8, y: 0.15, w: 8.4, h: 0.6, fontSize: 18, bold: true, color: 'FFFFFF', fontFace: 'Arial'
+      });
+
+      // 4 Thẻ mục tiêu có thể chỉnh sửa trực tiếp từng từ
+      const objCards = [
+        {
+          x: 0.6, y: 1.1, w: 4.2, h: 1.95, color: 'EFF6FF', border: '3B82F6',
+          title: '📖 1. KIẾN THỨC CỐT LÕI',
+          body: s.bulletPoints[0] || 'Nắm vững bản chất, định nghĩa và quy luật khoa học trọng tâm của bài học.'
+        },
+        {
+          x: 5.2, y: 1.1, w: 4.2, h: 1.95, color: 'ECFDF5', border: '10B981',
+          title: '⚙️ 2. KỸ NĂNG THAO TÁC',
+          body: s.bulletPoints[1] || 'Thao tác chính xác, phân tích sơ đồ và giải quyết các bài toán kỹ thuật thực tiễn.'
+        },
+        {
+          x: 0.6, y: 3.2, w: 4.2, h: 1.95, color: 'FEFCE8', border: 'F59E0B',
+          title: '⭐ 3. PHẨM CHẤT NGHỀ NGHIỆP',
+          body: s.bulletPoints[3] || s.bulletPoints[2] || 'Rèn luyện tính cẩn thận, kỷ luật lao động và tuân thủ an toàn tuyệt đối.'
+        },
+        {
+          x: 5.2, y: 3.2, w: 4.2, h: 1.95, color: 'F5F3FF', border: '8B5CF6',
+          title: '💻 4. NĂNG LỰC SỐ HÓA',
+          body: s.bulletPoints[2] || 'Khai thác tài nguyên số, sử dụng thiết bị tương tác và tra cứu thông tin trực tuyến.'
+        }
+      ];
+
+      for (const c of objCards) {
+        slide.addShape(pptx.ShapeType.roundRect, {
+          x: c.x, y: c.y, w: c.w, h: c.h, rectRadius: 0.12,
+          fill: { color: c.color }, line: { color: c.border, width: 1.5 }
+        });
+        slide.addText(c.title, {
+          x: c.x + 0.2, y: c.y + 0.15, w: c.w - 0.4, h: 0.35,
+          fontSize: 13, bold: true, color: '0F172A', fontFace: 'Arial'
+        });
+        slide.addText(c.body, {
+          x: c.x + 0.2, y: c.y + 0.55, w: c.w - 0.4, h: c.h - 0.7,
+          fontSize: 12, color: '334155', fontFace: 'Calibri', valign: 'top', wrap: true
+        });
+      }
+
+      // Footer
+      slide.addShape(pptx.ShapeType.rect, { x: 0, y: 5.25, w: 10, h: 0.375, fill: { color: 'F1F5F9' }, line: { color: 'E2E8F0', width: 1 } });
+      slide.addText(`📖 ${subject} - ${lessonTitle} | ${className} | Văn bản chỉnh sửa được 100%`, {
+        x: 0.5, y: 5.25, w: 8.0, h: 0.375, fontSize: 9.5, color: '64748B', valign: 'middle', fontFace: 'Calibri'
+      });
+      slide.addText(`Trang ${s.slideNumber}/${slides.length}`, {
+        x: 8.5, y: 5.25, w: 1.0, h: 0.375, fontSize: 9.5, bold: true, color: '0284C7', align: 'right', valign: 'middle', fontFace: 'Calibri'
       });
 
       continue;
     }
 
-    // --- CÁC SLIDE NỘI DUNG (SLIDE 2 ĐẾN N) ---
+    // =========================================================================
+    // SLIDE 5: QUY TRÌNH THỰC HÀNH / THAO TÁC (3 BƯỚC NATIVE EDITABLE TEXT)
+    // =========================================================================
+    if (i === 4) {
+      slide.background = { color: 'F8FAFC' };
+
+      slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 10, h: 0.9, fill: { color: '0284C7' } });
+      slide.addText(s.title.toUpperCase(), {
+        x: 0.8, y: 0.15, w: 8.4, h: 0.6, fontSize: 17, bold: true, color: 'FFFFFF', fontFace: 'Arial'
+      });
+
+      // 3 Bước thực hành dạng Native Cards
+      const stepCards = [
+        {
+          num: '1', title: 'BƯỚC 1: CHUẨN BỊ & KHẢO SÁT',
+          color: 'F0FDF4', border: '16A34A', tagColor: '16A34A',
+          body: s.bulletPoints[0] || 'Kiểm tra dụng cụ đo kiểm, trang bị bảo hộ lao động đạt chuẩn.'
+        },
+        {
+          num: '2', title: 'BƯỚC 2: TRIỂN KHAI THAO TÁC KỸ THUẬT',
+          color: 'F0F9FF', border: '0284C7', tagColor: '0284C7',
+          body: s.bulletPoints[1] || 'Triển khai đúng sơ đồ nguyên lý, quy chuẩn kỹ thuật và giám sát thông số.'
+        },
+        {
+          num: '3', title: 'BƯỚC 3: KIỂM TRA, NGHIỆM THU & 5S',
+          color: 'FFFBEB', border: 'D97706', tagColor: 'D97706',
+          body: s.bulletPoints[2] || 'Đánh giá kết quả đạt được, thu dọn vệ sinh công nghiệp 5S an toàn.'
+        }
+      ];
+
+      for (let idx = 0; idx < stepCards.length; idx++) {
+        const sc = stepCards[idx];
+        const yPos = 1.1 + idx * 1.05;
+
+        // Thẻ nền
+        slide.addShape(pptx.ShapeType.roundRect, {
+          x: 0.6, y: yPos, w: 6.2, h: 0.95, rectRadius: 0.1,
+          fill: { color: sc.color }, line: { color: sc.border, width: 1.5 }
+        });
+
+        // Vòng tròn số bước
+        slide.addShape(pptx.ShapeType.ellipse, {
+          x: 0.8, y: yPos + 0.18, w: 0.6, h: 0.6,
+          fill: { color: sc.tagColor }
+        });
+        slide.addText(sc.num, {
+          x: 0.8, y: yPos + 0.18, w: 0.6, h: 0.6,
+          fontSize: 14, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle'
+        });
+
+        // Tiêu đề & nội dung bước (Native Text)
+        slide.addText(sc.title, {
+          x: 1.55, y: yPos + 0.1, w: 5.1, h: 0.3,
+          fontSize: 12.5, bold: true, color: '0F172A', fontFace: 'Arial'
+        });
+        slide.addText(sc.body, {
+          x: 1.55, y: yPos + 0.42, w: 5.1, h: 0.45,
+          fontSize: 11.5, color: '334155', fontFace: 'Calibri', wrap: true
+        });
+      }
+
+      // Hộp cảnh báo an toàn ở dưới (Native Text)
+      slide.addShape(pptx.ShapeType.roundRect, {
+        x: 0.6, y: 4.35, w: 6.2, h: 0.75, rectRadius: 0.1,
+        fill: { color: 'FEF2F2' }, line: { color: 'EF4444', width: 1.5 }
+      });
+      slide.addText('⚠️ NGUYÊN TẮC AN TOÀN BẮT BUỘC:', {
+        x: 0.8, y: 4.4, w: 5.8, h: 0.28,
+        fontSize: 11, bold: true, color: 'B91C1C', fontFace: 'Arial'
+      });
+      slide.addText(s.bulletPoints[3] || 'Tuyệt đối tuân thủ quy chuẩn an toàn lao động và đeo đầy đủ trang bị bảo hộ.', {
+        x: 0.8, y: 4.68, w: 5.8, h: 0.38,
+        fontSize: 10.5, color: '7F1D1D', fontFace: 'Calibri', wrap: true
+      });
+
+      // Ảnh minh họa đồ họa bên phải
+      const svg = createPureGraphicIllustrationSvg('procedure', subject);
+      const imgData = await svgToDataUrl(svg, 500, 450);
+      slide.addImage({ data: imgData, x: 7.1, y: 1.2, w: 2.4, h: 3.8 });
+
+      // Footer
+      slide.addShape(pptx.ShapeType.rect, { x: 0, y: 5.25, w: 10, h: 0.375, fill: { color: 'F1F5F9' }, line: { color: 'E2E8F0', width: 1 } });
+      slide.addText(`📖 ${subject} - ${lessonTitle} | ${className} | Văn bản chỉnh sửa được 100%`, {
+        x: 0.5, y: 5.25, w: 8.0, h: 0.375, fontSize: 9.5, color: '64748B', valign: 'middle', fontFace: 'Calibri'
+      });
+      slide.addText(`Trang ${s.slideNumber}/${slides.length}`, {
+        x: 8.5, y: 5.25, w: 1.0, h: 0.375, fontSize: 9.5, bold: true, color: '0284C7', align: 'right', valign: 'middle', fontFace: 'Calibri'
+      });
+
+      continue;
+    }
+
+    // =========================================================================
+    // SLIDE 7: CÂU HỎI TRẮC NGHIỆM CỦNG CỐ (4 Ô A, B, C, D 100% EDITABLE TEXT)
+    // =========================================================================
+    if (i === 6) {
+      slide.background = { color: 'F8FAFC' };
+
+      slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 10, h: 0.9, fill: { color: '0284C7' } });
+      slide.addText('HOẠT ĐỘNG 4: CÂU HỎI TRẮC NGHIỆM CỦNG CỐ', {
+        x: 0.8, y: 0.15, w: 8.4, h: 0.6, fontSize: 17, bold: true, color: 'FFFFFF', fontFace: 'Arial'
+      });
+
+      // Khung câu hỏi (Native Text)
+      slide.addShape(pptx.ShapeType.roundRect, {
+        x: 0.6, y: 1.1, w: 6.2, h: 1.2, rectRadius: 0.12,
+        fill: { color: 'FFFFFF' }, line: { color: '0284C7', width: 1.5 }
+      });
+      slide.addText('❓ CÂU HỎI KIỂM TRA ĐỘ HIỂU BÀI:', {
+        x: 0.8, y: 1.2, w: 5.8, h: 0.28,
+        fontSize: 11, bold: true, color: '0369A1', fontFace: 'Arial'
+      });
+      slide.addText(s.bulletPoints[0] || `Khẳng định nào sau đây là đúng nhất khi nói về nội dung bài học '${lessonTitle}'?`, {
+        x: 0.8, y: 1.5, w: 5.8, h: 0.7,
+        fontSize: 12.5, bold: true, color: '0F172A', fontFace: 'Calibri', wrap: true
+      });
+
+      // 4 Lựa chọn A, B, C, D (Native Shapes & Native Text)
+      const options = [
+        { label: 'A', text: s.bulletPoints[1] || 'Phương án A: Khái niệm và đặc điểm kỹ thuật cơ bản', bg: 'FEE2E2', border: 'EF4444', textColor: '991B1B' },
+        { label: 'B', text: s.bulletPoints[2] || 'Phương án B: Quy trình vận hành và tiêu chuẩn an toàn', bg: 'DBEAFE', border: '3B82F6', textColor: '1E40AF' },
+        { label: 'C', text: s.bulletPoints[3] || 'Phương án C: Ứng dụng thực tiễn trong hệ thống công nghiệp', bg: 'FEF9C3', border: 'EAB308', textColor: '854D0E' },
+        { label: 'D', text: s.bulletPoints[4] || 'Phương án D: Cả 3 phương án trên đều đúng', bg: 'DCFCE7', border: '22C55E', textColor: '166534' }
+      ];
+
+      for (let optIdx = 0; optIdx < options.length; optIdx++) {
+        const opt = options[optIdx];
+        const col = optIdx % 2;
+        const row = Math.floor(optIdx / 2);
+        const xPos = 0.6 + col * 3.15;
+        const yPos = 2.45 + row * 1.35;
+
+        slide.addShape(pptx.ShapeType.roundRect, {
+          x: xPos, y: yPos, w: 3.05, h: 1.25, rectRadius: 0.1,
+          fill: { color: opt.bg }, line: { color: opt.border, width: 1.5 }
+        });
+
+        // Huy hiệu chữ cái A, B, C, D
+        slide.addShape(pptx.ShapeType.ellipse, {
+          x: xPos + 0.15, y: yPos + 0.15, w: 0.45, h: 0.45,
+          fill: { color: opt.border }
+        });
+        slide.addText(opt.label, {
+          x: xPos + 0.15, y: yPos + 0.15, w: 0.45, h: 0.45,
+          fontSize: 12, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle'
+        });
+
+        // Nội dung lựa chọn (Native Text)
+        slide.addText(opt.text, {
+          x: xPos + 0.7, y: yPos + 0.15, w: 2.2, h: 0.95,
+          fontSize: 11.5, color: opt.textColor, fontFace: 'Calibri', valign: 'top', wrap: true
+        });
+      }
+
+      // Ảnh minh họa cúp / quiz bên phải
+      const svg = createPureGraphicIllustrationSvg('quiz', subject);
+      const imgData = await svgToDataUrl(svg, 500, 450);
+      slide.addImage({ data: imgData, x: 7.1, y: 1.2, w: 2.4, h: 3.8 });
+
+      // Footer
+      slide.addShape(pptx.ShapeType.rect, { x: 0, y: 5.25, w: 10, h: 0.375, fill: { color: 'F1F5F9' }, line: { color: 'E2E8F0', width: 1 } });
+      slide.addText(`📖 ${subject} - ${lessonTitle} | ${className} | Văn bản chỉnh sửa được 100%`, {
+        x: 0.5, y: 5.25, w: 8.0, h: 0.375, fontSize: 9.5, color: '64748B', valign: 'middle', fontFace: 'Calibri'
+      });
+      slide.addText(`Trang ${s.slideNumber}/${slides.length}`, {
+        x: 8.5, y: 5.25, w: 1.0, h: 0.375, fontSize: 9.5, bold: true, color: '0284C7', align: 'right', valign: 'middle', fontFace: 'Calibri'
+      });
+
+      continue;
+    }
+
+    // =========================================================================
+    // CÁC SLIDE CÒN LẠI (SLIDE 3, 4, 6, 8): BỐ CỤC 2 CỘT CHUẨN NATIVE TEXT
+    // =========================================================================
     slide.background = { color: 'F8FAFC' };
 
-    // Thanh tiêu đề phía trên (Header Banner)
-    slide.addShape(pptx.ShapeType.rect, {
-      x: 0,
-      y: 0,
-      w: 10,
-      h: 0.95,
-      fill: { color: '0284C7' }
-    });
+    // Thanh tiêu đề phía trên
+    slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 10, h: 0.95, fill: { color: '0284C7' } });
 
-    // Huy hiệu số thứ tự Slide
+    // Huy hiệu số slide
     slide.addShape(pptx.ShapeType.roundRect, {
-      x: 0.5,
-      y: 0.2,
-      w: 1.1,
-      h: 0.55,
-      rectRadius: 0.1,
-      fill: { color: '0369A1' },
-      line: { color: '38BDF8', width: 1 }
+      x: 0.5, y: 0.2, w: 1.1, h: 0.55, rectRadius: 0.1,
+      fill: { color: '0369A1' }, line: { color: '38BDF8', width: 1 }
     });
     slide.addText(`SLIDE ${s.slideNumber}`, {
-      x: 0.5,
-      y: 0.2,
-      w: 1.1,
-      h: 0.55,
-      fontSize: 11,
-      bold: true,
-      color: 'FFFFFF',
-      align: 'center',
-      valign: 'middle',
-      fontFace: 'Arial'
+      x: 0.5, y: 0.2, w: 1.1, h: 0.55,
+      fontSize: 11, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle', fontFace: 'Arial'
     });
 
-    // Tiêu đề Slide
+    // Tiêu đề Slide (Native Text)
     slide.addText(s.title.toUpperCase(), {
-      x: 1.75,
-      y: 0.15,
-      w: 7.8,
-      h: 0.65,
-      fontSize: 17,
-      bold: true,
-      color: 'FFFFFF',
-      valign: 'middle',
-      fontFace: 'Arial'
+      x: 1.75, y: 0.15, w: 7.8, h: 0.65,
+      fontSize: 17, bold: true, color: 'FFFFFF', valign: 'middle', fontFace: 'Arial'
     });
 
-    // Khung nội dung chính bên trái
+    // Khung nội dung chính bên trái (Native Shape)
     slide.addShape(pptx.ShapeType.roundRect, {
-      x: 0.5,
-      y: 1.15,
-      w: 5.5,
-      h: 3.8,
-      rectRadius: 0.15,
-      fill: { color: 'FFFFFF' },
-      line: { color: 'E2E8F0', width: 1.5 }
+      x: 0.5, y: 1.15, w: 5.8, h: 3.8, rectRadius: 0.15,
+      fill: { color: 'FFFFFF' }, line: { color: 'E2E8F0', width: 1.5 }
     });
 
-    // Tiêu đề nội dung chiếu
+    // Nhãn hướng dẫn (Native Text)
     slide.addText('📌 NỘI DUNG TRÌNH CHIẾU TRỌNG TÂM:', {
-      x: 0.7,
-      y: 1.25,
-      w: 5.1,
-      h: 0.35,
-      fontSize: 12,
-      bold: true,
-      color: '0369A1',
-      fontFace: 'Calibri'
+      x: 0.7, y: 1.25, w: 5.4, h: 0.35,
+      fontSize: 12, bold: true, color: '0369A1', fontFace: 'Calibri'
     });
 
-    // Các gạch đầu dòng bài học
+    // Các gạch đầu dòng (100% Native Editable Text Items)
     const bulletItems = s.bulletPoints.map(bp => ({
       text: bp + '\\n',
       options: {
-        fontSize: 12.5,
+        fontSize: 13,
         color: '1E293B',
         fontFace: 'Calibri',
         bullet: { code: '2022' },
-        spaceAfter: 8
+        spaceAfter: 10
       }
     }));
 
     slide.addText(bulletItems, {
-      x: 0.8,
-      y: 1.65,
-      w: 5.0,
-      h: 3.1,
-      valign: 'top',
-      wrap: true
+      x: 0.8, y: 1.65, w: 5.3, h: 3.1,
+      valign: 'top', wrap: true
     });
 
-    // Khung hình ảnh minh họa bên phải
+    // Khung hình ảnh minh họa bên phải (Native Shape)
     slide.addShape(pptx.ShapeType.roundRect, {
-      x: 6.2,
-      y: 1.15,
-      w: 3.3,
-      h: 3.8,
-      rectRadius: 0.15,
-      fill: { color: 'FFFFFF' },
-      line: { color: '38BDF8', width: 1.5 }
+      x: 6.5, y: 1.15, w: 3.0, h: 3.8, rectRadius: 0.15,
+      fill: { color: 'FFFFFF' }, line: { color: '38BDF8', width: 1.5 }
     });
 
-    // Ảnh minh họa trực quan
-    const svg = createSlideIllustrationSvg(type, s.title, subject);
-    const imgData = await svgToDataUrl(svg, 600, 450);
+    // Ảnh minh họa vector thuần túy (không chứa text tĩnh)
+    const svg = createPureGraphicIllustrationSvg(type, subject);
+    const imgData = await svgToDataUrl(svg, 500, 450);
     slide.addImage({
       data: imgData,
-      x: 6.3,
-      y: 1.25,
-      w: 3.1,
-      h: 2.7
+      x: 6.6, y: 1.25, w: 2.8, h: 2.4
     });
 
-    // Chú thích hình ảnh & Gợi ý sư phạm bên dưới ảnh
+    // Hộp ghi chú sư phạm bên dưới ảnh (Native Text editable)
     slide.addShape(pptx.ShapeType.roundRect, {
-      x: 6.3,
-      y: 4.05,
-      w: 3.1,
-      h: 0.8,
-      rectRadius: 0.1,
-      fill: { color: 'F0F9FF' },
-      line: { color: 'BAE6FD', width: 1 }
+      x: 6.6, y: 3.75, w: 2.8, h: 1.1, rectRadius: 0.1,
+      fill: { color: 'F0F9FF' }, line: { color: 'BAE6FD', width: 1 }
     });
     slide.addText([
-      { text: '💡 Minh họa trực quan: ', options: { bold: true, color: '0284C7', fontSize: 10 } },
-      { text: s.visualSuggestion ? s.visualSuggestion.slice(0, 80) : 'Sơ đồ & dữ liệu hỗ trợ tư duy học sinh.', options: { color: '0369A1', fontSize: 9.5 } }
+      { text: '💡 Ghi chú sư phạm: ', options: { bold: true, color: '0284C7', fontSize: 10 } },
+      { text: s.visualSuggestion || 'Hình ảnh trực quan hóa khái niệm, hỗ trợ học sinh tư duy.', options: { color: '0369A1', fontSize: 9.5 } }
     ], {
-      x: 6.4,
-      y: 4.1,
-      w: 2.9,
-      h: 0.7,
-      fontFace: 'Calibri',
-      valign: 'middle',
-      wrap: true
+      x: 6.7, y: 3.8, w: 2.6, h: 1.0,
+      fontFace: 'Calibri', valign: 'middle', wrap: true
     });
 
     // Chân trang (Footer)
-    slide.addShape(pptx.ShapeType.rect, {
-      x: 0,
-      y: 5.25,
-      w: 10,
-      h: 0.375,
-      fill: { color: 'F1F5F9' },
-      line: { color: 'E2E8F0', width: 1 }
-    });
-    slide.addText(`📖 ${subject} - ${lessonTitle} | ${className} | Hiệu ứng chuyển slide tự động kích hoạt`, {
-      x: 0.5,
-      y: 5.25,
-      w: 8.0,
-      h: 0.375,
-      fontSize: 9.5,
-      color: '64748B',
-      valign: 'middle',
-      fontFace: 'Calibri'
+    slide.addShape(pptx.ShapeType.rect, { x: 0, y: 5.25, w: 10, h: 0.375, fill: { color: 'F1F5F9' }, line: { color: 'E2E8F0', width: 1 } });
+    slide.addText(`📖 ${subject} - ${lessonTitle} | ${className} | Văn bản chỉnh sửa được 100%`, {
+      x: 0.5, y: 5.25, w: 8.0, h: 0.375, fontSize: 9.5, color: '64748B', valign: 'middle', fontFace: 'Calibri'
     });
     slide.addText(`Trang ${s.slideNumber}/${slides.length}`, {
-      x: 8.5,
-      y: 5.25,
-      w: 1.0,
-      h: 0.375,
-      fontSize: 9.5,
-      bold: true,
-      color: '0284C7',
-      align: 'right',
-      valign: 'middle',
-      fontFace: 'Calibri'
+      x: 8.5, y: 5.25, w: 1.0, h: 0.375, fontSize: 9.5, bold: true, color: '0284C7', align: 'right', valign: 'middle', fontFace: 'Calibri'
     });
   }
 
-  // 2. XUẤT RA DỮ LIỆU THÔ VÀ BỔ SUNG HIỆU ỨNG TRANSITIONS BẰNG JSZIP
+  // Xuất file và nhúng Transition
   const rawPptx = await pptx.write({ outputType: 'arraybuffer' });
   const finalBlob = await injectSlideTransitions(rawPptx as ArrayBuffer);
 
-  // 3. KÍCH HOẠT TẢI XUỐNG TRÌNH DUYỆT
+  // Kích hoạt tải về
   const cleanFileName = `Slide_${lessonTitle.replace(/[^a-zA-Z0-9\u00C0-\u1EF9]/g, '_')}.pptx`;
   const blobUrl = URL.createObjectURL(finalBlob);
   const a = document.createElement('a');

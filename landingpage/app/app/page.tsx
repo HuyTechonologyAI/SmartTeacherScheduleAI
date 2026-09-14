@@ -26,7 +26,7 @@ export function recordDeletedEventIds(ids: (string | number)[]): void {
   }
 }
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import EcosystemMegaBar from '@/components/EcosystemMegaBar';
 import Link from 'next/link';
 import TodayCommandCenter from '@/components/dashboard/TodayCommandCenter';
@@ -81,6 +81,12 @@ import { InteractiveMindMap } from './InteractiveMindMap';
 import { InteractiveMiniGame } from './InteractiveMiniGame';
 import { AutomatedPaymentModal } from './AutomatedPaymentModal';
 import { extractPedagogicalKnowledge, PedagogicalKnowledge } from './deepRagPedagogicalParser';
+import {
+  fetchHuyTechHubResources,
+  syncDocumentToHuyTechHub,
+  HuyTechHubResource,
+  EcosystemSyncResult
+} from '@/lib/ecosystemResources';
 import { isTestData, cleanAllTestData, countTestData } from './testDataSanitizer';
 import {
   KnowledgeDocument,
@@ -606,7 +612,10 @@ export default function UnifiedTeacherScheduleApp() {
   const [aiSubTab, setAiSubTab] = useState<'planner' | 'exam' | 'chat' | 'knowledge'>('planner');
   const [knowledgeDocs, setKnowledgeDocs] = useState<KnowledgeDocument[]>([]);
   const [kbSearch, setKbSearch] = useState('');
-  const [kbFilter, setKbFilter] = useState<'ALL' | 'GIAO_TRINH' | 'DE_CUONG' | 'PHAP_QUY' | 'ATLD_5S' | 'CUSTOM'>('ALL');
+  const [kbFilter, setKbFilter] = useState<'ALL' | 'GIAO_TRINH' | 'DE_CUONG' | 'PHAP_QUY' | 'ATLD_5S' | 'CUSTOM' | 'HUYTECH_HUB'>('ALL');
+  const [hubResources, setHubResources] = useState<HuyTechHubResource[]>([]);
+  const [isSyncingHub, setIsSyncingHub] = useState<boolean>(false);
+  const [isHubConnected, setIsHubConnected] = useState<boolean>(true);
   const [kbViewingDoc, setKbViewingDoc] = useState<KnowledgeDocument | null>(null);
   const [kbShowAddModal, setKbShowAddModal] = useState(false);
   const [kbNewTitle, setKbNewTitle] = useState('');
@@ -620,6 +629,25 @@ export default function UnifiedTeacherScheduleApp() {
   const [kbAttachedFileType, setKbAttachedFileType] = useState('');
   const [kbAttachedFileData, setKbAttachedFileData] = useState('');
   const [kbIsExtracting, setKbIsExtracting] = useState(false);
+
+  const loadHubResources = useCallback(async () => {
+    try {
+      setIsSyncingHub(true);
+      const { connected, resources } = await fetchHuyTechHubResources();
+      setIsHubConnected(connected);
+      if (resources && resources.length > 0) {
+        setHubResources(resources);
+      }
+    } catch (e) {
+      console.warn('Lỗi nạp tài liệu từ huycncdsai.io.vn:', e);
+    } finally {
+      setIsSyncingHub(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadHubResources();
+  }, [loadHubResources]);
 
   // Edit / Update Knowledge Document States
   const [kbEditingDoc, setKbEditingDoc] = useState<KnowledgeDocument | null>(null);
@@ -5963,14 +5991,56 @@ export default function UnifiedTeacherScheduleApp() {
                 {/* Filters & Search */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-3.5 shadow-sm">
                   <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 text-xs">
-                    {(['ALL', 'GIAO_TRINH', 'DE_CUONG', 'PHAP_QUY', 'ATLD_5S', 'CUSTOM'] as const).map((cat) => {
+                    {/* Huy Technology Hub Sync & Anti-Duplicate Connection Banner */}
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-indigo-950/60 via-slate-900/70 to-teal-950/50 border border-indigo-500/30 shadow-sm text-xs">
+                  <div className="flex items-center gap-2.5">
+                    <span className={`w-2.5 h-2.5 rounded-full ${isHubConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                    <span className="font-bold text-slate-800 dark:text-slate-100">
+                      🔗 Liên kết trực tiếp Kho Tài Liệu Hệ Sinh Thái:
+                    </span>
+                    <a
+                      href="https://huycncdsai.io.vn/resources"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-indigo-600 dark:text-indigo-400 hover:underline font-bold inline-flex items-center gap-1"
+                      title="Xem kho tài liệu trực tiếp trên huycncdsai.io.vn"
+                    >
+                      <span>huycncdsai.io.vn/resources</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold text-[10px] border border-emerald-500/30">
+                      🛡️ Bộ lọc chống trùng lặp: ĐANG BẬT
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => loadHubResources()}
+                      disabled={isSyncingHub}
+                      className="px-3 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] flex items-center gap-1.5 transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                      title="Kiểm tra và đồng bộ lại danh sách tài liệu từ huycncdsai.io.vn"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${isSyncingHub ? 'animate-spin' : ''}`} />
+                      <span>{isSyncingHub ? 'Đang đồng bộ...' : 'Đồng bộ lại'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filters & Search */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-3.5 shadow-sm">
+                  <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 text-xs">
+                    {(['ALL', 'GIAO_TRINH', 'DE_CUONG', 'PHAP_QUY', 'ATLD_5S', 'CUSTOM', 'HUYTECH_HUB'] as const).map((cat) => {
                       const labels = {
                         ALL: 'Tất cả (' + knowledgeDocs.length + ')',
                         GIAO_TRINH: 'Giáo trình (' + knowledgeDocs.filter(d => d.category === 'GIAO_TRINH').length + ')',
                         DE_CUONG: 'Đề cương (' + knowledgeDocs.filter(d => d.category === 'DE_CUONG').length + ')',
                         PHAP_QUY: 'Pháp quy BGDĐT & GDNN',
                         ATLD_5S: 'ATLĐ & 5S Xưởng',
-                        CUSTOM: 'Tài liệu Thầy/Cô nạp (' + knowledgeDocs.filter(d => !d.isBuiltIn).length + ')'
+                        CUSTOM: 'Tài liệu Thầy/Cô nạp (' + knowledgeDocs.filter(d => !d.isBuiltIn).length + ')',
+                        HUYTECH_HUB: '🏢 Kho huycncdsai.io.vn (' + hubResources.length + ')'
                       };
                       const isSel = kbFilter === cat;
                       return (
@@ -6004,7 +6074,85 @@ export default function UnifiedTeacherScheduleApp() {
 
                 {/* Document List */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {knowledgeDocs
+                  {kbFilter === 'HUYTECH_HUB' ? (
+                    hubResources.map((hubDoc) => (
+                      <div
+                        key={hubDoc.id}
+                        className="p-4 rounded-2xl border bg-white dark:bg-slate-800/80 border-indigo-200/80 dark:border-indigo-800/60 shadow-sm space-y-3.5 transition-all"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-1.5 flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30">
+                                🏢 HUY TECHNOLOGY HUB
+                              </span>
+                              <span className="text-xs font-mono font-bold text-teal-600 dark:text-teal-400">
+                                {hubDoc.type || 'PDF'}
+                              </span>
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                                Đang hoạt động
+                              </span>
+                            </div>
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
+                              {hubDoc.title}
+                            </h3>
+                            {hubDoc.description && (
+                              <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2">
+                                {hubDoc.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-700/60 flex-wrap gap-2">
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                            Kho lưu trữ: <strong className="text-indigo-600 dark:text-indigo-400">huycncdsai.io.vn</strong>
+                          </span>
+                          <div className="flex items-center gap-2">
+                            {hubDoc.link && (
+                              <a
+                                href={hubDoc.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                <span>Mở tài liệu</span>
+                              </a>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const importedDoc: KnowledgeDocument = {
+                                  id: 'hub-' + hubDoc.id,
+                                  code: 'HUB_' + hubDoc.id,
+                                  title: hubDoc.title,
+                                  category: 'ATLD_5S',
+                                  subject: 'ALL',
+                                  targetLevel: 'ALL',
+                                  content: `TÀI LIỆU TỪ KHO HUY TECHNOLOGY HUB (huycncdsai.io.vn)\n\n• Tên tài liệu: ${hubDoc.title}\n• Nội dung mô tả: ${hubDoc.description || 'Tài liệu đào tạo thực chiến từ huycncdsai.io.vn'}\n• Định dạng tệp: ${hubDoc.type || 'PDF'}\n• Liên kết gốc: ${hubDoc.link || 'https://huycncdsai.io.vn/resources'}\n\nTài liệu này đã được đồng bộ trực tiếp từ hệ sinh thái Huy Technology AI Hub.`,
+                                  isBuiltIn: false,
+                                  isActive: true,
+                                  createdAt: hubDoc.created_at || new Date().toISOString(),
+                                  syncedToHub: true,
+                                  isDuplicateOnHub: true,
+                                  hubResourceId: hubDoc.id,
+                                  hubLink: hubDoc.link
+                                };
+                                saveKnowledgeDocument(importedDoc);
+                                refreshKnowledgeDocs();
+                                alert(`🎉 Đã nhập tài liệu '${hubDoc.title}' từ huycncdsai.io.vn vào kho tư liệu của Thầy/Cô thành công!`);
+                              }}
+                              className="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer border border-emerald-500/30"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>Nhập vào EduViet</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : knowledgeDocs
                     .filter((doc) => {
                       if (kbFilter === 'GIAO_TRINH' && doc.category !== 'GIAO_TRINH') return false;
                       if (kbFilter === 'DE_CUONG' && doc.category !== 'DE_CUONG') return false;
@@ -6045,6 +6193,16 @@ export default function UnifiedTeacherScheduleApp() {
                               <span className="text-xs font-mono font-bold text-emerald-400">
                                 {doc.code}
                               </span>
+                              {doc.syncedToHub && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30" title="Đã đồng bộ sang kho tài liệu huycncdsai.io.vn">
+                                  <span>🏢 huycncdsai.io.vn: Đã đồng bộ</span>
+                                </span>
+                              )}
+                              {doc.isDuplicateOnHub && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30" title="Tài liệu đã có trên huycncdsai.io.vn - Bộ lọc tự động bỏ qua để tránh trùng lặp">
+                                  <span>🛡️ Đã có trên huycncdsai.io.vn (Tránh trùng)</span>
+                                </span>
+                              )}
                             </div>
                             <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
                               {doc.title}
@@ -6574,8 +6732,8 @@ export default function UnifiedTeacherScheduleApp() {
                             if (savedOk) {
                               refreshKnowledgeDocs();
                               pushToCloud(events, schedules, syncCode, false);
-                              setKbFilter('ALL'); // Reset filter to ALL so document is immediately displayed!
-                              setKbSearch('');    // Clear any search term
+                              setKbFilter('ALL');
+                              setKbSearch('');
                               setKbShowAddModal(false);
                               setKbNewTitle('');
                               setKbNewCode('');
@@ -6584,7 +6742,35 @@ export default function UnifiedTeacherScheduleApp() {
                               setKbAttachedFileSize(0);
                               setKbAttachedFileType('');
                               setKbAttachedFileData('');
-                              alert('Đã lưu thành công tài liệu vào kho tư liệu đối chiếu chuẩn của AI!');
+
+                              // KÍCH HOẠT BỘ LỌC ĐỐI CHIẾU & ĐỒNG BỘ VỚI HUYCNCDSAI.IO.VN
+                              syncDocumentToHuyTechHub({
+                                title: newDoc.title,
+                                description: newDoc.content ? newDoc.content.slice(0, 300) : ('Tài liệu: ' + (newDoc.fileName || newDoc.title)),
+                                code: newDoc.code,
+                                fileName: newDoc.fileName,
+                                fileType: newDoc.fileType,
+                                author: teacherProfile.fullName || 'Giáo viên',
+                                category: newDoc.category
+                              }).then((syncRes) => {
+                                if (syncRes.isDuplicate) {
+                                  newDoc.isDuplicateOnHub = true;
+                                  newDoc.syncedToHub = false;
+                                  newDoc.hubSyncMessage = syncRes.message;
+                                  saveKnowledgeDocument(newDoc);
+                                  refreshKnowledgeDocs();
+                                  alert(`🛡️ BỘ LỌC CHỐNG TRÙNG LẶP HUYCNCDSAI.IO.VN:\n\n${syncRes.message}\n\nTài liệu đã được lưu an toàn trong kho của Thầy/Cô mà không bị nhân bản thừa sang huycncdsai.io.vn.`);
+                                } else if (syncRes.synced) {
+                                  newDoc.syncedToHub = true;
+                                  newDoc.isDuplicateOnHub = false;
+                                  newDoc.hubSyncMessage = syncRes.message;
+                                  saveKnowledgeDocument(newDoc);
+                                  refreshKnowledgeDocs();
+                                  alert(`🎉 ĐÃ LƯU & ĐỒNG BỘ THÀNH CÔNG!\n\n${syncRes.message}\n\nTài liệu đã được chia sẻ và liên kết an toàn sang Kho tài liệu huycncdsai.io.vn.`);
+                                }
+                              }).catch((e) => {
+                                console.warn('Lỗi kiểm tra trùng lặp hệ sinh thái:', e);
+                              });
                             } else {
                               alert('Lỗi: Bộ nhớ trình duyệt không thể lưu tài liệu! Vui lòng thử lại.');
                             }

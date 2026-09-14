@@ -18,6 +18,12 @@ export interface KnowledgeDocument {
   fileType?: string;
   fileData?: string;
   updatedAt?: number;
+  syncedToHub?: boolean;
+  isDuplicateOnHub?: boolean;
+  hubSyncStatus?: 'SYNCED' | 'DUPLICATE_SKIPPED' | 'PENDING';
+  hubSyncMessage?: string;
+  hubResourceId?: string | number;
+  hubLink?: string;
 }
 
 export const BUILT_IN_KNOWLEDGE_DOCUMENTS: KnowledgeDocument[] = [

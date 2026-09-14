@@ -49,6 +49,8 @@ export interface ExtractedLessonKnowledge {
   rawContextSnippet: string;
 }
 
+import { findCurriculumKnowledge } from './curriculumKnowledgeBase';
+
 /**
  * Chuẩn hóa và làm sạch văn bản thô từ tài liệu
  */
@@ -58,6 +60,13 @@ export function cleanRawDocumentText(text: string): string {
     .replace(/\r\n/g, '\n')
     .replace(/\t/g, ' ')
     .replace(/[\uFFFD\?]+/g, ' ')
+    // Xóa triệt để các thông báo hệ thống về tài liệu scan/ảnh, tránh để AI nhầm lẫn thành bài dạy
+    .replace(/TÀI LIỆU DẠNG HÌNH ẢNH[\s\S]*?(?=\n\n|\n[A-Z0-9]|$)/gi, '')
+    .replace(/TÀI LIỆU SCAN NGUYÊN BẢN[\s\S]*?(?=\n\n|\n[A-Z0-9]|$)/gi, '')
+    .replace(/Dung lượng:\s*[\d.]+\s*KB/gi, '')
+    .replace(/Định dạng:\s*(?:PDF|DOCX?|FILE)/gi, '')
+    .replace(/\(Tài liệu không chứa lớp văn bản vector[\s\S]*?\)/gi, '')
+    .replace(/Thầy\/Cô có thể bấm 'Xem PDF trực quan'[\s\S]*?\./gi, '')
     .replace(/[ ]{2,}/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -179,7 +188,7 @@ export function extractCoreDefinitions(text: string, lessonTitle: string = ''): 
       if (match && match[1] && match[2]) {
         const term = match[1].trim().replace(/^[0-9.]+\s*/, '');
         const def = match[2].trim();
-        // Lọc bỏ nếu term quá dài hoặc mang tính tiêu đề hành chính chung chung
+        // Lọc bỏ nếu term quá dài hoặc mang tính tiêu đề hành chính chung chung / thông báo scan
         if (
           term.length >= 3 &&
           term.length <= 45 &&
@@ -187,7 +196,12 @@ export function extractCoreDefinitions(text: string, lessonTitle: string = ''): 
           !term.toLowerCase().startsWith('bài') &&
           !term.toLowerCase().startsWith('tiết') &&
           !term.toLowerCase().startsWith('trang') &&
-          !term.toLowerCase().startsWith('câu hỏi')
+          !term.toLowerCase().startsWith('câu hỏi') &&
+          !term.toLowerCase().includes('tài liệu') &&
+          !term.toLowerCase().includes('dung lượng') &&
+          !term.toLowerCase().includes('định dạng') &&
+          !term.toLowerCase().includes('scan') &&
+          !term.toLowerCase().includes('hình ảnh')
         ) {
           if (!definitions.some(d => d.term.toLowerCase() === term.toLowerCase())) {
             definitions.push({ term, definition: def });
@@ -206,12 +220,18 @@ export function extractCoreDefinitions(text: string, lessonTitle: string = ''): 
       if (
         trimmed.length > 20 &&
         trimmed.length < 250 &&
+        !trimmed.toLowerCase().includes('dung lượng') &&
+        !trimmed.toLowerCase().includes('scan nguyên bản') &&
         /\b(là|được dùng để|có tác dụng|gồm có|có nhiệm vụ|hoạt động dựa trên)\b/i.test(trimmed)
       ) {
         const parts = trimmed.split(/\b(?:là|được dùng để|có tác dụng|gồm có|có nhiệm vụ|hoạt động dựa trên)\b/i);
         if (parts.length >= 2 && parts[0].trim().length >= 3 && parts[0].trim().length < 40 && parts[1].trim().length > 10) {
           const termCandidate = parts[0].trim().replace(/^[-*•0-9.]+\s*/, '');
-          if (!definitions.some(d => d.term.toLowerCase() === termCandidate.toLowerCase())) {
+          if (
+            !termCandidate.toLowerCase().includes('tài liệu') &&
+            !termCandidate.toLowerCase().includes('scan') &&
+            !definitions.some(d => d.term.toLowerCase() === termCandidate.toLowerCase())
+          ) {
             definitions.push({
               term: termCandidate,
               definition: parts[1].trim()
@@ -243,6 +263,13 @@ export function extractTopicSections(text: string): TopicSection[] {
   for (const rawLine of lines) {
     const line = rawLine.trim();
     if (!line) continue;
+    if (
+      line.toLowerCase().includes('tài liệu dạng hình ảnh') ||
+      line.toLowerCase().includes('scan nguyên bản') ||
+      line.toLowerCase().includes('dung lượng:')
+    ) {
+      continue;
+    }
 
     const isMatch = headingRegex.test(line) || (
       line.length >= 6 &&
@@ -250,7 +277,8 @@ export function extractTopicSections(text: string): TopicSection[] {
       line === line.toUpperCase() &&
       /[A-ZÀ-Ỹ]/.test(line) &&
       !line.includes('CỘNG HÒA') &&
-      !line.includes('BỘ GIÁO DỤC')
+      !line.includes('BỘ GIÁO DỤC') &&
+      !line.includes('TÀI LIỆU')
     );
 
     if (isMatch && line.length < 100) {
@@ -281,7 +309,13 @@ export function extractTopicSections(text: string): TopicSection[] {
     const paragraphs = text
       .split(/\n{2,}/)
       .map(p => p.trim())
-      .filter(p => p.length > 40 && !p.startsWith('===') && !p.startsWith('---'));
+      .filter(p =>
+        p.length > 40 &&
+        !p.startsWith('===') &&
+        !p.startsWith('---') &&
+        !p.toLowerCase().includes('tài liệu dạng hình ảnh') &&
+        !p.toLowerCase().includes('scan nguyên bản')
+      );
 
     paragraphs.slice(0, 4).forEach((p, idx) => {
       const firstSentence = p.split(/[.:\n]/)[0].trim();
@@ -346,7 +380,6 @@ export function extractPracticalSteps(text: string): PracticalStepItem[] {
       const title = parts[0].trim();
       const desc = parts.slice(1).join(':').trim() || rest;
 
-      // Tìm câu lưu ý an toàn hoặc yêu cầu kỹ thuật ở dòng tiếp theo nếu có
       let nextDetail = '';
       if (i + 1 < lines.length) {
         const nextLine = lines[i + 1].trim();
@@ -448,12 +481,12 @@ export function extractEquipment(text: string, subject: string = ''): { teacher:
 
   // Bổ sung thiết bị đặc thù môn học
   const subLower = (subject || '').toLowerCase();
-  if (subLower.includes('công nghệ') || subLower.includes('cơ khí') || subLower.includes('tiện') || subLower.includes('kỹ thuật')) {
-    if (!teacherEq.some(e => e.includes('máy') || e.includes('mô hình'))) {
-      teacherEq.push('Mô hình chi tiết máy thực tế, phôi mẫu, dụng cụ đo kiểm (thước cặp/panme)');
+  if (subLower.includes('công nghệ') || subLower.includes('cơ khí') || subLower.includes('tiện') || subLower.includes('kỹ thuật') || subLower.includes('điện')) {
+    if (!teacherEq.some(e => e.includes('máy') || e.includes('mô hình') || e.includes('đồng hồ'))) {
+      teacherEq.push('Mô hình trực quan, thiết bị đo kiểm chuyên dụng (đồng hồ VOM, ampe kìm)');
     }
-    if (!studentEq.some(e => e.includes('bảo hộ'))) {
-      studentEq.push('Trang phục bảo hộ lao động đạt chuẩn xưởng, phiếu thực hành');
+    if (!studentEq.some(e => e.includes('bảo hộ') || e.includes('phiếu'))) {
+      studentEq.push('Trang bị bảo hộ lao động đạt chuẩn, phiếu học tập');
     }
   }
 
@@ -472,12 +505,25 @@ export function deepParseLessonDocument(
   const cleanTitle = lessonTitle.trim() || 'Bài học chuyên đề';
   const snippet = extractRelevantLessonText(docContent, cleanTitle);
 
-  const coreDefinitions = extractCoreDefinitions(snippet, cleanTitle);
-  const topicSections = extractTopicSections(snippet);
-  const formulasAndRules = extractFormulasAndRules(snippet);
-  const practicalSteps = extractPracticalSteps(snippet);
-  const sampleExercises = extractSampleExercises(snippet);
-  const equipmentList = extractEquipment(snippet, subject);
+  let coreDefinitions = extractCoreDefinitions(snippet, cleanTitle);
+  let topicSections = extractTopicSections(snippet);
+  let formulasAndRules = extractFormulasAndRules(snippet);
+  let practicalSteps = extractPracticalSteps(snippet);
+  let sampleExercises = extractSampleExercises(snippet);
+  let equipmentList = extractEquipment(snippet, subject);
+
+  // Đối chiếu với Kho tri thức Sư phạm Quốc gia (GDPT 2018)
+  // Đặc biệt giải cứu khi tài liệu tải lên là tệp scan/ảnh hoặc chưa có lớp văn bản số hóa
+  const curriculumMatch = findCurriculumKnowledge(cleanTitle, subject, grade);
+
+  if (curriculumMatch && (coreDefinitions.length === 0 || topicSections.length <= 1 || snippet.length < 50)) {
+    coreDefinitions = curriculumMatch.coreDefinitions;
+    topicSections = curriculumMatch.topicSections;
+    formulasAndRules = curriculumMatch.formulasAndRules;
+    practicalSteps = curriculumMatch.practicalSteps;
+    sampleExercises = curriculumMatch.sampleExercises;
+    equipmentList = curriculumMatch.equipmentList;
+  }
 
   // Tạo danh sách từ khóa chuyên ngành (Key Terms)
   const keyTerms: string[] = [];
@@ -489,15 +535,29 @@ export function deepParseLessonDocument(
     if (cleanH && cleanH.length < 40 && !keyTerms.includes(cleanH)) keyTerms.push(cleanH);
   });
 
+  if (curriculumMatch && keyTerms.length === 0) {
+    curriculumMatch.keyTerms.forEach(k => {
+      if (!keyTerms.includes(k)) keyTerms.push(k);
+    });
+  }
+
   // Tóm tắt nội dung bài học
   let summary = '';
   if (coreDefinitions.length > 0) {
     summary = `Bài học tập trung vào các nội dung trọng tâm: ${coreDefinitions.map(d => d.term).slice(0, 5).join(', ')}.`;
   } else if (topicSections.length > 0) {
     summary = `Nội dung chính gồm các đề mục: ${topicSections.map(t => t.heading).slice(0, 4).join('; ')}.`;
+  } else if (curriculumMatch) {
+    summary = curriculumMatch.summary;
   } else {
     summary = `Nội dung bài học '${cleanTitle}' môn ${subject || 'chuyên môn'} được trích xuất trực tiếp từ tài liệu bài giảng của giáo viên.`;
   }
+
+  const finalSnippet = snippet.length >= 50
+    ? snippet
+    : curriculumMatch
+    ? `${curriculumMatch.summary}\n\n${curriculumMatch.topicSections.map(t => t.heading + ':\n' + t.contentLines.join('\n')).join('\n\n')}`
+    : snippet;
 
   return {
     lessonTitle: cleanTitle,
@@ -511,7 +571,7 @@ export function deepParseLessonDocument(
     sampleExercises,
     equipmentList,
     keyTerms,
-    rawContextSnippet: snippet
+    rawContextSnippet: finalSnippet
   };
 }
 

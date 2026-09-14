@@ -92,6 +92,7 @@ import {
   findMatchingKnowledgeDocument,
   MatchedDocResult
 } from './knowledgeBaseData';
+import { findCurriculumKnowledge, findCurriculumKnowledgeText } from './curriculumKnowledgeBase';
 import {
   extractFullTextFromFile,
   downloadOriginalUploadedFile,
@@ -912,7 +913,16 @@ export default function UnifiedTeacherScheduleApp() {
     setPlannerModuleTitle(inferredLesson);
 
     // ƯU TIÊN 1: Nếu ca dạy đã đính kèm tài liệu thực tế ev.attachmentContent
-    if (ev.attachmentContent && ev.attachmentContent.trim().length > 20) {
+    let activeContent = ev.attachmentContent || '';
+    if (activeContent && /TÀI LIỆU DẠNG HÌNH ẢNH|SCAN NGUYÊN BẢN|Dung lượng:\s*[\d.]+\s*KB/i.test(activeContent)) {
+      const genuine = findCurriculumKnowledgeText(inferredLesson, ev.subject, ev.className);
+      if (genuine) {
+        activeContent = genuine;
+        ev.attachmentContent = genuine;
+      }
+    }
+
+    if (activeContent && activeContent.trim().length > 20) {
       const customDocId = `event-att-${ev.id}`;
       const attachedDoc: KnowledgeDocument = {
         id: customDocId,
@@ -921,7 +931,7 @@ export default function UnifiedTeacherScheduleApp() {
         category: 'GIAO_TRINH',
         subject: ev.subject || 'ALL',
         targetLevel: ev.className || 'ALL',
-        content: ev.attachmentContent,
+        content: activeContent,
         fileName: ev.attachmentName,
         isBuiltIn: false,
         isActive: true,
@@ -933,10 +943,10 @@ export default function UnifiedTeacherScheduleApp() {
       setPlannerSelectedDocId(customDocId);
       setPlannerMatchedDocResult({
         doc: attachedDoc,
-        relevantSnippet: ev.attachmentContent,
+        relevantSnippet: activeContent,
         confidence: 100
       });
-      const parsed = extractPedagogicalKnowledge(ev.attachmentContent, inferredLesson);
+      const parsed = extractPedagogicalKnowledge(activeContent, inferredLesson);
       setPlannerExtractedPreview(parsed);
       return;
     }
@@ -1046,13 +1056,21 @@ export default function UnifiedTeacherScheduleApp() {
     }
     setPlannerMatchedDocResult(freshMatched);
 
-    const refCtx = freshMatched?.doc?.content || freshMatched?.relevantSnippet || getActiveReferenceContext(plannerSubject, plannerStandard === 5512 ? 'PHAP_QUY' : 'ATLD_5S');
+    let refCtx = freshMatched?.doc?.content || freshMatched?.relevantSnippet || getActiveReferenceContext(plannerSubject, plannerStandard === 5512 ? 'PHAP_QUY' : 'ATLD_5S');
+    if (!refCtx || /TÀI LIỆU DẠNG HÌNH ẢNH|SCAN NGUYÊN BẢN|Dung lượng:\s*[\d.]+\s*KB/i.test(refCtx)) {
+      const curriculumKnowledge = findCurriculumKnowledgeText(title, plannerSubject, plannerClass);
+      if (curriculumKnowledge) {
+        refCtx = curriculumKnowledge;
+        if (freshMatched?.doc) {
+          freshMatched.doc.content = curriculumKnowledge;
+          freshMatched.relevantSnippet = curriculumKnowledge;
+        }
+      }
+    }
 
     // Cập nhật preview bóc tách Deep-RAG
-    if (freshMatched?.doc?.content) {
-      const parsed = extractPedagogicalKnowledge(freshMatched.doc.content, title);
-      setPlannerExtractedPreview(parsed);
-    }
+    const parsed = extractPedagogicalKnowledge(refCtx || '', title);
+    setPlannerExtractedPreview(parsed);
 
     setPlannerStepProgress('Bước 2/5: Bóc tách khái niệm, công thức, quy trình từ tài liệu bài giảng...');
 
@@ -2336,9 +2354,16 @@ export default function UnifiedTeacherScheduleApp() {
   // Save Attachment
   const handleSaveAttachment = () => {
     if (!attachingEvent) return;
-    const finalContent = attachFileContent || attachingEvent.attachmentContent || '';
+    let finalContent = attachFileContent || attachingEvent.attachmentContent || '';
     const finalName = attachFileName || attachingEvent.attachmentName || 'Tài_liệu_bài_giảng.pdf';
     const finalUrl = attachFileUrl || attachingEvent.attachmentUrl || '';
+
+    if (finalContent && /TÀI LIỆU DẠNG HÌNH ẢNH|SCAN NGUYÊN BẢN|Dung lượng:\s*[\d.]+\s*KB/i.test(finalContent)) {
+      const curriculum = findCurriculumKnowledgeText(attachingEvent.notes || attachingEvent.title, attachingEvent.subject, attachingEvent.className);
+      if (curriculum) {
+        finalContent = curriculum;
+      }
+    }
 
     const updated = events.map((e) => {
       if (e.id === attachingEvent.id) {
@@ -2616,7 +2641,14 @@ export default function UnifiedTeacherScheduleApp() {
         const stored = localStorage.getItem(`smart_teacher_ai_pack_${ev.id}`) ||
                        localStorage.getItem(`smart_teacher_ai_pack_${ev.attachmentName}`);
         if (stored) {
-          pkg = JSON.parse(stored);
+          const parsed = JSON.parse(stored);
+          const rawStr = JSON.stringify(parsed);
+          // Nếu gói đã lưu bị nhiễm scan notice / file metadata rác, xóa bỏ cache để tạo mới với tri thức chuẩn
+          if (rawStr.includes('TÀI LIỆU DẠNG HÌNH ẢNH') || rawStr.includes('SCAN NGUYÊN BẢN') || rawStr.includes('14615.1 KB')) {
+            pkg = null;
+          } else {
+            pkg = parsed;
+          }
         }
       } catch (_) {}
     }
@@ -2641,6 +2673,9 @@ export default function UnifiedTeacherScheduleApp() {
         const is2634 = ev.attachmentName.includes('2634') || ev.sessionType === 'Thực hành';
 
         let refContent = ev.attachmentContent || '';
+        if (/TÀI LIỆU DẠNG HÌNH ẢNH|SCAN NGUYÊN BẢN|Dung lượng:\s*[\d.]+\s*KB/i.test(refContent)) {
+          refContent = findCurriculumKnowledgeText(cleanTitle, ev.subject, ev.className) || '';
+        }
         if (!refContent) {
           const matchDoc = knowledgeDocs.find(d => 
             d.fileName === ev.attachmentName || 
@@ -2649,8 +2684,15 @@ export default function UnifiedTeacherScheduleApp() {
             (ev.attachmentName && d.title && d.title.toLowerCase().includes(ev.attachmentName.toLowerCase().replace('.doc', '').replace('giaoan_5512_', '').replace(/_/g, ' ')))
           );
           if (matchDoc && matchDoc.content) {
-            refContent = matchDoc.content;
+            let docContent = matchDoc.content;
+            if (/TÀI LIỆU DẠNG HÌNH ẢNH|SCAN NGUYÊN BẢN|Dung lượng:\s*[\d.]+\s*KB/i.test(docContent)) {
+              docContent = findCurriculumKnowledgeText(cleanTitle, ev.subject, ev.className) || '';
+            }
+            refContent = docContent;
           }
+        }
+        if (!refContent) {
+          refContent = findCurriculumKnowledgeText(cleanTitle, ev.subject, ev.className) || '';
         }
 
         pkg = generateComprehensiveLessonPlanPackage({
@@ -2686,6 +2728,12 @@ export default function UnifiedTeacherScheduleApp() {
 
     // Nếu là tệp thông thường (PDF, DOCX tải lên thủ công), mở qua Document Viewer chung:
     let realContent = ev.attachmentContent || '';
+    if (realContent && /TÀI LIỆU DẠNG HÌNH ẢNH|SCAN NGUYÊN BẢN|Dung lượng:\s*[\d.]+\s*KB/i.test(realContent)) {
+      const curriculum = findCurriculumKnowledgeText(ev.notes || ev.title, ev.subject, ev.className);
+      if (curriculum) {
+        realContent = curriculum;
+      }
+    }
     if (!realContent && typeof window !== 'undefined') {
       try {
         realContent = localStorage.getItem(`smart_teacher_ai_plan_${ev.id}`) ||
@@ -2700,7 +2748,17 @@ export default function UnifiedTeacherScheduleApp() {
         (ev.attachmentName && d.title && d.title.toLowerCase().includes(ev.attachmentName.toLowerCase().replace('.doc', '').replace('giaoan_5512_', '').replace(/_/g, ' ')))
       );
       if (matchDoc && matchDoc.content) {
-        realContent = matchDoc.content;
+        let docContent = matchDoc.content;
+        if (/TÀI LIỆU DẠNG HÌNH ẢNH|SCAN NGUYÊN BẢN|Dung lượng:\s*[\d.]+\s*KB/i.test(docContent)) {
+          docContent = findCurriculumKnowledgeText(ev.notes || ev.title, ev.subject, ev.className) || '';
+        }
+        realContent = docContent;
+      }
+    }
+    if (!realContent || /TÀI LIỆU DẠNG HÌNH ẢNH|SCAN NGUYÊN BẢN|Dung lượng:\s*[\d.]+\s*KB/i.test(realContent)) {
+      const curriculum = findCurriculumKnowledgeText(ev.notes || ev.title, ev.subject, ev.className);
+      if (curriculum) {
+        realContent = curriculum;
       }
     }
     if (!realContent) {

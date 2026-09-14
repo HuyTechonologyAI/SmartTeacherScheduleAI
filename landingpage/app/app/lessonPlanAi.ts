@@ -137,12 +137,21 @@ export function generateLessonPlan5512(
   const k = deepParseLessonDocument(referenceContext, lessonTitle, subject, grade);
   const custom = customRequirements?.trim() ? ` Yêu cầu sư phạm: ${customRequirements}.` : '';
 
-  // Trích xuất các câu thực chất từ tài liệu đính kèm (loại bỏ tiêu đề hoặc dòng phân cách)
+  // Trích xuất các câu thực chất từ tài liệu đính kèm (loại bỏ tiêu đề, dòng phân cách hoặc thông báo scan)
   const substantiveSentences = referenceContext
     ? referenceContext
         .split(/[.\n;]+/)
         .map(s => s.trim().replace(/^[-*•0-9.]+\s*/, ''))
-        .filter(s => s.length >= 25 && !s.startsWith('===') && !s.startsWith('---') && !s.toLowerCase().includes('mục lục'))
+        .filter(s =>
+          s.length >= 25 &&
+          !s.startsWith('===') &&
+          !s.startsWith('---') &&
+          !s.toLowerCase().includes('mục lục') &&
+          !s.toLowerCase().includes('tài liệu dạng hình ảnh') &&
+          !s.toLowerCase().includes('scan nguyên bản') &&
+          !s.toLowerCase().includes('dung lượng:') &&
+          !s.toLowerCase().includes('xem pdf trực quan')
+        )
     : [];
 
   // 1. Mục tiêu kiến thức chi tiết (Không viết chung chung, bám sát tài liệu)
@@ -163,14 +172,18 @@ export function generateLessonPlan5512(
   knowledgeObj += custom;
 
   // 2. Nội dung Hoạt động 1: Khởi động
-  const leadTerm = k.keyTerms[0] || lessonTitle;
+  const rawLead = k.keyTerms[0] || lessonTitle;
+  const leadTerm = (rawLead.toLowerCase().includes('tài liệu') || rawLead.toLowerCase().includes('scan'))
+    ? lessonTitle
+    : rawLead;
+
   let act1Content = '';
-  if (k.keyTerms.length > 0) {
+  if (leadTerm && leadTerm !== lessonTitle) {
     act1Content = `Giáo viên trình chiếu tình huống thực tiễn hoặc mẫu vật/video ngắn về "${leadTerm}" và nêu câu hỏi gợi mở: "Trong thực tế đời sống và khoa học kỹ thuật, ${leadTerm} đóng vai trò gì? Nếu không nắm vững nguyên lý này, chúng ta sẽ gặp khó khăn hay sai sót nào?"`;
   } else if (substantiveSentences.length > 0) {
     act1Content = `Giáo viên đưa ra tình huống thực tế xuất phát từ tài liệu bài giảng: "${substantiveSentences[0]}", khơi gợi mâu thuẫn nhận thức và dẫn dắt học sinh khám phá bài '${lessonTitle}'.`;
   } else {
-    act1Content = `Giáo viên đưa ra tình huống thực tế gắn liền với chủ đề '${lessonTitle}', tạo mâu thuẫn nhận thức khơi gợi trí tò mò của học sinh.`;
+    act1Content = `Giáo viên trình chiếu hình ảnh/video thực tế liên quan đến bài học '${lessonTitle}', nêu câu hỏi gợi mở tạo mâu thuẫn nhận thức khơi gợi trí tò mò của học sinh.`;
   }
 
   // 3. Nội dung Hoạt động 2: Hình thành kiến thức mới (Bám sát 100% tài liệu)
@@ -287,7 +300,16 @@ export function generateLessonPlan2634(
     ? referenceContext
         .split(/[.\n;]+/)
         .map(s => s.trim().replace(/^[-*•0-9.]+\s*/, ''))
-        .filter(s => s.length >= 25 && !s.startsWith('===') && !s.startsWith('---') && !s.toLowerCase().includes('mục lục'))
+        .filter(s =>
+          s.length >= 25 &&
+          !s.startsWith('===') &&
+          !s.startsWith('---') &&
+          !s.toLowerCase().includes('mục lục') &&
+          !s.toLowerCase().includes('tài liệu dạng hình ảnh') &&
+          !s.toLowerCase().includes('scan nguyên bản') &&
+          !s.toLowerCase().includes('dung lượng:') &&
+          !s.toLowerCase().includes('xem pdf trực quan')
+        )
     : [];
 
   // Quy trình thao tác mẫu (bước 1, 2, 3...)

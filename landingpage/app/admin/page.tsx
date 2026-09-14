@@ -26,9 +26,11 @@ import {
   DollarSign,
   HardDrive,
   FileSpreadsheet,
-  Info
+  Info,
+  Calculator
 } from 'lucide-react';
 import { setAuthSession, clearAuthSession, getCurrentAuthSession, AuthSession } from '@/lib/authRbac';
+import { FinancialAiTab } from './FinancialAiTab';
 
 interface MetricsData {
   infrastructure: {
@@ -116,7 +118,7 @@ export default function SuperAdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [adminPasscode, setAdminPasscode] = useState<string>('');
   const [authError, setAuthError] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'downloads' | 'traffic' | 'revenue' | 'users'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'downloads' | 'traffic' | 'revenue' | 'users' | 'ai_financial'>('dashboard');
 
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
   const [downloads, setDownloads] = useState<DownloadAnalyticsData | null>(null);
@@ -337,6 +339,7 @@ export default function SuperAdminPage() {
         <div className="flex items-center gap-2 min-w-max">
           {[
             { id: 'dashboard', label: '📊 Tổng Quan Hệ Thống', icon: BarChart3 },
+            { id: 'ai_financial', label: '🧠 AI Tài Chính & Định Giá', icon: Calculator },
             { id: 'downloads', label: '📥 Bộ Đếm Lượt Tải', icon: Download },
             { id: 'traffic', label: '🌐 Lưu Lượng Truy Cập', icon: Globe },
             { id: 'revenue', label: '💳 Doanh Thu & Gói Cước', icon: DollarSign },
@@ -928,6 +931,11 @@ export default function SuperAdminPage() {
               )}
             </div>
           </div>
+        )}
+
+        {/* ================= TAB: AI TÀI CHÍNH & MÔ HÌNH ĐỊNH GIÁ (TRỤ CỘT 6) ================= */}
+        {activeTab === 'ai_financial' && (
+          <FinancialAiTab />
         )}
       </main>
     </div>

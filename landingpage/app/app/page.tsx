@@ -6711,7 +6711,7 @@ export default function UnifiedTeacherScheduleApp() {
             </div>
 
             {/* ========================================================================= */}
-            {/* 1. PHIÊN BẢN CÀI ĐẶT & HỆ THỐNG ĐA NỀN TẢNG (v1.8.0 RELEASE MATRIX) */}
+            {/* 1. PHIÊN BẢN CÀI ĐẶT & HỆ THỐNG ĐA NỀN TẢNG (v2.0.0 RELEASE MATRIX) */}
             {/* ========================================================================= */}
             <div className="bg-white dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl p-6 space-y-6 shadow-sm">
               <div className="flex items-center justify-between flex-wrap gap-4 pb-4 border-b border-slate-100 dark:border-slate-700/60">
@@ -6725,7 +6725,7 @@ export default function UnifiedTeacherScheduleApp() {
                         Smart Teacher Schedule AI
                       </h3>
                       <span className="px-3 py-0.5 rounded-full bg-gradient-to-r from-rose-600 to-amber-600 text-white text-xs font-mono font-bold shadow-xs">
-                        v1.8.0 Chính Thức
+                        v2.0.0 Chính Thức
                       </span>
                       <span className="px-2.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold">
                         Build 18 • Bản Mới Nhất
@@ -6795,8 +6795,8 @@ export default function UnifiedTeacherScheduleApp() {
                         <span>Hướng dẫn & Tải</span>
                       </button>
                       <a
-                        href="/SmartTeacherSchedule_v1.8.0_Release.apk"
-                        download="SmartTeacherSchedule_v1.8.0_Release.apk"
+                        href="/SmartTeacherSchedule_v2.0.0_Release.apk"
+                        download="SmartTeacherSchedule_v2.0.0_Release.apk"
                         onClick={(e) => {
                           e.stopPropagation();
                           trackDownload('android', '1.8.0', 'Settings Android APK');
@@ -6929,8 +6929,8 @@ export default function UnifiedTeacherScheduleApp() {
                         <span>Hướng dẫn & Tải</span>
                       </button>
                       <a
-                        href="/downloads/SmartTeacherSchedule_Setup_v1.8.0.exe"
-                        download="SmartTeacherSchedule_Setup_v1.8.0.exe"
+                        href="/downloads/SmartTeacherSchedule_Setup_v2.0.0.exe"
+                        download="SmartTeacherSchedule_Setup_v2.0.0.exe"
                         onClick={(e) => {
                           e.stopPropagation();
                           trackDownload('windows_setup', '1.8.0', 'Settings Windows Setup');
@@ -6985,11 +6985,11 @@ export default function UnifiedTeacherScheduleApp() {
                 </div>
               </div>
 
-              {/* v1.8.0 Highlight Feature Matrix */}
+              {/* v2.0.0 Highlight Feature Matrix */}
               <div className="bg-slate-50 dark:bg-slate-900/60 rounded-xl p-4 border border-slate-200/70 dark:border-slate-800 space-y-2.5">
                 <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <Zap className="w-4 h-4 text-amber-500" />
-                  <span>Những tính năng cốt lõi mới trên bản phát hành v1.8.0:</span>
+                  <span>Những tính năng cốt lõi mới trên bản phát hành v2.0.0:</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-300">
                   <div className="flex items-start gap-2">

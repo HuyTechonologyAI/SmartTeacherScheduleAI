@@ -17,6 +17,8 @@ export interface TeacherProfile {
   lastLoginAt?: string; // Thời gian đăng nhập gần nhất
   licenseTier?: 'STARTER' | 'VIP1' | 'VIP2' | 'PRO' | 'SCHOOL'; // Hạng mức bản quyền dịch vụ (VIP 1 cá nhân, VIP 2 lớp học, Trường học)
   licenseExpiresAt?: string; // Ngày hết hạn bản quyền
+  huyTechId?: string; // Mã định danh hợp nhất Hệ Sinh Thái Huy Technology AI
+  notes?: string; // Ghi chú hệ thống
 }
 
 export const POPULAR_SUBJECTS = [

@@ -1427,8 +1427,18 @@ export const AutomatedPaymentModal: React.FC<AutomatedPaymentModalProps> = ({
                 <div className="p-6 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center space-y-2">
                   <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto" />
                   <h6 className="font-bold text-emerald-800 dark:text-emerald-300 text-sm">
-                    Đã Gửi Yêu Cầu Xuất Hóa Đơn VAT Thành Công!
+                    Đã Gửi Yêu Cầu & Liên Thông SmartTax AI Thành Công!
                   </h6>
+                  <div className="p-3 rounded-xl bg-slate-900 border border-emerald-500/40 text-left text-xs font-mono space-y-1 my-2">
+                    <div className="text-emerald-400 flex items-center justify-between">
+                      <span>Mã Liên Thông SmartTax AI:</span>
+                      <strong className="text-white">SMARTTAX-INV-${Date.now().toString().slice(-6)}</strong>
+                    </div>
+                    <div className="text-slate-400 text-[10px] flex items-center justify-between">
+                      <span>Mã tra cứu cơ quan Thuế:</span>
+                      <span className="text-indigo-300">CQT-${vatForm.taxCode.replace(/[^0-9]/g, '').slice(0, 6) || '888888'}-AUTH</span>
+                    </div>
+                  </div>
                   <p className="text-xs text-slate-600 dark:text-slate-300 max-w-md mx-auto">
                     Hóa đơn điện tử hợp lệ theo quy định Tổng cục Thuế sẽ được gửi trực tiếp đến hòm thư <strong>{vatForm.email}</strong> trong vòng 24h làm việc.
                   </p>

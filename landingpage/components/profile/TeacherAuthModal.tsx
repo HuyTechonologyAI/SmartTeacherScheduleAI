@@ -20,6 +20,7 @@ import {
   saveTeacherProfile 
 } from '@/app/app/teacherProfileData';
 import { Language, t } from '@/app/app/i18n';
+import { generateHuyTechSsoSession, getHuyTechSession } from '@/lib/ecosystemSso';
 
 interface TeacherAuthModalProps {
   isOpen: boolean;
@@ -321,6 +322,30 @@ export default function TeacherAuthModal({
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                 />
               </div>
+
+              {/* Huy Tech ID Single Sign-On (SSO) Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  const sso = generateHuyTechSsoSession(loginIdentifier, currentProfile.fullName || 'Thầy/Cô Giáo Viên');
+                  const updated: TeacherProfile = {
+                    ...currentProfile,
+                    fullName: sso.fullName,
+                    email: sso.email,
+                    phone: sso.phone,
+                    huyTechId: sso.huyTechId,
+                    notes: `Huy Tech ID: ${sso.huyTechId} (Hệ Sinh Thái Hợp Nhất)`
+                  };
+                  saveTeacherProfile(updated);
+                  onAuthSuccess(updated);
+                  onClose();
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-rose-600 via-amber-600 to-indigo-600 hover:opacity-95 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                title="Đăng nhập tự động đồng bộ tài khoản giữa huycncdsai.io.vn, SmartTax AI và EduViet"
+              >
+                <span>⚡</span>
+                <span>Đăng Nhập Một Chạm Bằng Huy Tech ID (Hệ Sinh Thái AI)</span>
+              </button>
 
               {/* Submit Button */}
               <button

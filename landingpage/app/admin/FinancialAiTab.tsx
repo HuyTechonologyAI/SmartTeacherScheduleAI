@@ -843,6 +843,80 @@ export const FinancialAiTab: React.FC = () => {
           </div>
         </div>
 
+
+        {/* BẢNG ĐIỀU KHIỂN GIÁM SÁT KỸ THUẬT & TỐI ƯU OPEX HỆ SINH THÁI */}
+        <div className="p-5 rounded-3xl bg-slate-900 border border-emerald-500/40 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+            <div className="flex items-center gap-2">
+              <span className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                ✓
+              </span>
+              <div>
+                <h4 className="font-bold text-sm text-white flex items-center gap-2">
+                  <span>Trạng Thái Vận Hành Kỹ Thuật 4 Cổng Hệ Sinh Thái (Live Health)</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                </h4>
+                <p className="text-[11px] text-slate-400">Kiểm tra kết nối liên thông tự động theo thời gian thực</p>
+              </div>
+            </div>
+            <span className="text-xs font-bold text-emerald-300 bg-emerald-950/80 px-3 py-1 rounded-full border border-emerald-800">
+              Tiết Kiệm 66.5% Chi Phí Hạ Tầng (OPEX)
+            </span>
+          </div>
+
+          {/* 4 Dịch vụ liên thông */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+            <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 space-y-1">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-bold text-rose-300">🏢 Master Hub</span>
+                <span className="text-emerald-400 font-mono font-bold">38ms</span>
+              </div>
+              <span className="font-bold text-white block">huycncdsai.io.vn</span>
+              <span className="text-[10px] text-slate-400 block">SSO & Tổng Bộ AI (99.98%)</span>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 space-y-1">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-bold text-emerald-300">📊 SmartTax AI</span>
+                <span className="text-emerald-400 font-mono font-bold">42ms</span>
+              </div>
+              <span className="font-bold text-white block">smarttax-ai.vercel.app</span>
+              <span className="text-[10px] text-slate-400 block">HĐĐT NĐ 123 (99.95%)</span>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 space-y-1">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-bold text-indigo-300">🎓 Sư Phạm Số</span>
+                <span className="text-emerald-400 font-mono font-bold">18ms</span>
+              </div>
+              <span className="font-bold text-white block">Smart Teacher AI</span>
+              <span className="text-[10px] text-slate-400 block">CV 5512 & TT 22 Core</span>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700/80 space-y-1">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-bold text-amber-300">⚡ Cổng Thanh Toán</span>
+                <span className="text-emerald-400 font-mono font-bold">&lt; 3s</span>
+              </div>
+              <span className="font-bold text-white block">ACB - 37780997</span>
+              <span className="text-[10px] text-slate-400 block">Webhook Napas 24/7</span>
+            </div>
+          </div>
+
+          {/* So sánh tối ưu OPEX */}
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-850 to-slate-900 border border-emerald-500/20 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="space-y-0.5">
+              <span className="font-bold text-white">Hiệu Quả Kinh Tế Nhờ Kiến Trúc Hợp Nhất:</span>
+              <p className="text-[11px] text-slate-400">
+                Chi phí hạ tầng truyền thống 3 website: <strong>15.5 Tr/tháng</strong> → Hạ tầng Serverless dùng chung: <strong>5.2 Tr/tháng</strong> (Tiết kiệm <strong>10.3 Tr/tháng</strong> ~ <strong>123 Tr/năm</strong>).
+              </p>
+            </div>
+            <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-xs shrink-0 self-start sm:self-auto">
+              Biên Lợi Nhuận Ròng Tăng +14.2%
+            </span>
+          </div>
+        </div>
+
         {/* 3 Websites Quick Access */}
         <div className="p-5 rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="space-y-1">

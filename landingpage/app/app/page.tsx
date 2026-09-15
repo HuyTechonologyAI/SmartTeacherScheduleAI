@@ -143,6 +143,7 @@ import {
 import { isTestStudent, isTestClassroom, isTestSyncData } from './testDataSanitizer';
 
 import AIAssistantWidget from '@/components/AIAssistantWidget';
+import AiCentralHubDispatcherCard from '@/components/AiCentralHubDispatcherCard';
 import { AiPedagogyMode, processPedagogicalAiQuery } from '@/components/aiPedagogyEngine';
 
 import {
@@ -5161,6 +5162,12 @@ export default function UnifiedTeacherScheduleApp() {
                     {/* ================= TAB 1: KẾ HOẠCH BÀI DẠY (GIÁO ÁN) ================= */}
                     {plannerActiveResultTab === 'plan' && (
                       <div className="space-y-4">
+                        <AiCentralHubDispatcherCard
+                          category="LESSON"
+                          lessonTitle={plannerLessonTitle || plannerResult5512?.lessonTitle || 'Kế hoạch bài dạy'}
+                          subject={plannerSubject || plannerResult5512?.subject || 'Công nghệ'}
+                          grade={plannerClass || plannerResult5512?.grade || '12'}
+                        />
                         {plannerResult5512 && (
                           <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl p-5 space-y-4 text-xs sm:text-sm text-slate-800 dark:text-slate-100">
                             <div className="text-center pb-3 border-b border-slate-200 dark:border-slate-700">
@@ -5251,6 +5258,12 @@ export default function UnifiedTeacherScheduleApp() {
                     {/* ================= TAB 2: KỊCH BẢN SLIDE THUYẾT TRÌNH ================= */}
                     {plannerActiveResultTab === 'slides' && plannerFullPackage && (
                       <div className="space-y-4 animate-fade-in">
+                        <AiCentralHubDispatcherCard
+                          category="SLIDES"
+                          lessonTitle={plannerFullPackage.lessonTitle}
+                          subject={plannerFullPackage.subject}
+                          grade={plannerClass || '12'}
+                        />
                         <div className="flex items-center justify-between p-3.5 rounded-xl bg-gradient-to-r from-sky-500/15 via-blue-500/10 to-indigo-500/15 border border-sky-500/30 text-xs flex-wrap gap-2.5">
                           <div className="space-y-0.5">
                             <span className="text-sky-300 font-bold flex items-center gap-1.5 text-xs sm:text-sm">
@@ -5339,16 +5352,30 @@ export default function UnifiedTeacherScheduleApp() {
 
                     {/* ================= TAB 3: CÂU HỎI MINI GAME ================= */}
                     {plannerActiveResultTab === 'game' && plannerFullPackage && (
-                      <InteractiveMiniGame
+                      <div className="space-y-4 animate-fade-in">
+                        <AiCentralHubDispatcherCard
+                          category="VOICE"
+                          lessonTitle={plannerFullPackage.lessonTitle}
+                          subject={plannerFullPackage.subject}
+                          grade={plannerClass || '12'}
+                        />
+                        <InteractiveMiniGame
                         questions={plannerFullPackage.miniGame}
                         lessonTitle={plannerFullPackage.lessonTitle}
                         subject={plannerFullPackage.subject}
-                      />
+                        />
+                      </div>
                     )}
 
                     {/* ================= TAB 4: KỊCH BẢN VIDEO VI MÔ ================= */}
                     {plannerActiveResultTab === 'video' && plannerFullPackage && (
                       <div className="space-y-4 animate-fade-in">
+                        <AiCentralHubDispatcherCard
+                          category="VIDEO"
+                          lessonTitle={plannerFullPackage.lessonTitle}
+                          subject={plannerFullPackage.subject}
+                          grade={plannerClass || '12'}
+                        />
                         <div className="flex items-center justify-between p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs">
                           <span className="text-amber-800 dark:text-amber-300 font-bold">
                             🎬 Kịch bản Video vi mô (Microlearning) gồm {plannerFullPackage.videoScript.length} phân cảnh chi tiết (3-5 phút).
@@ -5415,11 +5442,19 @@ export default function UnifiedTeacherScheduleApp() {
 
                     {/* ================= TAB 5: SƠ ĐỒ TƯ DUY (MINDMAP) ================= */}
                     {plannerActiveResultTab === 'mindmap' && plannerFullPackage && (
-                      <InteractiveMindMap
+                      <div className="space-y-4 animate-fade-in">
+                        <AiCentralHubDispatcherCard
+                          category="MINDMAP"
+                          lessonTitle={plannerFullPackage.lessonTitle}
+                          subject={plannerFullPackage.subject}
+                          grade={plannerClass || '12'}
+                        />
+                        <InteractiveMindMap
                         mindmap={plannerFullPackage.mindmap}
                         lessonTitle={plannerFullPackage.lessonTitle}
                         subject={plannerFullPackage.subject}
-                      />
+                        />
+                      </div>
                     )}
 
                     {/* ================= TAB 6: RÀ SOÁT & CHẤM ĐIỂM NĂNG LỰC SỐ ================= */}

@@ -5,6 +5,10 @@
 // ============================================================================
 
 import {
+  dispatchAiCentralHubTool,
+  AiCentralHubDispatchRecommendation
+} from '../lib/aiCentralHubDispatcher';
+import {
   KnowledgeDocument,
   getResolvedKnowledgeDocuments,
   findMatchingKnowledgeDocument,
@@ -35,6 +39,7 @@ export interface AiPedagogyResponse {
     url?: string;
     snippet?: string;
   }[];
+  aiHubDispatch?: AiCentralHubDispatchRecommendation;
 }
 
 // ----------------------------------------------------------------------------
@@ -418,8 +423,16 @@ export function generateSlideDeckPackage(
   const detectedGrade = info.grade;
   const cleanTitle = info.topic;
 
+  const aiHubDispatch = dispatchAiCentralHubTool({
+    category: 'SLIDES',
+    lessonTitle: cleanTitle,
+    subject: detectedSubj,
+    grade: detectedGrade
+  });
+
   return {
     mode: 'SLIDES',
+    aiHubDispatch,
     text: `📊 **BỘ SLIDE THUYẾT TRÌNH BÀI GIẢNG CHUẨN SƯ PHẠM (10 SLIDES)**\n\n🎯 **Chủ đề**: ${cleanTitle} | **Môn**: ${detectedSubj} | **Lớp**: ${detectedGrade}\n\n═══════════════════════════════════════════════════════════\n**SLIDE 1: BÌA BÀI GIẢNG ĐIỆN TỬ**\n• **Tiêu đề**: BÀI DẠY: ${cleanTitle.toUpperCase()}\n• **Nội dung**: Môn học: ${detectedSubj} • Lớp: ${detectedGrade} • Ứng dụng CNTT & AI Sư phạm\n• **Gợi ý thị giác**: Ảnh đồ họa chuyên nghiệp biểu trưng môn ${detectedSubj}, tiêu đề nổi bật.\n• 🗣️ **Lời giảng viên (Speaker Notes)**: *"Nhiệt liệt chào mừng các em đến với tiết học hôm nay! Chúng ta sẽ cùng khám phá những tri thức cốt lõi của bài: ${cleanTitle}."*\n\n**SLIDE 2: MỤC TIÊU BÀI HỌC CẦN ĐẠT (CV 5512)**\n• **Kiến thức**: Nắm vững khái niệm, nguyên lý và phương pháp vận dụng của ${cleanTitle}.\n• **Năng lực số**: Khai thác tài nguyên số, tra cứu học liệu và tương tác trực tuyến.\n• **Phẩm chất**: Kỷ luật, chăm chỉ và tinh thần làm việc nhóm trách nhiệm.\n• **Gợi ý thị giác**: Sơ đồ 3 mảnh ghép tương hỗ: Kiến thức - Năng lực số - Phẩm chất.\n\n**SLIDE 3: KHỞI ĐỘNG (HOẠT ĐỘNG 1)**\n• **Tình huống dẫn nhập**: *"Quan sát hiện tượng / bài toán thực tế liên quan đến ${cleanTitle}."*\n• **Câu hỏi gợi mở**: Nguyên nhân dẫn đến hiện tượng này là gì? Chúng ta giải quyết như thế nào?\n• 🗣️ **Lời giảng viên**: *"Thầy/Cô dành cho các em 2 phút suy nghĩ và ghi dự đoán vào phiếu học tập nhé!"*\n\n**SLIDE 4-5: HÌNH THÀNH KIẾN THỨC MỚI (PHẦN 1 & 2)**\n• Nội dung trọng tâm 1: Khái niệm bản chất, định lý hoặc quy tắc cơ bản của ${cleanTitle}.\n• Nội dung trọng tâm 2: Phân tích ví dụ điển hình và sơ đồ cấu trúc kiến thức.\n• **Gợi ý thị giác**: Sơ đồ cấu trúc trực quan có chú thích rõ ràng các thành phần.\n\n**SLIDE 6: NĂNG LỰC SỐ & KẾT NỐI ĐỜI SỐNG (CV 3456)**\n• Ứng dụng thực tiễn của ${cleanTitle} trong đời sống xã hội.\n• Khai thác phần mềm mô phỏng hoặc nền tảng số để tìm hiểu sâu hơn.\n\n**SLIDE 7-8: LUYỆN TẬP & THỰC HÀNH CỦNG CỐ**\n• Hệ thống 4 câu hỏi trắc nghiệm tương tác nhanh kiểm tra mức độ tiếp thu.\n• Bài tập tình huống vận dụng: Thảo luận nhóm trong 5 phút.\n\n**SLIDE 9: VẬN DỤNG & DỰ ÁN HỌC TẬP**\n• Dự án nhóm: Ứng dụng kiến thức bài học giải quyết một tình huống thực tế.\n• Tiêu chí đánh giá: Tính chính xác (40%), Tính sáng tạo (30%), Tinh thần hợp tác (30%).\n\n**SLIDE 10: TỔNG KẾT & HƯỚNG DẪN VỀ NHÀ**\n• Sơ đồ tư duy tóm tắt 3 từ khóa cốt lõi của bài học.\n• Nhiệm vụ: Hoàn thành bài tập củng cố và xem trước bài tiếp theo.`,
     quickActions: [
       { label: '📋 Sao chép Slide dạng Markdown', action: 'copy_slides_md', mode: 'SLIDES' },
@@ -485,8 +498,16 @@ export function generateMindmapPackage(
       Tích hợp liên môn
       Định hướng chuyển đổi số`;
 
+  const aiHubDispatch = dispatchAiCentralHubTool({
+    category: 'MINDMAP',
+    lessonTitle: clean,
+    subject: detectedSubj,
+    grade: detectedGrade
+  });
+
   return {
     mode: 'MINDMAP',
+    aiHubDispatch,
     text: `🧠 **SƠ ĐỒ TƯ DUY BÀI DẠY (MINDMAP & KNOWLEDGE TREE)**\n\n🎯 **Chủ đề**: ${clean} | **Môn**: ${detectedSubj} | **Khối lớp**: ${detectedGrade}\n\n═══════════════════════════════════════════════════════════\n🌳 **CÂY HỆ THỐNG KIẾN THỨC TRỰC QUAN (VISUAL TREE):**\n\n🌿 **[GỐC] ${clean.toUpperCase()} (${detectedSubj.toUpperCase()} ${detectedGrade})**\n├── 🔹 **1. Khái Niệm Nền Tảng**\n│   ├── • Bản chất quy luật và định nghĩa cốt lõi\n│   ├── • Ký hiệu, đơn vị đo hoặc quy ước chuẩn\n│   └── • Bối cảnh xuất hiện và ý nghĩa\n├── 🔹 **2. Quy Luật & Cấu Trúc Trọng Tâm**\n│   ├── • Mối liên hệ bản chất giữa các thành phần\n│   └── • Các trường hợp đặc biệt và điều kiện áp dụng\n├── 🔹 **3. Kỹ Năng & Phương Pháp Giải Quyết Vấn Đề**\n│   ├── • Quy trình thao tác 4 bước chuẩn mực\n│   └── • Nhận diện các lỗi sai kinh điển cần tránh\n└── 🔹 **4. Ứng Dụng Thực Tiễn & Năng Lực Số**\n    ├── • Kết nối các tình huống sinh động trong đời sống\n    └── • Khai thác công cụ số và sơ đồ tư duy củng cố`,
     mermaidCode: mermaid,
     quickActions: [
@@ -549,8 +570,16 @@ export function generateIllustrationPackage(
     <text x="300" y="281" fill="#a5f3fc" font-size="11" text-anchor="middle" font-family="sans-serif">✨ Học liệu số chuẩn hóa theo định hướng Chương trình GDPT 2018</text>
   </svg>`;
 
+  const aiHubDispatch = dispatchAiCentralHubTool({
+    category: 'IMAGE',
+    lessonTitle: clean,
+    subject: detectedSubj,
+    grade: detectedGrade
+  });
+
   return {
     mode: 'ILLUSTRATION',
+    aiHubDispatch,
     text: `🎨 **THIẾT KẾ HÌNH ẢNH MINH HỌA BÀI HỌC & CÂU LỆNH PROMPT AI**\n\n🎯 **Chủ đề**: ${clean} | **Môn học**: ${detectedSubj} | **Lớp**: ${detectedGrade}\n\n═══════════════════════════════════════════════════════════\n🖼️ **1. HÌNH MINH HỌA VECTOR SVG TRỰC QUAN (Hiển thị ngay tại đây):**\n*(Thầy/Cô có thể chiếu trực tiếp lên tivi/bảng tương tác cho học sinh quan sát nguyên lý)*\n\n═══════════════════════════════════════════════════════════\n🤖 **2. CÂU LỆNH PROMPT AI CAO CẤP (Dành cho Midjourney / DALL-E 3 / Gemini Imagen):**\n\n📝 **Prompt Tiếng Anh (Khuyến nghị dùng để đạt chất lượng ảnh 3D đẹp nhất):**\n\`\`\`text\nHigh quality educational 3D illustration about ${clean}, subject of ${detectedSubj} grade ${detectedGrade}, modern infographic elements, clean studio lighting, realistic details, textbook art style, 8k resolution --ar 16:9 --v 6.0\n\`\`\`\n\n📝 **Prompt Tiếng Việt (Dành cho Bing Image Creator / Canva AI):**\n\`\`\`text\nHình ảnh minh họa bài giảng môn ${detectedSubj} lớp ${detectedGrade}: Chủ đề "${clean}". Thể hiện rõ ràng các yếu tố kiến thức cốt lõi, màu sắc tươi sáng, phong cách đồ họa giáo dục sắc nét cho bài dạy số.\n\`\`\``,
     svgContent: svg,
     quickActions: [

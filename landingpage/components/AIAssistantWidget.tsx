@@ -45,6 +45,7 @@ import {
   searchOfficialVietnameseSources
 } from "./aiPedagogyEngine";
 import { getResolvedKnowledgeDocuments } from "../app/app/knowledgeBaseData";
+import { AiCentralHubDispatchRecommendation } from "../lib/aiCentralHubDispatcher";
 
 interface ChatMessage {
   id: string;
@@ -62,6 +63,7 @@ interface ChatMessage {
     url?: string;
     snippet?: string;
   }[];
+  aiHubDispatch?: AiCentralHubDispatchRecommendation;
 }
 
 export default function AIAssistantWidget() {
@@ -237,7 +239,8 @@ Thầy/Cô hãy chọn nhanh chức năng bên dưới hoặc đặt câu hỏi 
         svgContent: response.svgContent,
         mermaidCode: response.mermaidCode,
         wordExportableHtml: response.wordExportableHtml,
-        sourceReferences: response.sourceReferences
+        sourceReferences: response.sourceReferences,
+        aiHubDispatch: response.aiHubDispatch
       };
       setMessages((prev) => [...prev, aiMsg]);
       setIsTyping(false);
@@ -514,6 +517,74 @@ Thầy/Cô hãy chọn nhanh chức năng bên dưới hoặc đặt câu hỏi 
                         <pre className="text-[10px] text-slate-300 font-mono overflow-x-auto p-1.5 bg-black/40 rounded">
                           {msg.mermaidCode}
                         </pre>
+                      </div>
+                    )}
+
+                    {/* Thẻ Điều Phối AI Central Hub (huycncdsai.io.vn) */}
+                    {msg.aiHubDispatch && (
+                      <div className="mt-3.5 rounded-xl border-2 border-amber-500/40 bg-gradient-to-br from-slate-950 via-indigo-950/60 to-slate-900 p-3 shadow-xl space-y-2.5">
+                        <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-white/10">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                            <span className="text-[11px] font-bold text-amber-300 tracking-wide">
+                              ⚡ AI CENTRAL HUB • HUYCNCDSAI.IO.VN
+                            </span>
+                          </div>
+                          <span className="px-2 py-0.5 rounded-full bg-white/10 text-slate-300 text-[10px] font-mono border border-white/15">
+                            {msg.aiHubDispatch.primaryTool.license}
+                          </span>
+                        </div>
+
+                        <div className="flex items-start gap-2.5">
+                          <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 flex items-center justify-center font-bold text-sm shrink-0">
+                            🤖
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs font-bold text-white">
+                                {msg.aiHubDispatch.primaryTool.name}
+                              </span>
+                              <span className="px-1.5 py-0.2 rounded bg-indigo-500/30 text-indigo-200 text-[9px] font-semibold border border-indigo-500/40">
+                                {msg.aiHubDispatch.primaryTool.clusterName}
+                              </span>
+                              {msg.aiHubDispatch.secondaryTool && (
+                                <span className="text-[9px] text-slate-400">
+                                  + {msg.aiHubDispatch.secondaryTool.name}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-300 leading-snug">
+                              {msg.aiHubDispatch.primaryTool.headline}
+                            </p>
+                            <p className="text-[10px] text-emerald-400/90 italic">
+                              💡 {msg.aiHubDispatch.selectionReason}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Hướng dẫn thao tác nhanh */}
+                        <div className="pt-2 border-t border-white/10 flex items-center justify-between gap-2 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleCopyText(msg.aiHubDispatch!.optimizedPrompt, "hub-prompt-" + msg.id);
+                            }}
+                            className="px-2.5 py-1.5 rounded-lg bg-indigo-600/60 hover:bg-indigo-600 text-white font-medium text-[10px] flex items-center gap-1.5 transition-all cursor-pointer border border-indigo-400/30"
+                          >
+                            {copiedId === "hub-prompt-" + msg.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                            <span>{copiedId === "hub-prompt-" + msg.id ? "Đã chép Prompt" : "Sao chép Prompt Tối Ưu"}</span>
+                          </button>
+
+                          <a
+                            href={msg.aiHubDispatch.directHubLaunchUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold text-[10px] flex items-center gap-1.5 shadow-md shadow-amber-500/20 transition-all cursor-pointer"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            <span>Mở Trên AI Central Hub</span>
+                          </a>
+                        </div>
                       </div>
                     )}
 

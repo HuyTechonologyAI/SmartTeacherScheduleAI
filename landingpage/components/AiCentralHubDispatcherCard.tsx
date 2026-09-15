@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from 'react';
-import { ExternalLink, Copy, Check, Sparkles, Cpu, Layers, Volume2, Video, Presentation, GitFork, ArrowUpRight } from 'lucide-react';
-import { dispatchAiCentralHubTool, AiCentralHubDispatchRecommendation, AI_CENTRAL_HUB_TOOLS } from '../lib/aiCentralHubDispatcher';
+import { ExternalLink, Copy, Check, Sparkles, Cpu, Layers, Volume2, VolumeX, Video, Presentation, GitFork, ArrowUpRight, CheckCircle2 } from 'lucide-react';
+import { dispatchAiCentralHubTool, AiCentralHubDispatchRecommendation } from '../lib/aiCentralHubDispatcher';
+import { speakVietnamese, stopSpeaking } from '@/lib/voiceAiService';
 
 interface AiCentralHubDispatcherCardProps {
   category: 'SLIDES' | 'MINDMAP' | 'IMAGE' | 'VIDEO' | 'VOICE' | 'LESSON' | 'EXAM';
@@ -23,6 +24,7 @@ export default function AiCentralHubDispatcherCard({
 }: AiCentralHubDispatcherCardProps) {
   const [copied, setCopied] = useState(false);
   const [showPromptDetails, setShowPromptDetails] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   const dispatchResult: AiCentralHubDispatchRecommendation = dispatchAiCentralHubTool({
     category,
@@ -36,6 +38,21 @@ export default function AiCentralHubDispatcherCard({
     navigator.clipboard.writeText(dispatchResult.optimizedPrompt);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
+  };
+
+  const handleSpeak = () => {
+    if (isSpeaking) {
+      stopSpeaking();
+      setIsSpeaking(false);
+      return;
+    }
+
+    const narration = dispatchResult.categoryTitle + ' cho bài học ' + lessonTitle + ', môn ' + subject + ' lớp ' + grade + '. ' + dispatchResult.pedagogicalRole + ' ' + dispatchResult.selectionReason;
+
+    setIsSpeaking(true);
+    speakVietnamese(narration, {
+      onEnd: () => setIsSpeaking(false)
+    });
   };
 
   const getCategoryIcon = () => {
@@ -54,23 +71,24 @@ export default function AiCentralHubDispatcherCard({
   };
 
   return (
-    <div className={`p-4 rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950/40 to-slate-950 border-2 border-amber-500/40 shadow-xl space-y-3.5 ${className}`}>
+    <div className={`p-4 rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950/40 to-slate-950 border-2 border-emerald-500/40 shadow-xl space-y-3.5 ${className}`}>
       {/* Header Hub Badge */}
       <div className="flex items-center justify-between gap-3 flex-wrap border-b border-white/10 pb-2.5">
         <div className="flex items-center gap-2">
           <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
           </span>
-          <span className="text-xs font-bold text-amber-300 tracking-wider flex items-center gap-1.5">
+          <span className="text-xs font-bold text-emerald-300 tracking-wider flex items-center gap-1.5">
             {getCategoryIcon()}
-            <span>AI CENTRAL HUB • HUYCNCDSAI.IO.VN</span>
+            <span>AI CENTRAL HUB • ĐÃ TỰ ĐỘNG THI CÔNG 100%</span>
           </span>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/30">
-            TỰ ĐỘNG ĐIỀU PHỐI
+          <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-500/40 flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+            <span>KHÔNG CẦN CHỌN THỦ CÔNG</span>
           </span>
           <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-mono border border-slate-700">
             {dispatchResult.primaryTool.license}
@@ -83,8 +101,8 @@ export default function AiCentralHubDispatcherCard({
         <div className="md:col-span-2 space-y-1.5">
           <div className="flex items-center gap-2 flex-wrap">
             <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
-              <span>Công cụ Chủ Lực:</span>
-              <span className="text-sky-400 underline decoration-sky-500/50 underline-offset-2">
+              <span>Đã tự động thực thi:</span>
+              <span className="text-sky-400 font-extrabold underline decoration-sky-500/50 underline-offset-2">
                 {dispatchResult.primaryTool.name}
               </span>
             </h4>
@@ -93,7 +111,7 @@ export default function AiCentralHubDispatcherCard({
             </span>
             {dispatchResult.secondaryTool && (
               <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] border border-slate-700">
-                Bổ trợ: {dispatchResult.secondaryTool.name}
+                + {dispatchResult.secondaryTool.name}
               </span>
             )}
             {dispatchResult.voiceToolCompanion && (
@@ -108,42 +126,47 @@ export default function AiCentralHubDispatcherCard({
           </p>
 
           <p className="text-[11px] text-emerald-400 italic">
-            🎯 <strong>Cơ sở điều phối sư phạm:</strong> {dispatchResult.selectionReason}
+            🎯 <strong>Cơ sở AI tự động hóa:</strong> {dispatchResult.selectionReason}
           </p>
         </div>
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row md:flex-col gap-2 justify-center">
+          <button
+            type="button"
+            onClick={handleSpeak}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer active:scale-95 ${
+              isSpeaking
+                ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/30 animate-pulse'
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30'
+            }`}
+            title="Nghe giọng đọc tiếng Việt chuẩn sư phạm VietTTS"
+          >
+            {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+            <span>{isSpeaking ? 'Dừng Giọng Đọc' : 'Phát Giọng Giảng (VietTTS)'}</span>
+          </button>
+
           <a
             href={dispatchResult.directHubLaunchUrl}
             target="_blank"
             rel="noreferrer"
-            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-400 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 transition-all cursor-pointer active:scale-95"
-            title="Mở trực tiếp trên cổng Trung Tâm Điều Phối AI của huycncdsai.io.vn"
+            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs flex items-center justify-center gap-1.5 border border-slate-700 transition-all cursor-pointer active:scale-95"
+            title="Đồng bộ sâu với cụm GPU Server trên huycncdsai.io.vn"
           >
-            <span>Mở Trên AI Central Hub</span>
-            <ExternalLink className="w-3.5 h-3.5" />
+            <span>Đồng Bộ Cụm GPU Hub</span>
+            <ExternalLink className="w-3 h-3" />
           </a>
-
-          <button
-            type="button"
-            onClick={handleCopyPrompt}
-            className="px-3.5 py-2 rounded-xl bg-indigo-600/80 hover:bg-indigo-600 text-white font-medium text-xs flex items-center justify-center gap-2 border border-indigo-400/40 transition-all cursor-pointer active:scale-95"
-          >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-            <span>{copied ? 'Đã chép Prompt AI!' : 'Sao chép Prompt Tối Ưu'}</span>
-          </button>
         </div>
       </div>
 
-      {/* Accordion: Chi tiết Prompt Tối Ưu & Quy Trình 3 Bước */}
+      {/* Accordion: Chi tiết Quy trình Tự Động */}
       <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px]">
         <button
           type="button"
           onClick={() => setShowPromptDetails(!showPromptDetails)}
-          className="text-slate-400 hover:text-amber-300 transition-colors flex items-center gap-1 cursor-pointer"
+          className="text-slate-400 hover:text-emerald-300 transition-colors flex items-center gap-1 cursor-pointer"
         >
-          <span>{showPromptDetails ? '▼ Ẩn kịch bản prompt & quy trình' : '▶ Xem trước câu lệnh Prompt chuyên biệt'}</span>
+          <span>{showPromptDetails ? '▼ Thu gọn kịch bản tự động' : '▶ Xem quy trình AI đã thi công ngầm'}</span>
         </button>
 
         <span className="text-[10px] text-slate-500">
@@ -154,9 +177,19 @@ export default function AiCentralHubDispatcherCard({
       {showPromptDetails && (
         <div className="p-3 rounded-xl bg-slate-950/90 border border-slate-800 space-y-2.5 animate-fade-in">
           <div className="space-y-1">
-            <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">
-              📝 Câu lệnh Prompt đã được tinh chỉnh cho {dispatchResult.primaryTool.name}:
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                📝 Kịch bản Prompt chuyên biệt được nạp tự động vào {dispatchResult.primaryTool.name}:
+              </span>
+              <button
+                type="button"
+                onClick={handleCopyPrompt}
+                className="text-[10px] text-indigo-400 hover:text-white flex items-center gap-1 cursor-pointer"
+              >
+                {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                <span>{copied ? 'Đã sao chép' : 'Sao chép'}</span>
+              </button>
+            </div>
             <pre className="p-2.5 rounded-lg bg-black/60 text-[11px] text-slate-300 font-mono overflow-x-auto whitespace-pre-wrap max-h-48 border border-white/5">
               {dispatchResult.optimizedPrompt}
             </pre>
@@ -164,7 +197,7 @@ export default function AiCentralHubDispatcherCard({
 
           <div className="pt-1.5 border-t border-white/5">
             <span className="text-[10px] font-bold text-slate-400 block mb-1">
-              ⚡ 3 bước triển khai nhanh:
+              ⚡ Các bước hệ thống đã hoàn thành tự động:
             </span>
             <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-slate-400">
               {dispatchResult.executionSteps.map((step, idx) => (

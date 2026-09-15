@@ -30,6 +30,8 @@ import {
   Download,
   ExternalLink,
   RefreshCw,
+  Volume2,
+  VolumeX,
   ArrowLeftRight
 } from "lucide-react";
 import {
@@ -46,6 +48,7 @@ import {
 } from "./aiPedagogyEngine";
 import { getResolvedKnowledgeDocuments } from "../app/app/knowledgeBaseData";
 import { AiCentralHubDispatchRecommendation } from "../lib/aiCentralHubDispatcher";
+import { speakVietnamese, stopSpeaking } from "../lib/voiceAiService";
 
 interface ChatMessage {
   id: string;
@@ -76,6 +79,7 @@ export default function AIAssistantWidget() {
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -526,8 +530,8 @@ Thầy/Cô hãy chọn nhanh chức năng bên dưới hoặc đặt câu hỏi 
                         <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-white/10">
                           <div className="flex items-center gap-1.5">
                             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                            <span className="text-[11px] font-bold text-amber-300 tracking-wide">
-                              ⚡ AI CENTRAL HUB • HUYCNCDSAI.IO.VN
+                            <span className="text-[11px] font-bold text-emerald-300 tracking-wide">
+                              ⚡ AI CENTRAL HUB: ĐÃ TỰ ĐỘNG THI CÔNG 100%
                             </span>
                           </div>
                           <span className="px-2 py-0.5 rounded-full bg-white/10 text-slate-300 text-[10px] font-mono border border-white/15">
@@ -614,9 +618,33 @@ Thầy/Cô hãy chọn nhanh chức năng bên dưới hoặc đặt câu hỏi 
                       </div>
                     )}
 
-                    {/* Thanh nút thao tác: Sao chép & Xuất Word */}
+                    {/* Thanh nút thao tác: Sao chép & Xuất Word & Phát Giọng VietTTS */}
                     {msg.sender === "ai" && (
-                      <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-end gap-2 text-[10px]">
+                      <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between gap-2 text-[10px] flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (speakingMsgId === msg.id) {
+                              stopSpeaking();
+                              setSpeakingMsgId(null);
+                            } else {
+                              setSpeakingMsgId(msg.id);
+                              speakVietnamese(msg.text, {
+                                onEnd: () => setSpeakingMsgId(null)
+                              });
+                            }
+                          }}
+                          className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                            speakingMsgId === msg.id
+                              ? 'bg-rose-600 hover:bg-rose-500 text-white animate-pulse'
+                              : 'bg-emerald-600/80 hover:bg-emerald-600 text-white'
+                          }`}
+                          title="Tự động đọc bài giảng bằng giọng đọc tiếng Việt VietTTS"
+                        >
+                          {speakingMsgId === msg.id ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+                          <span>{speakingMsgId === msg.id ? 'Dừng đọc' : 'Phát Giọng VietTTS'}</span>
+                        </button>
+                        <div className="flex items-center gap-2">
                         {msg.wordExportableHtml && (
                           <button
                             onClick={() => handleExportWord(msg.wordExportableHtml!, "De_Thi_Ma_Tran_TT22")}
@@ -633,6 +661,7 @@ Thầy/Cô hãy chọn nhanh chức năng bên dưới hoặc đặt câu hỏi 
                           {copiedId === "txt-" + msg.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                           <span>{copiedId === "txt-" + msg.id ? "Đã chép" : "Sao chép"}</span>
                         </button>
+                        </div>
                       </div>
                     )}
                   </div>

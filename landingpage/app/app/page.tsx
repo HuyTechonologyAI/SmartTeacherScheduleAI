@@ -78,6 +78,8 @@ import {
 } from './lessonPlanAi';
 import { generateAndDownloadPptx } from './lessonPlanPptx';
 import { InteractiveMindMap } from './InteractiveMindMap';
+import { InteractiveTechnicalImages } from './InteractiveTechnicalImages';
+import { speakVietnamese, stopSpeaking } from '@/lib/voiceAiService';
 import { InteractiveMiniGame } from './InteractiveMiniGame';
 import { AutomatedPaymentModal } from './AutomatedPaymentModal';
 import { extractPedagogicalKnowledge, PedagogicalKnowledge } from './deepRagPedagogicalParser';
@@ -159,6 +161,7 @@ import {
   ChevronRight,
   Download,
   Presentation,
+  Layers,
   Share2,
   AlertCircle,
   ArrowLeft,
@@ -920,7 +923,8 @@ export default function UnifiedTeacherScheduleApp() {
   const [excludeTestData, setExcludeTestData] = useState(true);
   const [testDataCount, setTestDataCount] = useState(0);
   const [dismissTestBanner, setDismissTestBanner] = useState(false);
-  const [plannerActiveResultTab, setPlannerActiveResultTab] = useState<'plan' | 'slides' | 'game' | 'video' | 'mindmap' | 'audit'>('plan');
+  const [plannerActiveResultTab, setPlannerActiveResultTab] = useState<'plan' | 'slides' | 'game' | 'video' | 'mindmap' | 'images' | 'audit'>('plan');
+  const [isLessonSpeaking, setIsLessonSpeaking] = useState(false);
   const [isExportingPptx, setIsExportingPptx] = useState(false);
   const [plannerStepProgress, setPlannerStepProgress] = useState('');
 
@@ -5078,6 +5082,54 @@ export default function UnifiedTeacherScheduleApp() {
                       </div>
                     </div>
 
+                    {/* TỰ ĐỘNG THI CÔNG 100% BY AI CENTRAL HUB BANNER & AUDIO PLAYER */}
+                    <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/70 via-slate-900 to-indigo-950/70 border-2 border-emerald-500/50 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xl mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 flex items-center justify-center font-bold text-lg shrink-0">
+                          ⚡
+                        </div>
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs sm:text-sm font-bold text-white">
+                              HỆ THỐNG AI ĐÃ TỰ ĐỘNG TẠO 100% TRỌN BỘ SẢN PHẨM SƯ PHẠM
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-500/30">
+                              TỰ ĐỘNG HÓA HOÀN TOÀN
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-300">
+                            Đã tự động phối hợp 14 công cụ AI Central Hub (Presenton .pptx, ComfyUI 4 ảnh kỹ thuật, Slidev Mindmap, MoneyPrinterTurbo video vi mô, VietTTS giọng đọc chuẩn).
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (isLessonSpeaking) {
+                              stopSpeaking();
+                              setIsLessonSpeaking(false);
+                            } else {
+                              setIsLessonSpeaking(true);
+                              const text = plannerFullPackage?.voiceNarrationText || (plannerLessonTitle + '. Bài giảng môn ' + plannerSubject);
+                              speakVietnamese(text, {
+                                onEnd: () => setIsLessonSpeaking(false)
+                              });
+                            }
+                          }}
+                          className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg transition-all cursor-pointer ${
+                            isLessonSpeaking
+                              ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/30 animate-pulse'
+                              : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30'
+                          }`}
+                        >
+                          <Volume2 className="w-4 h-4" />
+                          <span>{isLessonSpeaking ? 'Dừng Giọng Giảng' : 'Phát Giọng Giảng (VietTTS)'}</span>
+                        </button>
+                      </div>
+                    </div>
+
                     {/* Thanh Điều Hướng 6 Tab Kết Quả */}
                     <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-200 dark:border-slate-700 text-xs">
                       <button
@@ -5147,6 +5199,19 @@ export default function UnifiedTeacherScheduleApp() {
 
                       <button
                         type="button"
+                        onClick={() => setPlannerActiveResultTab('images')}
+                        className={`px-3.5 py-2 rounded-t-xl font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                          plannerActiveResultTab === 'images'
+                            ? 'bg-emerald-600 text-white shadow'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                      >
+                        <Layers className="w-3.5 h-3.5" />
+                        <span>6. Bộ Ảnh Kỹ Thuật (ComfyUI)</span>
+                      </button>
+
+                      <button
+                        type="button"
                         onClick={() => setPlannerActiveResultTab('audit')}
                         className={`px-3.5 py-2 rounded-t-xl font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                           plannerActiveResultTab === 'audit'
@@ -5155,7 +5220,7 @@ export default function UnifiedTeacherScheduleApp() {
                         }`}
                       >
                         <Award className="w-3.5 h-3.5" />
-                        <span>6. Chấm Điểm Năng Lực Số ({plannerFullPackage?.auditScore.totalScore || 96}đ)</span>
+                        <span>7. Chấm Điểm Năng Lực Số ({plannerFullPackage?.auditScore.totalScore || 96}đ)</span>
                       </button>
                     </div>
 
@@ -5453,6 +5518,23 @@ export default function UnifiedTeacherScheduleApp() {
                         mindmap={plannerFullPackage.mindmap}
                         lessonTitle={plannerFullPackage.lessonTitle}
                         subject={plannerFullPackage.subject}
+                        />
+                      </div>
+                    )}
+
+                    {/* ================= TAB: BỘ ẢNH KỸ THUẬT (COMFYUI) ================= */}
+                    {plannerActiveResultTab === 'images' && plannerFullPackage && (
+                      <div className="space-y-4 animate-fade-in">
+                        <AiCentralHubDispatcherCard
+                          category="IMAGE"
+                          lessonTitle={plannerFullPackage.lessonTitle}
+                          subject={plannerFullPackage.subject}
+                          grade={plannerClass || '12'}
+                        />
+                        <InteractiveTechnicalImages
+                          diagrams={plannerFullPackage.technicalDiagrams}
+                          lessonTitle={plannerFullPackage.lessonTitle}
+                          subject={plannerFullPackage.subject}
                         />
                       </div>
                     )}

@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RotateCcw, Volume2, VolumeX, Download, Sparkles, Video, User, Check, Layers, ExternalLink } from 'lucide-react';
+import { Play, Pause, RotateCcw, Volume2, VolumeX, Download, Sparkles, Video, User, Check, Layers, ExternalLink,
+  Edit3,
+  Save,
+  X
+} from 'lucide-react';
 import { VideoStoryboardScene } from './lessonPlanAi';
 import { speakVietnamese, stopSpeaking, PEDAGOGICAL_VOICES } from '@/lib/voiceAiService';
 
@@ -10,14 +14,39 @@ interface InteractiveAiVideoPlayerProps {
   lessonTitle: string;
   subject: string;
   voiceNarrationText?: string;
+  onUpdateVideoScript?: (newScript: VideoStoryboardScene[]) => void;
 }
 
 export function InteractiveAiVideoPlayer({
   videoScript,
   lessonTitle,
   subject,
-  voiceNarrationText = ''
+  voiceNarrationText = '',
+  onUpdateVideoScript
 }: InteractiveAiVideoPlayerProps) {
+  const [localScript, setLocalScript] = useState<VideoStoryboardScene[]>(videoScript);
+  useEffect(() => {
+    setLocalScript(videoScript);
+  }, [videoScript]);
+
+  // Modal chỉnh sửa phân cảnh
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [editScenes, setEditScenes] = useState<VideoStoryboardScene[]>([]);
+  const [editSceneIdx, setEditSceneIdx] = useState(0);
+
+  const handleOpenEditor = () => {
+    setEditScenes(JSON.parse(JSON.stringify(localScript)));
+    setEditSceneIdx(currentSceneIndex);
+    setIsEditorOpen(true);
+  };
+
+  const handleSaveEditor = () => {
+    setLocalScript(editScenes);
+    if (onUpdateVideoScript) {
+      onUpdateVideoScript(editScenes);
+    }
+    setIsEditorOpen(false);
+  };
   const [currentSceneIndex, setCurrentSceneIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -30,8 +59,8 @@ export function InteractiveAiVideoPlayer({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | null>(null);
 
-  const activeScene = videoScript[currentSceneIndex] || videoScript[0];
-  const totalScenes = videoScript.length;
+  const activeScene = localScript[currentSceneIndex] || localScript[0];
+  const totalScenes = localScript.length;
 
   // Scene duration estimate (approx 20-30s per scene)
   const sceneDuration = 25; 
@@ -88,7 +117,7 @@ export function InteractiveAiVideoPlayer({
     setCurrentTime(idx * sceneDuration);
     if (isPlaying) {
       setTimeout(() => {
-        const sceneText = videoScript[idx]?.voiceover || 'Nội dung phân cảnh ' + (idx + 1);
+        const sceneText = localScript[idx]?.voiceover || 'Nội dung phân cảnh ' + (idx + 1);
         speakVietnamese(sceneText, {
           rate: playbackSpeed,
           pitch: 1.0,
@@ -335,7 +364,7 @@ export function InteractiveAiVideoPlayer({
 
         {/* Scene Navigation Chips */}
         <div className="flex items-center gap-1.5 overflow-x-auto py-1">
-          {videoScript.map((sc, idx) => (
+          {localScript.map((sc, idx) => (
             <button
               key={idx}
               type="button"
@@ -376,6 +405,175 @@ export function InteractiveAiVideoPlayer({
           ))}
         </div>
       </div>
+
+      {/* MODAL CHỈNH SỬA PHÂN CẢNH VIDEO */}
+      {isEditorOpen && editScenes[editSceneIdx] && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          <div className="bg-slate-900 border border-amber-500/40 rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl animate-fade-in">
+            {/* Header */}
+            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between gap-3 shrink-0 bg-slate-950/60 rounded-t-2xl">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+                  <Edit3 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                    <span>Chỉnh Sửa Kịch Bản Phân Cảnh Video</span>
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-mono border border-amber-500/30">
+                      {editScenes.length} phân cảnh
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Thầy/Cô có thể tùy chỉnh lời bình thuyết minh, mô tả bối cảnh và chữ hiển thị trên video
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditorOpen(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Scenes Tabs */}
+            <div className="flex items-center gap-1.5 px-4 pt-3 border-b border-slate-800 overflow-x-auto shrink-0 bg-slate-950/40">
+              {editScenes.map((sc, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setEditSceneIdx(idx)}
+                  className={'px-3 py-2 rounded-t-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ' + (editSceneIdx === idx ? 'bg-amber-600 text-white shadow' : 'text-slate-400 hover:text-white hover:bg-slate-800/60')}
+                >
+                  <span>Cảnh {idx + 1}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Active Scene Form */}
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1 text-xs sm:text-sm text-slate-200">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2 space-y-1.5">
+                  <label className="font-semibold text-slate-300 text-xs">Tiêu đề phân cảnh:</label>
+                  <input
+                    type="text"
+                    value={editScenes[editSceneIdx].title}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditScenes(prev => {
+                        const next = [...prev];
+                        next[editSceneIdx] = { ...next[editSceneIdx], title: val };
+                        return next;
+                      });
+                    }}
+                    className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-amber-500"
+                    placeholder="VD: Mở đầu bài giảng & Đặt vấn đề..."
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="font-semibold text-slate-300 text-xs">Thời lượng ước tính:</label>
+                  <input
+                    type="text"
+                    value={editScenes[editSceneIdx].duration || '0:25'}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditScenes(prev => {
+                        const next = [...prev];
+                        next[editSceneIdx] = { ...next[editSceneIdx], duration: val };
+                        return next;
+                      });
+                    }}
+                    className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-amber-500"
+                    placeholder="0:25"
+                  />
+                </div>
+              </div>
+
+              {/* Visual Description */}
+              <div className="space-y-1.5">
+                <label className="font-semibold text-slate-300 text-xs">Mô tả bối cảnh hình ảnh / Video AI (Visual Description):</label>
+                <textarea
+                  rows={2}
+                  value={editScenes[editSceneIdx].visualDescription}
+                  onChange={(e) => {
+                    const text = e.target.value;
+                    setEditScenes(prev => {
+                      const next = [...prev];
+                      next[editSceneIdx] = { ...next[editSceneIdx], visualDescription: text };
+                      return next;
+                    });
+                  }}
+                  className="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 resize-none text-xs leading-relaxed"
+                  placeholder="Mô tả góc máy, hoạt cảnh chuyển động, thiết bị xuất hiện trên màn hình..."
+                />
+              </div>
+
+              {/* Voiceover Script (VietTTS will read this!) */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-semibold text-amber-300 text-xs flex items-center gap-1.5">
+                    <Volume2 className="w-3.5 h-3.5" />
+                    <span>Lời bình thuyết minh sư phạm (Giọng đọc VietTTS trực tiếp đọc đoạn này):</span>
+                  </label>
+                </div>
+                <textarea
+                  rows={4}
+                  value={editScenes[editSceneIdx].voiceover}
+                  onChange={(e) => {
+                    const text = e.target.value;
+                    setEditScenes(prev => {
+                      const next = [...prev];
+                      next[editSceneIdx] = { ...next[editSceneIdx], voiceover: text };
+                      return next;
+                    });
+                  }}
+                  className="w-full p-3 rounded-xl bg-slate-950 border border-amber-500/50 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 resize-none text-xs leading-relaxed"
+                  placeholder="Nhập câu chữ chuẩn mực sư phạm để AI chuyển đổi thành giọng nói truyền cảm..."
+                />
+              </div>
+
+              {/* On-screen text */}
+              <div className="space-y-1.5">
+                <label className="font-semibold text-slate-300 text-xs">Chữ hiển thị nổi bật trên màn hình (Overlay Subtitle / Highlight):</label>
+                <input
+                  type="text"
+                  value={editScenes[editSceneIdx].onScreenText || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setEditScenes(prev => {
+                      const next = [...prev];
+                      next[editSceneIdx] = { ...next[editSceneIdx], onScreenText: val };
+                      return next;
+                    });
+                  }}
+                  className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-amber-500"
+                  placeholder="Từ khóa trọng tâm hoặc công thức xuất hiện trên khung hình..."
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 sm:p-5 border-t border-slate-800 flex items-center justify-end gap-3 shrink-0 bg-slate-950/60 rounded-b-2xl">
+              <button
+                type="button"
+                onClick={() => setIsEditorOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveEditor}
+                className="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-amber-600/30 transition-all cursor-pointer"
+              >
+                <Save className="w-4 h-4" />
+                <span>Lưu Kịch Bản Phân Cảnh</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

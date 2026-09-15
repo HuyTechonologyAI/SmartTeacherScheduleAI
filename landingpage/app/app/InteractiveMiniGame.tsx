@@ -23,7 +23,12 @@ import {
   Clock,
   ListFilter,
   HelpCircle,
-  AlertCircle
+  AlertCircle,
+  Edit3,
+  Save,
+  Plus,
+  Trash2,
+  X
 } from 'lucide-react';
 import { MiniGameQuestion, miniGameToTxt } from './lessonPlanAi';
 
@@ -31,13 +36,61 @@ interface InteractiveMiniGameProps {
   questions: MiniGameQuestion[];
   lessonTitle: string;
   subject?: string;
+  onUpdateQuestions?: (newQuestions: MiniGameQuestion[]) => void;
 }
 
 export const InteractiveMiniGame: React.FC<InteractiveMiniGameProps> = ({
   questions = [],
   lessonTitle,
-  subject = 'Bộ môn'
+  subject = 'Bộ môn',
+  onUpdateQuestions
 }) => {
+  const [localQuestions, setLocalQuestions] = useState<MiniGameQuestion[]>(questions);
+  useEffect(() => {
+    setLocalQuestions(questions);
+  }, [questions]);
+
+  // Modal chỉnh sửa câu hỏi
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [editList, setEditList] = useState<MiniGameQuestion[]>([]);
+  const [editIdx, setEditIdx] = useState(0);
+
+  const handleOpenEditor = () => {
+    setEditList(JSON.parse(JSON.stringify(localQuestions)));
+    setEditIdx(0);
+    setIsEditorOpen(true);
+  };
+
+  const handleSaveEditor = () => {
+    setLocalQuestions(editList);
+    if (onUpdateQuestions) {
+      onUpdateQuestions(editList);
+    }
+    setIsEditorOpen(false);
+  };
+
+  const handleAddQuestion = () => {
+    const newQ: MiniGameQuestion = {
+      id: Date.now(),
+      question: 'Câu hỏi tương tác mới ' + (editList.length + 1) + '?',
+      options: ['A. Phương án 1', 'B. Phương án 2', 'C. Phương án 3', 'D. Phương án 4'],
+      correctAnswer: 'A',
+      explanation: 'Giải thích cơ sở khoa học hoặc lý do chọn đáp án này.',
+      timeLimitSeconds: 30,
+      points: 10,
+      bloomLevel: 'Thông hiểu'
+    };
+    const next = [...editList, newQ];
+    setEditList(next);
+    setEditIdx(next.length - 1);
+  };
+
+  const handleDeleteQuestion = (idxToDelete: number) => {
+    if (editList.length <= 1) return;
+    const next = editList.filter((_, i) => i !== idxToDelete);
+    setEditList(next);
+    setEditIdx(Math.max(0, idxToDelete - 1));
+  };
   // Chế độ xem: 'slide' (Trình chiếu từng câu trên lớp) | 'list' (Danh sách tất cả câu)
   const [viewMode, setViewMode] = useState<'slide' | 'list'>('slide');
   const [currentIdx, setCurrentIdx] = useState<number>(0);
@@ -51,7 +104,7 @@ export const InteractiveMiniGame: React.FC<InteractiveMiniGameProps> = ({
   const [selectedMap, setSelectedMap] = useState<{ [id: number]: string }>({});
 
   // Đồng hồ đếm ngược cho câu hỏi hiện tại trong chế độ Slide
-  const currentQ = questions[currentIdx] || null;
+  const currentQ = localQuestions[currentIdx] || null;
   const initialTime = currentQ?.timeLimitSeconds || 30;
   const [timeLeft, setTimeLeft] = useState<number>(initialTime);
   const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
@@ -77,7 +130,7 @@ export const InteractiveMiniGame: React.FC<InteractiveMiniGameProps> = ({
     return () => clearInterval(interval);
   }, [isTimerRunning, timeLeft]);
 
-  if (!questions || questions.length === 0) {
+  if (!questions || localQuestions.length === 0) {
     return (
       <div className="p-8 text-center text-slate-400 bg-slate-900 rounded-2xl border border-slate-800">
         Chưa có dữ liệu câu hỏi Mini Game.
@@ -103,7 +156,7 @@ export const InteractiveMiniGame: React.FC<InteractiveMiniGameProps> = ({
 
   // Tải file .txt cho Kahoot / Quizizz
   const handleDownloadTxt = () => {
-    const txt = miniGameToTxt(questions, lessonTitle);
+    const txt = miniGameToTxt(localQuestions, lessonTitle);
     const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -116,7 +169,7 @@ export const InteractiveMiniGame: React.FC<InteractiveMiniGameProps> = ({
   };
 
   const handleCopyTxt = () => {
-    const txt = miniGameToTxt(questions, lessonTitle);
+    const txt = miniGameToTxt(localQuestions, lessonTitle);
     navigator.clipboard.writeText(txt);
     setCopiedTxt(true);
     setTimeout(() => setCopiedTxt(false), 2000);
@@ -137,7 +190,7 @@ export const InteractiveMiniGame: React.FC<InteractiveMiniGameProps> = ({
             <h4 className="text-sm font-bold text-white flex items-center gap-2">
               <span>Đấu Trí Tương Tác Mini Game</span>
               <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                {questions.length} Câu Hỏi Chuẩn Sư Phạm
+                {localQuestions.length} Câu Hỏi Chuẩn Sư Phạm
               </span>
             </h4>
             <p className="text-xs text-slate-400">
@@ -197,6 +250,17 @@ export const InteractiveMiniGame: React.FC<InteractiveMiniGameProps> = ({
             <span>{copiedTxt ? 'Đã Chép' : 'Chép Text'}</span>
           </button>
 
+          {/* Nút Chỉnh sửa câu hỏi */}
+          <button
+            type="button"
+            onClick={handleOpenEditor}
+            className="px-3 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-amber-600/25 transition-all cursor-pointer"
+            title="Chỉnh sửa câu hỏi, đáp án, thời gian đếm ngược trước khi xuất file"
+          >
+            <Edit3 className="w-4 h-4" />
+            <span>Chỉnh Sửa Câu Hỏi</span>
+          </button>
+
           {/* Tải file .txt cho Kahoot/Quizizz */}
           <button
             type="button"
@@ -228,7 +292,7 @@ export const InteractiveMiniGame: React.FC<InteractiveMiniGameProps> = ({
 
             {/* Các nút chuyển nhanh câu 1, 2, 3, 4 */}
             <div className="flex items-center gap-1.5">
-              {questions.map((q, idx) => {
+              {localQuestions.map((q, idx) => {
                 const isAct = idx === currentIdx;
                 const isRev = !!revealedMap[q.id];
                 return (
@@ -252,8 +316,8 @@ export const InteractiveMiniGame: React.FC<InteractiveMiniGameProps> = ({
 
             <button
               type="button"
-              disabled={currentIdx === questions.length - 1}
-              onClick={() => setCurrentIdx(prev => Math.min(questions.length - 1, prev + 1))}
+              disabled={currentIdx === localQuestions.length - 1}
+              onClick={() => setCurrentIdx(prev => Math.min(localQuestions.length - 1, prev + 1))}
               className="px-3 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:hover:bg-purple-600 text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
             >
               <span>Câu Tiếp Theo</span>
@@ -268,7 +332,7 @@ export const InteractiveMiniGame: React.FC<InteractiveMiniGameProps> = ({
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <span className="px-3.5 py-1.5 rounded-xl bg-purple-600 text-white font-extrabold text-xs tracking-wider shadow">
-                    CÂU {currentIdx + 1} / {questions.length}
+                    CÂU {currentIdx + 1} / {localQuestions.length}
                   </span>
                   <span className="px-3 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 font-bold text-xs">
                     {currentQ.bloomLevel.toUpperCase()}
@@ -447,7 +511,7 @@ export const InteractiveMiniGame: React.FC<InteractiveMiniGameProps> = ({
       {/* ========================================================================= */}
       {viewMode === 'list' && (
         <div className="space-y-4 animate-fade-in">
-          {questions.map((q, idx) => {
+          {localQuestions.map((q, idx) => {
             const isRev = !!revealedMap[q.id];
             const sel = selectedMap[q.id];
 
@@ -537,6 +601,215 @@ export const InteractiveMiniGame: React.FC<InteractiveMiniGameProps> = ({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* MODAL CHỈNH SỬA BỘ CÂU HỎI MINI GAME */}
+      {isEditorOpen && editList[editIdx] && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          <div className="bg-slate-900 border border-purple-500/40 rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl animate-fade-in">
+            {/* Header */}
+            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between gap-3 shrink-0 bg-slate-950/60 rounded-t-2xl">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400">
+                  <Edit3 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                    <span>Chỉnh Sửa Bộ Câu Hỏi Mini Game</span>
+                    <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-mono border border-purple-500/30">
+                      {editList.length} câu
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Giáo viên chủ động điều chỉnh câu hỏi, phương án và đáp án đúng trước khi xuất file
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditorOpen(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Questions Tabs */}
+            <div className="flex items-center gap-1.5 px-4 pt-3 border-b border-slate-800 overflow-x-auto shrink-0 bg-slate-950/40">
+              {editList.map((q, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setEditIdx(idx)}
+                  className={'px-3 py-1.5 rounded-t-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shrink-0 ' + (editIdx === idx ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-white hover:bg-slate-800/60')}
+                >
+                  <span>Câu {idx + 1}</span>
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={handleAddQuestion}
+                className="px-2.5 py-1.5 rounded-t-xl text-xs font-bold text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/40 border border-dashed border-emerald-500/40 transition-all flex items-center gap-1 cursor-pointer shrink-0 ml-1"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Thêm câu</span>
+              </button>
+            </div>
+
+            {/* Active Question Form */}
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1 text-xs sm:text-sm text-slate-200">
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-bold text-purple-300 text-sm">Câu hỏi #{editIdx + 1}</span>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-slate-400 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Thời gian:</span>
+                  </label>
+                  <select
+                    value={editList[editIdx].timeLimitSeconds || 30}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      setEditList(prev => {
+                        const next = [...prev];
+                        next[editIdx] = { ...next[editIdx], timeLimitSeconds: val };
+                        return next;
+                      });
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs font-medium cursor-pointer"
+                  >
+                    <option value={15}>15 giây</option>
+                    <option value={20}>20 giây</option>
+                    <option value={30}>30 giây</option>
+                    <option value={45}>45 giây</option>
+                    <option value={60}>60 giây</option>
+                  </select>
+
+                  {editList.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteQuestion(editIdx)}
+                      className="px-2 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 text-xs font-medium flex items-center gap-1 transition-all cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Xóa câu</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Question Text */}
+              <div className="space-y-1.5">
+                <label className="font-semibold text-slate-300 text-xs">Nội dung câu hỏi:</label>
+                <textarea
+                  rows={3}
+                  value={editList[editIdx].question}
+                  onChange={(e) => {
+                    const text = e.target.value;
+                    setEditList(prev => {
+                      const next = [...prev];
+                      next[editIdx] = { ...next[editIdx], question: text };
+                      return next;
+                    });
+                  }}
+                  className="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 resize-none text-xs leading-relaxed"
+                  placeholder="Nhập câu hỏi tại đây..."
+                />
+              </div>
+
+              {/* 4 Options */}
+              <div className="space-y-2">
+                <label className="font-semibold text-slate-300 text-xs flex items-center justify-between">
+                  <span>4 Phương án trả lời (Bấm vào chữ cái để chọn đáp án ĐÚNG):</span>
+                </label>
+                {(editList[editIdx].options || []).map((opt, oIdx) => {
+                  const letter = String.fromCharCode(65 + oIdx);
+                  const isCorrect = (editList[editIdx].correctAnswer || '').toUpperCase().startsWith(letter);
+
+                  return (
+                    <div
+                      key={oIdx}
+                      className={'p-2.5 rounded-xl border flex items-center gap-2.5 transition-all ' + (isCorrect ? 'bg-emerald-950/30 border-emerald-500/50' : 'bg-slate-950/60 border-slate-800')}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditList(prev => {
+                            const next = [...prev];
+                            next[editIdx] = { ...next[editIdx], correctAnswer: letter };
+                            return next;
+                          });
+                        }}
+                        className={'w-7 h-7 rounded-lg font-bold text-xs flex items-center justify-center shrink-0 cursor-pointer transition-all ' + (isCorrect ? 'bg-emerald-500 text-slate-950 shadow-md' : 'bg-slate-800 text-slate-400 hover:text-white')}
+                        title={'Đặt phương án ' + letter + ' làm đáp án đúng'}
+                      >
+                        {letter}
+                      </button>
+                      <input
+                        type="text"
+                        value={opt}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setEditList(prev => {
+                            const next = [...prev];
+                            const newOpts = [...(next[editIdx].options || [])];
+                            newOpts[oIdx] = val;
+                            next[editIdx] = { ...next[editIdx], options: newOpts };
+                            return next;
+                          });
+                        }}
+                        className="flex-1 bg-transparent border-none text-white text-xs focus:outline-none"
+                        placeholder={'Phương án ' + letter}
+                      />
+                      {isCorrect && (
+                        <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full shrink-0">
+                          Đáp án đúng
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Explanation */}
+              <div className="space-y-1.5">
+                <label className="font-semibold text-slate-300 text-xs">Giải thích sư phạm (hiển thị khi mở kết quả):</label>
+                <textarea
+                  rows={2}
+                  value={editList[editIdx].explanation || ''}
+                  onChange={(e) => {
+                    const text = e.target.value;
+                    setEditList(prev => {
+                      const next = [...prev];
+                      next[editIdx] = { ...next[editIdx], explanation: text };
+                      return next;
+                    });
+                  }}
+                  className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 resize-none text-xs leading-relaxed"
+                  placeholder="Giải thích nguyên nhân chọn đáp án đúng..."
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 sm:p-5 border-t border-slate-800 flex items-center justify-end gap-3 shrink-0 bg-slate-950/60 rounded-b-2xl">
+              <button
+                type="button"
+                onClick={() => setIsEditorOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveEditor}
+                className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-purple-600/30 transition-all cursor-pointer"
+              >
+                <Save className="w-4 h-4" />
+                <span>Lưu Bộ Câu Hỏi</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

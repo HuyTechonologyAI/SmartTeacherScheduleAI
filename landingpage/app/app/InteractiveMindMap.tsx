@@ -36,6 +36,7 @@ interface InteractiveMindMapProps {
   mindmap: LessonMindmapData;
   lessonTitle: string;
   subject?: string;
+  onUpdateMindmap?: (newMindmap: LessonMindmapData) => void;
 }
 
 interface NodePosition {
@@ -73,7 +74,8 @@ interface EditModalState {
 export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
   mindmap,
   lessonTitle,
-  subject = 'Bộ môn'
+  subject = 'Bộ môn',
+  onUpdateMindmap
 }) => {
   // 1. Quản lý trạng thái nội dung (Có thể chỉnh sửa)
   const [editableMindmap, setEditableMindmap] = useState<LessonMindmapData>(() => mindmap || {
@@ -378,6 +380,9 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
           subItems: newSubItems
         };
       }
+      if (onUpdateMindmap) {
+        onUpdateMindmap(next);
+      }
       return next;
     });
 
@@ -394,6 +399,9 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
         ...next.branches[bIdx],
         subItems: [...currentSubs, `Ý kiến thức mới #${currentSubs.length + 1}`]
       };
+      if (onUpdateMindmap) {
+        onUpdateMindmap(next);
+      }
       return next;
     });
   };
@@ -408,6 +416,9 @@ export const InteractiveMindMap: React.FC<InteractiveMindMapProps> = ({
         ...next.branches[bIdx],
         subItems: newSubs
       };
+      if (onUpdateMindmap) {
+        onUpdateMindmap(next);
+      }
       return next;
     });
   };

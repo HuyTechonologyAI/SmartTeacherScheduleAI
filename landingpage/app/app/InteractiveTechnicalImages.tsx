@@ -1,7 +1,13 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Download, Volume2, VolumeX, Eye, Maximize2, Check, Sparkles, Shield, Cpu, Layers } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Download, Volume2, VolumeX, Eye, Maximize2, Check, Sparkles, Shield, Cpu, Layers,
+  Edit3,
+  Save,
+  Plus,
+  Trash2,
+  X
+} from 'lucide-react';
 import { TechnicalDiagramItem } from './lessonPlanAi';
 import { speakVietnamese, stopSpeaking } from '@/lib/voiceAiService';
 
@@ -9,20 +15,46 @@ interface InteractiveTechnicalImagesProps {
   diagrams: TechnicalDiagramItem[];
   lessonTitle: string;
   subject: string;
+  onUpdateDiagrams?: (newDiagrams: TechnicalDiagramItem[]) => void;
 }
 
 export function InteractiveTechnicalImages({
   diagrams,
   lessonTitle,
-  subject
+  subject,
+  onUpdateDiagrams
 }: InteractiveTechnicalImagesProps) {
+  const [localDiagrams, setLocalDiagrams] = useState<TechnicalDiagramItem[]>(diagrams);
+  useEffect(() => {
+    setLocalDiagrams(diagrams);
+  }, [diagrams]);
+
   const [selectedStep, setSelectedStep] = useState(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [zoomDiagram, setZoomDiagram] = useState<TechnicalDiagramItem | null>(null);
 
-  if (!diagrams || diagrams.length === 0) return null;
+  // Modal chỉnh sửa thông số kỹ thuật
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [editDiagrams, setEditDiagrams] = useState<TechnicalDiagramItem[]>([]);
+  const [editIdx, setEditIdx] = useState(0);
 
-  const active = diagrams[selectedStep] || diagrams[0];
+  const handleOpenEditor = () => {
+    setEditDiagrams(JSON.parse(JSON.stringify(localDiagrams)));
+    setEditIdx(selectedStep);
+    setIsEditorOpen(true);
+  };
+
+  const handleSaveEditor = () => {
+    setLocalDiagrams(editDiagrams);
+    if (onUpdateDiagrams) {
+      onUpdateDiagrams(editDiagrams);
+    }
+    setIsEditorOpen(false);
+  };
+
+  if (!localDiagrams || localDiagrams.length === 0) return null;
+
+  const active = localDiagrams[selectedStep] || localDiagrams[0];
 
   const handleSpeak = () => {
     if (isSpeaking) {
@@ -83,12 +115,21 @@ export function InteractiveTechnicalImages({
             {isSpeaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
             <span>{isSpeaking ? 'Dừng Giọng Đọc' : 'Nghe Thuyết Minh (VietTTS)'}</span>
           </button>
+<button
+            type="button"
+            onClick={handleOpenEditor}
+            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-amber-600/25 transition-all cursor-pointer"
+            title="Chỉnh sửa thông số kỹ thuật, mô tả và lưu ý an toàn từng bước"
+          >
+            <Edit3 className="w-4 h-4" />
+            <span>Chỉnh Sửa Thông Số</span>
+          </button>
         </div>
       </div>
 
       {/* Step Tabs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {diagrams.map((diag, idx) => (
+        {localDiagrams.map((diag, idx) => (
           <button
             key={diag.step}
             type="button"
@@ -243,6 +284,215 @@ export function InteractiveTechnicalImages({
               >
                 <Download className="w-4 h-4" />
                 <span>Tải Bản Gốc Vector (.svg)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CHỈNH SỬA THÔNG SỐ KỸ THUẬT */}
+      {isEditorOpen && editDiagrams[editIdx] && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          <div className="bg-slate-900 border border-emerald-500/40 rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl animate-fade-in">
+            {/* Header */}
+            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between gap-3 shrink-0 bg-slate-950/60 rounded-t-2xl">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+                  <Edit3 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                    <span>Chỉnh Sửa Thông Số & Kỹ Thuật Bước {editIdx + 1}</span>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-mono border border-emerald-500/30">
+                      Chu trình 4 bước
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Giáo viên chủ động hiệu chỉnh thông số kỹ thuật thực hành và tiêu chuẩn ATLĐ trước khi xuất bản
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditorOpen(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Step Tabs */}
+            <div className="flex items-center gap-1.5 px-4 pt-3 border-b border-slate-800 overflow-x-auto shrink-0 bg-slate-950/40">
+              {editDiagrams.map((d, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setEditIdx(idx)}
+                  className={'px-3 py-2 rounded-t-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ' + (editIdx === idx ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white hover:bg-slate-800/60')}
+                >
+                  <span>Bước {idx + 1}: {d.title.slice(0, 15)}...</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Active Diagram Form */}
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1 text-xs sm:text-sm text-slate-200">
+              <div className="space-y-1.5">
+                <label className="font-semibold text-slate-300 text-xs">Tiêu đề bước thực hành / Nguyên lý:</label>
+                <input
+                  type="text"
+                  value={editDiagrams[editIdx].title}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setEditDiagrams(prev => {
+                      const next = [...prev];
+                      next[editIdx] = { ...next[editIdx], title: val };
+                      return next;
+                    });
+                  }}
+                  className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500"
+                  placeholder="Tiêu đề bước..."
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-semibold text-slate-300 text-xs">Mô tả quy trình kỹ thuật:</label>
+                <textarea
+                  rows={2}
+                  value={editDiagrams[editIdx].description}
+                  onChange={(e) => {
+                    const text = e.target.value;
+                    setEditDiagrams(prev => {
+                      const next = [...prev];
+                      next[editIdx] = { ...next[editIdx], description: text };
+                      return next;
+                    });
+                  }}
+                  className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 resize-none text-xs leading-relaxed"
+                  placeholder="Mô tả các thao tác, cơ chế vật lý..."
+                />
+              </div>
+
+              {/* Parameters List */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-semibold text-slate-300 text-xs">
+                    Thông số kỹ thuật định lượng (Parameters):
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditDiagrams(prev => {
+                        const next = [...prev];
+                        const currentParams = next[editIdx].parameters || [];
+                        next[editIdx] = {
+                          ...next[editIdx],
+                          parameters: [...currentParams, { label: 'Thông số mới', value: 'Giá trị' }]
+                        };
+                        return next;
+                      });
+                    }}
+                    className="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1 hover:bg-emerald-500/30 transition-all cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Thêm thông số</span>
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {(editDiagrams[editIdx].parameters || []).map((param, pIdx) => (
+                    <div key={pIdx} className="flex items-center gap-2 p-2 rounded-xl bg-slate-950/80 border border-slate-800">
+                      <input
+                        type="text"
+                        value={param.label}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setEditDiagrams(prev => {
+                            const next = [...prev];
+                            const newParams = [...next[editIdx].parameters];
+                            newParams[pIdx] = { ...newParams[pIdx], label: val };
+                            next[editIdx] = { ...next[editIdx], parameters: newParams };
+                            return next;
+                          });
+                        }}
+                        className="w-1/2 p-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500"
+                        placeholder="Tên thông số (vd: Điện áp U)"
+                      />
+                      <input
+                        type="text"
+                        value={param.value}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setEditDiagrams(prev => {
+                            const next = [...prev];
+                            const newParams = [...next[editIdx].parameters];
+                            newParams[pIdx] = { ...newParams[pIdx], value: val };
+                            next[editIdx] = { ...next[editIdx], parameters: newParams };
+                            return next;
+                          });
+                        }}
+                        className="w-1/2 p-2 rounded-lg bg-slate-900 border border-slate-700 text-emerald-300 font-mono text-xs focus:outline-none focus:border-emerald-500"
+                        placeholder="Giá trị (vd: 220V ± 5%)"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditDiagrams(prev => {
+                            const next = [...prev];
+                            const newParams = next[editIdx].parameters.filter((_, i) => i !== pIdx);
+                            next[editIdx] = { ...next[editIdx], parameters: newParams };
+                            return next;
+                          });
+                        }}
+                        className="p-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/20 rounded-lg transition-all cursor-pointer shrink-0"
+                        title="Xóa thông số này"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Safety Notes */}
+              <div className="space-y-1.5">
+                <label className="font-semibold text-rose-400 text-xs flex items-center gap-1">
+                  <Shield className="w-3.5 h-3.5" />
+                  <span>Quy tắc an toàn & Tiêu chuẩn 5S thực hành:</span>
+                </label>
+                <textarea
+                  rows={2}
+                  value={editDiagrams[editIdx].keySafetyNotes}
+                  onChange={(e) => {
+                    const text = e.target.value;
+                    setEditDiagrams(prev => {
+                      const next = [...prev];
+                      next[editIdx] = { ...next[editIdx], keySafetyNotes: text };
+                      return next;
+                    });
+                  }}
+                  className="w-full p-2.5 rounded-xl bg-slate-950 border border-rose-500/40 text-white placeholder-slate-500 focus:outline-none focus:border-rose-400 resize-none text-xs leading-relaxed"
+                  placeholder="Lưu ý an toàn lao động, ngắt nguồn điện, trang bị bảo hộ cá nhân..."
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 sm:p-5 border-t border-slate-800 flex items-center justify-end gap-3 shrink-0 bg-slate-950/60 rounded-b-2xl">
+              <button
+                type="button"
+                onClick={() => setIsEditorOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveEditor}
+                className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-emerald-600/30 transition-all cursor-pointer"
+              >
+                <Save className="w-4 h-4" />
+                <span>Lưu Thay Đổi Bước {editIdx + 1}</span>
               </button>
             </div>
           </div>

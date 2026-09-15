@@ -82,6 +82,7 @@ import { InteractiveMindMap } from './InteractiveMindMap';
 import { InteractiveTechnicalImages } from './InteractiveTechnicalImages';
 import { InteractiveAiVideoPlayer } from './InteractiveAiVideoPlayer';
 import { InteractiveSlidePlayer } from './InteractiveSlidePlayer';
+import { LessonPlanEditorModal } from './LessonPlanEditorModal';
 import { speakVietnamese, stopSpeaking } from '@/lib/voiceAiService';
 import { InteractiveMiniGame } from './InteractiveMiniGame';
 import { AutomatedPaymentModal } from './AutomatedPaymentModal';
@@ -930,6 +931,7 @@ export default function UnifiedTeacherScheduleApp() {
   const [isLessonSpeaking, setIsLessonSpeaking] = useState(false);
   const [isExportingPptx, setIsExportingPptx] = useState(false);
   const [plannerStepProgress, setPlannerStepProgress] = useState('');
+  const [isLessonPlanEditorOpen, setIsLessonPlanEditorOpen] = useState(false);
 
   // Hàm chọn ca dạy và tự động trích xuất tiết học, tên bài và khớp nối tài liệu giáo trình
   const selectPlannerEvent = (ev: CalendarEventItem) => {
@@ -4989,6 +4991,18 @@ export default function UnifiedTeacherScheduleApp() {
                           </button>
                         )}
 
+                        {(plannerResult5512 || plannerResult2634) && (
+                          <button
+                            type="button"
+                            onClick={() => setIsLessonPlanEditorOpen(true)}
+                            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-amber-600/25 transition-all cursor-pointer"
+                            title="Chỉnh sửa chi tiết Kế hoạch bài dạy trước khi xuất bản file Word"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>Chỉnh Sửa Giáo Án</span>
+                          </button>
+                        )}
+
                         {/* Tải Giáo án Word đơn lẻ */}
                         <button
                           type="button"
@@ -5238,6 +5252,26 @@ export default function UnifiedTeacherScheduleApp() {
                     {/* ================= TAB 1: KẾ HOẠCH BÀI DẠY (GIÁO ÁN) ================= */}
                     {plannerActiveResultTab === 'plan' && (
                       <div className="space-y-4">
+                        <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-slate-900/80 border border-sky-500/30 backdrop-blur shadow">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-xl bg-sky-500/20 border border-sky-500/30 text-sky-400 flex items-center justify-center font-bold">
+                              <Edit3 className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <span className="text-xs font-bold text-white block">Tùy Chỉnh Kế Hoạch Bài Dạy (CV 5512 / 2634)</span>
+                              <span className="text-[11px] text-slate-400">Thầy/Cô có thể chỉnh sửa mục tiêu, thiết bị dạy học và tiến trình 4 hoạt động sư phạm trước khi xuất file</span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setIsLessonPlanEditorOpen(true)}
+                            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-sky-600/25 transition-all cursor-pointer shrink-0"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                            <span>Chỉnh Sửa Kế Hoạch Bài Dạy</span>
+                          </button>
+                        </div>
+
                         <AiCentralHubDispatcherCard
                           category="LESSON"
                           lessonTitle={plannerLessonTitle || plannerResult5512?.lessonTitle || 'Kế hoạch bài dạy'}
@@ -5475,9 +5509,14 @@ export default function UnifiedTeacherScheduleApp() {
                           voiceContent="Bộ câu hỏi tương tác trắc nghiệm củng cố và đánh giá mức độ tiếp thu bài giảng của học sinh."
                         />
                         <InteractiveMiniGame
-                        questions={plannerFullPackage.miniGame}
-                        lessonTitle={plannerFullPackage.lessonTitle}
-                        subject={plannerFullPackage.subject}
+                          questions={plannerFullPackage.miniGame}
+                          lessonTitle={plannerFullPackage.lessonTitle}
+                          subject={plannerFullPackage.subject}
+                          onUpdateQuestions={(newQuestions) => {
+                            setPlannerFullPackage(prev => prev ? { ...prev, miniGame: newQuestions } : prev);
+                            setAlertBanner('🟢 Đã cập nhật bộ câu hỏi Mini Game thành công!');
+                            setTimeout(() => setAlertBanner(null), 3000);
+                          }}
                         />
                       </div>
                     )}
@@ -5499,6 +5538,11 @@ export default function UnifiedTeacherScheduleApp() {
                           lessonTitle={plannerFullPackage.lessonTitle}
                           subject={plannerFullPackage.subject}
                           voiceNarrationText={plannerFullPackage.voiceNarrationText}
+                          onUpdateVideoScript={(newScript) => {
+                            setPlannerFullPackage(prev => prev ? { ...prev, videoScript: newScript } : prev);
+                            setAlertBanner('🟢 Đã cập nhật kịch bản phân cảnh Video thành công!');
+                            setTimeout(() => setAlertBanner(null), 3000);
+                          }}
                         />
 
                         <div className="flex items-center justify-between p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs">
@@ -5576,9 +5620,12 @@ export default function UnifiedTeacherScheduleApp() {
                           voiceContent={plannerFullPackage.voiceNarrationText}
                         />
                         <InteractiveMindMap
-                        mindmap={plannerFullPackage.mindmap}
-                        lessonTitle={plannerFullPackage.lessonTitle}
-                        subject={plannerFullPackage.subject}
+                          mindmap={plannerFullPackage.mindmap}
+                          lessonTitle={plannerFullPackage.lessonTitle}
+                          subject={plannerFullPackage.subject}
+                          onUpdateMindmap={(newMindmap) => {
+                            setPlannerFullPackage(prev => prev ? { ...prev, mindmap: newMindmap } : prev);
+                          }}
                         />
                       </div>
                     )}
@@ -5597,6 +5644,11 @@ export default function UnifiedTeacherScheduleApp() {
                           diagrams={plannerFullPackage.technicalDiagrams}
                           lessonTitle={plannerFullPackage.lessonTitle}
                           subject={plannerFullPackage.subject}
+                          onUpdateDiagrams={(newDiagrams) => {
+                            setPlannerFullPackage(prev => prev ? { ...prev, technicalDiagrams: newDiagrams } : prev);
+                            setAlertBanner('🟢 Đã cập nhật thông số bộ ảnh kỹ thuật!');
+                            setTimeout(() => setAlertBanner(null), 3000);
+                          }}
                         />
                       </div>
                     )}
@@ -10307,6 +10359,42 @@ export default function UnifiedTeacherScheduleApp() {
           setTeacherProfile(profile);
           saveTeacherProfile(profile);
           setAlertBanner(`Chào mừng thầy/cô ${profile.fullName} đã đăng nhập!`);
+          setTimeout(() => setAlertBanner(null), 3500);
+        }}
+      />
+      {/* Modal Chỉnh Sửa Kế Hoạch Bài Dạy (CV 5512 / CV 2634) */}
+      <LessonPlanEditorModal
+        isOpen={isLessonPlanEditorOpen}
+        onClose={() => setIsLessonPlanEditorOpen(false)}
+        standard={plannerStandard === 5512 ? 5512 : 2634}
+        plan5512={plannerResult5512}
+        plan2634={plannerResult2634}
+        onSave5512={(updated) => {
+          setPlannerResult5512(updated);
+          if (plannerFullPackage) {
+            const voiceText = `Nội dung trọng tâm bài học ${updated.lessonTitle}. ${updated.activity2Knowledge?.content || ''} ${updated.activity3Practice?.content || ''}`;
+            setPlannerFullPackage({
+              ...plannerFullPackage,
+              lessonTitle: updated.lessonTitle,
+              subject: updated.subject,
+              plan5512: updated,
+              voiceNarrationText: voiceText
+            });
+          }
+          setAlertBanner('🟢 Đã lưu thành công các chỉnh sửa Kế hoạch bài dạy (CV 5512)!');
+          setTimeout(() => setAlertBanner(null), 3500);
+        }}
+        onSave2634={(updated) => {
+          setPlannerResult2634(updated);
+          if (plannerFullPackage) {
+            setPlannerFullPackage({
+              ...plannerFullPackage,
+              lessonTitle: updated.moduleTitle,
+              subject: updated.occupation,
+              plan2634: updated
+            });
+          }
+          setAlertBanner('🟢 Đã lưu thành công các chỉnh sửa Kế hoạch bài dạy nghề (CV 2634)!');
           setTimeout(() => setAlertBanner(null), 3500);
         }}
       />

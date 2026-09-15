@@ -62,7 +62,7 @@ export async function GET() {
       // Danh sách sự kiện thực tế
       const events = dbRows.slice(0, 15).map((r: any) => ({
         platform: r.platform || 'android',
-        version: r.version || '2.0.0',
+        version: r.version || '2.1.0',
         source: r.source || 'Website',
         time: r.created_at ? new Date(r.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 'Vừa xong'
       }));
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const platform = body.platform || 'android';
     const source = body.source || 'Website Direct';
-    const version = body.version || '2.0.0';
+    const version = body.version || '2.1.0';
 
     if ((inMemoryStats.platforms as any)[platform] !== undefined) {
       (inMemoryStats.platforms as any)[platform] += 1;

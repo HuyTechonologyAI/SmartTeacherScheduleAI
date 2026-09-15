@@ -1,5 +1,5 @@
 /**
- * Deep-RAG Sư Phạm Semantic Parser Engine v2.0
+ * Deep-RAG Sư Phạm Semantic Parser Engine v2.1
  * Chuyên bóc tách và phân tích ngữ nghĩa tài liệu bài giảng giáo viên (.docx, .pdf, .txt, giáo trình, chuyên đề)
  * Nhằm cung cấp dữ liệu thực tế cho AI soạn giáo án chuẩn CV 5512 và CV 2634, loại bỏ hoàn toàn khung sườn chung chung.
  */

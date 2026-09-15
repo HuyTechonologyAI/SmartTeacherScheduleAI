@@ -275,7 +275,7 @@ export default function EcosystemBrochureModal({ isOpen, onClose }: EcosystemBro
                   Trợ lý Sư phạm Soạn bài CV 5512, Đề thi TT 22, Slide PPTX, Sơ đồ tư duy & Quản trị 4 cổng trường học.
                 </p>
                 <span className="text-[10px] text-indigo-300 font-mono font-bold block">
-                  Đang hoạt động (v2.0.0)
+                  Đang hoạt động (v2.1.0)
                 </span>
               </div>
             </div>

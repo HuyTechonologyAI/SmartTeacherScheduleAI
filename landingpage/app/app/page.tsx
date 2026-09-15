@@ -7431,7 +7431,7 @@ export default function UnifiedTeacherScheduleApp() {
                 </div>
               </div>
 
-              {/* v2.0.0 Highlight Feature Matrix */}
+              {/* v2.1.0 Highlight Feature Matrix */}
               <div className="bg-slate-50 dark:bg-slate-900/60 rounded-xl p-4 border border-slate-200/70 dark:border-slate-800 space-y-2.5">
                 <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <Zap className="w-4 h-4 text-amber-500" />

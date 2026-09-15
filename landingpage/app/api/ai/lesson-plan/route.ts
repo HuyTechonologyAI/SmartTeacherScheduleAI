@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     const customRequirements = body.customRequirements || '';
     const rawDocumentText = body.rawDocumentText || body.referenceContext || body.matchedDoc?.relevantSnippet || '';
 
-    // 1. Phân tách ngữ nghĩa tài liệu với Deep-RAG Sư Phạm v2.0
+    // 1. Phân tách ngữ nghĩa tài liệu với Deep-RAG Sư Phạm v2.1
     const extracted = deepParseLessonDocument(rawDocumentText, lessonTitle, subject, grade);
 
     const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;

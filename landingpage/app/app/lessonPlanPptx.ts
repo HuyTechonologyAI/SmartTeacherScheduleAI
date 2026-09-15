@@ -25,45 +25,45 @@ function renderNativeVisualCard(
   const cleanSub = (subject || '').toLowerCase();
   const isElectricOrTech = cleanSub.includes('điện') || cleanSub.includes('công nghệ') || cleanSub.includes('kỹ thuật') || cleanSub.includes('vật lí');
 
+  // Khung card đồ họa kỹ thuật đồng bộ (Unified Palette: Navy Slate & Sky Blue)
   switch (type) {
     case 'cover': {
-      // Bìa bài giảng: Thẻ thông tin công nghệ & chuyển đổi số sang trọng
       slide.addShape(pptx.ShapeType.roundRect, {
-        x: 6.6, y: 1.1, w: 2.9, h: 3.7, rectRadius: 0.15,
-        fill: { color: '1E293B' }, line: { color: '38BDF8', width: 2 }
+        x: 6.6, y: 1.1, w: 2.9, h: 3.7, rectRadius: 0.12,
+        fill: { color: '1E293B' }, line: { color: '38BDF8', width: 1.5 }
       });
 
       slide.addShape(pptx.ShapeType.roundRect, {
-        x: 6.8, y: 1.3, w: 2.5, h: 0.45, rectRadius: 0.1,
+        x: 6.8, y: 1.3, w: 2.5, h: 0.42, rectRadius: 0.08,
         fill: { color: '0284C7' }
       });
       slide.addText('CHUẨN GDPT 2018', {
-        x: 6.8, y: 1.3, w: 2.5, h: 0.45,
+        x: 6.8, y: 1.3, w: 2.5, h: 0.42,
         fontSize: 11, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle', fontFace: 'Arial'
       });
 
       slide.addShape(pptx.ShapeType.ellipse, {
-        x: 7.45, y: 1.9, w: 1.2, h: 1.2,
-        fill: { color: '0F172A' }, line: { color: '38BDF8', width: 2 }
+        x: 7.55, y: 1.9, w: 1.0, h: 1.0,
+        fill: { color: '0F172A' }, line: { color: '38BDF8', width: 1.5 }
       });
       slide.addText(isElectricOrTech ? '⚡' : '🎓', {
-        x: 7.45, y: 1.9, w: 1.2, h: 1.2,
-        fontSize: 32, align: 'center', valign: 'middle'
+        x: 7.55, y: 1.9, w: 1.0, h: 1.0,
+        fontSize: 26, align: 'center', valign: 'middle'
       });
 
       const pills = [
-        { text: '✨ Trực quan & Sinh động', color: '38BDF8' },
-        { text: '💡 Phát triển năng lực HS', color: '34D399' },
-        { text: '🚀 Chuyển đổi số giáo dục', color: 'FBBF24' }
+        { text: 'Trực quan & Hiện đại', color: '38BDF8' },
+        { text: 'Phát triển năng lực', color: '34D399' },
+        { text: 'Chuyển đổi số giáo dục', color: 'FBBF24' }
       ];
       for (let pIdx = 0; pIdx < pills.length; pIdx++) {
-        const py = 3.25 + pIdx * 0.48;
+        const py = 3.15 + pIdx * 0.48;
         slide.addShape(pptx.ShapeType.roundRect, {
-          x: 6.8, y: py, w: 2.5, h: 0.4, rectRadius: 0.08,
+          x: 6.8, y: py, w: 2.5, h: 0.38, rectRadius: 0.08,
           fill: { color: '0F172A' }, line: { color: '334155', width: 1 }
         });
         slide.addText(pills[pIdx].text, {
-          x: 6.8, y: py, w: 2.5, h: 0.4,
+          x: 6.8, y: py, w: 2.5, h: 0.38,
           fontSize: 10, bold: true, color: pills[pIdx].color, align: 'center', valign: 'middle', fontFace: 'Calibri'
         });
       }
@@ -71,95 +71,91 @@ function renderNativeVisualCard(
     }
 
     case 'procedure': {
-      // Slide quy trình thực hành: Card các bước chuẩn an toàn
       slide.addShape(pptx.ShapeType.roundRect, {
-        x: 7.0, y: 1.15, w: 2.5, h: 3.9, rectRadius: 0.15,
-        fill: { color: 'ECFDF5' }, line: { color: '10B981', width: 1.5 }
+        x: 6.6, y: 1.15, w: 2.9, h: 3.8, rectRadius: 0.12,
+        fill: { color: 'FFFFFF' }, line: { color: '0284C7', width: 1.5 }
       });
 
       slide.addShape(pptx.ShapeType.roundRect, {
-        x: 7.15, y: 1.3, w: 2.2, h: 0.45, rectRadius: 0.08,
-        fill: { color: '059669' }
+        x: 6.75, y: 1.3, w: 2.6, h: 0.4, rectRadius: 0.08,
+        fill: { color: '0369A1' }
       });
-      slide.addText('📋 QUY TRÌNH THỰC HIỆN', {
-        x: 7.15, y: 1.3, w: 2.2, h: 0.45,
+      slide.addText('QUY TRÌNH THỰC HIỆN CHUẨN', {
+        x: 6.75, y: 1.3, w: 2.6, h: 0.4,
         fontSize: 10.5, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle', fontFace: 'Arial'
       });
 
       const steps = [
-        '1️⃣ Chuẩn bị & Kiểm tra dụng cụ',
-        '2️⃣ Kết nối & Thao tác đúng quy chuẩn',
-        '3️⃣ Vận hành & Đo đạc thông số',
-        '4️⃣ Nghiệm thu & Thu dọn vị trí'
+        'Bước 1: Khảo sát & Chuẩn bị thiết bị',
+        'Bước 2: Triển khai thao tác đúng kỹ thuật',
+        'Bước 3: Vận hành & Đo đạc thông số',
+        'Bước 4: Nghiệm thu & Vệ sinh 5S'
       ];
       for (let sIdx = 0; sIdx < steps.length; sIdx++) {
-        const sy = 1.9 + sIdx * 0.58;
+        const sy = 1.85 + sIdx * 0.54;
         slide.addShape(pptx.ShapeType.roundRect, {
-          x: 7.15, y: sy, w: 2.2, h: 0.5, rectRadius: 0.08,
-          fill: { color: 'FFFFFF' }, line: { color: 'A7F3D0', width: 1 }
+          x: 6.75, y: sy, w: 2.6, h: 0.44, rectRadius: 0.06,
+          fill: { color: 'F0F9FF' }, line: { color: 'BAE6FD', width: 1 }
         });
         slide.addText(steps[sIdx], {
-          x: 7.2, y: sy, w: 2.1, h: 0.5,
-          fontSize: 9.5, color: '065F46', fontFace: 'Calibri', valign: 'middle'
+          x: 6.8, y: sy, w: 2.5, h: 0.44,
+          fontSize: 9.5, color: '0369A1', fontFace: 'Calibri', valign: 'middle'
         });
       }
 
       slide.addShape(pptx.ShapeType.roundRect, {
-        x: 7.15, y: 4.35, w: 2.2, h: 0.55, rectRadius: 0.08,
-        fill: { color: 'FEF2F2' }, line: { color: 'EF4444', width: 1.5 }
+        x: 6.75, y: 4.15, w: 2.6, h: 0.6, rectRadius: 0.08,
+        fill: { color: 'FEF2F2' }, line: { color: 'F87171', width: 1 }
       });
-      slide.addText('🛡️ TUÂN THỦ AN TOÀN 100%', {
-        x: 7.15, y: 4.35, w: 2.2, h: 0.55,
-        fontSize: 10, bold: true, color: 'B91C1C', align: 'center', valign: 'middle', fontFace: 'Arial'
+      slide.addText('TUÂN THỦ AN TOÀN LAO ĐỘNG 100%', {
+        x: 6.75, y: 4.15, w: 2.6, h: 0.6,
+        fontSize: 9.5, bold: true, color: '991B1B', align: 'center', valign: 'middle', fontFace: 'Arial'
       });
       break;
     }
 
     case 'quiz': {
-      // Slide trắc nghiệm: Card cúp vinh danh và thể lệ
       slide.addShape(pptx.ShapeType.roundRect, {
-        x: 7.0, y: 1.15, w: 2.5, h: 3.9, rectRadius: 0.15,
-        fill: { color: 'FFFBEB' }, line: { color: 'F59E0B', width: 1.5 }
+        x: 6.6, y: 1.15, w: 2.9, h: 3.8, rectRadius: 0.12,
+        fill: { color: 'FFFFFF' }, line: { color: '0284C7', width: 1.5 }
       });
 
       slide.addShape(pptx.ShapeType.roundRect, {
-        x: 7.15, y: 1.3, w: 2.2, h: 0.45, rectRadius: 0.08,
-        fill: { color: 'D97706' }
+        x: 6.75, y: 1.3, w: 2.6, h: 0.4, rectRadius: 0.08,
+        fill: { color: '0284C7' }
       });
-      slide.addText('🏆 GÓC ĐẤU TRÍ NHANH', {
-        x: 7.15, y: 1.3, w: 2.2, h: 0.45,
-        fontSize: 11, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle', fontFace: 'Arial'
-      });
-
-      slide.addShape(pptx.ShapeType.ellipse, {
-        x: 7.7, y: 1.9, w: 1.1, h: 1.1,
-        fill: { color: 'FEF3C7' }, line: { color: 'F59E0B', width: 2 }
-      });
-      slide.addText('⭐', {
-        x: 7.7, y: 1.9, w: 1.1, h: 1.1,
-        fontSize: 32, align: 'center', valign: 'middle'
+      slide.addText('THỂ LỆ TRẮC NGHIỆM', {
+        x: 6.75, y: 1.3, w: 2.6, h: 0.4,
+        fontSize: 10.5, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle', fontFace: 'Arial'
       });
 
       const rules = [
-        '⏱️ Thời gian: 30s/câu',
-        '🎁 +1 Điểm tích lũy cho đội nhanh',
-        '🙋 Giơ thẻ chọn đáp án đúng'
+        'Thời gian suy nghĩ: 30s/câu',
+        'Cộng điểm tích lũy cho đội nhanh',
+        'Chọn 1 phương án chính xác nhất'
       ];
       for (let rIdx = 0; rIdx < rules.length; rIdx++) {
-        const ry = 3.15 + rIdx * 0.42;
+        const ry = 1.9 + rIdx * 0.48;
         slide.addShape(pptx.ShapeType.roundRect, {
-          x: 7.15, y: ry, w: 2.2, h: 0.38, rectRadius: 0.08,
-          fill: { color: 'FFFFFF' }, line: { color: 'FDE68A', width: 1 }
+          x: 6.75, y: ry, w: 2.6, h: 0.4, rectRadius: 0.06,
+          fill: { color: 'F8FAFC' }, line: { color: 'E2E8F0', width: 1 }
         });
         slide.addText(rules[rIdx], {
-          x: 7.2, y: ry, w: 2.1, h: 0.38,
-          fontSize: 9.5, color: '92400E', fontFace: 'Calibri', valign: 'middle'
+          x: 6.85, y: ry, w: 2.4, h: 0.4,
+          fontSize: 9.5, color: '334155', fontFace: 'Calibri', valign: 'middle'
         });
       }
 
-      slide.addText('Tự tin chọn đáp án chính xác!', {
-        x: 7.1, y: 4.45, w: 2.3, h: 0.4,
-        fontSize: 10, italic: true, color: 'B45309', align: 'center', fontFace: 'Calibri', valign: 'middle'
+      slide.addShape(pptx.ShapeType.roundRect, {
+        x: 6.75, y: 3.5, w: 2.6, h: 1.25, rectRadius: 0.08,
+        fill: { color: 'F0FDF4' }, line: { color: '86EFAC', width: 1 }
+      });
+      slide.addText([
+        { text: 'Mục tiêu củng cố:\n', options: { bold: true, color: '166534', fontSize: 10 } },
+        { text: 'Kiểm tra độ khắc sâu kiến thức trọng tâm và khả năng vận dụng giải quyết tình huống kỹ thuật.', options: { color: '14532D', fontSize: 9.0 } }
+      ], {
+        x: 6.85, y: 3.55, w: 2.4, h: 1.15,
+        fontFace: 'Calibri', valign: 'middle', wrap: true
       });
       break;
     }
@@ -171,70 +167,61 @@ function renderNativeVisualCard(
     default: {
       const config = {
         warmup: {
-          bg: 'EFF6FF', border: '3B82F6', titleBg: '1D4ED8', title: '⚡ KHỞI ĐỘNG TƯ DUY', icon: '💡',
-          items: ['❓ Đặt vấn đề từ thực tiễn', '🤝 Thảo luận trao đổi cặp đôi', '⏱️ Thời gian: 3 - 5 phút']
+          title: 'KHỞI ĐỘNG TƯ DUY',
+          items: ['Đặt vấn đề từ thực tiễn', 'Thảo luận cặp đôi nhanh', 'Thời gian: 3 - 5 phút']
         },
         theory: {
-          bg: 'F8FAFC', border: '0284C7', titleBg: '0369A1', title: '🔬 KHÁI NIỆM TRỌNG TÂM', icon: '📊',
-          items: ['1️⃣ Nắm chắc định nghĩa gốc', '2️⃣ Khảo sát đặc tính kỹ thuật', '3️⃣ Liên hệ hệ thống thực tế']
+          title: 'KHÁI NIỆM TRỌNG TÂM',
+          items: ['Nắm chắc định nghĩa gốc', 'Khảo sát đặc tính kỹ thuật', 'Liên hệ mô hình thực tế']
         },
         discussion: {
-          bg: 'FAF5FF', border: '8B5CF6', titleBg: '6D28D9', title: '👥 THẢO LUẬN NHÓM', icon: '🤝',
-          items: ['👑 Nhóm trưởng: Điều phối', '✍️ Thư ký: Ghi chép tổng hợp', '🎤 Báo cáo viên: Thuyết trình']
+          title: 'THẢO LUẬN NHÓM',
+          items: ['Nhóm trưởng: Điều phối', 'Thư ký: Ghi chép tổng hợp', 'Báo cáo viên: Thuyết trình']
         },
         summary: {
-          bg: 'F0FDF4', border: '16A34A', titleBg: '15803D', title: '🚀 VẬN DỤNG & MỞ RỘNG', icon: '🎯',
-          items: ['📚 Củng cố kiến thức trọng tâm', '📝 Làm bài tập ứng dụng SGK', '🔍 Đọc trước bài học mới']
+          title: 'VẬN DỤNG & MỞ RỘNG',
+          items: ['Củng cố kiến thức trọng tâm', 'Làm bài tập ứng dụng', 'Đọc trước bài học tiếp theo']
         }
       }[type] || {
-        bg: 'EFF6FF', border: '3B82F6', titleBg: '0284C7', title: '📌 ĐIỂM NHẤN BÀI HỌC', icon: '💡',
-        items: ['Nắm vững kiến thức trọng tâm', 'Rèn luyện kỹ năng thực hành', 'Tích cực chủ động sáng tạo']
+        title: 'ĐIỂM NHẤN BÀI HỌC',
+        items: ['Nắm vững kiến thức cốt lõi', 'Rèn luyện kỹ năng thực hành', 'Tích cực chủ động sáng tạo']
       };
 
       slide.addShape(pptx.ShapeType.roundRect, {
-        x: 6.5, y: 1.15, w: 3.0, h: 3.8, rectRadius: 0.15,
-        fill: { color: 'FFFFFF' }, line: { color: config.border, width: 1.5 }
+        x: 6.6, y: 1.15, w: 2.9, h: 3.8, rectRadius: 0.12,
+        fill: { color: 'FFFFFF' }, line: { color: '0284C7', width: 1.5 }
       });
 
       slide.addShape(pptx.ShapeType.roundRect, {
-        x: 6.65, y: 1.3, w: 2.7, h: 0.45, rectRadius: 0.08,
-        fill: { color: config.titleBg }
+        x: 6.75, y: 1.3, w: 2.6, h: 0.4, rectRadius: 0.08,
+        fill: { color: '0369A1' }
       });
       slide.addText(config.title, {
-        x: 6.65, y: 1.3, w: 2.7, h: 0.45,
-        fontSize: 11, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle', fontFace: 'Arial'
-      });
-
-      slide.addShape(pptx.ShapeType.ellipse, {
-        x: 7.6, y: 1.85, w: 0.8, h: 0.8,
-        fill: { color: config.bg }, line: { color: config.border, width: 1.5 }
-      });
-      slide.addText(config.icon, {
-        x: 7.6, y: 1.85, w: 0.8, h: 0.8,
-        fontSize: 24, align: 'center', valign: 'middle'
+        x: 6.75, y: 1.3, w: 2.6, h: 0.4,
+        fontSize: 10.5, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle', fontFace: 'Arial'
       });
 
       for (let itIdx = 0; itIdx < config.items.length; itIdx++) {
-        const iy = 2.75 + itIdx * 0.38;
+        const iy = 1.85 + itIdx * 0.48;
         slide.addShape(pptx.ShapeType.roundRect, {
-          x: 6.65, y: iy, w: 2.7, h: 0.34, rectRadius: 0.06,
-          fill: { color: config.bg }, line: { color: config.border, width: 0.8 }
+          x: 6.75, y: iy, w: 2.6, h: 0.4, rectRadius: 0.06,
+          fill: { color: 'F8FAFC' }, line: { color: 'E2E8F0', width: 1 }
         });
         slide.addText(config.items[itIdx], {
-          x: 6.75, y: iy, w: 2.5, h: 0.34,
+          x: 6.85, y: iy, w: 2.4, h: 0.4,
           fontSize: 9.5, color: '1E293B', fontFace: 'Calibri', valign: 'middle'
         });
       }
 
       slide.addShape(pptx.ShapeType.roundRect, {
-        x: 6.65, y: 3.95, w: 2.7, h: 0.85, rectRadius: 0.08,
-        fill: { color: 'F8FAFC' }, line: { color: 'CBD5E1', width: 1 }
+        x: 6.75, y: 3.45, w: 2.6, h: 1.35, rectRadius: 0.08,
+        fill: { color: 'F0F9FF' }, line: { color: 'BAE6FD', width: 1 }
       });
       slide.addText([
-        { text: '💡 Gợi ý sư phạm: ', options: { bold: true, color: '0284C7', fontSize: 9.5 } },
-        { text: visualSuggestion || 'Kết nối nội dung với bài tập và câu hỏi thực tế cho học sinh.', options: { color: '334155', fontSize: 9.0 } }
+        { text: 'Gợi ý sư phạm: ', options: { bold: true, color: '0284C7', fontSize: 9.5 } },
+        { text: visualSuggestion || 'Kết nối nội dung với bài tập và tình huống thực tế cho học sinh.', options: { color: '334155', fontSize: 9.0 } }
       ], {
-        x: 6.75, y: 3.98, w: 2.5, h: 0.78,
+        x: 6.85, y: 3.5, w: 2.4, h: 1.25,
         fontFace: 'Calibri', valign: 'middle', wrap: true
       });
       break;
@@ -242,21 +229,14 @@ function renderNativeVisualCard(
   }
 }
 
-/**
- * Nhúng hiệu ứng chuyển slide (Transitions) chuẩn OpenXML
- */
 async function injectSlideTransitions(rawPptxBuffer: ArrayBuffer | Uint8Array): Promise<Blob> {
   const zip = await JSZip.loadAsync(rawPptxBuffer);
 
   const transitions = [
     '<p:transition spd="med" advClick="1"><p:fade/></p:transition>',
-    '<p:transition spd="med" advClick="1"><p:push dir="r"/></p:transition>',
     '<p:transition spd="med" advClick="1"><p:wipe dir="r"/></p:transition>',
     '<p:transition spd="med" advClick="1"><p:fade/></p:transition>',
-    '<p:transition spd="med" advClick="1"><p:push dir="l"/></p:transition>',
-    '<p:transition spd="med" advClick="1"><p:wipe dir="l"/></p:transition>',
-    '<p:transition spd="med" advClick="1"><p:fade/></p:transition>',
-    '<p:transition spd="med" advClick="1"><p:push dir="r"/></p:transition>'
+    '<p:transition spd="med" advClick="1"><p:wipe dir="l"/></p:transition>'
   ];
 
   const slideFiles = Object.keys(zip.files).filter(

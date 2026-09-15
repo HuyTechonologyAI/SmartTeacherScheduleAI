@@ -11,6 +11,7 @@ interface AiCentralHubDispatcherCardProps {
   subject?: string;
   grade?: string;
   customPrompt?: string;
+  voiceContent?: string;
   className?: string;
 }
 
@@ -20,6 +21,7 @@ export default function AiCentralHubDispatcherCard({
   subject = 'Công nghệ',
   grade = '12',
   customPrompt = '',
+  voiceContent = '',
   className = ''
 }: AiCentralHubDispatcherCardProps) {
   const [copied, setCopied] = useState(false);
@@ -47,10 +49,19 @@ export default function AiCentralHubDispatcherCard({
       return;
     }
 
-    const narration = dispatchResult.categoryTitle + ' cho bài học ' + lessonTitle + ', môn ' + subject + ' lớp ' + grade + '. ' + dispatchResult.pedagogicalRole + ' ' + dispatchResult.selectionReason;
+    // Yêu cầu 1: Đọc NỘI DUNG THỰC CHẤT của bài học, KHÔNG đọc tiêu đề hay nhãn hành chính
+    let textToRead = (voiceContent || '').trim();
+    if (!textToRead) {
+      textToRead = `${dispatchResult.pedagogicalRole}. ${dispatchResult.selectionReason}`;
+    }
+
+    // Lọc bỏ mọi tiền tố tiêu đề nếu có
+    textToRead = textToRead
+      .replace(/^(?:Kế hoạch bài dạy|Bài dạy|Bài học|Tiêu đề|Môn|Lớp)[^:]*:\s*/gi, '')
+      .replace(/^Kính chào Thầy Cô[^.]*\.\s*/gi, '');
 
     setIsSpeaking(true);
-    speakVietnamese(narration, {
+    speakVietnamese(textToRead, {
       onEnd: () => setIsSpeaking(false)
     });
   };

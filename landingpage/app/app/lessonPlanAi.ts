@@ -543,6 +543,43 @@ export function generateLessonSlides(
   referenceSnippet: string = ''
 ): LessonSlideItem[] {
   const k = deepParseLessonDocument(referenceSnippet, lessonTitle, subject, grade);
+  const safeTitle = lessonTitle.replace(/["<>&]/g, '').trim();
+  const lower = (safeTitle + ' ' + subject + ' ' + referenceSnippet).toLowerCase();
+
+  // Nhận diện chuyên môn bài dạy để cá nhân hóa chuẩn xác câu từ sư phạm
+  let domainFocus = 'Quy luật & Kiến thức cốt lõi';
+  let sampleQuestion = `Khẳng định nào sau đây là đúng nhất khi áp dụng quy tắc vào '${safeTitle}'?`;
+  let optA = 'A. Nắm vững bản chất nguyên lý và tuân thủ các bước kỹ thuật chuẩn';
+  let optB = 'B. Bỏ qua bước kiểm tra an toàn và vận hành trực tiếp ở công suất tối đa';
+  let optC = 'C. Chỉ áp dụng trong phòng thí nghiệm mà không có giá trị thực tiễn';
+  let optD = 'D. Không cần quan tâm đến các thông số đo kiểm định mức';
+  let explanation = 'Phương án A đúng vì việc nắm vững nguyên lý và an toàn là yêu cầu bắt buộc.';
+
+  if (lower.includes('động cơ') || lower.includes('piston') || lower.includes('kỳ') || lower.includes('nhiệt')) {
+    domainFocus = 'Nguyên lý chuyển hóa nhiệt năng thành cơ năng & Chu trình 4 kỳ';
+    sampleQuestion = 'Trong chu trình 4 kỳ của động cơ đốt trong, kỳ nào là kỳ duy nhất sinh công cơ học hữu ích?';
+    optA = 'A. Kỳ 1: Nạp hòa khí vào buồng cháy xi lanh';
+    optB = 'B. Kỳ 2: Nén hòa khí với áp suất và nhiệt độ cao';
+    optC = 'C. Kỳ 3: Nổ - Giãn nở sinh công đẩy piston đi xuống';
+    optD = 'D. Kỳ 4: Xả khí thải ra môi trường qua xupap xả';
+    explanation = 'Kỳ 3 (Cháy - Giãn nở) là kỳ sinh công duy nhất, 3 kỳ còn lại là các kỳ tiêu tốn động năng.';
+  } else if (lower.includes('điện') || lower.includes('ohm') || lower.includes('mạch') || lower.includes('ampe')) {
+    domainFocus = 'Định luật Ôm, Đặc tuyến I-U & Mạch an toàn điện gia dụng';
+    sampleQuestion = 'Theo định luật Ôm cho đoạn mạch thuần trở, cường độ dòng điện I có mối liên hệ như thế nào với hiệu điện thế U?';
+    optA = 'A. Tỉ lệ thuận với hiệu điện thế U và tỉ lệ nghịch với điện trở R (I = U / R)';
+    optB = 'B. Tỉ lệ nghịch với hiệu điện thế U và tỉ lệ thuận với điện trở R';
+    optC = 'C. Giữ nguyên không đổi khi hiệu điện thế U thay đổi';
+    optD = 'D. Tăng theo hàm số mũ khi nhiệt độ dây dẫn giảm sâu';
+    explanation = 'Hệ thức định luật Ôm: I = U / R, I tỉ lệ thuận với U khi điện trở R không đổi.';
+  } else if (lower.includes('tiện') || lower.includes('phay') || lower.includes('cơ khí') || lower.includes('cắt gọt')) {
+    domainFocus = 'Kỹ thuật gia công cắt gọt, góc độ dao cắt & Tiêu chuẩn an toàn xưởng 5S';
+    sampleQuestion = 'Khi tiện mặt ngoài chi tiết trục kim loại, góc sau α của dao tiện có tác dụng cơ bản gì?';
+    optA = 'A. Giảm ma sát giữa mặt sau của dao với bề mặt đang gia công của chi tiết';
+    optB = 'B. Tăng chiều sâu cắt lên mức cực đại trong thời gian ngắn';
+    optC = 'C. Giữ cố định mâm cặp 3 chấu trên băng máy';
+    optD = 'D. Thay đổi độ cứng vững của đài dao';
+    explanation = 'Góc sau α được mài nghiêng để ngăn mặt sau dao cọ xát vào bề mặt chi tiết gia công.';
+  }
 
   const sec1 = k.topicSections[0];
   const sec2 = k.topicSections[1];
@@ -550,106 +587,108 @@ export function generateLessonSlides(
   return [
     {
       slideNumber: 1,
-      title: `BÀI DẠY: ${lessonTitle.toUpperCase()}`,
+      title: `BÀI DẠY: ${safeTitle.toUpperCase()}`,
       bulletPoints: [
-        `Môn học / Chuyên ngành: ${subject}`,
-        `Khối lớp / Trình độ đào tạo: ${grade}`,
-        `Tư liệu đối chiếu chuẩn: ${k.summary.slice(0, 80)}`,
-        `Giáo viên phụ trách bài giảng`
+        `Môn học: ${subject} • Lớp ${grade}`,
+        `Chuyên đề trọng tâm: ${domainFocus}`,
+        `Thời lượng thiết kế: Tiết học chuẩn GDPT 2018 kết hợp học liệu số`,
+        `Phát triển năng lực: Tự chủ, giải quyết vấn đề và năng lực ứng dụng số`
       ],
-      speakerNotes: `Kính chào các em học sinh! Hôm nay chúng ta cùng tìm hiểu bài học '${lessonTitle}'. Thầy/Cô mong muốn các em chủ động tương tác và cùng khám phá kiến thức khoa học cốt lõi.`,
-      visualSuggestion: `Hình ảnh trực quan về ${k.keyTerms[0] || subject} kết hợp đồ họa vector hiện đại.`
+      speakerNotes: `Bài học hôm nay tập trung vào các quy luật khoa học cốt lõi, mô hình vận hành và ứng dụng thực tiễn của ${safeTitle}. Yêu cầu các em quan sát kỹ sơ đồ nguyên lý và thực hiện đúng thao tác hướng dẫn.`,
+      visualSuggestion: `Đồ họa vector chuyên đề ${subject} hiện đại, đồng bộ bảng màu Navy Slate và Sky Blue.`
     },
     {
       slideNumber: 2,
-      title: 'MỤC TIÊU BÀI HỌC CẦN ĐẠT',
+      title: 'MỤC TIÊU BÀI HỌC CẦN ĐẠT (CHUẨN GDPT 2018)',
       bulletPoints: [
-        `Về Kiến thức: ${k.coreDefinitions.length > 0 ? k.coreDefinitions.map(d => d.term).join(', ') : 'Nắm vững bản chất và quy luật cốt lõi'}`,
-        'Về Năng lực: Phát triển tư duy khoa học, kỹ năng giải quyết vấn đề thực tiễn',
-        'Về Năng lực số: Khai thác tài nguyên số, tra cứu học liệu và tương tác trực tuyến',
-        'Về Phẩm chất: Tinh thần trách nhiệm, kỷ luật và say mê nghiên cứu'
+        `Kiến thức cốt lõi: ${k.coreDefinitions.length > 0 ? k.coreDefinitions.map(d => d.term).join(', ') : domainFocus}`,
+        'Năng lực đặc thù: Phân tích đúng bản chất kỹ thuật, đọc hiểu sơ đồ và áp dụng công thức chính xác',
+        'Năng lực số: Khai thác hiệu quả mô hình mô phỏng, bảng số liệu và sơ đồ tư duy số',
+        'Phẩm chất: Tác phong công nghiệp cẩn trọng, kỷ luật lao động và an toàn tuyệt đối'
       ],
-      speakerNotes: 'Sau bài học này, các em cần đạt được 4 mục tiêu trọng tâm trên để áp dụng vào các bài tập và thực tiễn.',
-      visualSuggestion: 'Biểu tượng 4 mảnh ghép mục tiêu: Kiến thức, Kỹ năng, Năng lực số và Phẩm chất.'
+      speakerNotes: 'Sau bài học, học sinh làm chủ được kiến thức nền tảng, có năng lực thao tác độc lập và giải quyết các tình huống kỹ thuật thực tế.',
+      visualSuggestion: 'Khung ma trận 4 miền năng lực: Kiến thức, Thao tác, Năng lực số và Phẩm chất nghề nghiệp.'
     },
     {
       slideNumber: 3,
-      title: `HOẠT ĐỘNG 1: KHỞI ĐỘNG (${k.keyTerms[0] || lessonTitle})`,
+      title: `HOẠT ĐỘNG 1: KHỞI ĐỘNG & TÌNH HUỐNG THỰC TIỄN`,
       bulletPoints: [
-        `Tình huống thực tế dẫn nhập: Vai trò của ${k.keyTerms[0] || lessonTitle}`,
-        'Câu hỏi gợi mở: Vì sao vấn đề này đóng vai trò quyết định trong thực tiễn?',
-        'Huy động kiến thức nền tảng đã học ở các bài trước',
-        'Thời gian suy nghĩ và thảo luận nhanh: 2 phút'
+        `Tình huống thực tế dẫn nhập: Ứng dụng của ${k.keyTerms[0] || safeTitle} trong cuộc sống`,
+        'Câu hỏi đặt vấn đề: Làm thế nào để kiểm soát và tối ưu hóa hiệu suất của hệ thống?',
+        'Đối chiếu kiến thức đã biết với thách thức thực nghiệm mới',
+        'Thời gian tiếp nhận và suy nghĩ định hướng: 3 - 5 phút'
       ],
-      speakerNotes: `Thầy/Cô có một tình huống thực tiễn thú vị về ${k.keyTerms[0] || lessonTitle}. Các em hãy chú ý quan sát và phát biểu suy nghĩ của mình nhé!`,
-      visualSuggestion: 'Ảnh chụp tình huống thực tế hoặc video clip ngắn 30s.'
+      speakerNotes: 'Mở đầu bài học bằng một tình huống thực tiễn sinh động, kích thích tư duy phản biện và nhu cầu khám phá tri thức mới của học sinh.',
+      visualSuggestion: 'Hình ảnh thiết bị thực tế trong đời sống hoặc video thực nghiệm ngắn 30 giây.'
     },
     {
       slideNumber: 4,
-      title: sec1 ? `NỘI DUNG 1: ${sec1.heading.toUpperCase()}` : 'NỘI DUNG 1: KHÁI NIỆM & BẢN CHẤT CỐT LÕI',
+      title: sec1 ? `NỘI DUNG 1: ${sec1.heading.toUpperCase()}` : 'NỘI DUNG 1: KHÁI NIỆM & NGUYÊN LÝ BẢN CHẤT',
       bulletPoints: sec1 && sec1.contentLines.length > 0
         ? sec1.contentLines.slice(0, 4)
         : k.coreDefinitions.length > 0
-        ? k.coreDefinitions.slice(0, 3).map(d => `• ${d.term}: ${d.definition}`)
+        ? k.coreDefinitions.slice(0, 3).map(d => `${d.term}: ${d.definition}`)
         : [
-            `Khái niệm và định nghĩa trọng tâm về '${lessonTitle}'`,
-            'Các thành phần cấu thành và nguyên lý vận hành cơ bản',
-            'Các quy luật khoa học cần ghi nhớ chính xác'
+            `Định nghĩa và bản chất khoa học cốt lõi của ${safeTitle}`,
+            'Mối quan hệ định lượng giữa các thông số trạng thái trong hệ thống',
+            'Quy luật vận hành cơ bản cần ghi nhớ và áp dụng chuẩn xác',
+            'Phân loại các trường hợp và điều kiện áp dụng trong thực nghiệm'
           ],
-      speakerNotes: 'Đây là phần kiến thức nền tảng quan trọng nhất. Các em hãy ghi chép cẩn thận các thuật ngữ cốt lõi vào vở.',
-      visualSuggestion: 'Sơ đồ khối phân tích cấu trúc khái niệm, có mũi tên liên kết giữa các thành phần.'
+      speakerNotes: 'Đây là nội dung bản chất then chốt. Cần lưu ý sự khác biệt giữa các thông số lý thuyết và thực nghiệm đo đạc.',
+      visualSuggestion: 'Sơ đồ khối bản chất nguyên lý, liên kết các đại lượng bằng mũi tên tương quan rõ ràng.'
     },
     {
       slideNumber: 5,
-      title: sec2 ? `NỘI DUNG 2: ${sec2.heading.toUpperCase()}` : 'NỘI DUNG 2: NGUYÊN LÝ & QUY TRÌNH THỰC HÀNH',
+      title: sec2 ? `NỘI DUNG 2: ${sec2.heading.toUpperCase()}` : 'NỘI DUNG 2: QUY TRÌNH THỰC HÀNH & TIÊU CHUẨN KỸ THUẬT',
       bulletPoints: sec2 && sec2.contentLines.length > 0
         ? sec2.contentLines.slice(0, 4)
         : k.practicalSteps.length > 0
-        ? k.practicalSteps.slice(0, 3).map(s => `• Bước ${s.stepNumber}: ${s.stepTitle} - ${s.description}`)
+        ? k.practicalSteps.slice(0, 3).map(s => `Bước ${s.stepNumber}: ${s.stepTitle} - ${s.description}`)
         : [
-            'Quy trình triển khai kỹ thuật / Phương pháp giải quyết tình huống',
-            'Các bước thực hiện chuẩn mực: Bước 1 -> Bước 2 -> Bước 3',
-            'Các lỗi sai thường gặp và biện pháp phòng tránh an toàn'
+            'Bước 1: Khảo sát sơ đồ, chuẩn bị thiết bị đo và kiểm tra an toàn',
+            'Bước 2: Triển khai lắp ráp, đấu nối hoặc gá kẹp đúng trình tự kỹ thuật',
+            'Bước 3: Vận hành, thu thập số liệu và kiểm tra độ chính xác',
+            'Bước 4: Nghiệm thu kết quả, vệ sinh công nghiệp và hoàn thành phiếu học tập'
           ],
-      speakerNotes: 'Bây giờ chúng ta sẽ chuyển từ lý thuyết sang quy trình thao tác. Các em lưu ý các lỗi sai thường gặp để tránh lặp lại.',
-      visualSuggestion: 'Infographic quy trình từng bước trực quan kèm dấu tick xanh cho thao tác đúng, dấu X đỏ cho lỗi sai.'
+      speakerNotes: 'Quá trình thực hành đòi hỏi học sinh tuân thủ nghiêm ngặt quy trình từng bước, đặc biệt là các nguyên tắc bảo hộ lao động.',
+      visualSuggestion: 'Lưu đồ 4 bước thực hành chuyên nghiệp kèm các ký hiệu cảnh báo an toàn kỹ thuật.'
     },
     {
       slideNumber: 6,
-      title: 'THẢO LUẬN NHÓM & TƯƠNG TÁC SỐ',
+      title: 'HOẠT ĐỘNG 3: THẢO LUẬN NHÓM & XỬ LÝ SỐ LIỆU',
       bulletPoints: [
-        'Chia lớp thành 4 nhóm học tập (Nhóm 1, 2, 3, 4)',
-        `Nhiệm vụ: Phân tích bài toán về '${k.keyTerms[0] || lessonTitle}'`,
-        'Học sinh sử dụng thiết bị số / Bảng tương tác để tổng hợp ý kiến',
-        'Thời gian thảo luận: 10 phút'
+        'Tổ chức lớp học thành 4 nhóm chuyên trách (phân vai Trưởng nhóm, Thư ký, Báo cáo viên)',
+        `Nhiệm vụ: Khảo sát và phân tích số liệu thực nghiệm liên quan đến ${safeTitle}`,
+        'Xử lý sai số đo lường, đối chiếu kết quả tính toán với đồ thị lý thuyết',
+        'Thời gian thảo luận nhóm và thống nhất kết quả: 7 - 10 phút'
       ],
-      speakerNotes: 'Mời các nhóm bắt đầu thảo luận. Thầy/Cô sẽ đến từng nhóm để hỗ trợ và chấm điểm tích cực.',
-      visualSuggestion: 'Đồng hồ đếm ngược 10 phút, biểu tượng 4 nhóm học tập hợp tác.'
+      speakerNotes: 'Giáo viên theo dõi tiến độ từng nhóm, đặt câu hỏi gợi mở cho các nhóm gặp khó khăn và khích lệ sự hợp tác tích cực.',
+      visualSuggestion: 'Bảng thu thập số liệu mẫu và phân công nhiệm vụ nhóm trực quan.'
     },
     {
       slideNumber: 7,
-      title: 'LUYỆN TẬP & CỦNG CỐ KIẾN THỨC',
-      bulletPoints: k.sampleExercises.length > 0
-        ? k.sampleExercises.slice(0, 2).map((e, idx) => `Câu ${idx + 1}: ${e.question}`)
-        : [
-            `Bài tập 1: Vận dụng kiến thức bài '${lessonTitle}' để giải quyết bài toán điển hình`,
-            'Bài tập 2: Câu hỏi trắc nghiệm nhanh 4 đáp án kiểm tra độ hiểu bài',
-            'Học sinh quét mã QR hoặc tương tác trực tiếp trên màn hình'
-          ],
-      speakerNotes: 'Chúng ta cùng làm bài tập luyện tập để kiểm tra xem lớp mình đã nắm chắc bài học hôm nay chưa nhé!',
-      visualSuggestion: 'Giao diện câu hỏi trắc nghiệm tương tác với 4 ô màu A, B, C, D sinh động.'
+      title: 'HOẠT ĐỘNG 4: CÂU HỎI TRẮC NGHIỆM CỦNG CỐ',
+      bulletPoints: [
+        sampleQuestion,
+        optA,
+        optB,
+        optC,
+        optD
+      ],
+      speakerNotes: `Thử thách kiểm tra mức độ hiểu bài: ${explanation}`,
+      visualSuggestion: '4 khung phương án A, B, C, D rõ ràng, phân biệt màu sắc hài hòa giúp học sinh dễ dàng lựa chọn.'
     },
     {
       slideNumber: 8,
-      title: 'VẬN DỤNG & NHIỆM VỤ VỀ NHÀ',
+      title: 'HOẠT ĐỘNG 5: VẬN DỤNG THỰC TẾ & BÀI TẬP VỀ NHÀ',
       bulletPoints: [
-        `Dự án mở rộng: Ứng dụng của ${k.keyTerms[0] || lessonTitle} trong đời sống thực tế`,
-        'Vẽ sơ đồ tư duy tổng kết bài học',
-        'Đọc trước bài mới và chuẩn bị học liệu theo hướng dẫn',
-        'Nộp sản phẩm qua Cổng học tập số trước buổi học tiếp theo'
+        `Dự án học tập: Vận dụng tri thức ${safeTitle} giải quyết bài toán kỹ thuật tại địa phương`,
+        'Hoàn thiện sơ đồ tư duy tổng kết toàn bộ nội dung bài học vào vở ghi',
+        'Truy cập cổng học liệu số để làm bài tập tự luyện và kiểm tra đánh giá trực tuyến',
+        'Chuẩn bị trước tài liệu và câu hỏi cho bài học tiếp theo'
       ],
-      speakerNotes: 'Tiết học hôm nay kết thúc tại đây. Cảm ơn sự tích cực của cả lớp. Các em nhớ hoàn thành bài tập về nhà nhé!',
-      visualSuggestion: 'Sơ đồ tư duy thu nhỏ tóm tắt bài học và biểu tượng nộp bài trực tuyến.'
+      speakerNotes: 'Củng cố toàn bộ bài giảng, giao nhiệm vụ mở rộng để phát triển tư duy sáng tạo và năng lực tự học của học sinh.',
+      visualSuggestion: 'Sơ đồ tư duy thu nhỏ và mã QR liên kết bài tập trực tuyến.'
     }
   ];
 }
@@ -1066,142 +1105,600 @@ export interface FullLessonPackage {
 
 
 // ============================================================================
-// BƯỚC A7: TỰ ĐỘNG SINH BỘ 4 ẢNH KỸ THUẬT CHU TRÌNH (COMFYUI ENGINE HUB)
+// BƯỚC A7: BỘ SINH ĐỒ HỌA VECTOR KỸ THUẬT CHUYÊN SÂU BÁM SÁT BÀI HỌC (COMFYUI HUB)
 // ============================================================================
 export function generateTechnicalDiagramsCycle(
   lessonTitle: string,
   subject: string,
-  className: string
+  className: string,
+  referenceSnippet: string = ''
 ): TechnicalDiagramItem[] {
-  const safeTitle = lessonTitle.replace(/["<>&]/g, '');
-  const safeSubj = subject.replace(/["<>&]/g, '');
+  const safeTitle = lessonTitle.replace(/["<>&]/g, '').trim();
+  const safeSubj = subject.replace(/["<>&]/g, '').trim();
+  const lower = (safeTitle + ' ' + safeSubj + ' ' + referenceSnippet).toLowerCase();
 
+  // 1. NHÓM ĐỘNG CƠ / ĐỘNG LỰC / NHIỆT MÁY (Động cơ đốt trong, Piston, Buồng đốt)
+  if (lower.includes('động cơ') || lower.includes('piston') || lower.includes('kỳ') || lower.includes('xi lanh') || lower.includes('nhiệt')) {
+    return [
+      {
+        step: 1,
+        phase: 'BƯỚC 1: KẾT CẤU CƠ CẤU PISTON - TRỤC KHUỶU',
+        title: `Mặt cắt kết cấu buồng đốt & piston: ${safeTitle}`,
+        description: 'Bản vẽ kỹ thuật thể hiện chi tiết: Nắp xi lanh, Xupap nạp, Xupap xả, Bugi đánh lửa, Thân Piston, Xéc măng, Thanh truyền và Trục khuỷu.',
+        parameters: [
+          { label: 'Đường kính Xi lanh (D)', value: '75.0 mm' },
+          { label: 'Hành trình Piston (S)', value: '82.0 mm' },
+          { label: 'Tỉ số nén (ε)', value: '10.5 : 1' }
+        ],
+        keySafetyNotes: 'Kiểm tra độ kín khít buồng đốt và khe hở xéc măng theo đúng tài liệu kỹ thuật.',
+        svgContent: `<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;border-radius:14px;background:linear-gradient(135deg,#0a1128 0%,#1c2541 100%);border:1px solid #00b4d844;">
+          <rect x="20" y="12" width="560" height="32" rx="6" fill="#1c2541" stroke="#00b4d8" stroke-width="1"/>
+          <text x="300" y="33" fill="#90e0ef" font-size="12" font-weight="bold" text-anchor="middle" font-family="sans-serif">📐 MẶT CẮT KẾT CẤU XI LANH & PISTON - ${safeTitle.toUpperCase()}</text>
+          <rect x="180" y="60" width="140" height="150" fill="#0f172a" stroke="#64748b" stroke-width="3"/>
+          <rect x="240" y="50" width="20" height="20" fill="#fbbf24" stroke="#d97706"/>
+          <text x="250" y="45" fill="#fef08a" font-size="9" text-anchor="middle" font-family="sans-serif">Bugi</text>
+          <path d="M205 60 L215 75" stroke="#38bdf8" stroke-width="3"/>
+          <text x="205" y="55" fill="#38bdf8" font-size="9" text-anchor="middle" font-family="sans-serif">Xupap nạp</text>
+          <path d="M295 60 L285 75" stroke="#f43f5e" stroke-width="3"/>
+          <text x="295" y="55" fill="#f43f5e" font-size="9" text-anchor="middle" font-family="sans-serif">Xupap xả</text>
+          <rect x="190" y="110" width="120" height="60" rx="4" fill="#334155" stroke="#38bdf8" stroke-width="2"/>
+          <text x="250" y="145" fill="#f8fafc" font-size="11" font-weight="bold" text-anchor="middle" font-family="sans-serif">PISTON</text>
+          <line x1="250" y1="170" x2="250" y2="230" stroke="#94a3b8" stroke-width="6"/>
+          <circle cx="250" cy="230" r="16" fill="#0284c7" stroke="#38bdf8" stroke-width="2"/>
+          <rect x="360" y="60" width="210" height="180" rx="10" fill="#0f172a" stroke="#334155"/>
+          <text x="375" y="85" fill="#38bdf8" font-size="11" font-weight="bold" font-family="sans-serif">📌 CHÚ GIẢI KỸ THUẬT:</text>
+          <text x="375" y="110" fill="#cbd5e1" font-size="10" font-family="sans-serif">1. Bugi đánh lửa điện áp cao</text>
+          <text x="375" y="132" fill="#cbd5e1" font-size="10" font-family="sans-serif">2. Cửa nạp hòa khí nhiên liệu</text>
+          <text x="375" y="154" fill="#cbd5e1" font-size="10" font-family="sans-serif">3. Cửa xả khí thải cháy</text>
+          <text x="375" y="176" fill="#cbd5e1" font-size="10" font-family="sans-serif">4. Thân Piston truyền áp lực</text>
+          <text x="375" y="198" fill="#cbd5e1" font-size="10" font-family="sans-serif">5. Thanh truyền biến chuyển động</text>
+          <text x="375" y="220" fill="#cbd5e1" font-size="10" font-family="sans-serif">6. Trục khuỷu sinh công quay</text>
+          <rect x="20" y="260" width="560" height="45" rx="8" fill="#0b132b" stroke="#334155"/>
+          <text x="35" y="288" fill="#94a3b8" font-size="10" font-family="sans-serif">✨ Bản vẽ độc quyền chuẩn hóa theo mô hình động lực học ComfyUI (AI Central Hub huycncdsai.io.vn)</text>
+        </svg>`
+      },
+      {
+        step: 2,
+        phase: 'BƯỚC 2: NGUYÊN LÝ CHU TRÌNH 4 KỲ ĐỘNG CƠ',
+        title: `Sơ đồ nguyên lý 4 kỳ liên hoàn: Nạp - Nén - Nổ - Xả`,
+        description: 'Mô tả diễn biến hành trình piston, trạng thái đóng mở xupap và áp suất trong buồng cháy qua từng kỳ hoạt động.',
+        parameters: [
+          { label: 'Kỳ 1 (Nạp)', value: 'Piston đi xuống, Xupap nạp mở' },
+          { label: 'Kỳ 2 (Nén)', value: 'Piston đi lên, 2 xupap đóng kín' },
+          { label: 'Kỳ 3 (Sinh công)', value: 'Bugi đánh lửa, Piston bị đẩy xuống' },
+          { label: 'Kỳ 4 (Xả)', value: 'Piston đi lên, Xupap xả mở' }
+        ],
+        keySafetyNotes: 'Hệ thống bôi trơn và làm mát phải hoạt động liên tục để tránh hiện tượng bó kẹt piston.',
+        svgContent: `<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;border-radius:14px;background:linear-gradient(135deg,#1e1b4b 0%,#0f172a 100%);border:1px solid #818cf844;">
+          <rect x="20" y="12" width="560" height="32" rx="6" fill="#1e1b4b" stroke="#818cf8" stroke-width="1"/>
+          <text x="300" y="33" fill="#c7d2fe" font-size="12" font-weight="bold" text-anchor="middle" font-family="sans-serif">🔄 CHU TRÌNH 4 KỲ LIÊN HOÀN CỦA ĐỘNG CƠ ĐỐT TRONG</text>
+          <g transform="translate(30, 65)">
+            <rect width="125" height="175" rx="8" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5"/>
+            <text x="62" y="25" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle" font-family="sans-serif">KỲ 1: NẠP</text>
+            <circle cx="62" cy="70" r="28" fill="#0284c7" opacity="0.4"/>
+            <text x="62" y="76" fill="#ffffff" font-size="18" text-anchor="middle">⬇️</text>
+            <text x="62" y="120" fill="#cbd5e1" font-size="9" text-anchor="middle" font-family="sans-serif">Piston: Đi xuống</text>
+            <text x="62" y="140" fill="#cbd5e1" font-size="9" text-anchor="middle" font-family="sans-serif">Nạp mở - Xả đóng</text>
+            <text x="62" y="160" fill="#38bdf8" font-size="9" font-weight="bold" text-anchor="middle" font-family="sans-serif">Hút hòa khí</text>
+          </g>
+          <g transform="translate(170, 65)">
+            <rect width="125" height="175" rx="8" fill="#0f172a" stroke="#fbbf24" stroke-width="1.5"/>
+            <text x="62" y="25" fill="#fbbf24" font-size="11" font-weight="bold" text-anchor="middle" font-family="sans-serif">KỲ 2: NÉN</text>
+            <circle cx="62" cy="70" r="28" fill="#d97706" opacity="0.4"/>
+            <text x="62" y="76" fill="#ffffff" font-size="18" text-anchor="middle">⬆️</text>
+            <text x="62" y="120" fill="#cbd5e1" font-size="9" text-anchor="middle" font-family="sans-serif">Piston: Đi lên</text>
+            <text x="62" y="140" fill="#cbd5e1" font-size="9" text-anchor="middle" font-family="sans-serif">2 Xupap đều đóng</text>
+            <text x="62" y="160" fill="#fbbf24" font-size="9" font-weight="bold" text-anchor="middle" font-family="sans-serif">Áp suất & T° tăng</text>
+          </g>
+          <g transform="translate(310, 65)">
+            <rect width="125" height="175" rx="8" fill="#0f172a" stroke="#f43f5e" stroke-width="1.5"/>
+            <text x="62" y="25" fill="#f43f5e" font-size="11" font-weight="bold" text-anchor="middle" font-family="sans-serif">KỲ 3: NỔ (CÔNG)</text>
+            <circle cx="62" cy="70" r="28" fill="#e11d48" opacity="0.4"/>
+            <text x="62" y="76" fill="#ffffff" font-size="18" text-anchor="middle">💥</text>
+            <text x="62" y="120" fill="#cbd5e1" font-size="9" text-anchor="middle" font-family="sans-serif">Bugi đánh lửa</text>
+            <text x="62" y="140" fill="#cbd5e1" font-size="9" text-anchor="middle" font-family="sans-serif">Khí giãn nở cực đại</text>
+            <text x="62" y="160" fill="#f43f5e" font-size="9" font-weight="bold" text-anchor="middle" font-family="sans-serif">Đẩy Piston sinh công</text>
+          </g>
+          <g transform="translate(450, 65)">
+            <rect width="125" height="175" rx="8" fill="#0f172a" stroke="#10b981" stroke-width="1.5"/>
+            <text x="62" y="25" fill="#10b981" font-size="11" font-weight="bold" text-anchor="middle" font-family="sans-serif">KỲ 4: XẢ</text>
+            <circle cx="62" cy="70" r="28" fill="#059669" opacity="0.4"/>
+            <text x="62" y="76" fill="#ffffff" font-size="18" text-anchor="middle">💨</text>
+            <text x="62" y="120" fill="#cbd5e1" font-size="9" text-anchor="middle" font-family="sans-serif">Piston: Đi lên</text>
+            <text x="62" y="140" fill="#cbd5e1" font-size="9" text-anchor="middle" font-family="sans-serif">Nạp đóng - Xả mở</text>
+            <text x="62" y="160" fill="#10b981" font-size="9" font-weight="bold" text-anchor="middle" font-family="sans-serif">Đẩy khí cháy ra</text>
+          </g>
+          <rect x="20" y="255" width="560" height="50" rx="8" fill="#0f172a" stroke="#334155"/>
+          <text x="35" y="285" fill="#cbd5e1" font-size="10" font-family="sans-serif">⚡ Lưu ý sư phạm: Trong 4 kỳ, chỉ có duy nhất Kỳ 3 là sinh công cơ học hữu ích, 3 kỳ còn lại là các kỳ phụ tiêu tốn động năng.</text>
+        </svg>`
+      },
+      {
+        step: 3,
+        phase: 'BƯỚC 3: ĐỒ THỊ CHU TRÌNH NHIỆT ĐỘNG P-V',
+        title: `Đồ thị công chỉ thị Áp suất - Thể tích (P-V Diagram)`,
+        description: 'Đồ thị biểu diễn mối liên hệ giữa áp suất buồng cháy (P) và thể tích xi lanh (V) từ điểm chết trên (ĐCT) đến điểm chết dưới (ĐCD).',
+        parameters: [
+          { label: 'Thể tích buồng cháy (Vc)', value: '45 cm³' },
+          { label: 'Thể tích công tác (Vh)', value: '425 cm³' },
+          { label: 'Áp suất nổ cực đại (Pmax)', value: '4.5 - 6.0 MPa' }
+        ],
+        keySafetyNotes: 'Tuân thủ nghiêm ngặt quy định về trị số octan của nhiên liệu để tránh hiện tượng kích nổ.',
+        svgContent: `<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;border-radius:14px;background:linear-gradient(135deg,#03071e 0%,#370617 100%);border:1px solid #d0000044;">
+          <rect x="20" y="12" width="560" height="32" rx="6" fill="#370617" stroke="#dc2626" stroke-width="1"/>
+          <text x="300" y="33" fill="#fca5a5" font-size="12" font-weight="bold" text-anchor="middle" font-family="sans-serif">📈 ĐỒ THỊ CHU TRÌNH CÔNG CHỈ THỊ P - V (ĐỘNG CƠ 4 KỲ)</text>
+          <line x1="80" y1="240" x2="520" y2="240" stroke="#94a3b8" stroke-width="2"/>
+          <line x1="80" y1="240" x2="80" y2="60" stroke="#94a3b8" stroke-width="2"/>
+          <text x="525" y="244" fill="#94a3b8" font-size="11" font-weight="bold">V (Thể tích)</text>
+          <text x="80" y="52" fill="#94a3b8" font-size="11" font-weight="bold">P (Áp suất)</text>
+          <path d="M 120 220 L 460 220 C 460 220, 200 190, 120 140 L 120 80 C 120 80, 260 140, 460 200 Z" fill="#e11d4833" stroke="#f43f5e" stroke-width="2.5"/>
+          <text x="120" y="255" fill="#f87171" font-size="10" text-anchor="middle">Vc (ĐCT)</text>
+          <text x="460" y="255" fill="#f87171" font-size="10" text-anchor="middle">Va (ĐCD)</text>
+          <text x="130" y="80" fill="#fef08a" font-size="11" font-weight="bold">Điểm Nổ (Pmax)</text>
+          <rect x="20" y="260" width="560" height="45" rx="8" fill="#0f172a" stroke="#334155"/>
+          <text x="35" y="288" fill="#fca5a5" font-size="10" font-family="sans-serif">💡 Diện tích khép kín trong đường cong P-V biểu thị công cơ học sinh ra trong một chu trình công tác.</text>
+        </svg>`
+      },
+      {
+        step: 4,
+        phase: 'BƯỚC 4: HỆ THỐNG XỬ LÝ KHÍ THẢI & BẢO VỆ MÔI TRƯỜNG',
+        title: `Bộ chuyển đổi xúc tác 3 thành phần (Catalytic Converter)`,
+        description: 'Cơ chế xử lý khí độc hại (CO, NOx, HC) thành khí an toàn (CO2, H2O, N2) đạt tiêu chuẩn khí thải Euro 5/6.',
+        parameters: [
+          { label: 'Chất xúc tác quý', value: 'Bạch kim (Pt) & Rhodi (Rh)' },
+          { label: 'Nhiệt độ làm việc', value: '400°C - 800°C' },
+          { label: 'Hiệu suất lọc', value: '> 95% khí ô nhiễm' }
+        ],
+        keySafetyNotes: 'Không sử dụng xăng pha chì vì sẽ làm ngộ độc và vô hiệu hóa bộ xúc tác.',
+        svgContent: `<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;border-radius:14px;background:linear-gradient(135deg,#064e3b 0%,#0f172a 100%);border:1px solid #10b98144;">
+          <rect x="20" y="12" width="560" height="32" rx="6" fill="#064e3b" stroke="#10b981" stroke-width="1"/>
+          <text x="300" y="33" fill="#a7f3d0" font-size="12" font-weight="bold" text-anchor="middle" font-family="sans-serif">🌱 HỆ THỐNG XÚC TÁC XỬ LÝ KHÍ THẢI BẢO VỆ MÔI TRƯỜNG</text>
+          <rect x="60" y="80" width="120" height="120" rx="8" fill="#1e293b" stroke="#f43f5e" stroke-width="2"/>
+          <text x="120" y="120" fill="#f87171" font-size="13" font-weight="bold" text-anchor="middle">KHÍ THẢI ĐỘC</text>
+          <text x="120" y="145" fill="#cbd5e1" font-size="11" text-anchor="middle">CO, NOx, HC</text>
+          <path d="M 190 140 L 250 140" stroke="#38bdf8" stroke-width="4" marker-end="url(#arrow)"/>
+          <rect x="260" y="65" width="160" height="150" rx="12" fill="#0f172a" stroke="#10b981" stroke-width="2"/>
+          <text x="340" y="105" fill="#34d399" font-size="13" font-weight="bold" text-anchor="middle">BỘ XÚC TÁC</text>
+          <text x="340" y="130" fill="#cbd5e1" font-size="10" text-anchor="middle">Lõi gốm tổ ong</text>
+          <text x="340" y="150" fill="#fef08a" font-size="10" text-anchor="middle">Phủ Pt / Rh / Pd</text>
+          <text x="340" y="180" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle">T° &gt; 400°C</text>
+          <path d="M 430 140 L 490 140" stroke="#34d399" stroke-width="4"/>
+          <rect x="490" y="80" width="80" height="120" rx="8" fill="#022c22" stroke="#34d399" stroke-width="2"/>
+          <text x="530" y="125" fill="#86efac" font-size="12" font-weight="bold" text-anchor="middle">KHÍ SẠCH</text>
+          <text x="530" y="150" fill="#cbd5e1" font-size="10" text-anchor="middle">CO2, H2O, N2</text>
+          <rect x="20" y="255" width="560" height="50" rx="8" fill="#022c22" stroke="#047857"/>
+          <text x="35" y="285" fill="#d1fae5" font-size="10" font-family="sans-serif">✨ Giáo dục ý thức bảo vệ môi trường, giảm phát thải khí nhà kính theo định hướng Net Zero của Chính phủ.</text>
+        </svg>`
+      }
+    ];
+  }
+
+  // 2. NHÓM ĐIỆN / ĐIỆN TỬ / VẬT LÝ ĐIỆN (Định luật Ôm, Mạch điện xoay chiều, Linh kiện)
+  if (lower.includes('điện') || lower.includes('ohm') || lower.includes('mạch') || lower.includes('ampe') || lower.includes('vôn') || lower.includes('trở')) {
+    return [
+      {
+        step: 1,
+        phase: 'BƯỚC 1: SƠ ĐỒ NGUYÊN LÝ MẠCH ĐIỆN ĐO KIỂM',
+        title: `Sơ đồ mạch điện đo kiểm định luật Ôm: ${safeTitle}`,
+        description: 'Sơ đồ gồm: Nguồn điện một chiều (DC), Khóa K, Biến trở R, Ampe kế (mắc nối tiếp) và Vôn kế (mắc song song với điện trở cần đo).',
+        parameters: [
+          { label: 'Nguồn cấp U', value: '0 - 12 V (DC điều chỉnh)' },
+          { label: 'Thang đo Ampe kế', value: '0 - 1.0 A (Độ chia 0.02A)' },
+          { label: 'Thang đo Vôn kế', value: '0 - 15 V (Độ chia 0.1V)' }
+        ],
+        keySafetyNotes: 'Luôn kiểm tra cực tính (+ / -) của thiết bị đo trước khi đóng khóa K.',
+        svgContent: `<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;border-radius:14px;background:linear-gradient(135deg,#03071e 0%,#0f172a 100%);border:1px solid #38bdf844;">
+          <rect x="20" y="12" width="560" height="32" rx="6" fill="#1e293b" stroke="#38bdf8" stroke-width="1"/>
+          <text x="300" y="33" fill="#38bdf8" font-size="12" font-weight="bold" text-anchor="middle" font-family="sans-serif">⚡ SƠ ĐỒ NGUYÊN LÝ MẠCH THÍ NGHIỆM ĐO KIỂM ĐỊNH LUẬT ÔM</text>
+          <rect x="80" y="70" width="440" height="150" rx="8" fill="#0f172a" stroke="#38bdf8" stroke-width="2"/>
+          <circle cx="150" cy="145" r="22" fill="#0284c7" stroke="#38bdf8" stroke-width="2"/>
+          <text x="150" y="152" fill="#ffffff" font-size="16" font-weight="bold" text-anchor="middle">A</text>
+          <rect x="250" y="125" width="100" height="40" rx="4" fill="#334155" stroke="#fbbf24" stroke-width="2"/>
+          <text x="300" y="150" fill="#fef08a" font-size="14" font-weight="bold" text-anchor="middle">R</text>
+          <path d="M 230 110 L 230 85 L 370 85 L 370 110" fill="none" stroke="#38bdf8" stroke-width="2"/>
+          <circle cx="300" cy="85" r="18" fill="#0284c7" stroke="#38bdf8" stroke-width="2"/>
+          <text x="300" y="91" fill="#ffffff" font-size="14" font-weight="bold" text-anchor="middle">V</text>
+          <line x1="430" y1="130" x2="430" y2="160" stroke="#f43f5e" stroke-width="4"/>
+          <line x1="440" y1="138" x2="440" y2="152" stroke="#f43f5e" stroke-width="3"/>
+          <text x="435" y="180" fill="#fca5a5" font-size="11" font-weight="bold" text-anchor="middle">Nguồn U</text>
+          <rect x="20" y="255" width="560" height="50" rx="8" fill="#0f172a" stroke="#334155"/>
+          <text x="35" y="285" fill="#93c5fd" font-size="10" font-family="sans-serif">📌 Nguyên tắc: Ampe kế mắc nối tiếp để đo cường độ dòng điện I; Vôn kế mắc song song để đo hiệu điện thế U hai đầu R.</text>
+        </svg>`
+      },
+      {
+        step: 2,
+        phase: 'BƯỚC 2: ĐỒ THỊ ĐẶC TUYẾN DÒNG - ÁP (I - U)',
+        title: `Đồ thị tuyến tính I - U & Hệ thức I = U / R`,
+        description: 'Đồ thị biểu diễn mối quan hệ tỉ lệ thuận đồng biến giữa cường độ dòng điện (I) và hiệu điện thế (U) đặt vào hai đầu vật dẫn thuần trở.',
+        parameters: [
+          { label: 'Dạng đồ thị', value: 'Đường thẳng đi qua gốc tọa độ O' },
+          { label: 'Hệ số góc k', value: 'k = tanα = 1/R' },
+          { label: 'Điện trở R', value: 'R = const (khi T° = const)' }
+        ],
+        keySafetyNotes: 'Điện trở dây dẫn tăng khi nhiệt độ tăng do hiệu ứng Jun - Len-xơ tỏa nhiệt.',
+        svgContent: `<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;border-radius:14px;background:linear-gradient(135deg,#111827 0%,#1f2937 100%);border:1px solid #38bdf844;">
+          <rect x="20" y="12" width="560" height="32" rx="6" fill="#1f2937" stroke="#38bdf8" stroke-width="1"/>
+          <text x="300" y="33" fill="#38bdf8" font-size="12" font-weight="bold" text-anchor="middle" font-family="sans-serif">📊 ĐỒ THỊ ĐẶC TUYẾN I - U & CÔNG THỨC ĐỊNH LUẬT ÔM</text>
+          <line x1="80" y1="240" x2="340" y2="240" stroke="#f8fafc" stroke-width="2"/>
+          <line x1="80" y1="240" x2="80" y2="60" stroke="#f8fafc" stroke-width="2"/>
+          <text x="345" y="244" fill="#38bdf8" font-size="11" font-weight="bold" font-family="sans-serif">U (V)</text>
+          <text x="80" y="52" fill="#f43f5e" font-size="11" font-weight="bold" font-family="sans-serif">I (A)</text>
+          <line x1="80" y1="240" x2="320" y2="90" stroke="#10b981" stroke-width="3.5"/>
+          <circle cx="160" cy="190" r="4" fill="#10b981"/>
+          <circle cx="240" cy="140" r="4" fill="#10b981"/>
+          <circle cx="320" cy="90" r="4" fill="#10b981"/>
+          <rect x="370" y="65" width="205" height="175" rx="10" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5"/>
+          <text x="472" y="95" fill="#f8fafc" font-size="13" font-weight="bold" text-anchor="middle" font-family="sans-serif">HỆ THỨC VÀNG</text>
+          <rect x="390" y="110" width="165" height="45" rx="8" fill="#1e293b" stroke="#10b981"/>
+          <text x="472" y="138" fill="#34d399" font-size="20" font-weight="bold" text-anchor="middle" font-family="sans-serif">I = U / R</text>
+          <text x="390" y="180" fill="#cbd5e1" font-size="10" font-family="sans-serif">• I (A): Cường độ dòng điện</text>
+          <text x="390" y="200" fill="#cbd5e1" font-size="10" font-family="sans-serif">• U (V): Hiệu điện thế</text>
+          <text x="390" y="220" fill="#cbd5e1" font-size="10" font-family="sans-serif">• R (Ω): Điện trở đoạn mạch</text>
+          <rect x="20" y="260" width="560" height="45" rx="8" fill="#0f172a" stroke="#374151"/>
+          <text x="35" y="288" fill="#94a3b8" font-size="10" font-family="sans-serif">💡 Kết luận: Khi U tăng bao nhiêu lần thì I tăng bấy nhiêu lần (quan hệ đồng biến tuyến tính bậc nhất).</text>
+        </svg>`
+      },
+      {
+        step: 3,
+        phase: 'BƯỚC 3: ĐO LƯỜNG & XỬ LÝ SỐ LIỆU THỰC HÀNH',
+        title: `Bảng số liệu kiểm chứng & Sai số đo lường`,
+        description: 'Quy trình thu thập số liệu qua 5 lần đo thực tế với các mức điện áp khác nhau, tính giá trị trung bình Rtb và sai số tuyệt đối.',
+        parameters: [
+          { label: 'Số lần đo chuẩn', value: 'n = 5 lần' },
+          { label: 'Điện trở trung bình', value: 'Rtb = 10.02 Ω' },
+          { label: 'Sai số tỉ đối', value: 'δ < 1.0%' }
+        ],
+        keySafetyNotes: 'Mỗi lần thay đổi biến trở phải tắt nguồn để tránh quá nhiệt làm sai lệch điện trở.',
+        svgContent: `<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;border-radius:14px;background:linear-gradient(135deg,#0c1017 0%,#1e293b 100%);border:1px solid #38bdf844;">
+          <rect x="20" y="12" width="560" height="32" rx="6" fill="#1e293b" stroke="#38bdf8" stroke-width="1"/>
+          <text x="300" y="33" fill="#38bdf8" font-size="12" font-weight="bold" text-anchor="middle" font-family="sans-serif">📋 BẢNG THU THẬP SỐ LIỆU THỰC HÀNH MÔN ĐIỆN VẬT LÝ</text>
+          <rect x="40" y="60" width="520" height="180" rx="8" fill="#0f172a" stroke="#475569"/>
+          <line x1="40" y1="95" x2="560" y2="95" stroke="#475569" stroke-width="2"/>
+          <text x="100" y="82" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle">Lần đo</text>
+          <text x="220" y="82" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle">Hiệu điện thế U (V)</text>
+          <text x="360" y="82" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle">Dòng điện I (A)</text>
+          <text x="490" y="82" fill="#34d399" font-size="11" font-weight="bold" text-anchor="middle">R = U/I (Ω)</text>
+          <line x1="40" y1="125" x2="560" y2="125" stroke="#334155"/>
+          <text x="100" y="115" fill="#f8fafc" font-size="10" text-anchor="middle">Lần 1</text>
+          <text x="220" y="115" fill="#f8fafc" font-size="10" text-anchor="middle">2.0 V</text>
+          <text x="360" y="115" fill="#f8fafc" font-size="10" text-anchor="middle">0.20 A</text>
+          <text x="490" y="115" fill="#34d399" font-size="10" font-weight="bold" text-anchor="middle">10.0 Ω</text>
+          <line x1="40" y1="155" x2="560" y2="155" stroke="#334155"/>
+          <text x="100" y="145" fill="#f8fafc" font-size="10" text-anchor="middle">Lần 2</text>
+          <text x="220" y="145" fill="#f8fafc" font-size="10" text-anchor="middle">4.0 V</text>
+          <text x="360" y="145" fill="#f8fafc" font-size="10" text-anchor="middle">0.40 A</text>
+          <text x="490" y="145" fill="#34d399" font-size="10" font-weight="bold" text-anchor="middle">10.0 Ω</text>
+          <line x1="40" y1="185" x2="560" y2="185" stroke="#334155"/>
+          <text x="100" y="175" fill="#f8fafc" font-size="10" text-anchor="middle">Lần 3</text>
+          <text x="220" y="175" fill="#f8fafc" font-size="10" text-anchor="middle">6.0 V</text>
+          <text x="360" y="175" fill="#f8fafc" font-size="10" text-anchor="middle">0.61 A</text>
+          <text x="490" y="175" fill="#34d399" font-size="10" font-weight="bold" text-anchor="middle">9.84 Ω</text>
+          <line x1="40" y1="215" x2="560" y2="215" stroke="#334155"/>
+          <text x="100" y="205" fill="#f8fafc" font-size="10" text-anchor="middle">Lần 4</text>
+          <text x="220" y="205" fill="#f8fafc" font-size="10" text-anchor="middle">8.0 V</text>
+          <text x="360" y="205" fill="#f8fafc" font-size="10" text-anchor="middle">0.79 A</text>
+          <text x="490" y="205" fill="#34d399" font-size="10" font-weight="bold" text-anchor="middle">10.1 Ω</text>
+          <rect x="20" y="255" width="560" height="50" rx="8" fill="#0f172a" stroke="#334155"/>
+          <text x="35" y="285" fill="#34d399" font-size="11" font-weight="bold" font-family="sans-serif">✅ Kết luận nghiệm thu: Giá trị điện trở R không phụ thuộc vào U và I, đặc trưng cho tính cản trở dòng điện của vật dẫn.</text>
+        </svg>`
+      },
+      {
+        step: 4,
+        phase: 'BƯỚC 4: ỨNG DỤNG MẠNG ĐIỆN GIA ĐÌNH & AN TOÀN 5S',
+        title: `Mạch an toàn điện gia đình: Aptomat chống giật & Cầu chì`,
+        description: 'Vận dụng định luật Ôm để tính toán chọn dây dẫn, công suất tải an toàn và thiết bị bảo vệ ngắn mạch (Aptomat / Fuse).',
+        parameters: [
+          { label: 'Điện áp lưới', value: '220 V (AC) / 50 Hz' },
+          { label: 'Dòng tải định mức', value: '16 A / 25 A / 32 A' },
+          { label: 'Tiêu chuẩn bảo vệ', value: 'Aptomat chống rò 30mA' }
+        ],
+        keySafetyNotes: 'Quy tắc vàng: Cắt điện trước khi sửa chữa, mang dép cách điện và sử dụng bút thử điện kiểm tra.',
+        svgContent: `<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;border-radius:14px;background:linear-gradient(135deg,#064e3b 0%,#0f172a 100%);border:1px solid #10b98144;">
+          <rect x="20" y="12" width="560" height="32" rx="6" fill="#064e3b" stroke="#10b981" stroke-width="1"/>
+          <text x="300" y="33" fill="#6ee7b7" font-size="12" font-weight="bold" text-anchor="middle" font-family="sans-serif">🛡️ MẠCH AN TOÀN ĐIỆN GIA DỤNG & THIẾT BỊ BẢO VỆ CHUẨN 5S</text>
+          <g transform="translate(40, 65)">
+            <rect width="150" height="175" rx="8" fill="#022c22" stroke="#10b981" stroke-width="1.5"/>
+            <text x="75" y="25" fill="#34d399" font-size="11" font-weight="bold" text-anchor="middle">APTOMAT (MCB)</text>
+            <text x="75" y="70" fill="#ffffff" font-size="28" text-anchor="middle">🔌</text>
+            <text x="75" y="115" fill="#cbd5e1" font-size="9" text-anchor="middle">Bảo vệ quá tải</text>
+            <text x="75" y="135" fill="#cbd5e1" font-size="9" text-anchor="middle">Chống ngắn mạch</text>
+            <text x="75" y="155" fill="#34d399" font-size="9" font-weight="bold" text-anchor="middle">Tự động ngắt &lt; 0.1s</text>
+          </g>
+          <g transform="translate(225, 65)">
+            <rect width="150" height="175" rx="8" fill="#022c22" stroke="#fbbf24" stroke-width="1.5"/>
+            <text x="75" y="25" fill="#fbbf24" font-size="11" font-weight="bold" text-anchor="middle">CẦU CHÌ / DÂY CHẢY</text>
+            <text x="75" y="70" fill="#ffffff" font-size="28" text-anchor="middle">⚡</text>
+            <text x="75" y="115" fill="#cbd5e1" font-size="9" text-anchor="middle">Dây chì nóng chảy</text>
+            <text x="75" y="135" fill="#cbd5e1" font-size="9" text-anchor="middle">Ngắt dòng tức thì</text>
+            <text x="75" y="155" fill="#fbbf24" font-size="9" font-weight="bold" text-anchor="middle">Bảo vệ thiết bị đắt tiền</text>
+          </g>
+          <g transform="translate(410, 65)">
+            <rect width="150" height="175" rx="8" fill="#022c22" stroke="#38bdf8" stroke-width="1.5"/>
+            <text x="75" y="25" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle">DÂY NỐI ĐẤT (PE)</text>
+            <text x="75" y="70" fill="#ffffff" font-size="28" text-anchor="middle">⏚</text>
+            <text x="75" y="115" fill="#cbd5e1" font-size="9" text-anchor="middle">Tiêu tán dòng rò</text>
+            <text x="75" y="135" fill="#cbd5e1" font-size="9" text-anchor="middle">Bảo vệ tính mạng người</text>
+            <text x="75" y="155" fill="#38bdf8" font-size="9" font-weight="bold" text-anchor="middle">Điện trở đất &lt; 4 Ω</text>
+          </g>
+          <rect x="20" y="255" width="560" height="50" rx="8" fill="#022c22" stroke="#047857"/>
+          <text x="35" y="285" fill="#d1fae5" font-size="10" font-family="sans-serif">✨ Học sinh vận dụng kiến thức tính toán chọn dây dẫn phù hợp với công suất ấm điện, điều hòa, tránh quá tải gây cháy nổ.</text>
+        </svg>`
+      }
+    ];
+  }
+
+  // 3. NHÓM CƠ KHÍ GIA CÔNG / TIỆN / PHAY / XƯỞNG
+  if (lower.includes('tiện') || lower.includes('phay') || lower.includes('cơ khí') || lower.includes('cắt gọt') || lower.includes('xưởng') || lower.includes('bào') || lower.includes('hàn')) {
+    return [
+      {
+        step: 1,
+        phase: 'BƯỚC 1: SƠ ĐỒ GÁ KẸP PHÔI & DAO CẮT GỌT',
+        title: `Góc độ dao cắt & Kết cấu mâm cặp: ${safeTitle}`,
+        description: 'Bản vẽ thể hiện nguyên lý gá kẹp phôi trụ trên mâm cặp 3 chấu tự định tâm, góc trước γ, góc sau α và góc sắc β của dao tiện ngoài.',
+        parameters: [
+          { label: 'Góc trước dao (γ)', value: '12° - 15°' },
+          { label: 'Góc sau dao (α)', value: '6° - 8°' },
+          { label: 'Góc nghiêng chính (φ)', value: '45° / 75°' }
+        ],
+        keySafetyNotes: 'Xiết chặt chấu cặp bằng tay vặn và rút khóa mâm cặp ra ngay lập tức trước khi bật máy.',
+        svgContent: `<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;border-radius:14px;background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%);border:1px solid #94a3b844;">
+          <rect x="20" y="12" width="560" height="32" rx="6" fill="#1e293b" stroke="#94a3b8" stroke-width="1"/>
+          <text x="300" y="33" fill="#e2e8f0" font-size="12" font-weight="bold" text-anchor="middle" font-family="sans-serif">⚙️ KẾT CẤU GÁ KẸP PHÔI TRÊN MÂM CẶP & CÁC GÓC ĐỘ DAO CẮT GỌT</text>
+          <rect x="50" y="90" width="80" height="110" rx="4" fill="#334155" stroke="#64748b" stroke-width="2"/>
+          <text x="90" y="150" fill="#94a3b8" font-size="11" font-weight="bold" text-anchor="middle">MÂM CẶP</text>
+          <rect x="130" y="115" width="220" height="60" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
+          <text x="240" y="150" fill="#0f172a" font-size="13" font-weight="bold" text-anchor="middle">PHÔI TRỤ (CHI TIẾT MÁY)</text>
+          <polygon points="300,175 350,175 340,240 310,240" fill="#fbbf24" stroke="#d97706" stroke-width="2"/>
+          <text x="330" y="215" fill="#78350f" font-size="11" font-weight="bold" text-anchor="middle">DAO TIỆN</text>
+          <rect x="400" y="70" width="170" height="165" rx="8" fill="#0f172a" stroke="#64748b"/>
+          <text x="415" y="95" fill="#38bdf8" font-size="11" font-weight="bold">📌 THÔNG SỐ DAO TIỆN:</text>
+          <text x="415" y="120" fill="#e2e8f0" font-size="10">• Góc trước γ: 15°</text>
+          <text x="415" y="142" fill="#e2e8f0" font-size="10">• Góc sau α: 8°</text>
+          <text x="415" y="164" fill="#e2e8f0" font-size="10">• Góc sắc β: 67°</text>
+          <text x="415" y="186" fill="#e2e8f0" font-size="10">• Chiều cao tâm dao: h = 0</text>
+          <text x="415" y="210" fill="#34d399" font-size="10" font-weight="bold">Đạt độ đồng tâm 100%</text>
+          <rect x="20" y="255" width="560" height="50" rx="8" fill="#0f172a" stroke="#334155"/>
+          <text x="35" y="285" fill="#cbd5e1" font-size="10" font-family="sans-serif">🛡️ Chú ý: Tâm dao tiện phải được gá ngang bằng chính xác với đường tâm của ụ động máy tiện.</text>
+        </svg>`
+      },
+      {
+        step: 2,
+        phase: 'BƯỚC 2: QUÁ TRÌNH TẠO PHOI & CHẾ ĐỘ CẮT (V, S, T)',
+        title: `Hình thành phoi cắt gọt & Bôi trơn làm mát`,
+        description: 'Vùng biến dạng dẻo kim loại, sự hình thành phoi (phoi vụn, phoi xếp, phoi dây) và vai trò của dung dịch trơn nguội làm mát.',
+        parameters: [
+          { label: 'Vận tốc cắt Vc', value: '80 - 120 m/phút' },
+          { label: 'Lượng chạy dao s', value: '0.15 - 0.25 mm/vòng' },
+          { label: 'Chiều sâu cắt t', value: '1.0 - 2.0 mm' }
+        ],
+        keySafetyNotes: 'Không bao giờ dùng tay không để gỡ phoi khi trục chính đang quay; luôn dùng móc gỡ phoi chuyên dụng.',
+        svgContent: `<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;border-radius:14px;background:linear-gradient(135deg,#0c1017 0%,#1e293b 100%);border:1px solid #38bdf844;">
+          <rect x="20" y="12" width="560" height="32" rx="6" fill="#1e293b" stroke="#38bdf8" stroke-width="1"/>
+          <text x="300" y="33" fill="#38bdf8" font-size="12" font-weight="bold" text-anchor="middle" font-family="sans-serif">🔥 VÙNG BIẾN DẠNG CẮT GỌT & SỰ HÌNH THÀNH PHOI KIM LOẠI</text>
+          <polygon points="120,70 300,70 300,160 120,160" fill="#64748b"/>
+          <text x="210" y="120" fill="#f8fafc" font-size="12" font-weight="bold" text-anchor="middle">LỚP KIM LOẠI CẦN HỚT</text>
+          <polygon points="300,120 400,120 370,220 300,220" fill="#d97706"/>
+          <text x="350" y="180" fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle">MŨI DAO</text>
+          <path d="M 300 120 Q 320 80, 360 70 Q 400 65, 420 80" fill="none" stroke="#fbbf24" stroke-width="8"/>
+          <text x="440" y="75" fill="#fef08a" font-size="11" font-weight="bold">PHOI DÂY</text>
+          <rect x="20" y="255" width="560" height="50" rx="8" fill="#0f172a" stroke="#334155"/>
+          <text x="35" y="285" fill="#93c5fd" font-size="10" font-family="sans-serif">💡 Dòng dung dịch tưới trơn nguội giúp giảm ma sát, cuốn trôi phoi và tăng tuổi thọ lưỡi cắt lên 300%.</text>
+        </svg>`
+      },
+      {
+        step: 3,
+        phase: 'BƯỚC 3: QUY TRÌNH AN TOÀN XƯỞNG & 5S CHUYÊN NGHIỆP',
+        title: `Mô hình 5S xưởng cơ khí & Phòng ngừa tai nạn lao động`,
+        description: 'Sàng lọc (Seiri), Sắp xếp (Seiton), Sạch sẽ (Seiso), Săn sóc (Seiketsu), Sẵn sàng (Shitsuke) trong đào tạo nghề.',
+        parameters: [
+          { label: 'Bảo hộ lao động', value: 'Áo xưởng, Kính bảo hộ, Giày mũi thép' },
+          { label: 'Kỷ luật vận hành', value: 'Tuyệt đối không đeo găng tay khi tiện' },
+          { label: 'Vệ sinh máy', value: 'Quét phoi, lau dầu bôi trơn sau ca' }
+        ],
+        keySafetyNotes: 'Tuyệt đối không đeo găng tay len / vải khi làm việc với các trục quay máy tiện hoặc máy phay.',
+        svgContent: `<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;border-radius:14px;background:linear-gradient(135deg,#064e3b 0%,#0f172a 100%);border:1px solid #10b98144;">
+          <rect x="20" y="12" width="560" height="32" rx="6" fill="#064e3b" stroke="#10b981" stroke-width="1"/>
+          <text x="300" y="33" fill="#6ee7b7" font-size="12" font-weight="bold" text-anchor="middle" font-family="sans-serif">🛡️ QUY TRÌNH 5S TIÊU CHUẨN XƯỞNG CƠ KHÍ CHẾ TẠO MÁY</text>
+          <g transform="translate(30, 65)">
+            <rect width="95" height="175" rx="6" fill="#022c22" stroke="#10b981" stroke-width="1.5"/>
+            <text x="47" y="25" fill="#34d399" font-size="11" font-weight="bold" text-anchor="middle">1. SÀNG LỌC</text>
+            <text x="47" y="70" fill="#ffffff" font-size="24" text-anchor="middle">🗑️</text>
+            <text x="47" y="115" fill="#cbd5e1" font-size="9" text-anchor="middle">Loại bỏ phế liệu</text>
+            <text x="47" y="135" fill="#cbd5e1" font-size="9" text-anchor="middle">Dụng cụ hỏng</text>
+          </g>
+          <g transform="translate(140, 65)">
+            <rect width="95" height="175" rx="6" fill="#022c22" stroke="#38bdf8" stroke-width="1.5"/>
+            <text x="47" y="25" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle">2. SẮP XẾP</text>
+            <text x="47" y="70" fill="#ffffff" font-size="24" text-anchor="middle">📐</text>
+            <text x="47" y="115" fill="#cbd5e1" font-size="9" text-anchor="middle">Dễ thấy, dễ lấy</text>
+            <text x="47" y="135" fill="#cbd5e1" font-size="9" text-anchor="middle">Đúng vị trí gá</text>
+          </g>
+          <g transform="translate(250, 65)">
+            <rect width="95" height="175" rx="6" fill="#022c22" stroke="#fbbf24" stroke-width="1.5"/>
+            <text x="47" y="25" fill="#fbbf24" font-size="11" font-weight="bold" text-anchor="middle">3. SẠCH SẼ</text>
+            <text x="47" y="70" fill="#ffffff" font-size="24" text-anchor="middle">🧹</text>
+            <text x="47" y="115" fill="#cbd5e1" font-size="9" text-anchor="middle">Quét sạch phoi</text>
+            <text x="47" y="135" fill="#cbd5e1" font-size="9" text-anchor="middle">Lau dầu băng máy</text>
+          </g>
+          <g transform="translate(360, 65)">
+            <rect width="95" height="175" rx="6" fill="#022c22" stroke="#a78bfa" stroke-width="1.5"/>
+            <text x="47" y="25" fill="#a78bfa" font-size="11" font-weight="bold" text-anchor="middle">4. SĂN SÓC</text>
+            <text x="47" y="70" fill="#ffffff" font-size="24" text-anchor="middle">📋</text>
+            <text x="47" y="115" fill="#cbd5e1" font-size="9" text-anchor="middle">Duy trì 3S đầu</text>
+            <text x="47" y="135" fill="#cbd5e1" font-size="9" text-anchor="middle">Kiểm tra định kỳ</text>
+          </g>
+          <g transform="translate(470, 65)">
+            <rect width="95" height="175" rx="6" fill="#022c22" stroke="#f43f5e" stroke-width="1.5"/>
+            <text x="47" y="25" fill="#f43f5e" font-size="11" font-weight="bold" text-anchor="middle">5. SẴN SÀNG</text>
+            <text x="47" y="70" fill="#ffffff" font-size="24" text-anchor="middle">⭐</text>
+            <text x="47" y="115" fill="#cbd5e1" font-size="9" text-anchor="middle">Tự giác tuân thủ</text>
+            <text x="47" y="135" fill="#cbd5e1" font-size="9" text-anchor="middle">Văn hóa nghề</text>
+          </g>
+          <rect x="20" y="255" width="560" height="50" rx="8" fill="#022c22" stroke="#047857"/>
+          <text x="35" y="285" fill="#d1fae5" font-size="10" font-family="sans-serif">⚡ Tuân thủ 5S giúp triệt tiêu 99% nguy cơ tai nạn xưởng và nâng cao năng suất gia công cơ khí.</text>
+        </svg>`
+      },
+      {
+        step: 4,
+        phase: 'BƯỚC 4: KIỂM TRA ĐO LƯỜNG SẢN PHẨM & DUNG SAI KỸ THUẬT',
+        title: `Đo kiểm kích thước bằng Thước cặp cơ khí & Panme`,
+        description: 'Đánh giá độ tròn, độ đồng tâm, độ nhám bề mặt Ra và kiểm tra kích thước chi tiết so với bản vẽ thiết kế.',
+        parameters: [
+          { label: 'Cấp chính xác thước cặp', value: '± 0.02 mm' },
+          { label: 'Cấp chính xác Panme', value: '± 0.005 mm' },
+          { label: 'Độ nhám đạt yêu cầu', value: 'Ra = 1.6 - 3.2 µm' }
+        ],
+        keySafetyNotes: 'Chỉ đo khi chi tiết máy đã dừng quay hoàn toàn và nhiệt độ phôi trở về nhiệt độ môi trường.',
+        svgContent: `<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;border-radius:14px;background:linear-gradient(135deg,#1e1b4b 0%,#0f172a 100%);border:1px solid #818cf844;">
+          <rect x="20" y="12" width="560" height="32" rx="6" fill="#1e1b4b" stroke="#818cf8" stroke-width="1"/>
+          <text x="300" y="33" fill="#c7d2fe" font-size="12" font-weight="bold" text-anchor="middle" font-family="sans-serif">📏 NGHIỆM THU KÍCH THƯỚC CHI TIẾT & DUNG SAI GIA CÔNG CƠ KHÍ</text>
+          <rect x="60" y="80" width="300" height="60" rx="2" fill="#334155" stroke="#94a3b8" stroke-width="2"/>
+          <rect x="180" y="70" width="100" height="80" fill="#475569" stroke="#cbd5e1" stroke-width="2"/>
+          <line x1="60" y1="160" x2="360" y2="160" stroke="#38bdf8" stroke-width="1.5"/>
+          <text x="210" y="175" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle">L = 120 ± 0.05 mm</text>
+          <text x="230" y="115" fill="#f8fafc" font-size="12" font-weight="bold" text-anchor="middle">Ø 30 ± 0.02</text>
+          <rect x="390" y="65" width="180" height="175" rx="8" fill="#0f172a" stroke="#818cf8"/>
+          <text x="405" y="90" fill="#818cf8" font-size="11" font-weight="bold">🎯 TIÊU CHUẨN NGHIỆM THU:</text>
+          <text x="405" y="115" fill="#cbd5e1" font-size="10">1. Không xước bề mặt chi tiết</text>
+          <text x="405" y="137" fill="#cbd5e1" font-size="10">2. Độ đảo hướng kính &lt; 0.02</text>
+          <text x="405" y="159" fill="#cbd5e1" font-size="10">3. Kích thước nằm trong dung sai</text>
+          <text x="405" y="181" fill="#cbd5e1" font-size="10">4. Vát mép đầu trục 1x45°</text>
+          <text x="405" y="210" fill="#34d399" font-size="11" font-weight="bold">XẾP LOẠI: ĐẠT CHUẨN A</text>
+          <rect x="20" y="255" width="560" height="50" rx="8" fill="#0f172a" stroke="#334155"/>
+          <text x="35" y="285" fill="#c7d2fe" font-size="10" font-family="sans-serif">✅ Kết quả đo kiểm được ghi chép vào Phiếu đánh giá rèn luyện kỹ năng nghề của học sinh.</text>
+        </svg>`
+      }
+    ];
+  }
+
+  // 4. NHÓM KHOA HỌC CHUNG / TỰ NHIÊN / TIN HỌC / STEM
   return [
     {
       step: 1,
-      phase: 'GIAI ĐOẠN 1: THIẾT KẾ & CHUẨN BỊ',
-      title: `Sơ đồ cấu trúc kỹ thuật: ${safeTitle}`,
-      description: `Phân tích các thành phần cấu tạo, sơ đồ nguyên lý và thông số định mức của ${safeTitle} phục vụ học sinh môn ${safeSubj}.`,
+      phase: 'BƯỚC 1: SƠ ĐỒ CẤU TRÚC LOGIC & KHÁI NIỆM',
+      title: `Cấu trúc phân nhánh logic bài học: ${safeTitle}`,
+      description: 'Mô hình phân rã nội dung bài học thành các trục kiến thức nền tảng, công thức liên hệ và ứng dụng thực tiễn.',
       parameters: [
-        { label: 'Tiêu chuẩn kỹ thuật', value: 'TCVN / ISO 9001' },
-        { label: 'Trạng thái ban đầu', value: 'Hiệu chuẩn 100%' },
-        { label: 'Vật tư / Dụng cụ', value: 'Bộ thiết bị đồng bộ' }
+        { label: 'Trục kiến thức 1', value: 'Khái niệm & Định nghĩa cốt lõi' },
+        { label: 'Trục kiến thức 2', value: 'Quy luật & Phương pháp thao tác' },
+        { label: 'Trục kiến thức 3', value: 'Vận dụng thực tiễn đời sống' }
       ],
-      keySafetyNotes: 'Kiểm tra nguồn điện và bảo hộ lao động đạt chuẩn trước khi thao tác.',
-      svgContent: `<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;border-radius:14px;background:linear-gradient(135deg, #0b132b 0%, #1c2541 100%);border:1px solid #3a86ff44;">
-        <defs>
-          <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#3a86ff" />
-            <stop offset="100%" stop-color="#00b4d8" />
-          </linearGradient>
-        </defs>
-        <rect x="20" y="15" width="560" height="34" rx="8" fill="#1c2541" stroke="#3a86ff" stroke-width="1.2"/>
-        <text x="300" y="38" fill="#90e0ef" font-size="13" font-weight="bold" text-anchor="middle" font-family="sans-serif">📐 ẢNH 1/4 (COMFYUI): BẢN VẼ CẤU TẠO NỀN TẢNG - ${safeTitle.toUpperCase()}</text>
-        <rect x="40" y="70" width="150" height="100" rx="12" fill="#0f172a" stroke="#00b4d8" stroke-width="1.5"/>
-        <text x="115" y="105" fill="#38bdf8" font-size="12" font-weight="bold" text-anchor="middle" font-family="sans-serif">Khối Nhập Liệu</text>
-        <text x="115" y="130" fill="#94a3b8" font-size="10" text-anchor="middle" font-family="sans-serif">Thông số đầu vào</text>
-        <path d="M190 120 L240 120" stroke="#38bdf8" stroke-width="2.5" marker-end="url(#arrow)"/>
-        <rect x="240" y="60" width="160" height="120" rx="14" fill="#1e293b" stroke="url(#g1)" stroke-width="2"/>
-        <circle cx="320" cy="110" r="30" fill="#0284c7" opacity="0.6"/>
-        <text x="320" y="117" fill="#ffffff" font-size="22" font-weight="bold" text-anchor="middle" font-family="sans-serif">⚙️</text>
-        <text x="320" y="160" fill="#f8fafc" font-size="11" font-weight="bold" text-anchor="middle" font-family="sans-serif">${safeTitle.slice(0, 20)}</text>
-        <path d="M400 120 L450 120" stroke="#38bdf8" stroke-width="2.5"/>
-        <rect x="450" y="70" width="110" height="100" rx="12" fill="#0f172a" stroke="#00b4d8" stroke-width="1.5"/>
-        <text x="505" y="105" fill="#38bdf8" font-size="12" font-weight="bold" text-anchor="middle" font-family="sans-serif">Đầu Ra</text>
-        <text x="505" y="130" fill="#94a3b8" font-size="10" text-anchor="middle" font-family="sans-serif">Chuẩn GDPT 2018</text>
-        <rect x="30" y="210" width="540" height="90" rx="10" fill="#0f172a" stroke="#334155"/>
-        <text x="45" y="235" fill="#38bdf8" font-size="11" font-weight="bold" font-family="sans-serif">⚡ Căn Cứ Sư Phạm & Tiêu Chuẩn Kỹ Thuật:</text>
-        <text x="45" y="258" fill="#cbd5e1" font-size="10" font-family="sans-serif">• Học sinh làm chủ mối liên kết giữa các bộ phận, nhận diện đúng ký hiệu quy chuẩn môn ${safeSubj}.</text>
-        <text x="45" y="280" fill="#94a3b8" font-size="10" font-family="sans-serif">• Sinh tự động từ Node-Graph ComfyUI kết nối AI Central Hub (huycncdsai.io.vn).</text>
+      keySafetyNotes: 'Nắm chắc định nghĩa gốc trước khi mở rộng sang các dạng bài tập nâng cao.',
+      svgContent: `<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;border-radius:14px;background:linear-gradient(135deg,#0a1128 0%,#001f54 100%);border:1px solid #00b4d844;">
+        <rect x="20" y="12" width="560" height="32" rx="6" fill="#001f54" stroke="#00b4d8" stroke-width="1"/>
+        <text x="300" y="33" fill="#90e0ef" font-size="12" font-weight="bold" text-anchor="middle" font-family="sans-serif">📊 CẤU TRÚC LOGIC BÀI DẠY - ${safeTitle.toUpperCase()}</text>
+        <rect x="200" y="60" width="200" height="45" rx="8" fill="#0284c7" stroke="#38bdf8" stroke-width="2"/>
+        <text x="300" y="88" fill="#ffffff" font-size="13" font-weight="bold" text-anchor="middle">${safeTitle.slice(0, 24)}</text>
+        <path d="M 300 105 L 300 135" stroke="#38bdf8" stroke-width="2"/>
+        <path d="M 140 135 L 460 135" stroke="#38bdf8" stroke-width="2"/>
+        <path d="M 140 135 L 140 165" stroke="#38bdf8" stroke-width="2"/>
+        <path d="M 300 135 L 300 165" stroke="#38bdf8" stroke-width="2"/>
+        <path d="M 460 135 L 460 165" stroke="#38bdf8" stroke-width="2"/>
+        <rect x="60" y="165" width="160" height="70" rx="8" fill="#0f172a" stroke="#38bdf8"/>
+        <text x="140" y="195" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle">1. Định Nghĩa Cốt Lõi</text>
+        <text x="140" y="215" fill="#cbd5e1" font-size="9" text-anchor="middle">Bản chất quy luật</text>
+        <rect x="230" y="165" width="140" height="70" rx="8" fill="#0f172a" stroke="#34d399"/>
+        <text x="300" y="195" fill="#34d399" font-size="11" font-weight="bold" text-anchor="middle">2. Quy Tắc & Cơ Chế</text>
+        <text x="300" y="215" fill="#cbd5e1" font-size="9" text-anchor="middle">Công thức liên hệ</text>
+        <rect x="380" y="165" width="160" height="70" rx="8" fill="#0f172a" stroke="#fbbf24"/>
+        <text x="460" y="195" fill="#fbbf24" font-size="11" font-weight="bold" text-anchor="middle">3. Ứng Dụng Thực Tiễn</text>
+        <text x="460" y="215" fill="#cbd5e1" font-size="9" text-anchor="middle">Đời sống & Khoa học</text>
+        <rect x="20" y="255" width="560" height="50" rx="8" fill="#0f172a" stroke="#334155"/>
+        <text x="35" y="285" fill="#cbd5e1" font-size="10" font-family="sans-serif">🎯 Sơ đồ phân nhánh logic giúp học sinh nắm bắt tổng thể bài dạy một cách trực quan, khoa học.</text>
       </svg>`
     },
     {
       step: 2,
-      phase: 'GIAI ĐOẠN 2: ĐỘNG LỰC HỌC & CHUYỂN HOÁ',
-      title: `Nguyên lý vận hành cốt lõi: ${safeTitle}`,
-      description: `Mô tả dòng chuyển động năng lượng, cơ cấu hoạt động và các đại lượng vật lý biến thiên trong quá trình thực thi bài học.`,
+      phase: 'BƯỚC 2: QUY LUẬT & NGUYÊN LÝ HOẠT ĐỘNG',
+      title: `Mô hình tương tác & Quy tắc vận hành`,
+      description: 'Phân tích cơ chế biến đổi, điều kiện cân bằng và mối quan hệ nhân quả trong nội dung bài học.',
       parameters: [
-        { label: 'Hiệu suất vận hành', value: 'η ≈ 92 - 96%' },
-        { label: 'Tốc độ phản hồi', value: '< 0.05s' },
-        { label: 'Chế độ công tác', value: 'Liên tục ổn định' }
+        { label: 'Phương pháp nghiên cứu', value: 'Quy nạp & Thực nghiệm' },
+        { label: 'Tính chất khoa học', value: 'Chính xác & Khách quan' },
+        { label: 'Công cụ mô phỏng', value: 'AI Sư Phạm v2.0' }
       ],
-      keySafetyNotes: 'Giữ khoảng cách an toàn với các vùng chuyển động và bộ phận sinh nhiệt.',
-      svgContent: `<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;border-radius:14px;background:linear-gradient(135deg, #10002b 0%, #240046 100%);border:1px solid #ff9e0044;">
-        <rect x="20" y="15" width="560" height="34" rx="8" fill="#240046" stroke="#ff9e00" stroke-width="1.2"/>
-        <text x="300" y="38" fill="#ffd166" font-size="13" font-weight="bold" text-anchor="middle" font-family="sans-serif">🔥 ẢNH 2/4 (COMFYUI): NGUYÊN LÝ HOẠT ĐỘNG & BIẾN THIÊN NĂNG LƯỢNG</text>
-        <circle cx="160" cy="125" r="50" fill="#3a0ca3" stroke="#ff9e00" stroke-width="2"/>
-        <text x="160" y="132" fill="#ffffff" font-size="26" font-weight="bold" text-anchor="middle" font-family="sans-serif">⚡</text>
-        <path d="M220 125 C 260 80, 320 80, 360 125" fill="none" stroke="#ff9e00" stroke-width="3" stroke-dasharray="6"/>
-        <circle cx="420" cy="125" r="50" fill="#7209b7" stroke="#4cc9f0" stroke-width="2"/>
-        <text x="420" y="132" fill="#ffffff" font-size="26" font-weight="bold" text-anchor="middle" font-family="sans-serif">🔄</text>
-        <text x="160" y="195" fill="#ffd166" font-size="11" font-weight="bold" text-anchor="middle" font-family="sans-serif">Giai Đoạn Nén / Tích Luỹ</text>
-        <text x="420" y="195" fill="#4cc9f0" font-size="11" font-weight="bold" text-anchor="middle" font-family="sans-serif">Giai Đoạn Sinh Công / Xả</text>
-        <rect x="30" y="215" width="540" height="85" rx="10" fill="#10002b" stroke="#5a189a"/>
-        <text x="45" y="240" fill="#ffd166" font-size="11" font-weight="bold" font-family="sans-serif">📈 Động Lực Học Quá Trình:</text>
-        <text x="45" y="262" fill="#e0aaff" font-size="10" font-family="sans-serif">• Quá trình biến đổi theo chu trình tuần hoàn kín, bảo toàn năng lượng và tối ưu hóa hiệu quả.</text>
-        <text x="45" y="284" fill="#94a3b8" font-size="10" font-family="sans-serif">• Giúp học sinh hiểu sâu bản chất quy luật thay vì học thuộc lòng lý thuyết thụ động.</text>
+      keySafetyNotes: 'Thao tác tư duy phản biện, đối chiếu kết quả với các ví dụ chuẩn mực.',
+      svgContent: `<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;border-radius:14px;background:linear-gradient(135deg,#172554 0%,#1e1b4b 100%);border:1px solid #60a5fa44;">
+        <rect x="20" y="12" width="560" height="32" rx="6" fill="#1e1b4b" stroke="#60a5fa" stroke-width="1"/>
+        <text x="300" y="33" fill="#93c5fd" font-size="12" font-weight="bold" text-anchor="middle" font-family="sans-serif">⚙️ QUY LUẬT & NGUYÊN TẮC HOẠT ĐỘNG TRỌNG TÂM</text>
+        <circle cx="150" cy="140" r="50" fill="#1e3a8a" stroke="#60a5fa" stroke-width="2"/>
+        <text x="150" y="145" fill="#ffffff" font-size="24" text-anchor="middle">💡</text>
+        <text x="150" y="210" fill="#93c5fd" font-size="11" font-weight="bold" text-anchor="middle">Nguyên Nhân / Điều Kiện</text>
+        <path d="M 220 140 L 370 140" stroke="#60a5fa" stroke-width="3" stroke-dasharray="6"/>
+        <circle cx="440" cy="140" r="50" fill="#312e81" stroke="#a78bfa" stroke-width="2"/>
+        <text x="440" y="145" fill="#ffffff" font-size="24" text-anchor="middle">🎯</text>
+        <text x="440" y="210" fill="#a78bfa" font-size="11" font-weight="bold" text-anchor="middle">Kết Quả / Sản Phẩm</text>
+        <rect x="20" y="255" width="560" height="50" rx="8" fill="#0f172a" stroke="#334155"/>
+        <text x="35" y="285" fill="#cbd5e1" font-size="10" font-family="sans-serif">⚡ Mối liên hệ bản chất được chuẩn hóa theo logic phát triển phẩm chất và năng lực của người học.</text>
       </svg>`
     },
     {
       step: 3,
-      phase: 'GIAI ĐOẠN 3: THAO TÁC & TIÊU CHUẨN 5S',
-      title: `Quy trình thực hiện chuẩn 4 bước: ${safeTitle}`,
-      description: `Quy định các bước thực hành an toàn xưởng, thao tác kỹ thuật và nguyên tắc 5S (Sàng lọc - Sắp xếp - Sạch sẽ - Săn sóc - Sẵn sàng).`,
+      phase: 'BƯỚC 3: QUY TRÌNH THỰC HÀNH & XỬ LÝ TÌNH HUỐNG',
+      title: `Lưu đồ 4 bước giải quyết vấn đề`,
+      description: 'Quy trình chuẩn mực để học sinh giải quyết các bài toán hoặc tình huống xuất hiện trong bài giảng.',
       parameters: [
-        { label: 'Cấp độ bảo hộ', value: 'Kính, Găng, Quần áo BHLĐ' },
-        { label: 'Quy chuẩn an toàn', value: '5S Quốc tế' },
-        { label: 'Kiểm soát sai số', value: '± 0.02 mm' }
+        { label: 'Bước 1', value: 'Xác định yêu cầu vấn đề' },
+        { label: 'Bước 2', value: 'Lựa chọn phương pháp tối ưu' },
+        { label: 'Bước 3', value: 'Thực thi & Kiểm chứng' }
       ],
-      keySafetyNotes: 'Tuyệt đối không đùa nghịch, giữ đúng tư thế đứng và sử dụng đúng chủng loại dụng cụ.',
-      svgContent: `<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;border-radius:14px;background:linear-gradient(135deg, #064e3b 0%, #065f46 100%);border:1px solid #10b98144;">
-        <rect x="20" y="15" width="560" height="34" rx="8" fill="#047857" stroke="#34d399" stroke-width="1.2"/>
-        <text x="300" y="38" fill="#d1fae5" font-size="13" font-weight="bold" text-anchor="middle" font-family="sans-serif">🛡️ ẢNH 3/4 (COMFYUI): QUY TRÌNH THAO TÁC KỸ THUẬT & AN TOÀN LAO ĐỘNG 5S</text>
-        <rect x="40" y="70" width="115" height="110" rx="10" fill="#022c22" stroke="#10b981" stroke-width="1.5"/>
-        <text x="97" y="100" fill="#34d399" font-size="11" font-weight="bold" text-anchor="middle" font-family="sans-serif">BƯỚC 1</text>
-        <text x="97" y="125" fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle" font-family="sans-serif">Kiểm Tra</text>
-        <text x="97" y="150" fill="#a7f3d0" font-size="9" text-anchor="middle" font-family="sans-serif">Máy & Thiết bị</text>
-        <rect x="175" y="70" width="115" height="110" rx="10" fill="#022c22" stroke="#10b981" stroke-width="1.5"/>
-        <text x="232" y="100" fill="#34d399" font-size="11" font-weight="bold" text-anchor="middle" font-family="sans-serif">BƯỚC 2</text>
-        <text x="232" y="125" fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle" font-family="sans-serif">Gá Đặt</text>
-        <text x="232" y="150" fill="#a7f3d0" font-size="9" text-anchor="middle" font-family="sans-serif">Cân chỉnh phôi</text>
-        <rect x="310" y="70" width="115" height="110" rx="10" fill="#022c22" stroke="#10b981" stroke-width="1.5"/>
-        <text x="367" y="100" fill="#34d399" font-size="11" font-weight="bold" text-anchor="middle" font-family="sans-serif">BƯỚC 3</text>
-        <text x="367" y="125" fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle" font-family="sans-serif">Thao Tác</text>
-        <text x="367" y="150" fill="#a7f3d0" font-size="9" text-anchor="middle" font-family="sans-serif">Vận hành chuẩn</text>
-        <rect x="445" y="70" width="115" height="110" rx="10" fill="#022c22" stroke="#10b981" stroke-width="1.5"/>
-        <text x="502" y="100" fill="#34d399" font-size="11" font-weight="bold" text-anchor="middle" font-family="sans-serif">BƯỚC 4</text>
-        <text x="502" y="125" fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle" font-family="sans-serif">Đo Kiểm</text>
-        <text x="502" y="150" fill="#a7f3d0" font-size="9" text-anchor="middle" font-family="sans-serif">Vệ sinh 5S</text>
-        <rect x="30" y="205" width="540" height="95" rx="10" fill="#022c22" stroke="#059669"/>
-        <text x="45" y="230" fill="#34d399" font-size="11" font-weight="bold" font-family="sans-serif">🛡️ Tiêu Chí Đánh Giá Kỹ Năng Sư Phạm:</text>
-        <text x="45" y="252" fill="#d1fae5" font-size="10" font-family="sans-serif">• Rèn luyện tác phong công nghiệp, tuân thủ kỷ luật xưởng theo Thông tư 22 và Công văn 5512.</text>
-        <text x="45" y="274" fill="#6ee7b7" font-size="10" font-family="sans-serif">• Sản phẩm học tập của học sinh được đối chiếu trực tiếp với bảng tiêu chí kỹ thuật.</text>
+      keySafetyNotes: 'Tuân thủ đúng trình tự các bước, không bỏ sót các điều kiện biên.',
+      svgContent: `<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;border-radius:14px;background:linear-gradient(135deg,#064e3b 0%,#0f172a 100%);border:1px solid #34d39944;">
+        <rect x="20" y="12" width="560" height="32" rx="6" fill="#064e3b" stroke="#34d399" stroke-width="1"/>
+        <text x="300" y="33" fill="#a7f3d0" font-size="12" font-weight="bold" text-anchor="middle" font-family="sans-serif">🔄 LƯU ĐỒ 4 BƯỚC GIẢI QUYẾT TÌNH HUỐNG CHUẨN MỰC</text>
+        <g transform="translate(40, 70)">
+          <rect width="115" height="150" rx="8" fill="#0f172a" stroke="#34d399" stroke-width="1.5"/>
+          <text x="57" y="30" fill="#34d399" font-size="11" font-weight="bold" text-anchor="middle">BƯỚC 1</text>
+          <text x="57" y="70" fill="#ffffff" font-size="12" font-weight="bold" text-anchor="middle">Xác định</text>
+          <text x="57" y="90" fill="#ffffff" font-size="12" font-weight="bold" text-anchor="middle">vấn đề</text>
+          <text x="57" y="125" fill="#a7f3d0" font-size="9" text-anchor="middle">Đọc kĩ đề bài</text>
+        </g>
+        <g transform="translate(175, 70)">
+          <rect width="115" height="150" rx="8" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5"/>
+          <text x="57" y="30" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle">BƯỚC 2</text>
+          <text x="57" y="70" fill="#ffffff" font-size="12" font-weight="bold" text-anchor="middle">Xây dựng</text>
+          <text x="57" y="90" fill="#ffffff" font-size="12" font-weight="bold" text-anchor="middle">kế hoạch</text>
+          <text x="57" y="125" fill="#a7f3d0" font-size="9" text-anchor="middle">Chọn quy luật</text>
+        </g>
+        <g transform="translate(310, 70)">
+          <rect width="115" height="150" rx="8" fill="#0f172a" stroke="#fbbf24" stroke-width="1.5"/>
+          <text x="57" y="30" fill="#fbbf24" font-size="11" font-weight="bold" text-anchor="middle">BƯỚC 3</text>
+          <text x="57" y="70" fill="#ffffff" font-size="12" font-weight="bold" text-anchor="middle">Thực thi</text>
+          <text x="57" y="90" fill="#ffffff" font-size="12" font-weight="bold" text-anchor="middle">giải pháp</text>
+          <text x="57" y="125" fill="#a7f3d0" font-size="9" text-anchor="middle">Tính toán chuẩn</text>
+        </g>
+        <g transform="translate(445, 70)">
+          <rect width="115" height="150" rx="8" fill="#0f172a" stroke="#f43f5e" stroke-width="1.5"/>
+          <text x="57" y="30" fill="#f43f5e" font-size="11" font-weight="bold" text-anchor="middle">BƯỚC 4</text>
+          <text x="57" y="70" fill="#ffffff" font-size="12" font-weight="bold" text-anchor="middle">Đánh giá &</text>
+          <text x="57" y="90" fill="#ffffff" font-size="12" font-weight="bold" text-anchor="middle">Kết luận</text>
+          <text x="57" y="125" fill="#a7f3d0" font-size="9" text-anchor="middle">Đối chiếu thực tế</text>
+        </g>
+        <rect x="20" y="255" width="560" height="50" rx="8" fill="#0f172a" stroke="#334155"/>
+        <text x="35" y="285" fill="#a7f3d0" font-size="10" font-family="sans-serif">🎯 Kỹ năng giải quyết vấn đề là một trong 3 năng lực chung cốt lõi theo Chương trình GDPT 2018.</text>
       </svg>`
     },
     {
       step: 4,
-      phase: 'GIAI ĐOẠN 4: ỨNG DỤNG & SẢN PHẨM HOÀN THIỆN',
-      title: `Sản phẩm đầu ra & Vận dụng thực tế: ${safeTitle}`,
-      description: `Đánh giá chất lượng thành phẩm, liên hệ ứng dụng vào đời sống sản xuất hiện đại và phát triển năng lực số theo CV 3456.`,
+      phase: 'BƯỚC 4: VẬN DỤNG ĐỜI SỐNG & CHUYỂN ĐỔI SỐ',
+      title: `Ứng dụng thực tiễn & Báo cáo sản phẩm số`,
+      description: 'Liên hệ thực tiễn xã hội, khai thác công cụ số và hoàn thành phiếu học tập trực tuyến.',
       parameters: [
-        { label: 'Tỉ lệ đạt yêu cầu', value: '100% học sinh' },
-        { label: 'Xếp loại đánh giá', value: 'Mức Đạt & Tốt (TT 22)' },
-        { label: 'Ứng dụng thực tế', value: 'Sản xuất công nghiệp & Đời sống' }
+        { label: 'Năng lực số (CV 3456)', value: 'Miền 4: Sáng tạo số' },
+        { label: 'Đánh giá học sinh (TT 22)', value: 'Mức Đạt & Tốt' },
+        { label: 'Hình thức sản phẩm', value: 'Sơ đồ tư duy / Infographic' }
       ],
-      keySafetyNotes: 'Bảo quản sản phẩm đúng nơi quy định, lưu trữ hồ sơ học tập số trên hệ sinh thái.',
-      svgContent: `<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;border-radius:14px;background:linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);border:1px solid #818cf844;">
-        <rect x="20" y="15" width="560" height="34" rx="8" fill="#3730a3" stroke="#a5b4fc" stroke-width="1.2"/>
-        <text x="300" y="38" fill="#e0e7ff" font-size="13" font-weight="bold" text-anchor="middle" font-family="sans-serif">🏆 ẢNH 4/4 (COMFYUI): THÀNH PHẨM HỌC TẬP & KẾT NỐI ĐỜI SỐNG THỰC TIỄN</text>
-        <rect x="80" y="70" width="440" height="120" rx="14" fill="#0f172a" stroke="#818cf8" stroke-width="1.8"/>
-        <circle cx="160" cy="130" r="38" fill="#4338ca" stroke="#c7d2fe" stroke-width="2"/>
-        <text x="160" y="139" fill="#ffffff" font-size="28" font-weight="bold" text-anchor="middle" font-family="sans-serif">🎯</text>
-        <text x="330" y="115" fill="#ffffff" font-size="14" font-weight="bold" font-family="sans-serif">Sản Phẩm Đạt Chuẩn Sư Phạm</text>
-        <text x="330" y="140" fill="#c7d2fe" font-size="11" font-family="sans-serif">• Đạt đầy đủ 3 thành tố mục tiêu bài học ${safeTitle}</text>
-        <text x="330" y="162" fill="#a5b4fc" font-size="11" font-family="sans-serif">• Ứng dụng thực tiễn trong ngành ${safeSubj} hiện đại</text>
-        <rect x="30" y="215" width="540" height="85" rx="10" fill="#0f172a" stroke="#4f46e5"/>
-        <text x="45" y="240" fill="#a5b4fc" font-size="11" font-weight="bold" font-family="sans-serif">🌐 Chuyển Đổi Số Giáo Dục (CV 3456 & QĐ 2422):</text>
-        <text x="45" y="262" fill="#e0e7ff" font-size="10" font-family="sans-serif">• Học sinh biết số hóa sản phẩm, tạo báo cáo số và chia sẻ trên Không Gian Học Tập EduViet.</text>
-        <text x="45" y="284" fill="#c7d2fe" font-size="10" font-family="sans-serif">• Khẳng định năng lực đổi mới sáng tạo và tư duy kỹ thuật trong kỷ nguyên AI.</text>
+      keySafetyNotes: 'Tôn trọng bản quyền học liệu số và chia sẻ sản phẩm an toàn trên môi trường mạng.',
+      svgContent: `<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;border-radius:14px;background:linear-gradient(135deg,#1e1b4b 0%,#312e81 100%);border:1px solid #818cf844;">
+        <rect x="20" y="12" width="560" height="32" rx="6" fill="#312e81" stroke="#818cf8" stroke-width="1"/>
+        <text x="300" y="33" fill="#e0e7ff" font-size="12" font-weight="bold" text-anchor="middle" font-family="sans-serif">🌐 VẬN DỤNG VÀO ĐỜI SỐNG & NĂNG LỰC SỐ CV 3456</text>
+        <rect x="80" y="70" width="440" height="150" rx="12" fill="#0f172a" stroke="#818cf8" stroke-width="1.8"/>
+        <circle cx="160" cy="145" r="40" fill="#4338ca" stroke="#c7d2fe" stroke-width="2"/>
+        <text x="160" y="154" fill="#ffffff" font-size="30" text-anchor="middle">🎓</text>
+        <text x="340" y="125" fill="#ffffff" font-size="15" font-weight="bold">Làm Chủ Kiến Thức & Kỹ Năng Số</text>
+        <text x="340" y="155" fill="#c7d2fe" font-size="11">• Ứng dụng giải quyết tình huống thực tế tại địa phương</text>
+        <text x="340" y="180" fill="#a5b4fc" font-size="11">• Khai thác sơ đồ tư duy số và kho học liệu trực tuyến</text>
+        <rect x="20" y="255" width="560" height="50" rx="8" fill="#0f172a" stroke="#334155"/>
+        <text x="35" y="285" fill="#e0e7ff" font-size="10" font-family="sans-serif">✨ Học sinh tự tin thuyết trình, thảo luận nhóm và ứng dụng tri thức vào các dự án học tập sáng tạo.</text>
       </svg>`
     }
   ];
@@ -1236,6 +1733,7 @@ export function generateComprehensiveLessonPlanPackage(params: {
   } = params;
 
   const combinedSnippet = matchedDoc?.relevantSnippet || referenceContext || '';
+  const k = deepParseLessonDocument(combinedSnippet, lessonTitle, subject, className);
 
   // 1. Kế hoạch bài dạy
   let plan5512: LessonPlan5512Data | undefined;
@@ -1305,12 +1803,24 @@ export function generateComprehensiveLessonPlanPackage(params: {
   );
 
   // 7. Lời bình thuyết minh bài giảng tự động (VietTTS Audio Voiceover)
+  // Chỉ đọc NỘI DUNG THỰC CHẤT của bài giảng (không đọc tiêu đề hay số hiệu hành chính)
+  const substantiveOpening = plan5512 
+    ? plan5512.activity1Opening.content.replace(/^Giáo viên (?:trình chiếu|đưa ra|nêu)[^:]*:\s*"?/i, '').replace(/"?$/i, '')
+    : 'Trong thực tiễn khoa học và đời sống, bài học này đóng vai trò nền tảng vô cùng quan trọng.';
+
+  const substantiveCoreKnowledge = plan5512
+    ? plan5512.activity2Knowledge.content.replace(/Nhiệm vụ \d+:[^\n]*\n•\s*/gi, '')
+    : (k.coreDefinitions.length > 0 
+        ? k.coreDefinitions.map(d => `Khái niệm ${d.term}: ${d.definition}`).join('. ') 
+        : 'Nắm vững bản chất nguyên lý và mối liên hệ giữa các đại lượng khoa học cốt lõi.');
+
   const voiceNarrationText = [
-    `Kính chào Thầy Cô và các em học sinh. Hôm nay chúng ta cùng nghiên cứu bài học: ${lessonTitle}, thuộc môn ${subject} lớp ${className}.`,
-    plan5512 ? plan5512.activity1Opening.content : 'Chúng ta cùng mở đầu bài học với các tình huống thực tế sinh động.',
-    `Trọng tâm của bài gồm các quy luật và kiến thức cốt lõi. Hãy chú ý theo dõi các sơ đồ kỹ thuật và vận dụng vào bài tập củng cố.`,
-    `Chúc các em có một tiết học đầy hào hứng và gặt hái nhiều kết quả tốt đẹp!`
-  ].join(' ');
+    substantiveOpening,
+    'Chúng ta cùng tìm hiểu bản chất kiến thức trọng tâm.',
+    substantiveCoreKnowledge,
+    'Về mặt vận dụng và thực hành, các em cần chú ý tuân thủ đúng quy trình kỹ thuật, thao tác chính xác và đối chiếu kết quả với tiêu chuẩn thực nghiệm.',
+    'Hãy hệ thống hóa toàn bộ kiến thức qua sơ đồ tư duy và vận dụng giải quyết các tình huống thực tế.'
+  ].filter(Boolean).join(' ');
 
   // 6. Rà soát & Chấm điểm Sư phạm Đa chiều
   const auditScore = auditAndScoreLessonPlan(

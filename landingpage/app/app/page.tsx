@@ -79,6 +79,7 @@ import {
 import { generateAndDownloadPptx } from './lessonPlanPptx';
 import { InteractiveMindMap } from './InteractiveMindMap';
 import { InteractiveTechnicalImages } from './InteractiveTechnicalImages';
+import { InteractiveAiVideoPlayer } from './InteractiveAiVideoPlayer';
 import { speakVietnamese, stopSpeaking } from '@/lib/voiceAiService';
 import { InteractiveMiniGame } from './InteractiveMiniGame';
 import { AutomatedPaymentModal } from './AutomatedPaymentModal';
@@ -5112,7 +5113,7 @@ export default function UnifiedTeacherScheduleApp() {
                               setIsLessonSpeaking(false);
                             } else {
                               setIsLessonSpeaking(true);
-                              const text = plannerFullPackage?.voiceNarrationText || (plannerLessonTitle + '. Bài giảng môn ' + plannerSubject);
+                              const text = plannerFullPackage?.voiceNarrationText || 'Nội dung bài học tập trung vào các quy luật, nguyên lý vận hành kỹ thuật và phương pháp thực nghiệm khoa học cốt lõi.';
                               speakVietnamese(text, {
                                 onEnd: () => setIsLessonSpeaking(false)
                               });
@@ -5232,6 +5233,7 @@ export default function UnifiedTeacherScheduleApp() {
                           lessonTitle={plannerLessonTitle || plannerResult5512?.lessonTitle || 'Kế hoạch bài dạy'}
                           subject={plannerSubject || plannerResult5512?.subject || 'Công nghệ'}
                           grade={plannerClass || plannerResult5512?.grade || '12'}
+                          voiceContent={plannerFullPackage?.voiceNarrationText}
                         />
                         {plannerResult5512 && (
                           <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl p-5 space-y-4 text-xs sm:text-sm text-slate-800 dark:text-slate-100">
@@ -5328,6 +5330,7 @@ export default function UnifiedTeacherScheduleApp() {
                           lessonTitle={plannerFullPackage.lessonTitle}
                           subject={plannerFullPackage.subject}
                           grade={plannerClass || '12'}
+                          voiceContent={plannerFullPackage.slides?.[0]?.speakerNotes || plannerFullPackage.voiceNarrationText}
                         />
                         <div className="flex items-center justify-between p-3.5 rounded-xl bg-gradient-to-r from-sky-500/15 via-blue-500/10 to-indigo-500/15 border border-sky-500/30 text-xs flex-wrap gap-2.5">
                           <div className="space-y-0.5">
@@ -5423,6 +5426,7 @@ export default function UnifiedTeacherScheduleApp() {
                           lessonTitle={plannerFullPackage.lessonTitle}
                           subject={plannerFullPackage.subject}
                           grade={plannerClass || '12'}
+                          voiceContent="Bộ câu hỏi tương tác trắc nghiệm củng cố và đánh giá mức độ tiếp thu bài giảng của học sinh."
                         />
                         <InteractiveMiniGame
                         questions={plannerFullPackage.miniGame}
@@ -5440,7 +5444,17 @@ export default function UnifiedTeacherScheduleApp() {
                           lessonTitle={plannerFullPackage.lessonTitle}
                           subject={plannerFullPackage.subject}
                           grade={plannerClass || '12'}
+                          voiceContent={plannerFullPackage.voiceNarrationText}
                         />
+
+                        {/* Interactive Microlearning AI Video Player (Tự động thi công 100%) */}
+                        <InteractiveAiVideoPlayer
+                          videoScript={plannerFullPackage.videoScript}
+                          lessonTitle={plannerFullPackage.lessonTitle}
+                          subject={plannerFullPackage.subject}
+                          voiceNarrationText={plannerFullPackage.voiceNarrationText}
+                        />
+
                         <div className="flex items-center justify-between p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs">
                           <span className="text-amber-800 dark:text-amber-300 font-bold">
                             🎬 Kịch bản Video vi mô (Microlearning) gồm {plannerFullPackage.videoScript.length} phân cảnh chi tiết (3-5 phút).
@@ -5513,6 +5527,7 @@ export default function UnifiedTeacherScheduleApp() {
                           lessonTitle={plannerFullPackage.lessonTitle}
                           subject={plannerFullPackage.subject}
                           grade={plannerClass || '12'}
+                          voiceContent={plannerFullPackage.voiceNarrationText}
                         />
                         <InteractiveMindMap
                         mindmap={plannerFullPackage.mindmap}
@@ -5530,6 +5545,7 @@ export default function UnifiedTeacherScheduleApp() {
                           lessonTitle={plannerFullPackage.lessonTitle}
                           subject={plannerFullPackage.subject}
                           grade={plannerClass || '12'}
+                          voiceContent="Bộ ảnh kỹ thuật và sơ đồ nguyên lý chu trình mô phỏng trực quan chuẩn hóa theo chuyên ngành."
                         />
                         <InteractiveTechnicalImages
                           diagrams={plannerFullPackage.technicalDiagrams}

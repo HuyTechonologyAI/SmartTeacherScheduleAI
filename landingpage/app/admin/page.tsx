@@ -27,10 +27,12 @@ import {
   HardDrive,
   FileSpreadsheet,
   Info,
-  Calculator
+  Calculator,
+  Tag
 } from 'lucide-react';
 import { setAuthSession, clearAuthSession, getCurrentAuthSession, AuthSession } from '@/lib/authRbac';
 import { FinancialAiTab } from './FinancialAiTab';
+import { VouchersTab } from './VouchersTab';
 
 interface MetricsData {
   infrastructure: {
@@ -118,7 +120,7 @@ export default function SuperAdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [adminPasscode, setAdminPasscode] = useState<string>('');
   const [authError, setAuthError] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'downloads' | 'traffic' | 'revenue' | 'users' | 'ai_financial'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'downloads' | 'traffic' | 'revenue' | 'users' | 'ai_financial' | 'vouchers'>('dashboard');
 
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
   const [downloads, setDownloads] = useState<DownloadAnalyticsData | null>(null);
@@ -339,6 +341,7 @@ export default function SuperAdminPage() {
         <div className="flex items-center gap-2 min-w-max">
           {[
             { id: 'dashboard', label: '📊 Tổng Quan Hệ Thống', icon: BarChart3 },
+            { id: 'vouchers', label: '🎟️ Quản Lý & Tặng Voucher', icon: Tag },
             { id: 'ai_financial', label: '🧠 AI Tài Chính & Định Giá', icon: Calculator },
             { id: 'downloads', label: '📥 Bộ Đếm Lượt Tải', icon: Download },
             { id: 'traffic', label: '🌐 Lưu Lượng Truy Cập', icon: Globe },
@@ -931,6 +934,11 @@ export default function SuperAdminPage() {
               )}
             </div>
           </div>
+        )}
+
+        {/* ================= TAB: QUẢN LÝ & TẶNG VOUCHER KHUYẾN MÃI ================= */}
+        {activeTab === 'vouchers' && (
+          <VouchersTab userList={userList} />
         )}
 
         {/* ================= TAB: AI TÀI CHÍNH & MÔ HÌNH ĐỊNH GIÁ (TRỤ CỘT 6) ================= */}

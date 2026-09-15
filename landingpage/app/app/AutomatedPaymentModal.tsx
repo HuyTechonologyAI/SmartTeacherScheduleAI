@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
+  Tag,
+  Gift,
   Crown,
   Check,
   CheckCheck,
@@ -79,6 +81,89 @@ export const AutomatedPaymentModal: React.FC<AutomatedPaymentModalProps> = ({
   } | null>(null);
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
 
+  // Voucher / Khuyến mãi state
+  const [voucherCodeInput, setVoucherCodeInput] = useState<string>('');
+  const [appliedVoucher, setAppliedVoucher] = useState<{
+    code: string;
+    title: string;
+    discountAmount: number;
+    finalPrice: number;
+    grantedTier?: 'VIP1' | 'VIP2' | 'SCHOOL' | 'PRO';
+    grantedDays?: number;
+    message: string;
+  } | null>(null);
+  const [voucherError, setVoucherError] = useState<string>('');
+  const [isApplyingVoucher, setIsApplyingVoucher] = useState<boolean>(false);
+
+  const selectedPlan =
+    PRICING_PLANS.find(p => p.id === selectedPlanId) || PRICING_PLANS[1];
+  const syntax = generateTransferSyntax(syncCode, selectedPlan.id);
+  const basePlanPrice = selectedPlan.price > 0 ? selectedPlan.price : 399000;
+  const effectivePrice = appliedVoucher ? appliedVoucher.finalPrice : basePlanPrice;
+  const vietQrUrl = generateVietQrImageUrl(effectivePrice, syntax);
+
+  const handleApplyVoucher = async () => {
+    if (!voucherCodeInput.trim()) {
+      setVoucherError('Vui lòng nhập mã Voucher');
+      return;
+    }
+    setIsApplyingVoucher(true);
+    setVoucherError('');
+    try {
+      const res = await fetch('/api/vouchers/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: voucherCodeInput.trim().toUpperCase(),
+          syncCode,
+          teacherName,
+          planId: selectedPlan.id,
+          originalPrice: basePlanPrice
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Mã voucher không hợp lệ hoặc đã hết hạn.');
+      }
+      setAppliedVoucher({
+        code: voucherCodeInput.trim().toUpperCase(),
+        title: data.voucher?.title || 'Voucher Khuyến Mãi',
+        discountAmount: data.discountAmount,
+        finalPrice: data.finalPrice,
+        grantedTier: data.grantedTier,
+        grantedDays: data.grantedDays,
+        message: data.message
+      });
+    } catch (err: any) {
+      setVoucherError(err.message || 'Không thể áp dụng voucher');
+      setAppliedVoucher(null);
+    } finally {
+      setIsApplyingVoucher(false);
+    }
+  };
+
+  const handleActivateFreeVoucher = async () => {
+    if (!appliedVoucher || appliedVoucher.finalPrice !== 0) return;
+    setIsPaid(true);
+    const tier = (appliedVoucher.grantedTier || 'VIP1') as 'VIP1' | 'VIP2' | 'SCHOOL' | 'PRO';
+    const expiresAt = new Date(Date.now() + (appliedVoucher.grantedDays || 30) * 24 * 60 * 60 * 1000).toISOString();
+    setPaidLicense({
+      tier,
+      expiresAt,
+      receiptId: `VOUCHER-${appliedVoucher.code}-${Date.now()}`,
+      receiptHash: `VOUCHER-DIGITAL-KEY-${appliedVoucher.code}`
+    });
+    setActiveStep('success');
+    confetti({
+      particleCount: 150,
+      spread: 90,
+      origin: { y: 0.6 }
+    });
+    if (onPaymentSuccess) {
+      onPaymentSuccess(tier, expiresAt);
+    }
+  };
+
   // Form Báo giá VIP 2 (Lớp học)
   const [vip2QuoteForm, setVip2QuoteForm] = useState({
     className: '',
@@ -122,11 +207,7 @@ export const AutomatedPaymentModal: React.FC<AutomatedPaymentModalProps> = ({
   const [vatSubmitted, setVatSubmitted] = useState<boolean>(false);
   const [isSubmittingVat, setIsSubmittingVat] = useState<boolean>(false);
 
-  const selectedPlan =
-    PRICING_PLANS.find(p => p.id === selectedPlanId) || PRICING_PLANS[1];
-  const syntax = generateTransferSyntax(syncCode, selectedPlan.id);
-  const effectivePrice = selectedPlan.price > 0 ? selectedPlan.price : 399000;
-  const vietQrUrl = generateVietQrImageUrl(effectivePrice, syntax);
+
 
   const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -740,6 +821,68 @@ export const AutomatedPaymentModal: React.FC<AutomatedPaymentModalProps> = ({
                     );
                   })}
                 </div>
+
+                {/* Ô Nhập Mã Voucher Khuyến Mãi Dành Cho Giáo Viên */}
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/40 via-slate-900 to-emerald-950/40 border border-purple-500/30 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-purple-300 flex items-center gap-1.5 uppercase tracking-wider">
+                      <Tag className="w-3.5 h-3.5 text-purple-400" />
+                      <span>Thầy/Cô Có Mã Voucher Khuyến Mãi Từ Admin?</span>
+                    </span>
+                    {appliedVoucher && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                        <Check className="w-3 h-3" />
+                        <span>Đã áp dụng: {appliedVoucher.code}</span>
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={voucherCodeInput}
+                      onChange={(e) => setVoucherCodeInput(e.target.value.toUpperCase().replace(/\s+/g, ''))}
+                      placeholder="Nhập mã voucher (VD: TRIAN2026, GV_TIENPHONG)..."
+                      className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono text-xs uppercase placeholder:text-slate-500 focus:border-purple-500 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleApplyVoucher}
+                      disabled={isApplyingVoucher || !voucherCodeInput.trim()}
+                      className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow cursor-pointer transition-all disabled:opacity-50 flex items-center gap-1.5 shrink-0"
+                    >
+                      <Gift className="w-3.5 h-3.5" />
+                      <span>{isApplyingVoucher ? 'Đang kiểm tra...' : 'Áp Dụng Voucher'}</span>
+                    </button>
+                  </div>
+
+                  {voucherError && (
+                    <p className="text-[11px] text-rose-400 font-semibold flex items-center gap-1">
+                      <span>⚠️</span>
+                      <span>{voucherError}</span>
+                    </p>
+                  )}
+
+                  {appliedVoucher && (
+                    <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs space-y-2">
+                      <div className="flex items-center justify-between font-bold">
+                        <span>🎉 {appliedVoucher.title}</span>
+                        <span className="text-emerald-400 font-black">- {appliedVoucher.discountAmount.toLocaleString('vi-VN')} đ</span>
+                      </div>
+                      <p className="text-[11px] text-emerald-300/90">{appliedVoucher.message}</p>
+                      {appliedVoucher.finalPrice === 0 && (
+                        <button
+                          type="button"
+                          onClick={handleActivateFreeVoucher}
+                          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-xs shadow-lg shadow-emerald-900/40 transition-all cursor-pointer flex items-center justify-center gap-2 animate-pulse"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                          <span>🎁 KÍCH HOẠT MIỄN PHÍ BẢN QUYỀN 100% NGAY LẬP TỨC (0 VNĐ)</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* ------------------------------------------------------------- */}
@@ -1219,6 +1362,55 @@ export const AutomatedPaymentModal: React.FC<AutomatedPaymentModalProps> = ({
                     ← Chọn gói khác
                   </button>
                 </div>
+              </div>
+
+              {/* Ô Nhập & Áp Dụng Mã Voucher Trong Bước Quét Mã */}
+              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-950/30 via-slate-900 to-emerald-950/30 border border-purple-500/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-purple-300 flex items-center gap-1.5">
+                    <Tag className="w-3.5 h-3.5 text-purple-400" />
+                    <span>MÃ VOUCHER KHUYẾN MÃI (NẾU CÓ)</span>
+                  </span>
+                  {appliedVoucher && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                      <Check className="w-3 h-3" />
+                      <span>{appliedVoucher.code} (-{appliedVoucher.discountAmount.toLocaleString('vi-VN')} đ)</span>
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={voucherCodeInput}
+                    onChange={(e) => setVoucherCodeInput(e.target.value.toUpperCase().replace(/\s+/g, ''))}
+                    placeholder="Nhập mã voucher (VD: TRIAN2026, GV_TIENPHONG)..."
+                    className="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono text-xs uppercase placeholder:text-slate-500 focus:border-purple-500 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyVoucher}
+                    disabled={isApplyingVoucher || !voucherCodeInput.trim()}
+                    className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow cursor-pointer transition-all disabled:opacity-50 shrink-0"
+                  >
+                    {isApplyingVoucher ? 'Đang nạp...' : 'Áp Dụng'}
+                  </button>
+                </div>
+
+                {voucherError && (
+                  <p className="text-[11px] text-rose-400 font-semibold">{voucherError}</p>
+                )}
+
+                {appliedVoucher && appliedVoucher.finalPrice === 0 && (
+                  <button
+                    type="button"
+                    onClick={handleActivateFreeVoucher}
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-xs shadow-lg shadow-emerald-900/40 transition-all cursor-pointer flex items-center justify-center gap-2 animate-pulse"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>🎉 KÍCH HOẠT BẢN QUYỀN 100% MIỄN PHÍ NGAY (0 VNĐ)</span>
+                  </button>
+                )}
               </div>
 
               {/* Phần quét mã QR & Thông tin ngân hàng */}

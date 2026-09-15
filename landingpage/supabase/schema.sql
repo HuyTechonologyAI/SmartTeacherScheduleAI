@@ -101,3 +101,58 @@ FOR ALL
 TO service_role 
 USING (true);
 
+-- 4. Bảng lưu trữ Voucher Khuyến Mãi do Admin khởi tạo và quản lý
+CREATE TABLE IF NOT EXISTS public.vouchers (
+    id TEXT PRIMARY KEY,
+    code TEXT UNIQUE NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    discount_type TEXT DEFAULT 'PERCENT', -- 'PERCENT', 'FIXED_AMOUNT', 'FREE_TRIAL', 'GRANT_TIER'
+    discount_value NUMERIC DEFAULT 0,
+    target_tier TEXT DEFAULT 'VIP1', -- 'ALL', 'VIP1', 'VIP2', 'SCHOOL', 'PRO'
+    grant_tier TEXT DEFAULT 'VIP1', -- 'NONE', 'VIP1', 'VIP2', 'SCHOOL'
+    grant_duration_days INT DEFAULT 30,
+    target_audience TEXT DEFAULT 'ALL',
+    max_usage INT DEFAULT 100,
+    used_count INT DEFAULT 0,
+    start_date TEXT,
+    end_date TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    features JSONB DEFAULT '[]'::jsonb,
+    gift_message TEXT,
+    assigned_teachers JSONB DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 5. Bảng lịch sử kích hoạt Voucher từ giáo viên
+CREATE TABLE IF NOT EXISTS public.voucher_redemptions (
+    id TEXT PRIMARY KEY,
+    voucher_code TEXT NOT NULL,
+    sync_code TEXT NOT NULL,
+    teacher_name TEXT,
+    school_name TEXT,
+    phone TEXT,
+    original_price NUMERIC DEFAULT 0,
+    discount_amount NUMERIC DEFAULT 0,
+    final_price NUMERIC DEFAULT 0,
+    applied_tier TEXT,
+    redeemed_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.vouchers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.voucher_redemptions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Cho phép đọc vouchers đang hoạt động"
+ON public.vouchers FOR SELECT TO anon USING (true);
+
+CREATE POLICY "Cho phép kích hoạt voucher"
+ON public.voucher_redemptions FOR INSERT TO anon WITH CHECK (true);
+
+CREATE POLICY "Admin toàn quyền vouchers"
+ON public.vouchers FOR ALL TO service_role USING (true);
+
+CREATE POLICY "Admin toàn quyền voucher redemptions"
+ON public.voucher_redemptions FOR ALL TO service_role USING (true);
+
+

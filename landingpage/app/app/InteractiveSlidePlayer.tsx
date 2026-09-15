@@ -20,6 +20,7 @@ import {
   Moon
 } from 'lucide-react';
 import { LessonSlideItem } from './lessonPlanAi';
+import { SlideEditorModal } from './SlideEditorModal';
 import { speakVietnamese, stopSpeaking, PEDAGOGICAL_VOICES } from '@/lib/voiceAiService';
 
 interface InteractiveSlidePlayerProps {
@@ -308,11 +309,11 @@ export function InteractiveSlidePlayer({
             <button
               type="button"
               onClick={() => setIsEditing(true)}
-              className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-bold flex items-center gap-1 cursor-pointer"
-              title="Chỉnh sửa nội dung slide này"
+              className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-amber-600/25 transition-all cursor-pointer"
+              title="Chỉnh sửa nội dung từng slide trình chiếu"
             >
-              <Edit3 className="w-3.5 h-3.5 text-sky-400" />
-              <span>Sửa Slide</span>
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>Chỉnh Sửa Slide</span>
             </button>
           )}
 
@@ -480,8 +481,20 @@ export function InteractiveSlidePlayer({
       {/* Slide Thumbnails Navigation Carousel */}
       <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
         <div className="flex items-center justify-between text-[11px] text-slate-400 font-bold px-1">
-          <span>DANH SÁCH 8 SLIDE TRÌNH CHIẾU:</span>
-          <span>Nhấp chuột vào slide để chuyển nhanh</span>
+          <div className="flex items-center gap-2">
+            <span>DANH SÁCH 8 SLIDE TRÌNH CHIẾU:</span>
+            <span className="text-[10px] text-slate-500 font-normal">(Nhấp chuột vào slide để chuyển nhanh)</span>
+          </div>
+          {onUpdateSlides && (
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              className="text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer transition-all"
+            >
+              <Edit3 className="w-3 h-3" />
+              <span>Chỉnh sửa Slide {currentSlideIndex + 1}</span>
+            </button>
+          )}
         </div>
 
         <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
@@ -515,76 +528,19 @@ export function InteractiveSlidePlayer({
         </div>
       </div>
 
-      {/* Inline Slide Edit Modal */}
-      {isEditing && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-sky-500/40 rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-              <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
-                <Edit3 className="w-4 h-4 text-sky-400" />
-                <span>Chỉnh Sửa Nội Dung Slide {currentSlideIndex + 1}</span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsEditing(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="block text-slate-400 mb-1 font-bold">Tiêu đề slide:</label>
-                <input
-                  type="text"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-sky-400 font-bold"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1 font-bold">Nội dung trình chiếu (Mỗi dòng 1 ý):</label>
-                <textarea
-                  rows={4}
-                  value={editBullets.join('\n')}
-                  onChange={(e) => setEditBullets(e.target.value.split('\n'))}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-sky-400 leading-relaxed font-sans"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1 font-bold">Lời giảng giáo viên (Speaker Notes):</label>
-                <textarea
-                  rows={3}
-                  value={editNotes}
-                  onChange={(e) => setEditNotes(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-sky-400 italic"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
-              <button
-                type="button"
-                onClick={() => setIsEditing(false)}
-                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium cursor-pointer"
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveEdit}
-                className="px-4 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-sky-600/30 cursor-pointer"
-              >
-                <Save className="w-3.5 h-3.5" />
-                <span>Lưu Thay Đổi</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Full Slide Editor Modal */}
+      <SlideEditorModal
+        isOpen={isEditing}
+        onClose={() => setIsEditing(false)}
+        slides={slides}
+        initialSlideIndex={currentSlideIndex}
+        onSaveSlides={(newSlides) => {
+          if (onUpdateSlides) {
+            onUpdateSlides(newSlides);
+          }
+          setIsEditing(false);
+        }}
+      />
     </div>
   );
 }

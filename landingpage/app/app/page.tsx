@@ -83,6 +83,7 @@ import { InteractiveTechnicalImages } from './InteractiveTechnicalImages';
 import { InteractiveAiVideoPlayer } from './InteractiveAiVideoPlayer';
 import { InteractiveSlidePlayer } from './InteractiveSlidePlayer';
 import { LessonPlanEditorModal } from './LessonPlanEditorModal';
+import { SlideEditorModal } from './SlideEditorModal';
 import { speakVietnamese, stopSpeaking } from '@/lib/voiceAiService';
 import { InteractiveMiniGame } from './InteractiveMiniGame';
 import { AutomatedPaymentModal } from './AutomatedPaymentModal';
@@ -932,6 +933,8 @@ export default function UnifiedTeacherScheduleApp() {
   const [isExportingPptx, setIsExportingPptx] = useState(false);
   const [plannerStepProgress, setPlannerStepProgress] = useState('');
   const [isLessonPlanEditorOpen, setIsLessonPlanEditorOpen] = useState(false);
+  const [isSlideEditorOpen, setIsSlideEditorOpen] = useState(false);
+  const [editingSlideIndex, setEditingSlideIndex] = useState(0);
 
   // Hàm chọn ca dạy và tự động trích xuất tiết học, tên bài và khớp nối tài liệu giáo trình
   const selectPlannerEvent = (ev: CalendarEventItem) => {
@@ -5424,6 +5427,19 @@ export default function UnifiedTeacherScheduleApp() {
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
+                              onClick={() => {
+                                setEditingSlideIndex(0);
+                                setIsSlideEditorOpen(true);
+                              }}
+                              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-amber-600/25 transition-all cursor-pointer"
+                              title="Chỉnh sửa nội dung từng slide trình chiếu"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                              <span>Chỉnh Sửa Slide</span>
+                            </button>
+
+                            <button
+                              type="button"
                               disabled={isExportingPptx}
                               onClick={async () => {
                                 if (isExportingPptx) return;
@@ -5472,10 +5488,22 @@ export default function UnifiedTeacherScheduleApp() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                          {plannerFullPackage.slides.map((s) => (
+                          {plannerFullPackage.slides.map((s, sIdx) => (
                             <div key={s.slideNumber} className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 space-y-2.5 text-xs text-slate-800 dark:text-slate-200">
                               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
                                 <span className="font-bold text-sky-400">SLIDE {s.slideNumber}: {s.title}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingSlideIndex(sIdx);
+                                    setIsSlideEditorOpen(true);
+                                  }}
+                                  className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1 cursor-pointer transition-all shrink-0"
+                                  title={'Chỉnh sửa chi tiết Slide ' + s.slideNumber}
+                                >
+                                  <Edit3 className="w-3 h-3" />
+                                  <span>Sửa Slide {s.slideNumber}</span>
+                                </button>
                               </div>
                               <div>
                                 <strong className="text-slate-700 dark:text-slate-200 block mb-1">📌 Nội dung trình chiếu:</strong>
@@ -9848,6 +9876,19 @@ export default function UnifiedTeacherScheduleApp() {
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
+                        onClick={() => {
+                          setEditingSlideIndex(0);
+                          setIsSlideEditorOpen(true);
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-amber-600/25 transition-all cursor-pointer"
+                        title="Chỉnh sửa nội dung từng slide trình chiếu"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                        <span>Chỉnh Sửa Slide</span>
+                      </button>
+
+                      <button
+                        type="button"
                         disabled={isExportingPptx}
                         onClick={async () => {
                           if (isExportingPptx) return;
@@ -9896,7 +9937,7 @@ export default function UnifiedTeacherScheduleApp() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {viewingLessonPackage.slides.map((s) => (
+                    {viewingLessonPackage.slides.map((s, sIdx) => (
                       <div
                         key={s.slideNumber}
                         className="bg-white dark:bg-slate-800/80 border-2 border-sky-200 dark:border-sky-800/60 rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-sm hover:border-sky-300 transition-all space-y-3 text-slate-800 dark:text-slate-100"
@@ -9906,7 +9947,21 @@ export default function UnifiedTeacherScheduleApp() {
                             <span className="text-xs font-bold text-sky-400 uppercase tracking-wider px-2 py-0.5 rounded bg-sky-500/10 border border-sky-500/20">
                               SLIDE {s.slideNumber}
                             </span>
-                            <span className="text-[11px] text-slate-400 italic">Môn {viewingLessonPackage.subject}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] text-slate-400 italic">Môn {viewingLessonPackage.subject}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingSlideIndex(sIdx);
+                                  setIsSlideEditorOpen(true);
+                                }}
+                                className="px-2 py-0.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-all"
+                                title={'Chỉnh sửa chi tiết Slide ' + s.slideNumber}
+                              >
+                                <Edit3 className="w-3 h-3" />
+                                <span>Sửa</span>
+                              </button>
+                            </div>
                           </div>
                           <h4 className="text-sm sm:text-base font-bold text-white mb-2 leading-snug">
                             {s.title}
@@ -10395,6 +10450,29 @@ export default function UnifiedTeacherScheduleApp() {
             });
           }
           setAlertBanner('🟢 Đã lưu thành công các chỉnh sửa Kế hoạch bài dạy nghề (CV 2634)!');
+          setTimeout(() => setAlertBanner(null), 3500);
+        }}
+      />
+      {/* Modal Chỉnh Sửa Toàn Bộ Slide Bài Giảng */}
+      <SlideEditorModal
+        isOpen={isSlideEditorOpen}
+        onClose={() => setIsSlideEditorOpen(false)}
+        slides={plannerFullPackage?.slides || viewingLessonPackage?.slides || []}
+        initialSlideIndex={editingSlideIndex}
+        onSaveSlides={(newSlides) => {
+          if (plannerFullPackage) {
+            setPlannerFullPackage({
+              ...plannerFullPackage,
+              slides: newSlides
+            });
+          }
+          if (viewingLessonPackage) {
+            setViewingLessonPackage({
+              ...viewingLessonPackage,
+              slides: newSlides
+            });
+          }
+          setAlertBanner('🟢 Đã lưu và cập nhật thành công nội dung các Slide bài giảng!');
           setTimeout(() => setAlertBanner(null), 3500);
         }}
       />

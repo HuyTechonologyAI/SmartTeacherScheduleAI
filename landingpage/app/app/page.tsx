@@ -66,6 +66,7 @@ import {
   generateLessonPlan5512,
   generateLessonPlan2634,
   generateExamMatrix,
+  generateLessonSlides,
   lessonPlan5512ToHtml,
   lessonPlan2634ToHtml,
   examMatrixToHtml,
@@ -80,6 +81,7 @@ import { generateAndDownloadPptx } from './lessonPlanPptx';
 import { InteractiveMindMap } from './InteractiveMindMap';
 import { InteractiveTechnicalImages } from './InteractiveTechnicalImages';
 import { InteractiveAiVideoPlayer } from './InteractiveAiVideoPlayer';
+import { InteractiveSlidePlayer } from './InteractiveSlidePlayer';
 import { speakVietnamese, stopSpeaking } from '@/lib/voiceAiService';
 import { InteractiveMiniGame } from './InteractiveMiniGame';
 import { AutomatedPaymentModal } from './AutomatedPaymentModal';
@@ -1194,6 +1196,14 @@ export default function UnifiedTeacherScheduleApp() {
           level: plannerClass || 'Trung cấp'
         };
       }
+      // Tự động tái sinh Slide đồng bộ 100% với kế hoạch bài dạy AI vừa phân tích
+      pkg.slides = generateLessonSlides(
+        title,
+        plannerSubject || 'Chung',
+        plannerClass || '12',
+        pkg.plan5512 || pkg.plan2634,
+        refCtx
+      );
     }
 
     setPlannerFullPackage(pkg);
@@ -5322,7 +5332,7 @@ export default function UnifiedTeacherScheduleApp() {
                       </div>
                     )}
 
-                    {/* ================= TAB 2: KỊCH BẢN SLIDE THUYẾT TRÌNH ================= */}
+                    {/* ================= TAB 2: KỊCH BẢN SLIDE THUYẾT TRÌNH (INTERACTIVE SLIDE PLAYER) ================= */}
                     {plannerActiveResultTab === 'slides' && plannerFullPackage && (
                       <div className="space-y-4 animate-fade-in">
                         <AiCentralHubDispatcherCard
@@ -5332,6 +5342,42 @@ export default function UnifiedTeacherScheduleApp() {
                           grade={plannerClass || '12'}
                           voiceContent={plannerFullPackage.slides?.[0]?.speakerNotes || plannerFullPackage.voiceNarrationText}
                         />
+
+                        {/* Interactive 16:9 Presentation Player (Khắc phục triệt để Issue 1) */}
+                        <InteractiveSlidePlayer
+                          slides={plannerFullPackage.slides}
+                          lessonTitle={plannerFullPackage.lessonTitle}
+                          subject={plannerFullPackage.subject}
+                          className={plannerClass || '12A1'}
+                          teacherName={teacherProfile.fullName || 'Giáo viên bộ môn'}
+                          schoolName={teacherProfile.schools?.[0] || 'Trường THPT'}
+                          onUpdateSlides={(newSlides) => {
+                            setPlannerFullPackage(prev => prev ? { ...prev, slides: newSlides } : prev);
+                          }}
+                          onExportPptx={async () => {
+                            if (isExportingPptx) return;
+                            setIsExportingPptx(true);
+                            try {
+                              await generateAndDownloadPptx({
+                                slides: plannerFullPackage.slides,
+                                lessonTitle: plannerFullPackage.lessonTitle,
+                                subject: plannerFullPackage.subject,
+                                className: plannerClass || '12A1',
+                                teacherName: teacherProfile.fullName || 'Giáo viên bộ môn',
+                                schoolName: teacherProfile.schools?.[0] || 'Trường THPT'
+                              });
+                              setAlertBanner('🟢 Đã xuất bản và tải thành công bài giảng PowerPoint (.pptx)!');
+                              setTimeout(() => setAlertBanner(null), 4000);
+                            } catch (err: any) {
+                              console.error('Lỗi tải slide PPTX:', err);
+                              alert('Không thể tạo file PowerPoint: ' + (err?.message || 'Vui lòng thử lại'));
+                            } finally {
+                              setIsExportingPptx(false);
+                            }
+                          }}
+                          isExportingPptx={isExportingPptx}
+                        />
+
                         <div className="flex items-center justify-between p-3.5 rounded-xl bg-gradient-to-r from-sky-500/15 via-blue-500/10 to-indigo-500/15 border border-sky-500/30 text-xs flex-wrap gap-2.5">
                           <div className="space-y-0.5">
                             <span className="text-sky-300 font-bold flex items-center gap-1.5 text-xs sm:text-sm">

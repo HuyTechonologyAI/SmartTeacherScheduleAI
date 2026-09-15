@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, RotateCcw, Volume2, VolumeX, Download, Sparkles, Video, User, Check, Layers, ExternalLink } from 'lucide-react';
 import { VideoStoryboardScene } from './lessonPlanAi';
-import { speakVietnamese, stopSpeaking } from '@/lib/voiceAiService';
+import { speakVietnamese, stopSpeaking, PEDAGOGICAL_VOICES } from '@/lib/voiceAiService';
 
 interface InteractiveAiVideoPlayerProps {
   videoScript: VideoStoryboardScene[];
@@ -23,6 +23,7 @@ export function InteractiveAiVideoPlayer({
   const [currentTime, setCurrentTime] = useState(0);
   const [isAvatarTalking, setIsAvatarTalking] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
+  const [selectedVoiceId, setSelectedVoiceId] = useState<'hoaimy' | 'namminh' | 'google' | 'auto'>('hoaimy');
   const [isExporting, setIsExporting] = useState(false);
   const [exportedVideoUrl, setExportedVideoUrl] = useState<string | null>(null);
 
@@ -52,6 +53,8 @@ export function InteractiveAiVideoPlayer({
     const sceneText = activeScene?.voiceover || voiceNarrationText || ('Nội dung phân cảnh ' + (currentSceneIndex + 1));
     speakVietnamese(sceneText, {
       rate: playbackSpeed,
+      pitch: 1.0,
+      voiceId: selectedVoiceId,
       onEnd: () => {
         setIsAvatarTalking(false);
         // Advance to next scene if available
@@ -88,6 +91,8 @@ export function InteractiveAiVideoPlayer({
         const sceneText = videoScript[idx]?.voiceover || 'Nội dung phân cảnh ' + (idx + 1);
         speakVietnamese(sceneText, {
           rate: playbackSpeed,
+          pitch: 1.0,
+          voiceId: selectedVoiceId,
           onEnd: () => {
             setIsAvatarTalking(false);
             if (idx < totalScenes - 1) {
@@ -238,7 +243,7 @@ export function InteractiveAiVideoPlayer({
             <div className="relative w-12 h-12 rounded-full bg-gradient-to-tr from-indigo-600 to-amber-500 p-0.5 shrink-0">
               <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center overflow-hidden relative">
                 {/* Simulated Teacher Portrait */}
-                <div className="text-2xl">👨‍🏫</div>
+                <div className="text-2xl">{selectedVoiceId === 'namminh' ? '👨‍🏫' : '👩‍🏫'}</div>
                 {/* Lip-sync Animation Indicator */}
                 {isAvatarTalking && (
                   <div className="absolute bottom-0 inset-x-0 h-2 bg-emerald-500/80 animate-pulse" />
@@ -249,7 +254,7 @@ export function InteractiveAiVideoPlayer({
               )}
             </div>
             <div className="leading-tight">
-              <span className="text-[11px] font-bold text-white block">Thầy Giáo AI</span>
+              <span className="text-[11px] font-bold text-white block">{selectedVoiceId === 'namminh' ? 'Thầy Nam Minh (AI Sư Phạm)' : selectedVoiceId === 'google' ? 'Cô Mai Linh (AI Sư Phạm)' : 'Cô Hoài My (AI Sư Phạm)'}</span>
               <span className="text-[9px] text-emerald-400 font-mono flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
                 {isAvatarTalking ? 'Đang thuyết minh...' : 'Sẵn sàng giảng'}
@@ -280,8 +285,8 @@ export function InteractiveAiVideoPlayer({
 
       {/* Video Controls Bar */}
       <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between gap-3 flex-wrap shadow-md">
-        {/* Playback Buttons */}
-        <div className="flex items-center gap-2">
+        {/* Playback Buttons & Pedagogical Voice Selector */}
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={togglePlay}
@@ -303,6 +308,29 @@ export function InteractiveAiVideoPlayer({
           >
             <RotateCcw className="w-4 h-4" />
           </button>
+
+          {/* Teacher Voice Selector (Khắc phục Issue 2) */}
+          <div className="flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1.5 rounded-xl border border-slate-700">
+            <Volume2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <label className="text-[11px] text-slate-300 font-medium">Giọng giảng:</label>
+            <select
+              value={selectedVoiceId}
+              onChange={(e) => {
+                setSelectedVoiceId(e.target.value as any);
+                if (isPlaying) {
+                  pauseVideo();
+                }
+              }}
+              className="bg-slate-900 text-amber-300 text-xs font-bold rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:border-amber-400 cursor-pointer"
+            >
+              {PEDAGOGICAL_VOICES.map(v => (
+                <option key={v.id} value={v.id}>
+                  {v.id === 'hoaimy' ? '👩‍🏫 ' : v.id === 'namminh' ? '👨‍🏫 ' : '🤖 '}
+                  {v.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Scene Navigation Chips */}

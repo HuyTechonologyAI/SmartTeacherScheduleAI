@@ -808,24 +808,24 @@ export function generateVideoStoryboard(
 ): VideoStoryboardScene[] {
   const k = deepParseLessonDocument(referenceSnippet, lessonTitle, subject, grade);
   const term1 = k.keyTerms[0] || lessonTitle;
-  const term2 = k.keyTerms[1] || 'Quy trình chuẩn';
+  const term2 = k.keyTerms[1] || 'Quy luật & Phương pháp';
 
   return [
     {
       sceneNumber: 1,
       title: 'DẪN NHẬP & TÌNH HUỐNG THỰC TẾ (INTRO)',
       duration: '0:00 - 0:45 (45 giây)',
-      visualDescription: `Cảnh quay cận cảnh một tình huống đời sống sinh động gắn liền với môn ${subject} và khái niệm '${term1}'. Đồ họa chữ 3D hiển thị tiêu đề '${lessonTitle}'. Nhạc nền hiện đại, lôi cuốn.`,
-      voiceover: `Chào các bạn! Các bạn đã bao giờ tự hỏi vì sao trong thực tế, vấn đề '${term1}' lại quyết định đến thành công của bài học hôm nay? Hãy cùng khám phá ngay trong video này!`,
-      onScreenText: `CHỦ ĐỀ: ${lessonTitle.toUpperCase()} • MÔN ${subject.toUpperCase()}`,
+      visualDescription: `Cảnh quay cận cảnh một tình huống đời sống sinh động gắn liền với môn ${subject} và khái niệm '${term1}'. Đồ họa vector 16:9 sắc nét thể hiện đối tượng nghiên cứu. Nhạc đệm nhẹ nhàng, sang trọng.`,
+      voiceover: `Trong thực tiễn kỹ thuật và đời sống, các hiện tượng và bản chất của ${term1} đóng vai trò nền tảng quyết định đến hiệu suất vận hành của toàn bộ hệ thống. Chúng ta cùng phân tích bản chất khoa học của bài học hôm nay.`,
+      onScreenText: `CHUYÊN ĐỀ BÀI DẠY: ${lessonTitle.toUpperCase()} • MÔN ${subject.toUpperCase()}`,
       aiPromptSuggestion: `Cinematic 4K shot of modern laboratory, students engaged in STEM technology project about ${term1}, photorealistic --ar 16:9`
     },
     {
       sceneNumber: 2,
       title: 'KHÁM PHÁ NGUYÊN LÝ & BẢN CHẤT CỐT LÕI',
       duration: '0:45 - 2:00 (75 giây)',
-      visualDescription: `Hình ảnh đồ họa 2D/3D phân rã cấu trúc về '${term1}'. Các mũi tên tương tác làm nổi bật từng thuật ngữ: ${k.keyTerms.slice(0, 3).join(', ')}.`,
-      voiceover: `Để hiểu rõ, chúng ta cùng bóc tách các yếu tố nền tảng. ${k.coreDefinitions[0] ? `Cụ thể: ${k.coreDefinitions[0].term} chính là ${k.coreDefinitions[0].definition}.` : 'Nắm vững định nghĩa và cơ chế vận hành chính là chìa khóa.'}`,
+      visualDescription: `Hình ảnh đồ họa 2D/3D phân rã cấu trúc về '${term1}'. Các mũi tên tương quan làm nổi bật từng thuật ngữ: ${k.keyTerms.slice(0, 3).join(', ')}.`,
+      voiceover: `Về mặt kiến thức cốt lõi, các em cần nắm vững định nghĩa và cơ chế tác động qua lại giữa các đại lượng. ${k.coreDefinitions[0] ? `Cụ thể: ${k.coreDefinitions[0].term} được xác định là ${k.coreDefinitions[0].definition}.` : 'Mối quan hệ nhân quả này chi phối toàn bộ quy luật vận hành và công thức tính toán thực nghiệm.'}`,
       onScreenText: `KIẾN THỨC CỐT LÕI: ${term1.toUpperCase()} -> ${term2.toUpperCase()}`,
       aiPromptSuggestion: `3D isometric infographic showing technological workflow diagram of ${term1}, glowing connection lines, futuristic UI HUD, 8k resolution --ar 16:9`
     },
@@ -833,8 +833,8 @@ export function generateVideoStoryboard(
       sceneNumber: 3,
       title: 'MÔ PHỎNG QUY TRÌNH & THAO TÁC MẪU',
       duration: '2:00 - 3:30 (90 giây)',
-      visualDescription: `Thước phim quay thao tác thực hiện mẫu từng bước một cách chậm rãi, rõ nét. Xuất hiện các biển cảnh báo an toàn và lưu ý kỹ thuật.`,
-      voiceover: `Bây giờ là các bước thực hiện chuẩn mực. ${k.practicalSteps[0] ? `Ở bước 1: ${k.practicalSteps[0].stepTitle} - ${k.practicalSteps[0].description}.` : 'Hãy chú ý kỹ thao tác đo kiểm và các thông số kỹ thuật.'}`,
+      visualDescription: `Thước phim mô phỏng thao tác thực hiện mẫu từng bước một cách chậm rãi, chuẩn xác. Xuất hiện các biển cảnh báo an toàn và lưu ý kỹ thuật.`,
+      voiceover: `Trong quy trình triển khai thao tác kỹ thuật, yêu cầu bắt buộc là tuân thủ đúng trình tự các bước. ${k.practicalSteps[0] ? `Ở bước 1, ${k.practicalSteps[0].stepTitle}: ${k.practicalSteps[0].description}.` : 'Cần kiểm tra kỹ thông số đo kiểm, trang bị bảo hộ và nguyên tắc an toàn lao động trước khi vận hành.'}`,
       onScreenText: 'QUY TRÌNH THỰC HIỆN: BƯỚC 1 -> BƯỚC 2 (LƯU Ý) -> BƯỚC 3',
       aiPromptSuggestion: `Close-up macro video shot of precision technical hands performing accurate calibration on modern educational equipment, smooth slow motion --ar 16:9`
     },
@@ -843,7 +843,7 @@ export function generateVideoStoryboard(
       title: 'TỔNG KẾT BÀI HỌC & THÁCH THỨC TƯƠNG TÁC',
       duration: '3:30 - 4:30 (60 giây)',
       visualDescription: 'Sơ đồ tư duy tóm lược cô đọng toàn bài. Xuất hiện một câu hỏi tình huống mở kèm đồng hồ đếm ngược 10 giây để người xem dừng video suy nghĩ.',
-      voiceover: `Như vậy, chúng ta đã nắm trọn vẹn chìa khóa của bài '${lessonTitle}'. Bạn hãy thử dừng video 10 giây và trả lời câu hỏi thách thức trên màn hình nhé!`,
+      voiceover: `Hệ thống hóa toàn bộ kiến thức qua sơ đồ tư duy, các em hãy đối chiếu kết quả đo đạc với đồ thị lý thuyết và giải quyết tình huống kỹ thuật xuất hiện trên màn hình.`,
       onScreenText: `THỬ THÁCH NHANH: NẾU THAY ĐỔI ĐIỀU KIỆN VỀ ${term1.toUpperCase()}, ĐIỀU GÌ SẼ XẢY RA?`,
       aiPromptSuggestion: `Glowing neon mindmap graphic summarizing educational concept, minimalist clean dark background, aesthetic UI design --ar 16:9`
     },
@@ -851,8 +851,8 @@ export function generateVideoStoryboard(
       sceneNumber: 5,
       title: 'DẶN DÒ & GIAO NHIỆM VỤ HỌC TẬP (OUTRO)',
       duration: '4:30 - 5:00 (30 giây)',
-      visualDescription: 'Logo trường học, mã QR tải phiếu bài tập số và học liệu trực tuyến. Lời cảm ơn và hẹn gặp lại ở bài giảng tiếp theo.',
-      voiceover: 'Đừng quên quét mã QR để làm bài tập rèn luyện và chuẩn bị bài mới. Chúc các bạn học tập thật hiệu quả và tràn đầy niềm vui!',
+      visualDescription: 'Logo trường học, mã QR tải phiếu bài tập số và học liệu trực tuyến. Lời chào và dặn dò chuẩn bị cho tiết học tiếp theo.',
+      voiceover: 'Hoàn thành phiếu học tập số và vận dụng kiến thức bài học để giải thích các hiện tượng thực tế tại địa phương. Chúc các em luôn chủ động và say mê nghiên cứu khoa học.',
       onScreenText: 'QUÉT MÃ QR NHẬN TÀI LIỆU • HẸN GẶP LẠI Ở TIẾT HỌC TIẾP THEO!',
       aiPromptSuggestion: `Clean elegant outro screen with QR code placeholder, soft gradient lighting, high-tech educational aesthetic --ar 16:9`
     }

@@ -143,61 +143,196 @@ export function isSpeechRecognitionSupported(): boolean {
   return 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window;
 }
 
+export interface PedagogicalVoiceProfile {
+  id: 'hoaimy' | 'namminh' | 'google' | 'auto';
+  name: string;
+  gender: 'female' | 'male';
+  region: 'Bắc' | 'Nam';
+  description: string;
+}
+
+export const PEDAGOGICAL_VOICES: PedagogicalVoiceProfile[] = [
+  {
+    id: 'hoaimy',
+    name: 'Cô Hoài My (Chuẩn Sư Phạm - Nữ Bắc)',
+    gender: 'female',
+    region: 'Bắc',
+    description: 'Giọng đọc nữ chuẩn truyền cảm, ấm áp, nhịp điệu sư phạm rõ ràng'
+  },
+  {
+    id: 'namminh',
+    name: 'Thầy Nam Minh (Chuẩn Sư Phạm - Nam Trầm)',
+    gender: 'male',
+    region: 'Bắc',
+    description: 'Giọng đọc nam trầm ấm, chững chạc, thích hợp hướng dẫn kỹ thuật'
+  },
+  {
+    id: 'google',
+    name: 'Cô Mai Linh (Google Tiếng Việt Tự Nhiên)',
+    gender: 'female',
+    region: 'Nam',
+    description: 'Giọng đọc tự nhiên, chuẩn âm tiết tiếng Việt, phát âm tròn vành rõ chữ'
+  },
+  {
+    id: 'auto',
+    name: 'Tự Động Chọn Giọng Chuẩn Sư Phạm Tốt Nhất',
+    gender: 'female',
+    region: 'Bắc',
+    description: 'Ưu tiên Neural AI voice tiếng Việt chất lượng cao nhất của hệ thống'
+  }
+];
+
+let activeAudioElement: HTMLAudioElement | null = null;
+
 /**
- * Phát giọng đọc tiếng Việt truyền cảm, thân thiện với học sinh
+ * Đợi và lấy danh sách giọng đọc tiếng Việt thực tế trong trình duyệt
  */
-export function speakVietnamese(
+export async function getAvailableVietnameseVoices(): Promise<SpeechSynthesisVoice[]> {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return [];
+
+  let voices = window.speechSynthesis.getVoices();
+  if (voices.length === 0) {
+    await new Promise<void>((resolve) => {
+      let resolved = false;
+      const onVoices = () => {
+        if (!resolved) {
+          resolved = true;
+          window.speechSynthesis.removeEventListener('voiceschanged', onVoices);
+          resolve();
+        }
+      };
+      window.speechSynthesis.addEventListener('voiceschanged', onVoices);
+      setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          window.speechSynthesis.removeEventListener('voiceschanged', onVoices);
+          resolve();
+        }
+      }, 400);
+    });
+    voices = window.speechSynthesis.getVoices();
+  }
+
+  return voices.filter(v => 
+    v.lang.toLowerCase().startsWith('vi') ||
+    v.name.toLowerCase().includes('vietnam') ||
+    v.name.toLowerCase().includes('tiếng việt') ||
+    v.name.toLowerCase().includes('hoaimy') ||
+    v.name.toLowerCase().includes('namminh')
+  );
+}
+
+/**
+ * Phát giọng đọc tiếng Việt chuẩn sư phạm:
+ * - Đảm bảo chỉ dùng giọng tiếng Việt chuẩn (Hoài My, Nam Minh, Google tiếng Việt, Natural)
+ * - Tự động phát qua HTML5 Audio trực tuyến nếu máy tính thiếu voice tiếng Việt
+ * - Tốc độ chuẩn mực (0.95), cao độ tự nhiên (1.0), không bị thé giọng hay đọc sai âm
+ */
+export async function speakVietnamese(
   text: string,
   options?: {
     rate?: number;
     pitch?: number;
+    voiceId?: 'hoaimy' | 'namminh' | 'google' | 'auto';
     onStart?: () => void;
     onEnd?: () => void;
   }
 ): Promise<void> {
-  return new Promise((resolve) => {
-    if (!isSpeechSynthesisSupported()) {
-      resolve();
-      return;
-    }
+  // Dừng âm thanh cũ nếu đang chạy
+  stopSpeaking();
 
-    try {
-      window.speechSynthesis.cancel(); // Hủy giọng đọc trước nếu đang chạy
+  const cleanText = text.replace(/[*_#`]/g, '').trim();
+  if (!cleanText) return;
 
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = options?.rate || 0.92; // Đọc hơi chậm rãi, rõ ràng cho bé
-      utterance.pitch = options?.pitch || 1.1; // Giọng hơi thanh nhẹ, ấm áp
-      utterance.lang = 'vi-VN';
+  const voices = await getAvailableVietnameseVoices();
 
-      const voices = window.speechSynthesis.getVoices();
-      const viVoice = voices.find(v => 
-        v.lang === 'vi-VN' || 
-        v.lang === 'vi_VN' || 
-        v.name.toLowerCase().includes('vietnam') ||
-        v.name.toLowerCase().includes('hoaimy') ||
-        v.name.toLowerCase().includes('mai')
-      );
+  // 1. TÌM GIỌNG ĐỌC SƯ PHẠM PHÙ HỢP TRÊN TRÌNH DUYỆT
+  const voicePref = options?.voiceId || 'auto';
+  let matchedVoice: SpeechSynthesisVoice | undefined;
 
-      if (viVoice) {
-        utterance.voice = viVoice;
+  if (voicePref === 'namminh') {
+    matchedVoice = voices.find(v => v.name.toLowerCase().includes('namminh')) ||
+                   voices.find(v => v.name.toLowerCase().includes('male') && v.lang.startsWith('vi'));
+  } else if (voicePref === 'google') {
+    matchedVoice = voices.find(v => v.name.toLowerCase().includes('google') && (v.lang.startsWith('vi') || v.name.toLowerCase().includes('tiếng việt')));
+  } else if (voicePref === 'hoaimy') {
+    matchedVoice = voices.find(v => v.name.toLowerCase().includes('hoaimy')) ||
+                   voices.find(v => v.name.toLowerCase().includes('natural') && v.lang.startsWith('vi'));
+  }
+
+  if (!matchedVoice) {
+    // Ưu tiên Neural / Natural -> Google -> Hoài My -> Bất kỳ giọng vi-VN
+    matchedVoice = 
+      voices.find(v => v.name.toLowerCase().includes('hoaimy')) ||
+      voices.find(v => v.name.toLowerCase().includes('natural') && v.lang.startsWith('vi')) ||
+      voices.find(v => v.name.toLowerCase().includes('google') && v.lang.startsWith('vi')) ||
+      voices.find(v => v.lang === 'vi-VN' || v.lang === 'vi_VN') ||
+      voices[0];
+  }
+
+  // 2. NẾU CÓ GIỌNG TIẾNG VIỆT CHUẨN -> PHÁT QUA SPEECH SYNTHESIS
+  if (matchedVoice && isSpeechSynthesisSupported()) {
+    return new Promise((resolve) => {
+      try {
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.voice = matchedVoice!;
+        utterance.rate = options?.rate || 0.96; // Tốc độ sư phạm chuẩn mực
+        utterance.pitch = options?.pitch || 1.0; // Cao độ tự nhiên người thật
+        utterance.lang = matchedVoice!.lang || 'vi-VN';
+
+        utterance.onstart = () => {
+          options?.onStart?.();
+        };
+
+        utterance.onend = () => {
+          options?.onEnd?.();
+          resolve();
+        };
+
+        utterance.onerror = () => {
+          options?.onEnd?.();
+          resolve();
+        };
+
+        window.speechSynthesis.speak(utterance);
+      } catch {
+        resolve();
       }
+    });
+  }
 
-      utterance.onstart = () => {
-        options?.onStart?.();
-      };
+  // 3. NẾU MÁY TÍNH KHÔNG CÓ BỘ GIỌNG TIẾNG VIỆT -> DÙNG HTML5 AUDIO VIETTTS FALLBACK
+  // Tuyệt đối không dùng voice tiếng Anh để đọc tiếng Việt!
+  return new Promise((resolve) => {
+    try {
+      options?.onStart?.();
+      // Cắt câu ngắn nếu đoạn văn quá dài để Google TTS xử lý mượt mà
+      const textToPlay = cleanText.length > 180 ? cleanText.slice(0, 180) + '...' : cleanText;
+      const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=${encodeURIComponent(textToPlay)}`;
+      
+      const audio = new Audio(audioUrl);
+      activeAudioElement = audio;
+      audio.playbackRate = options?.rate || 1.0;
 
-      utterance.onend = () => {
+      audio.onended = () => {
+        activeAudioElement = null;
         options?.onEnd?.();
         resolve();
       };
 
-      utterance.onerror = () => {
+      audio.onerror = () => {
+        activeAudioElement = null;
         options?.onEnd?.();
         resolve();
       };
 
-      window.speechSynthesis.speak(utterance);
+      audio.play().catch(() => {
+        activeAudioElement = null;
+        options?.onEnd?.();
+        resolve();
+      });
     } catch {
+      options?.onEnd?.();
       resolve();
     }
   });
@@ -264,6 +399,13 @@ export function speakEnglish(
 }
 
 export function stopSpeaking(): void {
+  if (activeAudioElement) {
+    try {
+      activeAudioElement.pause();
+      activeAudioElement.currentTime = 0;
+    } catch {}
+    activeAudioElement = null;
+  }
   if (isSpeechSynthesisSupported()) {
     try {
       window.speechSynthesis.cancel();

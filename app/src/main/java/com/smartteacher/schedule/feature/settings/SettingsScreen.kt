@@ -499,8 +499,8 @@ fun SettingsScreen(
                 }
             }
 
-            // Group: HỆ SINH THÁI ĐA NỀN TẢNG (v2.0.0)
-            SettingsGroupHeader("HỆ SINH THÁI ĐA NỀN TẢNG (v2.0.0)")
+            // Group: HỆ SINH THÁI ĐA NỀN TẢNG (v2.1.0)
+            SettingsGroupHeader("HỆ SINH THÁI ĐA NỀN TẢNG (v2.1.0)")
             Text(
                 "💡 Nhấp vào bất kỳ lựa chọn nào để xem hướng dẫn cài đặt chi tiết:",
                 style = MaterialTheme.typography.labelSmall,
@@ -531,7 +531,7 @@ fun SettingsScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Text("Android APK", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                     Surface(shape = RoundedCornerShape(4.dp), color = Color(0xFF10B981).copy(alpha = 0.15f)) {
-                                        Text("v2.0.0 • ~15.8 MB", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFF059669), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                        Text("v2.1.0 • ~15.8 MB", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFF059669), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
                                     }
                                 }
                                 Text("Cài trực tiếp Samsung, Tecno, Xiaomi, Oppo...", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
@@ -1170,7 +1170,7 @@ fun SettingsScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     when (platform) {
                         "android" -> {
-                            Text("1️⃣ Bấm 'Tải APK v2.0.0' bên dưới để tải tệp cài đặt chính thức.")
+                            Text("1️⃣ Bấm 'Tải APK v2.1.0' bên dưới để tải tệp cài đặt chính thức.")
                             Text("2️⃣ Nếu máy báo 'Tệp có thể gây hại', bấm 'Vẫn tải xuống' (Do cài ngoài Google Play, file đã ký số tuyệt đối an toàn).")
                             Text("3️⃣ Bấm mở file vừa tải và chọn 'Cài đặt'.")
                             Text("4️⃣ Cực kỳ quan trọng: Vào Cài đặt điện thoại > Ứng dụng > Smart Teacher > Pin > Chọn 'Không hạn chế' để chống tắt ngầm chuông báo!")
@@ -1182,7 +1182,7 @@ fun SettingsScreen(
                             Text("4️⃣ Chọn 'Thêm vào MH chính' (Add to Home Screen) rồi nhấn 'Thêm'.")
                         }
                         "desktop" -> {
-                            Text("1️⃣ Tải tệp SmartTeacherSchedule_v2.0.0_Desktop.zip từ gvcncdsai.io.vn")
+                            Text("1️⃣ Tải tệp SmartTeacherSchedule_v2.1.0_Desktop.zip từ gvcncdsai.io.vn")
                             Text("2️⃣ Chuột phải vào file zip và chọn 'Extract All...' (Giải nén tất cả).")
                             Text("3️⃣ Nhấp đúp vào file 'SmartTeacherSchedule.exe' để chạy ngay.")
                             Text("💡 Bật tính năng 'Cửa sổ thu nhỏ bục giảng' để xem đếm ngược ca dạy nổi đè lên slide PowerPoint!")
@@ -1206,13 +1206,13 @@ fun SettingsScreen(
                     onClick = {
                         if (platform == "android") {
                             runCatching {
-                                val url = "https://gvcncdsai.io.vn/SmartTeacherSchedule_v2.0.0_Release.apk"
+                                val url = "https://gvcncdsai.io.vn/SmartTeacherSchedule_v2.1.0_Release.apk"
                                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                                 context.startActivity(intent)
                             }
                         } else {
                             runCatching {
-                                val url = if (platform == "desktop") "https://gvcncdsai.io.vn/releases/SmartTeacherSchedule_v2.0.0_Desktop.zip" else "https://gvcncdsai.io.vn/app"
+                                val url = if (platform == "desktop") "https://gvcncdsai.io.vn/releases/SmartTeacherSchedule_v2.1.0_Desktop.zip" else "https://gvcncdsai.io.vn/app"
                                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                                 context.startActivity(intent)
                             }

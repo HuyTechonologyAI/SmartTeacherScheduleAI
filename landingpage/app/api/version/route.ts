@@ -2,19 +2,19 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   return NextResponse.json({
-    versionName: '2.0.0',
-    versionCode: 20,
+    versionName: '2.1.0',
+    versionCode: 21,
     minRequiredVersion: 18,
-    releaseDate: '2026-09-14',
-    title: 'Bản Cập Nhật v2.0.0 (Golden Release) - Hệ Sinh Thái Chuyển Đổi Số Hợp Nhất 3 Nền Tảng',
+    releaseDate: '2026-09-15',
+    title: 'Bản Cập Nhật v2.1.0 - Hệ Sinh Thái Giáo Dục Thông Minh & Điều Phối 14 AI Toàn Diện',
     releaseNotes: [
-      'Trụ Cột 5: Cổng thanh toán tự động VietQR Napas 24/7 & Webhook 3 giây (ACB STK: 37780997 NGO QUOC HUY).',
-      'Trụ Cột 5: Biên lai điện tử PDF bảo mật SHA-256 có mộc đỏ và Form đăng ký xuất Hóa đơn GTGT (VAT).',
-      'Trụ Cột 6: Động cơ AI Tài chính, Mô hình định giá theo User và Bộ quản lý Báo giá dự toán tự động (A4 PDF).',
-      'Hệ Sinh Thái 3 Nền Tảng: Liên thông dữ liệu chéo giữa huycncdsai.io.vn (Master Hub), smarttax-ai.vercel.app (Thuế & HĐĐT) và EduViet (Sư phạm).',
-      'Trụ Cột 1 (Kinh Doanh): Gói Combo Trường học tài trợ 1 năm SmartTax AI Pro (3.5 Triệu) và Ưu đãi 30% cho GV dạy thêm (HUYTECH-EDU).',
-      'Trụ Cột 2 (Truyền Thông): Tối ưu Google Schema JSON-LD SEO ma trận tam giác và Bộ ấn phẩm Hồ Sơ Năng Lực 4.0 in PDF A4.',
-      'Trụ Cột 3 (Vận Hành): Webhook xuất Hóa đơn điện tử sang SmartTax AI, Đăng nhập một lần Huy Tech ID SSO và Bảng giám sát OPEX 66.5%.'
+      'Điều phối tự động 14 công cụ AI trong AI Central Hub (huycncdsai.io.vn) theo từng cấu phần giáo án: Slide, Sơ đồ tư duy, 4 ảnh kỹ thuật ComfyUI, Video vi mô và VietTTS.',
+      'Trình chiếu Slide 16:9 Widescreen Canvas tương tác trực tiếp trên trình duyệt web, hiển thị 2 cột chuẩn mực sư phạm, điều hướng bàn phím, thumbnail và chế độ toàn màn hình.',
+      'Động cơ Giọng Đọc Sư Phạm Đa Tầng (VietTTS Neural Voice) với 4 hồ sơ giọng chuẩn (Cô Hoài My, Thầy Nam Minh, Cô Mai Linh) và cơ chế tự động Audio Fallback.',
+      'Tính năng Chỉnh Sửa Trực Tiếp Toàn Diện trên cả 6 cấu phần học liệu trước khi xuất bản file (.doc, .pptx, .txt, .svg).',
+      'Công cụ SlideEditorModal hỗ trợ chỉnh sửa nhanh nội dung từng slide trực tiếp trên thẻ slide hoặc từ thanh trình chiếu.',
+      'Cổng thanh toán tự động VietQR Napas 24/7 & Webhook 3 giây (ACB STK: 37780997 NGO QUOC HUY).',
+      'Liên thông dữ liệu đồng bộ chéo giữa Master Hub huycncdsai.io.vn, SmartTax AI và Smart Teacher Schedule AI.'
     ],
     ecosystem: {
       masterHub: 'https://huycncdsai.io.vn',
@@ -25,24 +25,24 @@ export async function GET() {
     },
     platforms: {
       android: {
-        versionName: '2.0.0',
-        versionCode: 20,
-        downloadUrl: 'https://www.gvcncdsai.io.vn/downloads/SmartTeacherSchedule_v2.0.0.apk',
-        backupUrl: 'https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v2.0.0/SmartTeacherSchedule_v2.0.0.apk',
-        fileName: 'SmartTeacherSchedule_v2.0.0.apk',
-        fileSizeMb: 15.65,
+        versionName: '2.1.0',
+        versionCode: 21,
+        downloadUrl: 'https://www.gvcncdsai.io.vn/downloads/SmartTeacherSchedule_v2.1.0.apk',
+        backupUrl: 'https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v2.1.0/SmartTeacherSchedule_v2.1.0.apk',
+        fileName: 'SmartTeacherSchedule_v2.1.0.apk',
+        fileSizeMb: 15.85,
         isForceUpdate: false
       },
       windows: {
-        versionName: '2.0.0',
-        versionCode: 20,
-        setupUrl: 'https://www.gvcncdsai.io.vn/downloads/SmartTeacherSchedule_Setup_v2.0.0.exe',
-        backupUrl: 'https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v2.0.0/SmartTeacherSchedule_Setup_v2.0.0.exe',
-        fileName: 'SmartTeacherSchedule_Setup_v2.0.0.exe',
+        versionName: '2.1.0',
+        versionCode: 21,
+        setupUrl: 'https://www.gvcncdsai.io.vn/downloads/SmartTeacherSchedule_Setup_v2.1.0.exe',
+        backupUrl: 'https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v2.1.0/SmartTeacherSchedule_Setup_v2.1.0.exe',
+        fileName: 'SmartTeacherSchedule_Setup_v2.1.0.exe',
         isForceUpdate: false
       },
       web: {
-        versionName: '2.0.0',
+        versionName: '2.1.0',
         url: 'https://www.gvcncdsai.io.vn/app'
       }
     }

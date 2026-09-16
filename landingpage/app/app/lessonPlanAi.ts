@@ -1898,8 +1898,172 @@ export function generateComprehensiveLessonPlanPackage(params: {
 // ============================================================================
 // HÀM ĐỊNH DẠNG XUẤT BẢN WORD & TEXT CHO CÁC THÀNH PHẦN
 // ============================================================================
+// BẢNG TIẾN TRÌNH & CHUYỂN ĐỔI HTML BỐ CỤC CHIA CỘT CHUẨN BỘ GD&ĐT VÀ TỔNG CỤC GDNN
+// ============================================================================
+
+export interface ParsedStepItem {
+  stepNum: number;
+  stepTitle: string;
+  content: string;
+}
+
+export function parseImplementationSteps(raw: string): ParsedStepItem[] {
+  if (!raw) return [];
+  const lines = raw.split(/\n+/).map(l => l.trim()).filter(Boolean);
+  const result: ParsedStepItem[] = [];
+  
+  let currentStep: ParsedStepItem | null = null;
+  
+  for (const line of lines) {
+    const isStep1 = /^(?:[\*•-]\s*)?(?:Bước\s*1|\d+\.\s*Giao nhiệm vụ)/i.test(line);
+    const isStep2 = /^(?:[\*•-]\s*)?(?:Bước\s*2|\d+\.\s*Thực hiện)/i.test(line);
+    const isStep3 = /^(?:[\*•-]\s*)?(?:Bước\s*3|\d+\.\s*Báo cáo)/i.test(line);
+    const isStep4 = /^(?:[\*•-]\s*)?(?:Bước\s*4|\d+\.\s*(?:Kết luận|Đánh giá))/i.test(line);
+
+    if (isStep1) {
+      currentStep = {
+        stepNum: 1,
+        stepTitle: 'Bước 1: Chuyển giao nhiệm vụ',
+        content: line.replace(/^(?:[\*•-]\s*)?(?:Bước\s*1:?|\d+\.\s*Giao nhiệm vụ[^:]*:?)\s*/i, '')
+      };
+      result.push(currentStep);
+    } else if (isStep2) {
+      currentStep = {
+        stepNum: 2,
+        stepTitle: 'Bước 2: Thực hiện nhiệm vụ',
+        content: line.replace(/^(?:[\*•-]\s*)?(?:Bước\s*2:?|\d+\.\s*Thực hiện[^:]*:?)\s*/i, '')
+      };
+      result.push(currentStep);
+    } else if (isStep3) {
+      currentStep = {
+        stepNum: 3,
+        stepTitle: 'Bước 3: Báo cáo, thảo luận',
+        content: line.replace(/^(?:[\*•-]\s*)?(?:Bước\s*3:?|\d+\.\s*Báo cáo[^:]*:?)\s*/i, '')
+      };
+      result.push(currentStep);
+    } else if (isStep4) {
+      currentStep = {
+        stepNum: 4,
+        stepTitle: 'Bước 4: Kết luận, nhận định',
+        content: line.replace(/^(?:[\*•-]\s*)?(?:Bước\s*4:?|\d+\.\s*(?:Kết luận|Đánh giá)[^:]*:?)\s*/i, '')
+      };
+      result.push(currentStep);
+    } else if (currentStep) {
+      currentStep.content += '\n' + line;
+    } else {
+      currentStep = {
+        stepNum: 1,
+        stepTitle: 'Nội dung thực hiện',
+        content: line
+      };
+      result.push(currentStep);
+    }
+  }
+  
+  return result;
+}
+
+function highlightGvHs(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/\b(GV|Giáo viên):/gi, '<b style="color: #1e3a8a;">[GV]:</b>')
+    .replace(/\b(HS|Học sinh):/gi, '<b style="color: #0369a1;">[HS]:</b>');
+}
+
+function formatImplementationStepsHtml(raw: string): string {
+  if (!raw) return 'Chưa có thông tin tổ chức thực hiện.';
+  const lines = raw.split(/\n+/).map(l => l.trim()).filter(Boolean);
+  
+  let formatted = '';
+  let hasMatchedStep = false;
+  
+  for (const line of lines) {
+    const isStep1 = /^(?:[\*•-]\s*)?(?:Bước\s*1|\d+\.\s*Giao nhiệm vụ)/i.test(line);
+    const isStep2 = /^(?:[\*•-]\s*)?(?:Bước\s*2|\d+\.\s*Thực hiện)/i.test(line);
+    const isStep3 = /^(?:[\*•-]\s*)?(?:Bước\s*3|\d+\.\s*Báo cáo)/i.test(line);
+    const isStep4 = /^(?:[\*•-]\s*)?(?:Bước\s*4|\d+\.\s*(?:Kết luận|Đánh giá))/i.test(line);
+
+    if (isStep1) {
+      hasMatchedStep = true;
+      const cleanContent = line.replace(/^(?:[\*•-]\s*)?(?:Bước\s*1:?|\d+\.\s*Giao nhiệm vụ[^:]*:?)\s*/i, '');
+      formatted += `<p style="margin: 4px 0 2px 0; font-weight: bold; color: #1e3a8a; font-size: 11.5pt;">* Bước 1: Chuyển giao nhiệm vụ</p><div style="margin: 0 0 8px 10px; font-size: 11pt; color: #1e293b; line-height: 1.45;">${highlightGvHs(cleanContent)}</div>`;
+    } else if (isStep2) {
+      hasMatchedStep = true;
+      const cleanContent = line.replace(/^(?:[\*•-]\s*)?(?:Bước\s*2:?|\d+\.\s*Thực hiện[^:]*:?)\s*/i, '');
+      formatted += `<p style="margin: 4px 0 2px 0; font-weight: bold; color: #1e3a8a; font-size: 11.5pt;">* Bước 2: Thực hiện nhiệm vụ</p><div style="margin: 0 0 8px 10px; font-size: 11pt; color: #1e293b; line-height: 1.45;">${highlightGvHs(cleanContent)}</div>`;
+    } else if (isStep3) {
+      hasMatchedStep = true;
+      const cleanContent = line.replace(/^(?:[\*•-]\s*)?(?:Bước\s*3:?|\d+\.\s*Báo cáo[^:]*:?)\s*/i, '');
+      formatted += `<p style="margin: 4px 0 2px 0; font-weight: bold; color: #1e3a8a; font-size: 11.5pt;">* Bước 3: Báo cáo, thảo luận</p><div style="margin: 0 0 8px 10px; font-size: 11pt; color: #1e293b; line-height: 1.45;">${highlightGvHs(cleanContent)}</div>`;
+    } else if (isStep4) {
+      hasMatchedStep = true;
+      const cleanContent = line.replace(/^(?:[\*•-]\s*)?(?:Bước\s*4:?|\d+\.\s*(?:Kết luận|Đánh giá)[^:]*:?)\s*/i, '');
+      formatted += `<p style="margin: 4px 0 2px 0; font-weight: bold; color: #1e3a8a; font-size: 11.5pt;">* Bước 4: Kết luận, nhận định</p><div style="margin: 0 0 4px 10px; font-size: 11pt; color: #1e293b; line-height: 1.45;">${highlightGvHs(cleanContent)}</div>`;
+    } else {
+      formatted += `<div style="margin: 2px 0 4px 10px; font-size: 11pt; color: #1e293b; line-height: 1.45;">${highlightGvHs(line)}</div>`;
+    }
+  }
+  
+  return hasMatchedStep ? formatted : `<div style="white-space: pre-line; font-size: 11pt; line-height: 1.45;">${highlightGvHs(raw)}</div>`;
+}
+
+function formatExpectedProductHtml(content: string, product: string): string {
+  return `
+    <div style="margin-bottom: 8px;">
+      <p style="margin: 0 0 3px 0; font-weight: bold; color: #1e3a8a; font-size: 11pt;">📌 Nội dung trọng tâm cần đạt:</p>
+      <div style="font-size: 10.5pt; color: #334155; line-height: 1.45; white-space: pre-line; padding-left: 6px; border-left: 2.5px solid #93c5fd; margin-bottom: 8px;">
+        ${content || 'Theo dõi và giải quyết nhiệm vụ theo hướng dẫn của giáo viên.'}
+      </div>
+    </div>
+    <div>
+      <p style="margin: 0 0 3px 0; font-weight: bold; color: #047857; font-size: 11pt;">🎯 Sản phẩm học sinh hoàn thành:</p>
+      <div style="font-size: 10.5pt; color: #14532d; line-height: 1.45; white-space: pre-line; padding-left: 6px; border-left: 2.5px solid #86efac;">
+        ${product || 'Vở ghi bài, phiếu học tập cá nhân/nhóm hoàn chỉnh.'}
+      </div>
+    </div>
+  `;
+}
+
+function renderActivity5512Html(actIndex: number, act: { name: string; objective: string; content: string; product: string; implementation: string }): string {
+  return `
+    <div style="margin-bottom: 22px; page-break-inside: avoid;">
+      <p style="font-weight: bold; color: #1e3a8a; font-size: 12.5pt; margin: 0 0 6px 0;">
+        ${act.name}
+      </p>
+      <p style="margin: 3px 0 3px 15px; font-size: 11.5pt;"><b>a) Mục tiêu:</b> ${act.objective}</p>
+      <p style="margin: 3px 0 3px 15px; font-size: 11.5pt;"><b>b) Nội dung tóm tắt:</b> <span style="color: #334155;">${act.content.length > 250 ? act.content.slice(0, 250) + '...' : act.content}</span></p>
+      <p style="margin: 3px 0 6px 15px; font-size: 11.5pt;"><b>c) Sản phẩm:</b> <span style="color: #166534;">${act.product.length > 200 ? act.product.slice(0, 200) + '...' : act.product}</span></p>
+      <p style="margin: 6px 0 4px 15px; font-weight: bold; font-size: 11.5pt; color: #0f172a;"><b>d) Tổ chức thực hiện:</b></p>
+      
+      <table border="1" cellpadding="6" style="border-collapse: collapse; width: 100%; margin: 6px 0 10px 0; font-family: 'Times New Roman', Times, serif; font-size: 11pt; border: 1px solid #94a3b8;">
+        <thead>
+          <tr style="background-color: #f1f5f9; text-align: center; font-weight: bold; border-bottom: 2px solid #64748b;">
+            <th style="width: 58%; padding: 8px; border: 1px solid #cbd5e1; color: #0f172a;">HOẠT ĐỘNG CỦA GIÁO VIÊN VÀ HỌC SINH</th>
+            <th style="width: 42%; padding: 8px; border: 1px solid #cbd5e1; color: #0f172a; background-color: #f8fafc;">SẢN PHẨM DỰ KIẾN / NỘI DUNG CẦN ĐẠT</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="vertical-align: top; padding: 10px; border: 1px solid #cbd5e1; line-height: 1.45;">
+              ${formatImplementationStepsHtml(act.implementation)}
+            </td>
+            <td style="vertical-align: top; padding: 10px; border: 1px solid #cbd5e1; line-height: 1.45; background-color: #fafafa;">
+              ${formatExpectedProductHtml(act.content, act.product)}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+}
 
 export function lessonPlan5512ToHtml(plan: LessonPlan5512Data): string {
+  const dur = plan.durationMinutes || 45;
+  const t1 = Math.max(5, Math.round(dur * 0.12));
+  const t2 = Math.round(dur * 0.50);
+  const t3 = Math.round(dur * 0.26);
+  const t4 = Math.max(4, dur - t1 - t2 - t3);
+
   return `
     <div style="font-family: 'Times New Roman', Times, serif; font-size: 13pt; line-height: 1.4; color: #000;">
       <div style="text-align: center; font-weight: bold; margin-bottom: 20px;">
@@ -1920,43 +2084,108 @@ export function lessonPlan5512ToHtml(plan: LessonPlan5512Data): string {
       <p style="margin: 3px 0 3px 20px;"><b>1. Giáo viên:</b> ${plan.equipment.teacherEquipment}</p>
       <p style="margin: 3px 0 15px 20px;"><b>2. Học sinh:</b> ${plan.equipment.studentEquipment}</p>
 
-      <p style="font-weight: bold; margin-bottom: 5px;">III. TIẾN TRÌNH DẠY HỌC</p>
+      <p style="font-weight: bold; margin: 18px 0 6px 0; font-size: 13pt;">III. TIẾN TRÌNH DẠY HỌC</p>
 
-      <!-- Hoạt động 1 -->
-      <div style="margin-left: 10px; margin-bottom: 12px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; background: #f8fafc;">
-        <p style="font-weight: bold; color: #0369a1; margin: 0 0 5px 0;">${plan.activity1Opening.name}</p>
-        <p style="margin: 2px 0;"><b>a) Mục tiêu:</b> ${plan.activity1Opening.objective}</p>
-        <p style="margin: 2px 0;"><b>b) Nội dung:</b> ${plan.activity1Opening.content}</p>
-        <p style="margin: 2px 0;"><b>c) Sản phẩm:</b> ${plan.activity1Opening.product}</p>
-        <p style="margin: 2px 0;"><b>d) Tổ chức thực hiện:</b><br/><span style="white-space: pre-line;">${plan.activity1Opening.implementation}</span></p>
-      </div>
+      <!-- 1. BẢNG TIẾN TRÌNH DẠY HỌC TỔNG THỂ (MA TRẬN 5 CỘT CHUẨN CV 5512) -->
+      <p style="font-weight: bold; margin: 6px 0 4px 10px; font-size: 11.5pt; color: #1e3a8a;">
+        1. Bảng ma trận tiến trình dạy học tổng thể (Chuẩn CV 5512/BGDĐT-GDTrH):
+      </p>
 
-      <!-- Hoạt động 2 -->
-      <div style="margin-left: 10px; margin-bottom: 12px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; background: #f8fafc;">
-        <p style="font-weight: bold; color: #0369a1; margin: 0 0 5px 0;">${plan.activity2Knowledge.name}</p>
-        <p style="margin: 2px 0;"><b>a) Mục tiêu:</b> ${plan.activity2Knowledge.objective}</p>
-        <p style="margin: 2px 0;"><b>b) Nội dung:</b><br/><span style="white-space: pre-line;">${plan.activity2Knowledge.content}</span></p>
-        <p style="margin: 2px 0;"><b>c) Sản phẩm:</b> ${plan.activity2Knowledge.product}</p>
-        <p style="margin: 2px 0;"><b>d) Tổ chức thực hiện:</b><br/><span style="white-space: pre-line;">${plan.activity2Knowledge.implementation}</span></p>
-      </div>
+      <table border="1" cellpadding="6" style="border-collapse: collapse; width: 100%; margin: 6px 0 18px 0; font-family: 'Times New Roman', Times, serif; font-size: 10.5pt; border: 1px solid #94a3b8;">
+        <thead>
+          <tr style="background-color: #e0f2fe; text-align: center; font-weight: bold; border-bottom: 2px solid #0284c7;">
+            <th style="width: 22%; padding: 8px; border: 1px solid #cbd5e1; color: #0369a1;">Tên Hoạt Động (Thời gian)</th>
+            <th style="width: 26%; padding: 8px; border: 1px solid #cbd5e1; color: #0369a1;">Mục Tiêu Hoạt Động</th>
+            <th style="width: 20%; padding: 8px; border: 1px solid #cbd5e1; color: #0369a1;">Phương Pháp & Kỹ Thuật</th>
+            <th style="width: 16%; padding: 8px; border: 1px solid #cbd5e1; color: #0369a1;">Phương Án Đánh Giá</th>
+            <th style="width: 16%; padding: 8px; border: 1px solid #cbd5e1; color: #0369a1;">Hồ Sơ / Sản Phẩm</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding: 6px 8px; border: 1px solid #cbd5e1; vertical-align: top;">
+              <b>1. Khởi động</b><br/>
+              <span style="color: #0369a1; font-style: italic;">(${t1} phút)</span>
+            </td>
+            <td style="padding: 6px 8px; border: 1px solid #cbd5e1; vertical-align: top;">
+              ${plan.activity1Opening.objective}
+            </td>
+            <td style="padding: 6px 8px; border: 1px solid #cbd5e1; vertical-align: top;">
+              Trực quan, Gợi mở vấn đáp, Kỹ thuật KWL / Tia chớp
+            </td>
+            <td style="padding: 6px 8px; border: 1px solid #cbd5e1; vertical-align: top;">
+              Đánh giá qua câu trả lời và thái độ hào hứng của HS
+            </td>
+            <td style="padding: 6px 8px; border: 1px solid #cbd5e1; vertical-align: top;">
+              ${plan.activity1Opening.product}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 8px; border: 1px solid #cbd5e1; vertical-align: top;">
+              <b>2. Hình thành kiến thức</b><br/>
+              <span style="color: #0369a1; font-style: italic;">(${t2} phút)</span>
+            </td>
+            <td style="padding: 6px 8px; border: 1px solid #cbd5e1; vertical-align: top;">
+              ${plan.activity2Knowledge.objective}
+            </td>
+            <td style="padding: 6px 8px; border: 1px solid #cbd5e1; vertical-align: top;">
+              Dạy học hợp tác, Thảo luận nhóm, Sơ đồ tư duy (${plan.appliedSkill || 'Khám phá tri thức'})
+            </td>
+            <td style="padding: 6px 8px; border: 1px solid #cbd5e1; vertical-align: top;">
+              Đánh giá quá trình qua Phiếu học tập số 1 và câu hỏi phản biện
+            </td>
+            <td style="padding: 6px 8px; border: 1px solid #cbd5e1; vertical-align: top;">
+              ${plan.activity2Knowledge.product}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 8px; border: 1px solid #cbd5e1; vertical-align: top;">
+              <b>3. Luyện tập</b><br/>
+              <span style="color: #0369a1; font-style: italic;">(${t3} phút)</span>
+            </td>
+            <td style="padding: 6px 8px; border: 1px solid #cbd5e1; vertical-align: top;">
+              ${plan.activity3Practice.objective}
+            </td>
+            <td style="padding: 6px 8px; border: 1px solid #cbd5e1; vertical-align: top;">
+              Luyện tập thực hành, Chia sẻ cặp đôi (Think-Pair-Share)
+            </td>
+            <td style="padding: 6px 8px; border: 1px solid #cbd5e1; vertical-align: top;">
+              Đánh giá kết quả bài làm theo barem đáp án chuẩn
+            </td>
+            <td style="padding: 6px 8px; border: 1px solid #cbd5e1; vertical-align: top;">
+              ${plan.activity3Practice.product}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 8px; border: 1px solid #cbd5e1; vertical-align: top;">
+              <b>4. Vận dụng & Mở rộng</b><br/>
+              <span style="color: #0369a1; font-style: italic;">(${t4} phút)</span>
+            </td>
+            <td style="padding: 6px 8px; border: 1px solid #cbd5e1; vertical-align: top;">
+              ${plan.activity4Application.objective}
+            </td>
+            <td style="padding: 6px 8px; border: 1px solid #cbd5e1; vertical-align: top;">
+              Dự án học tập, Nghiên cứu trường hợp, Giao bài tự học
+            </td>
+            <td style="padding: 6px 8px; border: 1px solid #cbd5e1; vertical-align: top;">
+              Đánh giá sản phẩm đề án thực tiễn theo Rubric
+            </td>
+            <td style="padding: 6px 8px; border: 1px solid #cbd5e1; vertical-align: top;">
+              ${plan.activity4Application.product}
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
-      <!-- Hoạt động 3 -->
-      <div style="margin-left: 10px; margin-bottom: 12px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; background: #f8fafc;">
-        <p style="font-weight: bold; color: #0369a1; margin: 0 0 5px 0;">${plan.activity3Practice.name}</p>
-        <p style="margin: 2px 0;"><b>a) Mục tiêu:</b> ${plan.activity3Practice.objective}</p>
-        <p style="margin: 2px 0;"><b>b) Nội dung:</b><br/><span style="white-space: pre-line;">${plan.activity3Practice.content}</span></p>
-        <p style="margin: 2px 0;"><b>c) Sản phẩm:</b> ${plan.activity3Practice.product}</p>
-        <p style="margin: 2px 0;"><b>d) Tổ chức thực hiện:</b><br/><span style="white-space: pre-line;">${plan.activity3Practice.implementation}</span></p>
-      </div>
+      <!-- 2. CÁC HOẠT ĐỘNG HỌC CHI TIẾT THEO BẢNG 2 CỘT -->
+      <p style="font-weight: bold; margin: 16px 0 8px 10px; font-size: 11.5pt; color: #1e3a8a;">
+        2. Các hoạt động học chi tiết (Kế hoạch tổ chức dạy học theo Bảng 2 cột chuẩn Bộ GD&ĐT):
+      </p>
 
-      <!-- Hoạt động 4 -->
-      <div style="margin-left: 10px; margin-bottom: 12px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; background: #f8fafc;">
-        <p style="font-weight: bold; color: #0369a1; margin: 0 0 5px 0;">${plan.activity4Application.name}</p>
-        <p style="margin: 2px 0;"><b>a) Mục tiêu:</b> ${plan.activity4Application.objective}</p>
-        <p style="margin: 2px 0;"><b>b) Nội dung:</b> ${plan.activity4Application.content}</p>
-        <p style="margin: 2px 0;"><b>c) Sản phẩm:</b> ${plan.activity4Application.product}</p>
-        <p style="margin: 2px 0;"><b>d) Tổ chức thực hiện:</b><br/><span style="white-space: pre-line;">${plan.activity4Application.implementation}</span></p>
-      </div>
+      ${renderActivity5512Html(1, plan.activity1Opening)}
+      ${renderActivity5512Html(2, plan.activity2Knowledge)}
+      ${renderActivity5512Html(3, plan.activity3Practice)}
+      ${renderActivity5512Html(4, plan.activity4Application)}
 
       ${plan.referenceCitations ? `
         <div style="margin-top: 15px; font-size: 10pt; color: #64748b; font-style: italic; border-top: 1px dashed #cbd5e1; padding-top: 8px;">
@@ -1968,6 +2197,12 @@ export function lessonPlan5512ToHtml(plan: LessonPlan5512Data): string {
 }
 
 export function lessonPlan2634ToHtml(plan: LessonPlan2634Data): string {
+  const dur = plan.durationMinutes || 180;
+  const t1 = Math.round(dur * 0.10);
+  const t2 = Math.round(dur * 0.15);
+  const t3 = Math.round(dur * 0.65);
+  const t4 = Math.max(5, dur - t1 - t2 - t3);
+
   return `
     <div style="font-family: 'Times New Roman', Times, serif; font-size: 13pt; line-height: 1.4; color: #000;">
       <div style="text-align: center; font-weight: bold; margin-bottom: 20px;">
@@ -1980,43 +2215,113 @@ export function lessonPlan2634ToHtml(plan: LessonPlan2634Data): string {
       </div>
 
       <p style="font-weight: bold; margin-bottom: 5px;">I. MỤC TIÊU BÀI DẠY</p>
-      <p style="margin: 3px 0 3px 20px;"><b>1. Kiến thức:</b> ${plan.objectives.knowledge}</p>
-      <p style="margin: 3px 0 3px 20px;"><b>2. Kỹ năng:</b> ${plan.objectives.skills}</p>
+      <p style="margin: 3px 0 3px 20px;"><b>1. Kiến thức nghề:</b> ${plan.objectives.knowledge}</p>
+      <p style="margin: 3px 0 3px 20px;"><b>2. Kỹ năng thực hành:</b> ${plan.objectives.skills}</p>
       <p style="margin: 3px 0 15px 20px;"><b>3. Năng lực tự chủ và ATLĐ:</b> ${plan.objectives.autonomyAndSafety}</p>
 
-      <p style="font-weight: bold; margin-bottom: 5px;">II. ĐIỀU KIỆN THỰC HIỆN BÀI HỌC</p>
+      <p style="font-weight: bold; margin-bottom: 5px;">II. ĐIỀU KIỆN THỰC HIỆN BÀI HỌC (XƯỞNG THỰC HÀNH)</p>
       <p style="margin: 3px 0 3px 20px;"><b>1. Thiết bị, máy móc:</b> ${plan.conditions.equipmentAndMachines}</p>
       <p style="margin: 3px 0 3px 20px;"><b>2. Dụng cụ, vật tư, phôi mẫu:</b> ${plan.conditions.materialsAndWorkpieces}</p>
       <p style="margin: 3px 0 15px 20px;"><b>3. Trang bị ATLĐ và 5S:</b> ${plan.conditions.safetyAnd5S}</p>
 
-      <p style="font-weight: bold; margin-bottom: 5px;">III. TIẾN TRÌNH DẠY HỌC THỰC HÀNH</p>
+      <p style="font-weight: bold; margin: 15px 0 6px 0;">III. TIẾN TRÌNH DẠY HỌC THỰC HÀNH TẠI XƯỞNG (BẢNG 6 CỘT CHUẨN CV 2634/GDNN)</p>
 
-      <table border="1" cellpadding="6" style="border-collapse: collapse; width: 100%; margin-top: 8px;">
-        <tr style="background-color: #ffedd5; font-weight: bold; text-align: center;">
-          <th style="width: 25%;">Các bước thực hiện</th>
-          <th style="width: 35%;">Hoạt động của Giáo viên</th>
-          <th style="width: 40%;">Hoạt động của Học sinh & Điểm then chốt ATLĐ</th>
-        </tr>
-        <tr>
-          <td><b>${plan.step1Orientation.name}</b></td>
-          <td>${plan.step1Orientation.teacherActivity}</td>
-          <td>${plan.step1Orientation.studentActivity}<br/><b style="color: #c2410c;">⚠️ Điểm then chốt:</b> ${plan.step1Orientation.safetyAndKeyPoints}</td>
-        </tr>
-        <tr>
-          <td><b>${plan.step2Demonstration.name}</b></td>
-          <td><span style="white-space: pre-line;">${plan.step2Demonstration.teacherActivity}</span></td>
-          <td>${plan.step2Demonstration.studentActivity}<br/><b style="color: #c2410c;">⚠️ Điểm then chốt:</b> ${plan.step2Demonstration.safetyAndKeyPoints}</td>
-        </tr>
-        <tr>
-          <td><b>${plan.step3Practice.name}</b></td>
-          <td>${plan.step3Practice.teacherActivity}</td>
-          <td><span style="white-space: pre-line;">${plan.step3Practice.studentActivity}</span><br/><b style="color: #c2410c;">⚠️ Điểm then chốt:</b> ${plan.step3Practice.safetyAndKeyPoints}</td>
-        </tr>
-        <tr>
-          <td><b>${plan.step4Evaluation.name}</b></td>
-          <td>${plan.step4Evaluation.teacherActivity}</td>
-          <td>${plan.step4Evaluation.studentActivity}<br/><b style="color: #c2410c;">⚠️ Điểm then chốt:</b> ${plan.step4Evaluation.safetyAndKeyPoints}</td>
-        </tr>
+      <table border="1" cellpadding="6" style="border-collapse: collapse; width: 100%; margin: 8px 0; font-family: 'Times New Roman', Times, serif; font-size: 11pt; border: 1px solid #fdba74;">
+        <thead>
+          <tr style="background-color: #ffedd5; text-align: center; font-weight: bold; border-bottom: 2px solid #ea580c;">
+            <th style="width: 5%; padding: 8px; border: 1px solid #fdba74; color: #9a3412;">TT</th>
+            <th style="width: 20%; padding: 8px; border: 1px solid #fdba74; color: #9a3412;">Các bước & Nội dung công việc</th>
+            <th style="width: 9%; padding: 8px; border: 1px solid #fdba74; color: #9a3412;">Thời gian</th>
+            <th style="width: 25%; padding: 8px; border: 1px solid #fdba74; color: #9a3412;">Hoạt động của Giáo viên</th>
+            <th style="width: 21%; padding: 8px; border: 1px solid #fdba74; color: #9a3412;">Hoạt động của Học sinh</th>
+            <th style="width: 20%; padding: 8px; border: 1px solid #fdba74; color: #9a3412;">Thiết bị, Tiêu chuẩn kỹ thuật, ATLĐ & 5S</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="text-align: center; font-weight: bold; border: 1px solid #fed7aa; vertical-align: top;">1</td>
+            <td style="border: 1px solid #fed7aa; vertical-align: top;">
+              <b>${plan.step1Orientation.name}</b><br/>
+              <span style="font-size: 9.5pt; color: #64748b;">(Chiếm ~10% thời lượng)</span>
+            </td>
+            <td style="text-align: center; border: 1px solid #fed7aa; vertical-align: top; font-weight: bold; color: #ea580c;">
+              ${t1} phút
+            </td>
+            <td style="border: 1px solid #fed7aa; vertical-align: top; line-height: 1.45;">
+              <span style="white-space: pre-line;">${plan.step1Orientation.teacherActivity}</span>
+            </td>
+            <td style="border: 1px solid #fed7aa; vertical-align: top; line-height: 1.45;">
+              <span style="white-space: pre-line;">${plan.step1Orientation.studentActivity}</span>
+            </td>
+            <td style="border: 1px solid #fed7aa; vertical-align: top; font-size: 10pt; line-height: 1.4; background-color: #fffaf5;">
+              <b style="color: #9a3412;">• Thiết bị:</b> ${plan.conditions.equipmentAndMachines.length > 120 ? plan.conditions.equipmentAndMachines.slice(0, 120) + '...' : plan.conditions.equipmentAndMachines}<br/><br/>
+              <b style="color: #dc2626;">⚠️ Điểm then chốt ATLĐ:</b> ${plan.step1Orientation.safetyAndKeyPoints}
+            </td>
+          </tr>
+
+          <tr>
+            <td style="text-align: center; font-weight: bold; border: 1px solid #fed7aa; vertical-align: top;">2</td>
+            <td style="border: 1px solid #fed7aa; vertical-align: top;">
+              <b>${plan.step2Demonstration.name}</b><br/>
+              <span style="font-size: 9.5pt; color: #64748b;">(Chiếm ~15% thời lượng - Làm mẫu 3 lần)</span>
+            </td>
+            <td style="text-align: center; border: 1px solid #fed7aa; vertical-align: top; font-weight: bold; color: #ea580c;">
+              ${t2} phút
+            </td>
+            <td style="border: 1px solid #fed7aa; vertical-align: top; line-height: 1.45;">
+              <span style="white-space: pre-line;">${plan.step2Demonstration.teacherActivity}</span>
+            </td>
+            <td style="border: 1px solid #fed7aa; vertical-align: top; line-height: 1.45;">
+              <span style="white-space: pre-line;">${plan.step2Demonstration.studentActivity}</span>
+            </td>
+            <td style="border: 1px solid #fed7aa; vertical-align: top; font-size: 10pt; line-height: 1.4; background-color: #fffaf5;">
+              <b style="color: #9a3412;">• Phôi mẫu & Dụng cụ:</b> ${plan.conditions.materialsAndWorkpieces.length > 120 ? plan.conditions.materialsAndWorkpieces.slice(0, 120) + '...' : plan.conditions.materialsAndWorkpieces}<br/><br/>
+              <b style="color: #dc2626;">⚠️ Trọng tâm kỹ thuật:</b> ${plan.step2Demonstration.safetyAndKeyPoints}
+            </td>
+          </tr>
+
+          <tr>
+            <td style="text-align: center; font-weight: bold; border: 1px solid #fed7aa; vertical-align: top;">3</td>
+            <td style="border: 1px solid #fed7aa; vertical-align: top;">
+              <b>${plan.step3Practice.name}</b><br/>
+              <span style="font-size: 9.5pt; color: #64748b;">(Chiếm ~65% thời lượng - Luyện tập xưởng)</span>
+            </td>
+            <td style="text-align: center; border: 1px solid #fed7aa; vertical-align: top; font-weight: bold; color: #ea580c;">
+              ${t3} phút
+            </td>
+            <td style="border: 1px solid #fed7aa; vertical-align: top; line-height: 1.45;">
+              <span style="white-space: pre-line;">${plan.step3Practice.teacherActivity}</span>
+            </td>
+            <td style="border: 1px solid #fed7aa; vertical-align: top; line-height: 1.45;">
+              <span style="white-space: pre-line;">${plan.step3Practice.studentActivity}</span>
+            </td>
+            <td style="border: 1px solid #fed7aa; vertical-align: top; font-size: 10pt; line-height: 1.4; background-color: #fffaf5;">
+              <b style="color: #9a3412;">• Tiêu chuẩn dung sai:</b> Đúng bản vẽ kỹ thuật.<br/><br/>
+              <b style="color: #dc2626;">⚠️ Điểm dừng an toàn:</b> ${plan.step3Practice.safetyAndKeyPoints}
+            </td>
+          </tr>
+
+          <tr>
+            <td style="text-align: center; font-weight: bold; border: 1px solid #fed7aa; vertical-align: top;">4</td>
+            <td style="border: 1px solid #fed7aa; vertical-align: top;">
+              <b>${plan.step4Evaluation.name}</b><br/>
+              <span style="font-size: 9.5pt; color: #64748b;">(Chiếm ~10% thời lượng - Nghiệm thu & 5S)</span>
+            </td>
+            <td style="text-align: center; border: 1px solid #fed7aa; vertical-align: top; font-weight: bold; color: #ea580c;">
+              ${t4} phút
+            </td>
+            <td style="border: 1px solid #fed7aa; vertical-align: top; line-height: 1.45;">
+              <span style="white-space: pre-line;">${plan.step4Evaluation.teacherActivity}</span>
+            </td>
+            <td style="border: 1px solid #fed7aa; vertical-align: top; line-height: 1.45;">
+              <span style="white-space: pre-line;">${plan.step4Evaluation.studentActivity}</span>
+            </td>
+            <td style="border: 1px solid #fed7aa; vertical-align: top; font-size: 10pt; line-height: 1.4; background-color: #fffaf5;">
+              <b style="color: #9a3412;">• Đánh giá:</b> Phiếu nghiệm thu sản phẩm định lượng.<br/><br/>
+              <b style="color: #dc2626;">⚠️ Nề nếp 5S xưởng:</b> ${plan.step4Evaluation.safetyAndKeyPoints}
+            </td>
+          </tr>
+        </tbody>
       </table>
 
       ${plan.referenceCitations ? `

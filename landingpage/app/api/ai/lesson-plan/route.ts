@@ -51,13 +51,19 @@ ${customRequirements ? `- Yêu cầu sư phạm bổ sung: ${customRequirements}
 
 ${pedagogicalDirectives}
 
-CHỈ THỊ SƯ PHẠM NGHIÊM NGẶT (STRICT ANTI-HALLUCINATION & PEDAGOGICAL GROUNDING):
+CHỈ THỊ SƯ PHẠM VÀ BỐ CỤC CHIA CỘT NGHIÊM NGẶT (CHUẨN BỘ GD&ĐT):
 1. Tuyệt đối KHÔNG viết các câu chung chung vô nghĩa như "Học sinh đọc SGK", "GV giao bài tập", "GV đưa ra tình huống", "HS thảo luận nhóm".
-2. BẮT BUỘC phải trích dẫn tên chính xác của các khái niệm, cấu tạo, định nghĩa, công thức toán/khoa học, thông số kỹ thuật và bài tập cụ thể lấy từ tài liệu trên vào nội dung từng hoạt động.
-3. Hoạt động Khởi động: Nêu rõ câu hỏi tình huống dẫn nhập cụ thể liên quan trực tiếp đến nội dung chuyên môn bài học.
-4. Hoạt động Hình thành kiến thức: Nêu rõ từng mục kiến thức cốt lõi, công thức, định nghĩa khoa học từ tài liệu.
-5. Hoạt động Luyện tập: Soạn cụ thể ít nhất 2 câu hỏi/bài tập có đề bài, số liệu/tình huống và đáp án/hướng dẫn chi tiết.
-6. Hoạt động Vận dụng: Nêu rõ bài toán hoặc tình huống thực tiễn cụ thể để học sinh giải quyết.
+2. BẮT BUỘC phải trích dẫn tên chính xác của các khái niệm, cấu tạo, định nghĩa, công thức toán/khoa học, thông số kỹ thuật và bài tập cụ thể lấy từ tài liệu trên.
+3. BỐ CỤC BẢNG 2 CỘT CHO "TỔ CHỨC THỰC HIỆN":
+   - Trường "implementation" (Cột trái): BẮT BUỘC chia thành 4 bước đánh dấu rõ ràng:
+     * Bước 1: Chuyển giao nhiệm vụ: [GV phát vấn/giao nhiệm vụ cụ thể gì? HS tiếp nhận thế nào?]
+     * Bước 2: Thực hiện nhiệm vụ: [HS nghiên cứu, tính toán, thảo luận thế nào? GV quan sát, gợi mở gì?]
+     * Bước 3: Báo cáo, thảo luận: [HS/đại diện nhóm trình bày gì? Các HS khác nhận xét, phản biện ra sao?]
+     * Bước 4: Kết luận, nhận định: [GV chuẩn hóa kiến thức gì? Rút ra kết luận khoa học nào?]
+   - Trường "product" (Cột phải - Sản phẩm dự kiến / Nội dung cần đạt): Phải nêu chi tiết nội dung kiến thức cốt lõi, công thức, định nghĩa, cùng với lời giải/đáp số cụ thể của các câu hỏi/bài tập để giáo viên đối chiếu nghiệm thu.
+4. Hoạt động Khởi động: Nêu rõ câu hỏi tình huống dẫn nhập cụ thể liên quan trực tiếp đến bài học.
+5. Hoạt động Luyện tập: Soạn cụ thể ít nhất 2 câu hỏi/bài tập có đề bài, số liệu và đáp án chi tiết.
+6. Hoạt động Vận dụng: Nêu rõ bài toán hoặc đề án thực tiễn cụ thể để học sinh giải quyết.
 
 Trả về duy nhất định dạng JSON thuần túy (không bọc markdown \`\`\`json) theo cấu trúc:
 {
@@ -74,29 +80,29 @@ Trả về duy nhất định dạng JSON thuần túy (không bọc markdown \`
     "name": "Hoạt động 1: Mở đầu / Khởi động (Xác định vấn đề học tập)",
     "objective": "...",
     "content": "...",
-    "product": "...",
-    "implementation": "1. Giao nhiệm vụ: ...\\n2. Thực hiện: ...\\n3. Báo cáo: ...\\n4. Kết luận: ..."
+    "product": "Kiến thức trọng tâm cần đạt và sản phẩm dự đoán/câu trả lời của học sinh...",
+    "implementation": "* Bước 1: Chuyển giao nhiệm vụ: GV...\\n* Bước 2: Thực hiện nhiệm vụ: HS...\\n* Bước 3: Báo cáo, thảo luận: HS...\\n* Bước 4: Kết luận, nhận định: GV..."
   },
   "activity2Knowledge": {
     "name": "Hoạt động 2: Hình thành kiến thức mới (Chiếm lĩnh tri thức trọng tâm)",
     "objective": "...",
     "content": "...",
-    "product": "...",
-    "implementation": "1. Giao nhiệm vụ: ...\\n2. Thực hiện: ...\\n3. Báo cáo: ...\\n4. Kết luận: ..."
+    "product": "Các định nghĩa, công thức, quy luật khoa học cần ghi nhớ và phiếu học tập hoàn thành...",
+    "implementation": "* Bước 1: Chuyển giao nhiệm vụ: GV...\\n* Bước 2: Thực hiện nhiệm vụ: HS...\\n* Bước 3: Báo cáo, thảo luận: HS...\\n* Bước 4: Kết luận, nhận định: GV..."
   },
   "activity3Practice": {
     "name": "Hoạt động 3: Luyện tập (Củng cố và rèn luyện kỹ năng)",
     "objective": "...",
     "content": "...",
-    "product": "...",
-    "implementation": "1. Giao nhiệm vụ: ...\\n2. Thực hiện: ...\\n3. Báo cáo: ...\\n4. Kết luận: ..."
+    "product": "Hệ thống bài tập có đề bài và lời giải chi tiết, đáp số cụ thể...",
+    "implementation": "* Bước 1: Chuyển giao nhiệm vụ: GV...\\n* Bước 2: Thực hiện nhiệm vụ: HS...\\n* Bước 3: Báo cáo, thảo luận: HS...\\n* Bước 4: Kết luận, nhận định: GV..."
   },
   "activity4Application": {
     "name": "Hoạt động 4: Vận dụng & Mở rộng (Gắn kết tri thức vào đời sống)",
     "objective": "...",
     "content": "...",
-    "product": "...",
-    "implementation": "1. Giao nhiệm vụ: ...\\n2. Thực hiện: ...\\n3. Đánh giá: ..."
+    "product": "Bản thiết kế giải pháp thực tiễn hoặc bài thu hoạch dự án ứng dụng...",
+    "implementation": "* Bước 1: Chuyển giao nhiệm vụ: GV...\\n* Bước 2: Thực hiện nhiệm vụ: HS...\\n* Bước 3: Báo cáo, thảo luận: HS...\\n* Bước 4: Kết luận, nhận định: GV..."
   }
 }
 `.trim()
@@ -117,9 +123,11 @@ ${customRequirements ? `- Yêu cầu sư phạm bổ sung: ${customRequirements}
 
 ${pedagogicalDirectives}
 
-CHỈ THỊ SƯ PHẠM NGHỀ NGHIỆP NGHIÊM NGẶT:
+CHỈ THỊ SƯ PHẠM NGHỀ NGHIỆP NGHIÊM NGẶT (BẢNG 6 CỘT CHUẨN XƯỞNG CV 2634):
 1. Bám sát tuyệt đối quy trình công nghệ, thông số máy, trang bị BHLĐ, các bước thao tác mẫu và quy tắc 5S từ tài liệu.
-2. Nêu rõ các lỗi hỏng thường gặp, nguyên nhân và cách khắc phục an toàn.
+2. Thao tác mẫu của giáo viên (Bước 2): BẮT BUỘC ghi rõ quy trình làm mẫu 3 lần (Lần 1: Tốc độ bình thường để HS quan sát tổng thể; Lần 2: Thao tác chậm kèm giải thích các điểm dừng quan trọng; Lần 3: Gọi 1 HS thao tác thử dưới sự uốn nắn của GV).
+3. Thực hành xưởng của học sinh (Bước 3): Ghi rõ quy cách phôi, dung sai kích thước bản vẽ, dụng cụ đo kiểm và điểm dừng an toàn.
+4. Nghiệm thu & 5S (Bước 4): Nêu rõ tiêu chí chấm điểm sản phẩm và quy trình vệ sinh công nghiệp 5S xưởng.
 
 Trả về duy nhất định dạng JSON thuần túy (không bọc markdown \`\`\`json) theo cấu trúc:
 {
@@ -131,7 +139,7 @@ Trả về duy nhất định dạng JSON thuần túy (không bọc markdown \`
   "conditions": {
     "equipmentAndMachines": "Máy móc, đồ gá, dụng cụ đo...",
     "materialsAndWorkpieces": "Phôi mẫu, dầu bôi trơn, dao cắt...",
-    "safetyAnd5S": "Trang bị BHLĐ, bình cứu hỏa..."
+    "safetyAnd5S": "Trang bị BHLĐ, bình cứu hỏa, tủ thuốc..."
   },
   "step1Orientation": {
     "name": "Bước 1: Hướng dẫn ban đầu & Phổ biến ATLĐ",
@@ -141,19 +149,19 @@ Trả về duy nhất định dạng JSON thuần túy (không bọc markdown \`
   },
   "step2Demonstration": {
     "name": "Bước 2: Hướng dẫn thường xuyên & Thao tác mẫu",
-    "teacherActivity": "...",
+    "teacherActivity": "Giáo viên thực hiện thao tác mẫu 3 lần: Lần 1 tốc độ bình thường; Lần 2 làm chậm phân tích điểm dừng kỹ thuật; Lần 3 kiểm tra nhận thức học sinh...",
     "studentActivity": "...",
     "safetyAndKeyPoints": "..."
   },
   "step3Practice": {
     "name": "Bước 3: Học sinh thực hành luyện tập tại xưởng",
-    "teacherActivity": "...",
+    "teacherActivity": "Phân chia vị trí máy, tuần tra giám sát, uốn nắn sai sót kỹ thuật kịp thời...",
     "studentActivity": "...",
     "safetyAndKeyPoints": "..."
   },
   "step4Evaluation": {
     "name": "Bước 4: Hướng dẫn kết thúc, Đánh giá & Thu dọn 5S",
-    "teacherActivity": "...",
+    "teacherActivity": "Nghiệm thu sản phẩm đối chiếu bản vẽ, nhận xét ưu khuyết điểm, hướng dẫn 5S...",
     "studentActivity": "...",
     "safetyAndKeyPoints": "..."
   }

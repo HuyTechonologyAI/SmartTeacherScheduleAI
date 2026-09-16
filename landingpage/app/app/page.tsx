@@ -75,7 +75,8 @@ import {
   miniGameToTxt,
   videoScriptToHtml,
   fullPackageToDocHtml,
-  downloadWordDoc
+  downloadWordDoc,
+  parseImplementationSteps
 } from './lessonPlanAi';
 import { generateAndDownloadPptx } from './lessonPlanPptx';
 import { InteractiveMindMap } from './InteractiveMindMap';
@@ -5484,17 +5485,169 @@ export default function UnifiedTeacherScheduleApp() {
                               <p><strong className="text-slate-700 dark:text-slate-200">• Học sinh:</strong> {plannerResult5512.equipment.studentEquipment}</p>
                             </div>
 
-                            <div className="space-y-3 pt-2">
-                              <h5 className="font-bold text-blue-400 uppercase text-xs">III. Tiến trình dạy học (4 Hoạt động bắt buộc):</h5>
-                              {[plannerResult5512.activity1Opening, plannerResult5512.activity2Knowledge, plannerResult5512.activity3Practice, plannerResult5512.activity4Application].map((act, idx) => (
-                                <div key={idx} className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 space-y-1.5 text-xs text-slate-800 dark:text-slate-200">
-                                  <span className="font-bold text-white text-xs block">{act.name}</span>
-                                  <p><strong className="text-slate-400">• Mục tiêu:</strong> {act.objective}</p>
-                                  <p><strong className="text-slate-400">• Nội dung:</strong> {act.content}</p>
-                                  <p><strong className="text-slate-400">• Sản phẩm:</strong> {act.product}</p>
-                                  <p><strong className="text-slate-400">• Tổ chức thực hiện:</strong> {act.implementation}</p>
+                            <div className="space-y-4 pt-2">
+                              {/* III.1. BẢNG TIẾN TRÌNH DẠY HỌC TỔNG THỂ (MA TRẬN 5 CỘT) */}
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                  <h5 className="font-bold text-blue-600 dark:text-blue-400 uppercase text-xs">
+                                    III.1. Bảng Ma Trận Tiến Trình Dạy Học Tổng Thể (5 Cột Chuẩn CV 5512)
+                                  </h5>
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono border border-blue-500/20">
+                                    Ma Trận 5 Cột BGD&ĐT
+                                  </span>
                                 </div>
-                              ))}
+
+                                <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                                  <table className="w-full text-left text-xs border-collapse">
+                                    <thead>
+                                      <tr className="bg-blue-50 dark:bg-slate-800 text-blue-900 dark:text-blue-200 border-b border-slate-200 dark:border-slate-700 text-[11px]">
+                                        <th className="p-2.5 w-[20%] font-bold">Hoạt Động & Thời lượng</th>
+                                        <th className="p-2.5 w-[26%] font-bold">Mục Tiêu Hoạt Động</th>
+                                        <th className="p-2.5 w-[20%] font-bold">Phương Pháp & Kỹ Thuật</th>
+                                        <th className="p-2.5 w-[17%] font-bold">Phương Án Đánh Giá</th>
+                                        <th className="p-2.5 w-[17%] font-bold">Hồ Sơ / Sản Phẩm</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+                                      <tr>
+                                        <td className="p-2.5 align-top">
+                                          <span className="font-bold text-slate-900 dark:text-white block">1. Khởi động</span>
+                                          <span className="text-[11px] text-sky-600 dark:text-sky-400 italic">
+                                            ({Math.max(5, Math.round((plannerResult5512.durationMinutes || 45) * 0.12))} phút)
+                                          </span>
+                                        </td>
+                                        <td className="p-2.5 align-top">{plannerResult5512.activity1Opening.objective}</td>
+                                        <td className="p-2.5 align-top">Trực quan, Gợi mở vấn đáp, Kỹ thuật KWL / Tia chớp</td>
+                                        <td className="p-2.5 align-top">Đánh giá câu trả lời và thái độ tham gia của HS</td>
+                                        <td className="p-2.5 align-top text-emerald-700 dark:text-emerald-300">{plannerResult5512.activity1Opening.product}</td>
+                                      </tr>
+                                      <tr>
+                                        <td className="p-2.5 align-top">
+                                          <span className="font-bold text-slate-900 dark:text-white block">2. Hình thành kiến thức</span>
+                                          <span className="text-[11px] text-sky-600 dark:text-sky-400 italic">
+                                            ({Math.round((plannerResult5512.durationMinutes || 45) * 0.50)} phút)
+                                          </span>
+                                        </td>
+                                        <td className="p-2.5 align-top">{plannerResult5512.activity2Knowledge.objective}</td>
+                                        <td className="p-2.5 align-top">Dạy học hợp tác, Thảo luận nhóm, Sơ đồ tư duy</td>
+                                        <td className="p-2.5 align-top">Đánh giá qua Phiếu học tập số 1 và câu hỏi gợi mở</td>
+                                        <td className="p-2.5 align-top text-emerald-700 dark:text-emerald-300">{plannerResult5512.activity2Knowledge.product}</td>
+                                      </tr>
+                                      <tr>
+                                        <td className="p-2.5 align-top">
+                                          <span className="font-bold text-slate-900 dark:text-white block">3. Luyện tập</span>
+                                          <span className="text-[11px] text-sky-600 dark:text-sky-400 italic">
+                                            ({Math.round((plannerResult5512.durationMinutes || 45) * 0.26)} phút)
+                                          </span>
+                                        </td>
+                                        <td className="p-2.5 align-top">{plannerResult5512.activity3Practice.objective}</td>
+                                        <td className="p-2.5 align-top">Luyện tập thực hành, Chia sẻ cặp đôi (Think-Pair-Share)</td>
+                                        <td className="p-2.5 align-top">Đánh giá kết quả bài tập theo đáp án chuẩn</td>
+                                        <td className="p-2.5 align-top text-emerald-700 dark:text-emerald-300">{plannerResult5512.activity3Practice.product}</td>
+                                      </tr>
+                                      <tr>
+                                        <td className="p-2.5 align-top">
+                                          <span className="font-bold text-slate-900 dark:text-white block">4. Vận dụng & Mở rộng</span>
+                                          <span className="text-[11px] text-sky-600 dark:text-sky-400 italic">
+                                            ({Math.max(4, (plannerResult5512.durationMinutes || 45) - Math.max(5, Math.round((plannerResult5512.durationMinutes || 45) * 0.12)) - Math.round((plannerResult5512.durationMinutes || 45) * 0.50) - Math.round((plannerResult5512.durationMinutes || 45) * 0.26))} phút)
+                                          </span>
+                                        </td>
+                                        <td className="p-2.5 align-top">{plannerResult5512.activity4Application.objective}</td>
+                                        <td className="p-2.5 align-top">Dự án học tập, Nghiên cứu trường hợp, Giao việc tự học</td>
+                                        <td className="p-2.5 align-top">Đánh giá đề án thực tiễn theo Rubric tiêu chí</td>
+                                        <td className="p-2.5 align-top text-emerald-700 dark:text-emerald-300">{plannerResult5512.activity4Application.product}</td>
+                                      </tr>
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+
+                              {/* III.2. CÁC HOẠT ĐỘNG HỌC CHI TIẾT THEO BẢNG 2 CỘT */}
+                              <div className="space-y-4 pt-2">
+                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                  <h5 className="font-bold text-blue-600 dark:text-blue-400 uppercase text-xs">
+                                    III.2. Chi Tiết Tổ Chức Hoạt Động Học (Bảng 2 Cột Chuẩn Bộ GD&ĐT)
+                                  </h5>
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono border border-emerald-500/20">
+                                    Bố Cục 2 Cột GV-HS & Sản Phẩm
+                                  </span>
+                                </div>
+
+                                {[plannerResult5512.activity1Opening, plannerResult5512.activity2Knowledge, plannerResult5512.activity3Practice, plannerResult5512.activity4Application].map((act, idx) => {
+                                  const steps = parseImplementationSteps(act.implementation);
+                                  return (
+                                    <div key={idx} className="p-4 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+                                      <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-slate-100 dark:border-slate-800">
+                                        <span className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">{act.name}</span>
+                                        <span className="px-2 py-0.5 rounded bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 text-[10px] font-semibold border border-sky-200 dark:border-sky-800">
+                                          Hoạt động {idx + 1}
+                                        </span>
+                                      </div>
+
+                                      <div className="space-y-1.5 text-xs">
+                                        <p><strong className="text-blue-600 dark:text-blue-400">a) Mục tiêu:</strong> <span className="text-slate-700 dark:text-slate-300">{act.objective}</span></p>
+                                        <p><strong className="text-blue-600 dark:text-blue-400">b) Nội dung tóm tắt:</strong> <span className="text-slate-600 dark:text-slate-400">{act.content.length > 250 ? act.content.slice(0, 250) + '...' : act.content}</span></p>
+                                        <p><strong className="text-emerald-600 dark:text-emerald-400">c) Sản phẩm:</strong> <span className="text-slate-600 dark:text-slate-400">{act.product.length > 200 ? act.product.slice(0, 200) + '...' : act.product}</span></p>
+                                      </div>
+
+                                      <div>
+                                        <p className="text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">d) Tổ chức thực hiện (Bảng phân chia 2 cột):</p>
+                                        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                                          <table className="w-full text-left text-xs border-collapse">
+                                            <thead>
+                                              <tr className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700 text-[11px]">
+                                                <th className="p-3 w-[58%] font-bold">HOẠT ĐỘNG CỦA GIÁO VIÊN VÀ HỌC SINH</th>
+                                                <th className="p-3 w-[42%] font-bold bg-slate-50 dark:bg-slate-800/60">SẢN PHẨM DỰ KIẾN / NỘI DUNG CẦN ĐẠT</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody>
+                                              <tr>
+                                                <td className="p-3 align-top border-r border-slate-200 dark:border-slate-700 space-y-2.5">
+                                                  {steps.length > 0 ? (
+                                                    steps.map((st, sIdx) => (
+                                                      <div key={sIdx} className="space-y-1">
+                                                        <div className="font-bold text-sky-600 dark:text-sky-400 text-xs flex items-center gap-1.5">
+                                                          <span className="w-1.5 h-1.5 rounded-full bg-sky-500 inline-block"></span>
+                                                          <span>{st.stepTitle}</span>
+                                                        </div>
+                                                        <p className="text-slate-700 dark:text-slate-300 text-xs leading-relaxed pl-3 whitespace-pre-line">
+                                                          {st.content}
+                                                        </p>
+                                                      </div>
+                                                    ))
+                                                  ) : (
+                                                    <p className="text-slate-700 dark:text-slate-300 whitespace-pre-line leading-relaxed">
+                                                      {act.implementation}
+                                                    </p>
+                                                  )}
+                                                </td>
+                                                <td className="p-3 align-top bg-slate-50/60 dark:bg-slate-900/40 space-y-3">
+                                                  <div>
+                                                    <span className="font-bold text-blue-600 dark:text-blue-400 text-[11px] block mb-1">
+                                                      📌 Nội dung trọng tâm cần đạt:
+                                                    </span>
+                                                    <div className="text-slate-700 dark:text-slate-300 text-xs leading-relaxed whitespace-pre-line pl-2 border-l-2 border-blue-400 dark:border-blue-500">
+                                                      {act.content || 'Theo dõi và thực hiện đầy đủ nhiệm vụ học tập.'}
+                                                    </div>
+                                                  </div>
+                                                  <div>
+                                                    <span className="font-bold text-emerald-600 dark:text-emerald-400 text-[11px] block mb-1">
+                                                      🎯 Sản phẩm học sinh hoàn thành:
+                                                    </span>
+                                                    <div className="text-slate-700 dark:text-slate-300 text-xs leading-relaxed whitespace-pre-line pl-2 border-l-2 border-emerald-400 dark:border-emerald-500">
+                                                      {act.product || 'Vở ghi chép và kết quả bài tập của học sinh.'}
+                                                    </div>
+                                                  </div>
+                                                </td>
+                                              </tr>
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </div>
                           </div>
                         )}
@@ -5507,7 +5660,7 @@ export default function UnifiedTeacherScheduleApp() {
                               </span>
                               <h4 className="text-base font-bold text-slate-900 dark:text-white mt-1">{plannerResult2634.moduleTitle}</h4>
                               <p className="text-xs text-slate-400 mt-0.5">
-                                Nghề: {plannerResult2634.occupation} • Trình độ: {plannerResult2634.level} • Thời lượng: {plannerResult2634.durationMinutes} giờ
+                                Nghề: {plannerResult2634.occupation} • Trình độ: {plannerResult2634.level} • Thời lượng: {plannerResult2634.durationMinutes} phút
                               </p>
                             </div>
 
@@ -5519,22 +5672,110 @@ export default function UnifiedTeacherScheduleApp() {
                             </div>
 
                             <div className="space-y-2">
-                              <h5 className="font-bold text-amber-400 uppercase text-xs">II. Điều kiện thực hiện (Xưởng thực hành):</h5>
+                              <h5 className="font-bold text-amber-800 dark:text-amber-400 uppercase text-xs">II. Điều kiện thực hiện (Xưởng thực hành):</h5>
                               <p><strong className="text-slate-700 dark:text-slate-200">• Máy móc thiết bị:</strong> {plannerResult2634.conditions.equipmentAndMachines}</p>
                               <p><strong className="text-slate-700 dark:text-slate-200">• Vật tư phôi mẫu:</strong> {plannerResult2634.conditions.materialsAndWorkpieces}</p>
                               <p><strong className="text-slate-700 dark:text-slate-200">• Trang bị BHLĐ & 5S:</strong> {plannerResult2634.conditions.safetyAnd5S}</p>
                             </div>
 
+                            {/* BẢNG TIẾN TRÌNH THỰC HÀNH 6 CỘT CHUẨN XƯỞNG */}
                             <div className="space-y-3 pt-2">
-                              <h5 className="font-bold text-amber-400 uppercase text-xs">III. Tiến trình thực hiện tại xưởng (4 Bước thực hành):</h5>
-                              {[plannerResult2634.step1Orientation, plannerResult2634.step2Demonstration, plannerResult2634.step3Practice, plannerResult2634.step4Evaluation].map((st, idx) => (
-                                <div key={idx} className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 space-y-1.5 text-xs text-slate-800 dark:text-slate-200">
-                                  <span className="font-bold text-white text-xs block">{st.name}</span>
-                                  <p><strong className="text-slate-400">• Hoạt động GV:</strong> {st.teacherActivity}</p>
-                                  <p><strong className="text-slate-400">• Hoạt động HS:</strong> {st.studentActivity}</p>
-                                  <p className="text-red-400 font-semibold">• Lưu ý ATLĐ & 5S: {st.safetyAndKeyPoints}</p>
-                                </div>
-                              ))}
+                              <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <h5 className="font-bold text-amber-800 dark:text-amber-400 uppercase text-xs">
+                                  III. Tiến Trình Thực Hành Tại Xưởng (Bảng 6 Cột Chuẩn CV 2634/GDNN):
+                                </h5>
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 font-mono border border-amber-500/20">
+                                  Bảng 6 Cột Chuẩn Xưởng
+                                </span>
+                              </div>
+
+                              <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                                <table className="w-full text-left text-xs border-collapse">
+                                  <thead>
+                                    <tr className="bg-amber-100/70 dark:bg-amber-950/50 text-amber-900 dark:text-amber-200 border-b border-amber-200 dark:border-amber-900/60 text-[11px]">
+                                      <th className="p-2.5 w-[5%] text-center font-bold">TT</th>
+                                      <th className="p-2.5 w-[20%] font-bold">Các Bước & Nội Dung Công Việc</th>
+                                      <th className="p-2.5 w-[9%] text-center font-bold">Thời Gian</th>
+                                      <th className="p-2.5 w-[25%] font-bold">Hoạt Động của Giáo Viên</th>
+                                      <th className="p-2.5 w-[21%] font-bold">Hoạt Động của Học Sinh</th>
+                                      <th className="p-2.5 w-[20%] font-bold">Thiết Bị, Dung Sai, ATLĐ & 5S</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+                                    {/* Step 1 */}
+                                    <tr>
+                                      <td className="p-2.5 text-center font-bold text-slate-500 dark:text-slate-400 align-top">1</td>
+                                      <td className="p-2.5 align-top">
+                                        <span className="font-bold text-slate-900 dark:text-white block">{plannerResult2634.step1Orientation.name}</span>
+                                        <span className="text-[10px] text-slate-400">(Chiếm ~10% thời lượng)</span>
+                                      </td>
+                                      <td className="p-2.5 text-center font-bold text-amber-600 dark:text-amber-400 align-top">
+                                        {Math.round((plannerResult2634.durationMinutes || 180) * 0.10)} phút
+                                      </td>
+                                      <td className="p-2.5 align-top leading-relaxed whitespace-pre-line">{plannerResult2634.step1Orientation.teacherActivity}</td>
+                                      <td className="p-2.5 align-top leading-relaxed whitespace-pre-line">{plannerResult2634.step1Orientation.studentActivity}</td>
+                                      <td className="p-2.5 align-top text-[11px] space-y-1 bg-amber-50/40 dark:bg-amber-950/20">
+                                        <p><strong className="text-amber-800 dark:text-amber-400">• Thiết bị:</strong> {plannerResult2634.conditions.equipmentAndMachines.slice(0, 80)}...</p>
+                                        <p className="text-rose-600 dark:text-rose-400 font-semibold">⚠️ Điểm then chốt: {plannerResult2634.step1Orientation.safetyAndKeyPoints}</p>
+                                      </td>
+                                    </tr>
+
+                                    {/* Step 2 */}
+                                    <tr>
+                                      <td className="p-2.5 text-center font-bold text-slate-500 dark:text-slate-400 align-top">2</td>
+                                      <td className="p-2.5 align-top">
+                                        <span className="font-bold text-slate-900 dark:text-white block">{plannerResult2634.step2Demonstration.name}</span>
+                                        <span className="text-[10px] text-slate-400">(Chiếm ~15% thời lượng - Làm mẫu 3 lần)</span>
+                                      </td>
+                                      <td className="p-2.5 text-center font-bold text-amber-600 dark:text-amber-400 align-top">
+                                        {Math.round((plannerResult2634.durationMinutes || 180) * 0.15)} phút
+                                      </td>
+                                      <td className="p-2.5 align-top leading-relaxed whitespace-pre-line">{plannerResult2634.step2Demonstration.teacherActivity}</td>
+                                      <td className="p-2.5 align-top leading-relaxed whitespace-pre-line">{plannerResult2634.step2Demonstration.studentActivity}</td>
+                                      <td className="p-2.5 align-top text-[11px] space-y-1 bg-amber-50/40 dark:bg-amber-950/20">
+                                        <p><strong className="text-amber-800 dark:text-amber-400">• Vật tư phôi:</strong> {plannerResult2634.conditions.materialsAndWorkpieces.slice(0, 80)}...</p>
+                                        <p className="text-rose-600 dark:text-rose-400 font-semibold">⚠️ Điểm dừng kỹ thuật: {plannerResult2634.step2Demonstration.safetyAndKeyPoints}</p>
+                                      </td>
+                                    </tr>
+
+                                    {/* Step 3 */}
+                                    <tr>
+                                      <td className="p-2.5 text-center font-bold text-slate-500 dark:text-slate-400 align-top">3</td>
+                                      <td className="p-2.5 align-top">
+                                        <span className="font-bold text-slate-900 dark:text-white block">{plannerResult2634.step3Practice.name}</span>
+                                        <span className="text-[10px] text-slate-400">(Chiếm ~65% thời lượng - Luyện tập xưởng)</span>
+                                      </td>
+                                      <td className="p-2.5 text-center font-bold text-amber-600 dark:text-amber-400 align-top">
+                                        {Math.round((plannerResult2634.durationMinutes || 180) * 0.65)} phút
+                                      </td>
+                                      <td className="p-2.5 align-top leading-relaxed whitespace-pre-line">{plannerResult2634.step3Practice.teacherActivity}</td>
+                                      <td className="p-2.5 align-top leading-relaxed whitespace-pre-line">{plannerResult2634.step3Practice.studentActivity}</td>
+                                      <td className="p-2.5 align-top text-[11px] space-y-1 bg-amber-50/40 dark:bg-amber-950/20">
+                                        <p><strong className="text-amber-800 dark:text-amber-400">• Tiêu chuẩn:</strong> Đạt dung sai kích thước bản vẽ.</p>
+                                        <p className="text-rose-600 dark:text-rose-400 font-semibold">⚠️ Điểm dừng an toàn: {plannerResult2634.step3Practice.safetyAndKeyPoints}</p>
+                                      </td>
+                                    </tr>
+
+                                    {/* Step 4 */}
+                                    <tr>
+                                      <td className="p-2.5 text-center font-bold text-slate-500 dark:text-slate-400 align-top">4</td>
+                                      <td className="p-2.5 align-top">
+                                        <span className="font-bold text-slate-900 dark:text-white block">{plannerResult2634.step4Evaluation.name}</span>
+                                        <span className="text-[10px] text-slate-400">(Chiếm ~10% thời lượng - Nghiệm thu & 5S)</span>
+                                      </td>
+                                      <td className="p-2.5 text-center font-bold text-amber-600 dark:text-amber-400 align-top">
+                                        {Math.max(5, (plannerResult2634.durationMinutes || 180) - Math.round((plannerResult2634.durationMinutes || 180) * 0.10) - Math.round((plannerResult2634.durationMinutes || 180) * 0.15) - Math.round((plannerResult2634.durationMinutes || 180) * 0.65))} phút
+                                      </td>
+                                      <td className="p-2.5 align-top leading-relaxed whitespace-pre-line">{plannerResult2634.step4Evaluation.teacherActivity}</td>
+                                      <td className="p-2.5 align-top leading-relaxed whitespace-pre-line">{plannerResult2634.step4Evaluation.studentActivity}</td>
+                                      <td className="p-2.5 align-top text-[11px] space-y-1 bg-amber-50/40 dark:bg-amber-950/20">
+                                        <p><strong className="text-amber-800 dark:text-amber-400">• Nghiệm thu:</strong> Phiếu đánh giá định lượng.</p>
+                                        <p className="text-rose-600 dark:text-rose-400 font-semibold">⚠️ Vệ sinh 5S: {plannerResult2634.step4Evaluation.safetyAndKeyPoints}</p>
+                                      </td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
                             </div>
                           </div>
                         )}

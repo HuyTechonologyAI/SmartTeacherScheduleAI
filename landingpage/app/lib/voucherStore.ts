@@ -68,7 +68,7 @@ const INITIAL_VOUCHERS: Voucher[] = [
     grantDurationDays: 30,
     targetAudience: 'ALL',
     maxUsage: 500,
-    usedCount: 42,
+    usedCount: 0,
     startDate: '2026-01-01',
     endDate: '2026-12-31',
     isActive: true,
@@ -79,27 +79,7 @@ const INITIAL_VOUCHERS: Voucher[] = [
       'Đồng bộ dữ liệu đám mây đa thiết bị PC & Điện thoại'
     ],
     giftMessage: 'Ban Quản Trị Smart Teacher Schedule AI trân trọng gửi tặng Thầy/Cô món quà tri ân: Miễn phí trọn vẹn 30 ngày Bản quyền VIP 1. Kính chúc Thầy/Cô giảng dạy thăng hoa và hạnh phúc!',
-    assignedTeachers: [
-      {
-        syncCode: 'ST-882194',
-        teacherName: 'Cô Nguyễn Thu Hà',
-        schoolName: 'THPT Chuyên Hà Nội - Amsterdam',
-        phone: '0912.345.678',
-        assignedAt: '2026-09-10T08:30:00Z',
-        redeemedAt: '2026-09-10T09:15:00Z',
-        status: 'REDEEMED',
-        giftNote: 'Tặng giáo viên xuất sắc hội đồng bộ môn Toán'
-      },
-      {
-        syncCode: 'ST-551203',
-        teacherName: 'Thầy Trần Quốc Bảo',
-        schoolName: 'THPT Lê Quý Đôn - TP.HCM',
-        phone: '0988.112.233',
-        assignedAt: '2026-09-14T14:20:00Z',
-        status: 'SENT',
-        giftNote: 'Tặng giáo viên tiên phong đổi mới số'
-      }
-    ],
+    assignedTeachers: [],
     createdAt: '2026-09-01T00:00:00Z',
     updatedAt: '2026-09-15T00:00:00Z'
   },
@@ -115,7 +95,7 @@ const INITIAL_VOUCHERS: Voucher[] = [
     grantDurationDays: 365,
     targetAudience: 'ALL',
     maxUsage: 200,
-    usedCount: 28,
+    usedCount: 0,
     startDate: '2026-09-01',
     endDate: '2026-11-30',
     isActive: true,
@@ -126,6 +106,7 @@ const INITIAL_VOUCHERS: Voucher[] = [
       'Hỗ trợ kỹ thuật 1-1 ưu tiên từ đội ngũ kỹ sư'
     ],
     giftMessage: 'Huy Technology AI trân trọng gửi tặng Thầy/Cô mã ưu đãi 50% Bản quyền trọn năm học. Chúc Thầy/Cô có một năm học thành công rực rỡ!',
+    assignedTeachers: [],
     createdAt: '2026-09-01T00:00:00Z',
     updatedAt: '2026-09-15T00:00:00Z'
   },
@@ -141,7 +122,7 @@ const INITIAL_VOUCHERS: Voucher[] = [
     grantDurationDays: 30,
     targetAudience: 'ALL',
     maxUsage: 100,
-    usedCount: 15,
+    usedCount: 0,
     startDate: '2026-09-01',
     endDate: '2026-12-31',
     isActive: true,
@@ -152,6 +133,7 @@ const INITIAL_VOUCHERS: Voucher[] = [
       'Báo cáo thống kê chuyên cần và đánh giá năng lực tự động'
     ],
     giftMessage: 'Món quà đặc biệt dành tặng Thầy/Cô: Trọn bộ tính năng VIP 2 kết nối Lớp học & Phụ huynh trong 30 ngày. Hãy để công nghệ hỗ trợ Thầy/Cô quản lý lớp thảnh thơi!',
+    assignedTeachers: [],
     createdAt: '2026-09-05T00:00:00Z',
     updatedAt: '2026-09-15T00:00:00Z'
   },
@@ -167,7 +149,7 @@ const INITIAL_VOUCHERS: Voucher[] = [
     grantDurationDays: 365,
     targetAudience: 'SCHOOL_ENTERPRISE',
     maxUsage: 50,
-    usedCount: 6,
+    usedCount: 0,
     startDate: '2026-08-15',
     endDate: '2026-12-31',
     isActive: true,
@@ -177,40 +159,14 @@ const INITIAL_VOUCHERS: Voucher[] = [
       'Tập huấn trực tiếp cho giáo viên toàn trường và xuất hóa đơn VAT đầy đủ'
     ],
     giftMessage: 'Huy Technology AI đồng hành cùng nhà trường trên con đường chuyển đổi số giáo dục toàn diện.',
+    assignedTeachers: [],
     createdAt: '2026-08-15T00:00:00Z',
     updatedAt: '2026-09-15T00:00:00Z'
   }
 ];
 
-// Lịch sử kích hoạt mẫu ban đầu
-const INITIAL_REDEMPTIONS: VoucherRedemption[] = [
-  {
-    id: 'red-001',
-    voucherCode: 'TRIAN2026',
-    syncCode: 'ST-882194',
-    teacherName: 'Cô Nguyễn Thu Hà',
-    schoolName: 'THPT Chuyên Hà Nội - Amsterdam',
-    phone: '0912.345.678',
-    originalPrice: 39000,
-    discountAmount: 39000,
-    finalPrice: 0,
-    appliedTier: 'VIP1',
-    redeemedAt: '2026-09-10T09:15:00Z'
-  },
-  {
-    id: 'red-002',
-    voucherCode: 'GV_TIENPHONG',
-    syncCode: 'ST-991204',
-    teacherName: 'Thầy Lê Hoàng Nam',
-    schoolName: 'THCS Chu Văn An - Hà Nội',
-    phone: '0903.222.111',
-    originalPrice: 399000,
-    discountAmount: 199500,
-    finalPrice: 199500,
-    appliedTier: 'VIP1',
-    redeemedAt: '2026-09-12T16:45:00Z'
-  }
-];
+// Lịch sử kích hoạt thực tế từ giáo viên (khởi tạo sạch 100%)
+const INITIAL_REDEMPTIONS: VoucherRedemption[] = [];
 
 // In-Memory Storage Cache để bảo đảm phản hồi siêu tốc và an toàn
 let inMemoryVouchers: Voucher[] = [...INITIAL_VOUCHERS];

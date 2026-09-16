@@ -197,7 +197,7 @@ export const VouchersTab: React.FC<VouchersTabProps> = ({ userList }) => {
             <DollarSign className="w-4 h-4 text-amber-400" />
           </div>
           <div className="text-2xl font-black text-white">
-            {(analytics?.totalDiscountEstimated ?? 2385000).toLocaleString('vi-VN')} đ
+            {(analytics?.totalDiscountEstimated ?? 0).toLocaleString('vi-VN')} đ
           </div>
           <div className="text-[11px] text-amber-400">Tổng chi phí hỗ trợ giáo viên</div>
         </div>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { deepParseLessonDocument } from '@/app/app/deepRagPedagogicalParser';
+import { buildPedagogicalSkillPrompt } from '@/lib/pedagogicalSkills';
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,13 +12,23 @@ export async function POST(req: NextRequest) {
     const durationMinutes = Number(body.durationMinutes) || (standard === 5512 ? 45 : 180);
     const customRequirements = body.customRequirements || '';
     const rawDocumentText = body.rawDocumentText || body.referenceContext || body.matchedDoc?.relevantSnippet || '';
+    const selectedSkillId = body.selectedSkillId || (standard === 2634 ? 'SKILL_WORKSHOP' : 'SKILL_5E');
+    const teachingStyleId = body.teachingStyleId || (standard === 2634 ? 'STYLE_INDUSTRIAL' : 'STYLE_INTERACTIVE');
+    const customStyleNote = body.customStyleNote || '';
 
     // 1. Phân tách ngữ nghĩa tài liệu với Deep-RAG Sư Phạm v2.1
     const extracted = deepParseLessonDocument(rawDocumentText, lessonTitle, subject, grade);
 
     const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
-    // 2. Nếu có Gemini API Key, gọi trực tiếp mô hình Gemini AI với Strict Grounding
+    // 2. Xây dựng chỉ thị Sư Phạm và Phong Cách Giảng Dạy bắt buộc
+    const pedagogicalDirectives = buildPedagogicalSkillPrompt({
+      selectedSkillId,
+      teachingStyleId,
+      customStyleNote
+    });
+
+    // 3. Nếu có Gemini API Key, gọi trực tiếp mô hình Gemini AI với Strict Grounding
     if (geminiApiKey) {
       try {
         const documentContext = (extracted.rawContextSnippet || rawDocumentText).slice(0, 25000);
@@ -37,6 +48,8 @@ THÔNG TIN BÀI DẠY:
 - Lớp: ${grade}
 - Thời lượng: ${durationMinutes} phút
 ${customRequirements ? `- Yêu cầu sư phạm bổ sung: ${customRequirements}` : ''}
+
+${pedagogicalDirectives}
 
 CHỈ THỊ SƯ PHẠM NGHIÊM NGẶT (STRICT ANTI-HALLUCINATION & PEDAGOGICAL GROUNDING):
 1. Tuyệt đối KHÔNG viết các câu chung chung vô nghĩa như "Học sinh đọc SGK", "GV giao bài tập", "GV đưa ra tình huống", "HS thảo luận nhóm".
@@ -101,6 +114,8 @@ THÔNG TIN BÀI DẠY:
 - Trình độ/Lớp: ${grade}
 - Thời lượng: ${durationMinutes} phút
 ${customRequirements ? `- Yêu cầu sư phạm bổ sung: ${customRequirements}` : ''}
+
+${pedagogicalDirectives}
 
 CHỈ THỊ SƯ PHẠM NGHỀ NGHIỆP NGHIÊM NGẶT:
 1. Bám sát tuyệt đối quy trình công nghệ, thông số máy, trang bị BHLĐ, các bước thao tác mẫu và quy tắc 5S từ tài liệu.

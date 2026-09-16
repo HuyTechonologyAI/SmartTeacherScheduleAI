@@ -110,6 +110,11 @@ import {
   findMatchingKnowledgeDocument,
   MatchedDocResult
 } from './knowledgeBaseData';
+import {
+  PEDAGOGICAL_SKILLS,
+  TEACHING_STYLES,
+  PedagogicalSkillConfig
+} from '@/lib/pedagogicalSkills';
 import { findCurriculumKnowledge, findCurriculumKnowledgeText } from './curriculumKnowledgeBase';
 import {
   extractFullTextFromFile,
@@ -886,6 +891,11 @@ export default function UnifiedTeacherScheduleApp() {
   const [plannerResult2634, setPlannerResult2634] = useState<LessonPlan2634Data | null>(null);
   const [plannerIsGenerating, setPlannerIsGenerating] = useState(false);
 
+  // Bộ Skill Sư Phạm & Phong Cách Giảng Dạy (Pedagogical Skills & Teaching Styles)
+  const [plannerSelectedSkill, setPlannerSelectedSkill] = useState<string>('SKILL_5E');
+  const [plannerTeachingStyle, setPlannerTeachingStyle] = useState<string>('STYLE_INTERACTIVE');
+  const [plannerCustomStyleNote, setPlannerCustomStyleNote] = useState<string>('');
+
   // New Multi-Modal Planner & Digital Competency States
   const [plannerClassFilter, setPlannerClassFilter] = useState('ALL');
   const [plannerMatchedDocResult, setPlannerMatchedDocResult] = useState<MatchedDocResult | null>(null);
@@ -1139,6 +1149,9 @@ export default function UnifiedTeacherScheduleApp() {
           customRequirements: plannerRequirements,
           rawDocumentText: refCtx,
           referenceContext: refCtx,
+          selectedSkillId: plannerSelectedSkill,
+          teachingStyleId: plannerTeachingStyle,
+          customStyleNote: plannerCustomStyleNote,
           matchedDoc: freshMatched?.doc ? {
             code: freshMatched.doc.code,
             title: freshMatched.doc.title,
@@ -1180,17 +1193,26 @@ export default function UnifiedTeacherScheduleApp() {
         fileName: freshMatched.doc.fileName,
         relevantSnippet: freshMatched.relevantSnippet
       } : null,
-      referenceContext: refCtx
+      referenceContext: refCtx,
+      skillConfig: {
+        selectedSkillId: plannerSelectedSkill,
+        teachingStyleId: plannerTeachingStyle,
+        customStyleNote: plannerCustomStyleNote
+      }
     });
 
     if (aiServerPlan) {
+      const activeSkill = PEDAGOGICAL_SKILLS.find(s => s.id === plannerSelectedSkill);
+      const activeStyle = TEACHING_STYLES.find(s => s.id === plannerTeachingStyle);
       if (plannerStandard === 5512 && (aiServerPlan.activity1Opening || aiServerPlan.activities || aiServerPlan.objectives)) {
         pkg.plan5512 = {
           ...pkg.plan5512,
           ...aiServerPlan,
           lessonTitle: title,
           subject: plannerSubject || 'Chung',
-          grade: plannerClass || 'Phổ thông'
+          grade: plannerClass || 'Phổ thông',
+          appliedSkill: activeSkill?.name || 'Mô hình 5E',
+          appliedStyle: activeStyle?.name || 'Tương tác & Truyền cảm hứng'
         };
       } else if (plannerStandard === 2634 && (aiServerPlan.step1Orientation || aiServerPlan.steps || aiServerPlan.objectives)) {
         pkg.plan2634 = {
@@ -1198,7 +1220,9 @@ export default function UnifiedTeacherScheduleApp() {
           ...aiServerPlan,
           moduleTitle: title,
           occupation: plannerSubject || 'Kỹ thuật',
-          level: plannerClass || 'Trung cấp'
+          level: plannerClass || 'Trung cấp',
+          appliedSkill: activeSkill?.name || 'Thực hành Xưởng 5S',
+          appliedStyle: activeStyle?.name || 'Kỷ luật Công nghiệp & 5S'
         };
       }
       // Tự động tái sinh Slide đồng bộ 100% với kế hoạch bài dạy AI vừa phân tích
@@ -4466,6 +4490,12 @@ export default function UnifiedTeacherScheduleApp() {
                         onClick={() => {
                           setPlannerStandard(5512);
                           setPlannerDuration('1');
+                          if (plannerSelectedSkill === 'SKILL_WORKSHOP') {
+                            setPlannerSelectedSkill('SKILL_5E');
+                          }
+                          if (plannerTeachingStyle === 'STYLE_INDUSTRIAL') {
+                            setPlannerTeachingStyle('STYLE_INTERACTIVE');
+                          }
                         }}
                         className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
                           plannerStandard === 5512
@@ -4487,6 +4517,8 @@ export default function UnifiedTeacherScheduleApp() {
                         onClick={() => {
                           setPlannerStandard(2634);
                           setPlannerDuration('4.0');
+                          setPlannerSelectedSkill('SKILL_WORKSHOP');
+                          setPlannerTeachingStyle('STYLE_INDUSTRIAL');
                         }}
                         className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
                           plannerStandard === 2634
@@ -4717,6 +4749,146 @@ export default function UnifiedTeacherScheduleApp() {
                         placeholder={plannerStandard === 5512 ? 'Tivi tương tác, video mô phỏng, phần mềm Kahoot, phiếu học tập số...' : 'Máy tiện vạn năng T616, kính bảo hộ, quy trình 5S xưởng...'}
                         className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2 text-xs sm:text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                       />
+                    </div>
+
+                    {/* BỘ SKILL SƯ PHẠM VÀ PHONG CÁCH GIẢNG DẠY CỦA GIÁO VIÊN */}
+                    <div className="bg-gradient-to-br from-indigo-50/70 via-sky-50/50 to-purple-50/60 dark:from-slate-900/90 dark:via-indigo-950/40 dark:to-slate-900/90 border border-indigo-200 dark:border-indigo-800/80 rounded-2xl p-4 space-y-3.5 shadow-xs animate-fade-in">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pb-2 border-b border-indigo-100 dark:border-indigo-900/60">
+                        <div className="flex items-center gap-2">
+                          <span className="p-1.5 rounded-lg bg-indigo-600 text-white text-xs shadow-xs">🎯</span>
+                          <div>
+                            <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
+                              <span>Bộ Skill Sư Phạm & Phong Cách Giảng Dạy Bắt Buộc</span>
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-400 font-semibold border border-rose-500/30">
+                                AI tuân thủ 100%
+                              </span>
+                            </h4>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                              Chọn phương pháp sư phạm trọng tâm và phong cách dẫn dắt để loại bỏ hoàn toàn các câu văn chung chung.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-[11px] font-medium text-indigo-700 dark:text-indigo-300 shrink-0">
+                          {plannerStandard === 5512 ? 'Chuẩn GDPT 2018' : 'Chuẩn Thực hành GDNN'}
+                        </div>
+                      </div>
+
+                      {/* 1. Chọn Bộ Kỹ Năng Sư Phạm (Skill Kit) */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                            1. Phương pháp & Kỹ năng sư phạm chủ đạo:
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            (Bám sát tiến trình 4 hoạt động CV {plannerStandard})
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          {PEDAGOGICAL_SKILLS
+                            .filter(s => s.applicableStandards.includes(plannerStandard))
+                            .map(skill => {
+                              const isSelected = plannerSelectedSkill === skill.id;
+                              return (
+                                <button
+                                  key={skill.id}
+                                  type="button"
+                                  onClick={() => setPlannerSelectedSkill(skill.id)}
+                                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer relative flex flex-col justify-between ${
+                                    isSelected
+                                      ? 'bg-white dark:bg-slate-800 border-indigo-500 shadow-md ring-2 ring-indigo-500/30'
+                                      : 'bg-white/70 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-700'
+                                  }`}
+                                >
+                                  <div>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-base">{skill.icon}</span>
+                                      {isSelected && <span className="text-indigo-600 dark:text-indigo-400 text-xs font-bold">✓</span>}
+                                    </div>
+                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-100 line-clamp-1">
+                                      {skill.shortName}
+                                    </div>
+                                  </div>
+                                  <div className="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-1 leading-tight">
+                                    {skill.tagline}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                        </div>
+
+                        {/* Diễn giải chi tiết Skill đang chọn */}
+                        {(() => {
+                          const currentSkill = PEDAGOGICAL_SKILLS.find(s => s.id === plannerSelectedSkill);
+                          if (!currentSkill) return null;
+                          return (
+                            <div className="mt-2 p-2.5 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-indigo-100 dark:border-indigo-900/40 text-[11px] text-slate-700 dark:text-slate-300 flex items-start gap-2">
+                              <span className="text-sm shrink-0 mt-0.5">{currentSkill.icon}</span>
+                              <div className="space-y-1">
+                                <span className="font-semibold text-indigo-900 dark:text-indigo-200">
+                                  {currentSkill.name}:
+                                </span>
+                                <span className="text-slate-600 dark:text-slate-300 ml-1">
+                                  {currentSkill.description}
+                                </span>
+                                <div className="text-[10px] text-indigo-700 dark:text-indigo-400 italic">
+                                  💡 AI sẽ định hình nội dung và câu hỏi thực hành dựa trên quy trình: {currentSkill.tagline}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+
+                      {/* 2. Chọn Phong Cách Giảng Dạy Của Giáo Viên */}
+                      <div>
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1.5">
+                          2. Phong cách giảng dạy & Ngôn từ sư phạm của Thầy/Cô:
+                        </span>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          {TEACHING_STYLES.map(style => {
+                            const isSelected = plannerTeachingStyle === style.id;
+                            return (
+                              <button
+                                key={style.id}
+                                type="button"
+                                onClick={() => setPlannerTeachingStyle(style.id)}
+                                className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-white dark:bg-slate-800 border-purple-500 shadow-md ring-2 ring-purple-500/30'
+                                    : 'bg-white/70 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-purple-300 dark:hover:border-purple-700'
+                                }`}
+                              >
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <span className="text-sm">{style.icon}</span>
+                                  <span className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
+                                    {style.shortName}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-tight">
+                                  {style.description}
+                                </p>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* 3. Ghi chú cá nhân hóa phong cách riêng */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                            3. Ghi chú cá nhân hóa phong cách riêng (Tùy chọn):
+                          </span>
+                          <span className="text-[10px] text-slate-400">AI học theo văn phong riêng</span>
+                        </div>
+                        <input
+                          type="text"
+                          value={plannerCustomStyleNote}
+                          onChange={(e) => setPlannerCustomStyleNote(e.target.value)}
+                          placeholder="Ví dụ: Giọng điệu hóm hỉnh, liên hệ nhiều ứng dụng công nghệ thực tế, học sinh tự tranh biện phản biện..."
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                        />
+                      </div>
                     </div>
 
                     {/* Mục lựa chọn tài liệu đối chiếu đưa vào AI */}

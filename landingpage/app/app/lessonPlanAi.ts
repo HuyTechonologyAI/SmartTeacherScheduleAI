@@ -6,12 +6,20 @@ import {
   deepParseLessonDocument,
   ExtractedLessonKnowledge
 } from './deepRagPedagogicalParser';
+import {
+  PedagogicalSkillConfig,
+  PEDAGOGICAL_SKILLS,
+  TEACHING_STYLES,
+  getSkillImplementationSteps
+} from '@/lib/pedagogicalSkills';
 
 export interface LessonPlan5512Data {
   lessonTitle: string;
   subject: string;
   grade: string;
   durationMinutes: number;
+  appliedSkill?: string;
+  appliedStyle?: string;
   objectives: {
     knowledge: string;
     competencies: string;
@@ -57,6 +65,8 @@ export interface LessonPlan2634Data {
   occupation: string;
   level: string;
   durationMinutes: number;
+  appliedSkill?: string;
+  appliedStyle?: string;
   objectives: {
     knowledge: string;
     skills: string;
@@ -131,11 +141,24 @@ export function generateLessonPlan5512(
   grade: string,
   durationMinutes: number = 45,
   customRequirements?: string,
-  referenceContext: string = ''
+  referenceContext: string = '',
+  skillConfig?: PedagogicalSkillConfig
 ): LessonPlan5512Data {
   // Bóc tách ngữ nghĩa toàn văn tài liệu bằng Deep-RAG Sư Phạm
   const k = deepParseLessonDocument(referenceContext, lessonTitle, subject, grade);
   const custom = customRequirements?.trim() ? ` Yêu cầu sư phạm: ${customRequirements}.` : '';
+
+  const skillId = skillConfig?.selectedSkillId || 'SKILL_5E';
+  const styleId = skillConfig?.teachingStyleId || 'STYLE_INTERACTIVE';
+  const activeSkill = PEDAGOGICAL_SKILLS.find(s => s.id === skillId) || PEDAGOGICAL_SKILLS[0];
+  const activeStyle = TEACHING_STYLES.find(s => s.id === styleId) || TEACHING_STYLES[0];
+
+  const leadConcept = k.coreDefinitions[0]?.term || k.keyTerms[0] || lessonTitle;
+
+  const act1Steps = getSkillImplementationSteps('opening', skillId, styleId, lessonTitle, subject, leadConcept);
+  const act2Steps = getSkillImplementationSteps('knowledge', skillId, styleId, lessonTitle, subject, leadConcept);
+  const act3Steps = getSkillImplementationSteps('practice', skillId, styleId, lessonTitle, subject, leadConcept);
+  const act4Steps = getSkillImplementationSteps('application', skillId, styleId, lessonTitle, subject, leadConcept);
 
   // Trích xuất các câu thực chất từ tài liệu đính kèm (loại bỏ tiêu đề, dòng phân cách hoặc thông báo scan)
   const substantiveSentences = referenceContext
@@ -238,9 +261,11 @@ export function generateLessonPlan5512(
     subject: subject || 'Chung',
     grade: grade || 'Phổ thông',
     durationMinutes,
+    appliedSkill: activeSkill.name,
+    appliedStyle: activeStyle.name,
     objectives: {
       knowledge: knowledgeObj,
-      competencies: `Phát triển năng lực tự chủ và tự học (chủ động nghiên cứu tài liệu môn ${subject}); Năng lực giao tiếp và hợp tác nhóm; Năng lực giải quyết vấn đề sáng tạo và tư duy phản biện.`,
+      competencies: `Phát triển năng lực tự chủ và tự học (chủ động nghiên cứu tài liệu môn ${subject}); Năng lực giao tiếp và hợp tác nhóm; Năng lực giải quyết vấn đề sáng tạo và tư duy phản biện. Phong cách tiếp cận: ${activeStyle.name}.`,
       qualities: `Bồi dưỡng phẩm chất chăm chỉ, trung thực, tinh thần trách nhiệm với nhiệm vụ học tập tập thể và niềm say mê khám phá khoa học.`
     },
     equipment: {
@@ -248,36 +273,36 @@ export function generateLessonPlan5512(
       studentEquipment: k.equipmentList.student.join('; ')
     },
     activity1Opening: {
-      name: `Hoạt động 1: Mở đầu / Khởi động (Xác định vấn đề học tập)`,
-      objective: `Kích hoạt kiến thức nền tảng, tạo mâu thuẫn nhận thức và tâm thế chủ động tiếp nhận bài học '${lessonTitle}'.`,
+      name: `Hoạt động 1: Mở đầu / Khởi động (${activeSkill.shortName})`,
+      objective: act1Steps.objective,
       content: act1Content,
-      product: `Câu trả lời, ý kiến thảo luận ban đầu của học sinh và nhu cầu muốn tìm hiểu bài mới.`,
-      implementation: `1. Giao nhiệm vụ: GV trình chiếu tình huống/video và câu hỏi khởi động.\n2. Thực hiện: HS suy nghĩ cá nhân trong 2 phút.\n3. Báo cáo: Đại diện 2 HS phát biểu, các bạn khác nhận xét.\n4. Kết luận: GV nhận xét, dẫn dắt vào bài mới '${lessonTitle}'.`
+      product: act1Steps.product,
+      implementation: act1Steps.implementation
     },
     activity2Knowledge: {
       name: `Hoạt động 2: Hình thành kiến thức mới (Chiếm lĩnh tri thức trọng tâm)`,
-      objective: `Học sinh chủ động phát hiện, tiếp thu và xây dựng được hệ thống kiến thức khoa học cốt lõi của bài '${lessonTitle}'.`,
+      objective: act2Steps.objective,
       content: act2Content,
-      product: `Phiếu học tập hoàn thiện của các nhóm, phần ghi chép cô đọng vào vở và sơ đồ phân tích của học sinh.`,
-      implementation: `1. Giao nhiệm vụ: GV chia lớp thành 4 nhóm, phát phiếu học tập tương ứng với từng mục kiến thức.\n2. Thực hiện: Các nhóm thảo luận, GV quan sát và hỗ trợ các nhóm gặp khó khăn.\n3. Báo cáo: Đại diện các nhóm báo cáo kết quả, nhóm khác phản biện.\n4. Kết luận: GV chốt chuẩn kiến thức khoa học trên bài giảng điện tử.`
+      product: act2Steps.product,
+      implementation: act2Steps.implementation
     },
     activity3Practice: {
       name: `Hoạt động 3: Luyện tập (Củng cố và rèn luyện kỹ năng)`,
-      objective: `Khắc sâu kiến thức vừa học, rèn luyện kỹ năng vận dụng vào hệ thống bài tập cụ thể.`,
+      objective: act3Steps.objective,
       content: act3Content,
-      product: `Lời giải chính xác của học sinh trên bảng con hoặc vở bài tập.`,
-      implementation: `1. Giao nhiệm vụ: GV giao bài tập luyện tập trên màn hình.\n2. Thực hiện: HS làm bài độc lập trong 5-7 phút.\n3. Báo cáo: GV gọi học sinh lên bảng chữa bài, các bạn khác đối chiếu.\n4. Kết luận: GV nhận xét, phân tích lỗi sai điển hình và chuẩn hóa phương pháp giải.`
+      product: act3Steps.product,
+      implementation: act3Steps.implementation
     },
     activity4Application: {
-      name: `Hoạt động 4: Vận dụng & Mở rộng (Gắn kết tri thức vào đời sống)`,
-      objective: `Phát triển tư duy bậc cao, khả năng vận dụng kiến thức bài học '${lessonTitle}' vào thực tiễn cuộc sống.`,
+      name: `Hoạt động 4: Vận dụng & Mở rộng (${activeSkill.shortName})`,
+      objective: act4Steps.objective,
       content: act4Content,
-      product: `Bài thu hoạch cá nhân, sản phẩm infographic hoặc mô hình ứng dụng nộp vào buổi học tiếp theo.`,
-      implementation: `1. Giao nhiệm vụ: GV hướng dẫn chi tiết yêu cầu và tiêu chí đánh giá sản phẩm.\n2. Thực hiện: HS thực hiện ngoài giờ lên lớp theo nhóm 2-3 em.\n3. Đánh giá: GV thu bài, nhận xét và ghi nhận điểm khuyến khích ở tiết học tới.`
+      product: act4Steps.product,
+      implementation: act4Steps.implementation
     },
     referenceCitations: referenceContext
-      ? `Công văn 5512/BGDĐT-GDTrH; CT GDPT 2018;\nTư liệu chuẩn đối chiếu từ Kho dữ liệu: ${k.summary}`
-      : 'Công văn 5512/BGDĐT-GDTrH của Bộ GD&ĐT; Chương trình Giáo dục Phổ thông 2018'
+      ? `Công văn 5512/BGDĐT-GDTrH; CT GDPT 2018;\nTư liệu chuẩn đối chiếu: ${k.summary};\nBộ Skill Sư Phạm: ${activeSkill.name} (${activeStyle.name})`
+      : `Công văn 5512/BGDĐT-GDTrH của Bộ GD&ĐT; Chương trình GDPT 2018; Skill: ${activeSkill.name}`
   };
 }
 
@@ -291,10 +316,16 @@ export function generateLessonPlan2634(
   level: string,
   durationMinutes: number = 180,
   workshopEquipment?: string,
-  referenceContext: string = ''
+  referenceContext: string = '',
+  skillConfig?: PedagogicalSkillConfig
 ): LessonPlan2634Data {
   const k = deepParseLessonDocument(referenceContext, moduleTitle, occupation, level);
   const equip = workshopEquipment?.trim() || k.equipmentList.teacher.join(', ');
+
+  const skillId = skillConfig?.selectedSkillId || 'SKILL_WORKSHOP';
+  const styleId = skillConfig?.teachingStyleId || 'STYLE_INDUSTRIAL';
+  const activeSkill = PEDAGOGICAL_SKILLS.find(s => s.id === skillId) || PEDAGOGICAL_SKILLS[6];
+  const activeStyle = TEACHING_STYLES.find(s => s.id === styleId) || TEACHING_STYLES[3];
 
   const substantiveSentences = referenceContext
     ? referenceContext
@@ -328,30 +359,34 @@ export function generateLessonPlan2634(
       k.topicSections.slice(0, 4).map((sec, idx) => `• Bước ${idx + 1} (${sec.heading}): ${sec.contentLines[0] || 'Thao tác đúng trình tự kỹ thuật.'}`).join('\n') +
       `\nGiáo viên thao tác mẫu 3 lần kết hợp giải thích các nguyên tắc cơ bản và an toàn.`;
 
-    step3PracticeContent = `Học sinh luyện tập tại các vị trí máy:\n` +
-      k.topicSections.slice(0, 4).map((sec, idx) => `• Nội dung ${idx + 1}: Thực hiện ${sec.heading}. Đảm bảo các thông số kích thước và an toàn.`).join('\n');
+    step3PracticeContent = `Học sinh thực hành phân đoạn theo các hạng mục trọng tâm của bài '${moduleTitle}'. Tuân thủ các nguyên tắc kỹ thuật và ghi nhận các thông số kiểm tra.`;
   } else if (substantiveSentences.length > 0) {
-    step2DemoContent = `Thao tác mẫu quy trình kỹ thuật gồm các bước:\n• Bước 1: Chuẩn bị phôi, dụng cụ đo kiểm và kiểm tra an toàn thiết bị.\n• Bước 2: Thực hiện thao tác ban đầu: ${substantiveSentences[0]}\n• Bước 3: Gia công/thực hành theo đúng chế độ: ${substantiveSentences[1] || 'Đảm bảo thông số công nghệ.'}\n• Bước 4: Đo kiểm sản phẩm, đánh giá dung sai và độ chính xác.\nGiáo viên làm mẫu 3 lần kèm nhắc nhở các điểm then chốt.`;
-
-    step3PracticeContent = `Học sinh thực hành gia công theo quy trình:\n• Bước 1: Gá đặt phôi và dụng cụ chắc chắn.\n• Bước 2: Thao tác đúng quy chuẩn kỹ thuật theo hướng dẫn của giáo viên.\n• Bước 3: Tự kiểm tra kích thước chi tiết sau mỗi công đoạn gia công.`;
+    step2DemoContent = `Giáo viên phân tích và thao tác mẫu các yêu cầu kỹ thuật: "${substantiveSentences.slice(0, 2).join(' ')}". Giải thích chi tiết các điểm dừng an toàn và lưu ý kỹ thuật.`;
+    step3PracticeContent = `Học sinh vận hành thiết bị, thực hành gia công/thao tác từng phần theo chỉ dẫn: "${substantiveSentences.slice(2, 4).join(' ') || 'Đảm bảo độ chính xác kích thước và an toàn lao động.'}"`;
   } else {
-    step2DemoContent = `Thao tác mẫu quy trình kỹ thuật 3 lần: Lần 1 tốc độ làm việc bình thường; Lần 2 làm chậm kèm giải thích chi tiết; Lần 3 nhấn mạnh các lỗi hỏng thường gặp và cách phòng tránh an toàn.`;
-    step3PracticeContent = `Học sinh vận hành máy, thực hiện gia công phôi mẫu theo phiếu hướng dẫn công nghệ. Tự kiểm tra kích thước chi tiết bằng dụng cụ đo kiểm sau mỗi bước gia công.`;
+    step2DemoContent = `Giáo viên thực hiện thao tác mẫu 3 lần quy trình gia công '${moduleTitle}':\n- Lần 1: Thao tác tốc độ bình thường để học sinh quan sát tổng thể.\n- Lần 2: Thao tác chậm kèm giải thích các điểm dừng quan trọng.\n- Lần 3: Gọi 1 học sinh làm thử dưới sự giám sát của giáo viên.`;
+    step3PracticeContent = `Học sinh nhận phôi, đồ gá và dụng cụ đo kiểm. Tiến hành thực hành phân đoạn và toàn phần dưới sự giám sát của giáo viên. Tự kiểm tra kích thước sản phẩm.`;
   }
 
   return {
     moduleTitle,
-    occupation: occupation || 'Kỹ thuật Cơ khí / Điện tử',
-    level: level || 'Trung cấp / Cao đẳng Nghề',
+    occupation: occupation || 'Kỹ thuật',
+    level: level || 'Trung cấp / Cao đẳng',
     durationMinutes,
+    appliedSkill: activeSkill.name,
+    appliedStyle: activeStyle.name,
     objectives: {
-      knowledge: `Trình bày đúng quy trình công nghệ, cấu tạo thiết bị, thông số kỹ thuật và các quy tắc An toàn lao động khi thực hiện bài '${moduleTitle}'. ${k.coreDefinitions.length > 0 ? `Nắm vững: ${k.coreDefinitions.map(d => d.term).join(', ')}.` : substantiveSentences.length > 0 ? `Nội dung cốt lõi: ${substantiveSentences.slice(0, 2).join('. ')}.` : ''}`,
-      skills: `Thực hiện thành thạo các thao tác chuẩn xác, gia công/lắp ráp đạt độ chính xác theo bản vẽ kỹ thuật; biết sử dụng thành thạo dụng cụ đo kiểm và khắc phục sai hỏng thông thường.`,
-      autonomyAndSafety: `Tuân thủ nghiêm ngặt quy tắc An toàn lao động (ATLĐ), Phòng chống cháy nổ (PCCN), vệ sinh công nghiệp 5S (Sàng lọc, Sắp xếp, Sạch sẽ, Săn sóc, Sẵn sàng) và ý thức kỷ luật xưởng.`
+      knowledge: k.topicSections.length > 0
+        ? `Nắm vững nguyên lý cấu tạo, quy trình công nghệ và các thông số kỹ thuật của bài '${moduleTitle}': ${k.topicSections.map(t => t.heading).join('; ')}.`
+        : `Hiểu rõ quy trình thao tác chuẩn, thông số vận hành máy và biện pháp phòng ngừa rủi ro cho bài '${moduleTitle}'.`,
+      skills: `Thực hiện thành thạo các bước thao tác mẫu, sử dụng đúng dụng cụ đo kiểm, đạt dung sai kích thước bản vẽ và kiểm soát thời gian hoàn thành. Phong cách thực hành: ${activeStyle.name}.`,
+      autonomyAndSafety: `Tuyệt đối tuân thủ quy tắc ATLĐ, PCCN, bảo hộ cá nhân và thực hiện nề nếp 5S xưởng trước, trong và sau ca làm việc.`
     },
     conditions: {
-      equipmentAndMachines: `Hệ thống máy móc xưởng (${equip}), đồ gá chuẩn, bảng quy trình công nghệ, dụng cụ đo kiểm chính xác.`,
-      materialsAndWorkpieces: `Phôi mẫu thực hành đầy đủ cho từng học sinh, dụng cụ cắt gọt/vật tư phụ trợ, dung dịch làm mát.`,
+      equipmentAndMachines: equip || 'Máy móc chuyên dùng xưởng thực hành, đồ gá, dụng cụ đo kiểm theo tiêu chuẩn module.',
+      materialsAndWorkpieces: k.keyTerms.length > 0
+        ? `Phôi liệu gia công, vật tư tiêu hao, bản vẽ kỹ thuật chi tiết bài '${moduleTitle}'.`
+        : 'Phôi mẫu thực hành, dầu mỡ bôi trơn, giẻ lau công nghiệp, bản vẽ kỹ thuật.',
       safetyAnd5S: `Trang phục BHLĐ đầy đủ (Áo BHLĐ cài cúc gọn gàng, giày bảo hộ mũi sắt, kính bảo hộ), tủ thuốc sơ cấp cứu, bình cứu hỏa CO2 tại vị trí quy định.`
     },
     step1Orientation: {
@@ -379,8 +414,8 @@ export function generateLessonPlan2634(
       safetyAndKeyPoints: `Thực hiện nghiêm túc 5S: Tắt hoàn toàn nguồn điện tổng của xưởng, giao trả chìa khóa và kiểm đếm dụng cụ đo kiểm đầy đủ.`
     },
     referenceCitations: referenceContext
-      ? `Công văn 2634/GDNN; Tiêu chuẩn ATLĐ và 5S xưởng;\nTư liệu chuẩn đối chiếu từ Kho dữ liệu:\n${k.summary}`
-      : 'Công văn 2634/GDNN của Tổng cục GDNN; Tiêu chuẩn An toàn xưởng và 5S'
+      ? `Công văn 2634/GDNN; Tiêu chuẩn ATLĐ và 5S xưởng;\nTư liệu chuẩn đối chiếu từ Kho dữ liệu:\n${k.summary};\nBộ Skill: ${activeSkill.name} (${activeStyle.name})`
+      : `Công văn 2634/GDNN của Tổng cục GDNN; Tiêu chuẩn An toàn xưởng và 5S; Skill: ${activeSkill.name}`
   };
 }
 
@@ -1719,6 +1754,7 @@ export function generateComprehensiveLessonPlanPackage(params: {
     relevantSnippet?: string;
   } | null;
   referenceContext?: string;
+  skillConfig?: PedagogicalSkillConfig;
 }): FullLessonPackage {
   const {
     lessonTitle,
@@ -1729,7 +1765,8 @@ export function generateComprehensiveLessonPlanPackage(params: {
     durationMinutes,
     customRequirements,
     matchedDoc,
-    referenceContext
+    referenceContext,
+    skillConfig
   } = params;
 
   const combinedSnippet = matchedDoc?.relevantSnippet || referenceContext || '';
@@ -1746,7 +1783,8 @@ export function generateComprehensiveLessonPlanPackage(params: {
       className,
       durationMinutes,
       customRequirements,
-      combinedSnippet
+      combinedSnippet,
+      skillConfig
     );
   } else {
     plan2634 = generateLessonPlan2634(
@@ -1755,7 +1793,8 @@ export function generateComprehensiveLessonPlanPackage(params: {
       className,
       durationMinutes * 60,
       customRequirements,
-      combinedSnippet
+      combinedSnippet,
+      skillConfig
     );
   }
 
@@ -1869,6 +1908,7 @@ export function lessonPlan5512ToHtml(plan: LessonPlan5512Data): string {
         <p style="margin: 0; font-weight: normal; font-style: italic;">
           Môn học: ${plan.subject} | Khối/Lớp: ${plan.grade} | Thời lượng: ${plan.durationMinutes} phút
         </p>
+        ${plan.appliedSkill ? `<p style="margin: 5px 0 0 0; font-size: 10.5pt; color: #047857; font-weight: bold;">[Bộ Skill Sư Phạm: ${plan.appliedSkill}${plan.appliedStyle ? ' • Phong cách: ' + plan.appliedStyle : ''}]</p>` : ''}
       </div>
 
       <p style="font-weight: bold; margin-bottom: 5px;">I. MỤC TIÊU BÀI DẠY</p>
@@ -1936,6 +1976,7 @@ export function lessonPlan2634ToHtml(plan: LessonPlan2634Data): string {
         <p style="margin: 0; font-weight: normal; font-style: italic;">
           Nghề: ${plan.occupation} | Trình độ: ${plan.level} | Thời lượng: ${plan.durationMinutes} phút
         </p>
+        ${plan.appliedSkill ? `<p style="margin: 5px 0 0 0; font-size: 10.5pt; color: #c2410c; font-weight: bold;">[Bộ Skill Sư Phạm: ${plan.appliedSkill}${plan.appliedStyle ? ' • Phong cách: ' + plan.appliedStyle : ''}]</p>` : ''}
       </div>
 
       <p style="font-weight: bold; margin-bottom: 5px;">I. MỤC TIÊU BÀI DẠY</p>

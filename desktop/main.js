@@ -140,8 +140,8 @@ function createMenu() {
           click: () => shell.openExternal('https://gvcncdsai.io.vn')
         },
         {
-          label: '📱 Tải bản Android APK v2.1.0',
-          click: () => shell.openExternal('https://www.gvcncdsai.io.vn/downloads/SmartTeacherSchedule_v2.1.0.apk')
+          label: '📱 Tải bản Android APK v2.2.0',
+          click: () => shell.openExternal('https://www.gvcncdsai.io.vn/downloads/SmartTeacherSchedule_v2.2.0.apk')
         },
         {
           label: '💬 Hỗ trợ Zalo: 0961364600',
@@ -149,12 +149,12 @@ function createMenu() {
         },
         { type: 'separator' },
         {
-          label: 'Về ứng dụng Smart Teacher Schedule AI v2.1.0',
+          label: 'Về ứng dụng Smart Teacher Schedule AI v2.2.0',
           click: () => {
             if (Notification.isSupported()) {
               new Notification({
                 title: 'Smart Teacher Schedule AI Desktop',
-                body: 'Phiên bản v2.1.0 - Hệ sinh thái đa nền tảng, tự động hóa sư phạm, đồng bộ đám mây và trợ lý giáo viên AI.'
+                body: 'Phiên bản v2.2.0 - Hệ sinh thái đa nền tảng, tự động hóa sư phạm, đồng bộ đám mây và trợ lý giáo viên AI.'
               }).show();
             }
           }
@@ -254,7 +254,7 @@ function checkForUpdates(manual = false) {
           dialog.showMessageBox(mainWindow, {
             type: 'info',
             title: 'Phiên bản mới nhất',
-            message: `Thầy cô đang sử dụng phiên bản v2.1.0 mới nhất của Smart Teacher Schedule AI.`,
+            message: `Thầy cô đang sử dụng phiên bản v2.2.0 mới nhất của Smart Teacher Schedule AI.`,
             buttons: ['Đồng ý']
           });
         }

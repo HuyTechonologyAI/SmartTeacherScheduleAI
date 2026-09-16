@@ -513,7 +513,7 @@ export default function TeacherProfileModal({
             <div className="space-y-0.5">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-bold text-slate-900 dark:text-white">Smart Teacher Schedule AI</span>
-                <span className="px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 font-mono font-bold text-[10px] border border-rose-200 dark:border-rose-900/50">v2.1.0 Release</span>
+                <span className="px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 font-mono font-bold text-[10px] border border-rose-200 dark:border-rose-900/50">v2.2.0 Release</span>
                 <span className="px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-bold text-[10px] border border-amber-200 dark:border-amber-900/50">Gói Giáo Viên Pro</span>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">

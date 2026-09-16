@@ -55,8 +55,143 @@ data class Activity5512(
     val objective: String, // a) Mục tiêu
     val content: String, // b) Nội dung
     val product: String, // c) Sản phẩm
-    val implementation: String // d) Tổ chức thực hiện
+    val implementation: String, // d) Tổ chức thực hiện
+    val pedagogicalMethod: String = "Trực quan, Gợi mở vấn đáp, Kỹ thuật KWL / Tia chớp", // Phương pháp & Kỹ thuật
+    val assessmentMethod: String = "Đánh giá qua câu trả lời và thái độ tham gia của HS", // Phương án đánh giá
+    val expectedContent: String = "", // Nội dung trọng tâm cần đạt (cột phải)
+    val expectedProduct: String = "" // Sản phẩm học sinh hoàn thành (cột phải)
 )
+
+/**
+ * Cấu trúc phân tách các bước sư phạm trong tổ chức thực hiện
+ */
+data class ImplementationStep(
+    val stepTitle: String,
+    val content: String
+)
+
+/**
+ * Phân tách chuỗi tổ chức thực hiện thành danh sách 4 bước sư phạm rõ ràng
+ */
+fun parseImplementationSteps(raw: String): List<ImplementationStep> {
+    if (raw.isBlank()) return emptyList()
+
+    val lines = raw.lines().map { it.trim() }.filter { it.isNotBlank() }
+    val steps = mutableListOf<ImplementationStep>()
+    var currentTitle = ""
+    val currentContent = StringBuilder()
+
+    fun flushCurrent() {
+        if (currentTitle.isNotBlank()) {
+            steps.add(ImplementationStep(currentTitle, currentContent.toString().trim()))
+            currentContent.clear()
+        }
+    }
+
+    for (line in lines) {
+        val isStep1 = Regex("^(?:[\\*•-]\\s*)?(?:Bước\\s*1|1\\.\\s*Giao nhiệm vụ)", RegexOption.IGNORE_CASE).containsMatchIn(line)
+        val isStep2 = Regex("^(?:[\\*•-]\\s*)?(?:Bước\\s*2|2\\.\\s*Thực hiện)", RegexOption.IGNORE_CASE).containsMatchIn(line)
+        val isStep3 = Regex("^(?:[\\*•-]\\s*)?(?:Bước\\s*3|3\\.\\s*Báo cáo)", RegexOption.IGNORE_CASE).containsMatchIn(line)
+        val isStep4 = Regex("^(?:[\\*•-]\\s*)?(?:Bước\\s*4|4\\.\\s*(?:Kết luận|Đánh giá))", RegexOption.IGNORE_CASE).containsMatchIn(line)
+
+        if (isStep1) {
+            flushCurrent()
+            currentTitle = "* Bước 1: Chuyển giao nhiệm vụ"
+            val clean = line.replace(Regex("^(?:[\\*•-]\\s*)?(?:Bước\\s*1:?|1\\.\\s*Giao nhiệm vụ[^:]*:?)\\s*", RegexOption.IGNORE_CASE), "")
+            if (clean.isNotBlank()) currentContent.append(clean).append("\n")
+        } else if (isStep2) {
+            flushCurrent()
+            currentTitle = "* Bước 2: Thực hiện nhiệm vụ"
+            val clean = line.replace(Regex("^(?:[\\*•-]\\s*)?(?:Bước\\s*2:?|2\\.\\s*Thực hiện[^:]*:?)\\s*", RegexOption.IGNORE_CASE), "")
+            if (clean.isNotBlank()) currentContent.append(clean).append("\n")
+        } else if (isStep3) {
+            flushCurrent()
+            currentTitle = "* Bước 3: Báo cáo, thảo luận"
+            val clean = line.replace(Regex("^(?:[\\*•-]\\s*)?(?:Bước\\s*3:?|3\\.\\s*Báo cáo[^:]*:?)\\s*", RegexOption.IGNORE_CASE), "")
+            if (clean.isNotBlank()) currentContent.append(clean).append("\n")
+        } else if (isStep4) {
+            flushCurrent()
+            currentTitle = "* Bước 4: Kết luận, nhận định"
+            val clean = line.replace(Regex("^(?:[\\*•-]\\s*)?(?:Bước\\s*4:?|4\\.\\s*(?:Kết luận|Đánh giá)[^:]*:?)\\s*", RegexOption.IGNORE_CASE), "")
+            if (clean.isNotBlank()) currentContent.append(clean).append("\n")
+        } else {
+            if (currentTitle.isBlank()) {
+                currentTitle = "* Tổ chức thực hiện"
+            }
+            currentContent.append(line).append("\n")
+        }
+    }
+    flushCurrent()
+
+    if (steps.isEmpty()) {
+        steps.add(ImplementationStep("* Tổ chức thực hiện", raw.trim()))
+    }
+    return steps
+}
+
+private fun highlightGvHs(text: String): String {
+    return text
+        .replace(Regex("(\\b(?:GV|Giáo viên)\\s*[:\\-])", RegexOption.IGNORE_CASE), "<b style='color: #0369a1;'>$1</b>")
+        .replace(Regex("(\\b(?:HS|Học sinh)\\s*[:\\-])", RegexOption.IGNORE_CASE), "<b style='color: #15803d;'>$1</b>")
+}
+
+private fun formatImplementationStepsHtml(raw: String): String {
+    val steps = parseImplementationSteps(raw)
+    val sb = StringBuilder()
+    for (st in steps) {
+        sb.append("<p style='margin: 4px 0 2px 0; font-weight: bold; color: #1e3a8a; font-size: 11.5pt;'>${st.stepTitle}</p>")
+        sb.append("<div style='margin: 0 0 8px 10px; font-size: 11pt; color: #1e293b; line-height: 1.45;'>")
+        sb.append(highlightGvHs(st.content).replace("\n", "<br>"))
+        sb.append("</div>")
+    }
+    return sb.toString()
+}
+
+private fun formatExpectedProductHtml(content: String, product: String): String {
+    val sb = StringBuilder()
+    sb.append("<div style='margin-bottom: 8px;'>")
+    sb.append("<p style='margin: 0 0 3px 0; font-weight: bold; color: #1e3a8a; font-size: 11pt;'>📌 Nội dung trọng tâm cần đạt:</p>")
+    sb.append("<div style='font-size: 10.5pt; color: #334155; line-height: 1.45; white-space: pre-line; padding-left: 6px; border-left: 2.5px solid #93c5fd; margin-bottom: 8px;'>")
+    sb.append(if (content.isNotBlank()) content.replace("\n", "<br>") else "Theo dõi và thực hiện đầy đủ nhiệm vụ theo hướng dẫn của giáo viên.")
+    sb.append("</div></div>")
+
+    sb.append("<div>")
+    sb.append("<p style='margin: 0 0 3px 0; font-weight: bold; color: #047857; font-size: 11pt;'>🎯 Sản phẩm học sinh hoàn thành:</p>")
+    sb.append("<div style='font-size: 10.5pt; color: #14532d; line-height: 1.45; white-space: pre-line; padding-left: 6px; border-left: 2.5px solid #86efac;'>")
+    sb.append(if (product.isNotBlank()) product.replace("\n", "<br>") else "Vở ghi bài, phiếu học tập cá nhân/nhóm hoàn chỉnh.")
+    sb.append("</div></div>")
+
+    return sb.toString()
+}
+
+private fun renderActivity5512Html(actIndex: Int, act: Activity5512): String {
+    val sb = StringBuilder()
+    sb.append("<div style='margin-bottom: 22px; page-break-inside: avoid;'>")
+    sb.append("<p style='font-weight: bold; color: #1e3a8a; font-size: 12.5pt; margin: 0 0 6px 0;'>${act.title}</p>")
+    sb.append("<p style='margin: 3px 0 3px 15px; font-size: 11.5pt;'><b>a) Mục tiêu:</b> ${act.objective}</p>")
+    sb.append("<p style='margin: 3px 0 3px 15px; font-size: 11.5pt;'><b>b) Nội dung tóm tắt:</b> <span style='color: #334155;'>${act.content.take(280)}</span></p>")
+    sb.append("<p style='margin: 3px 0 6px 15px; font-size: 11.5pt;'><b>c) Sản phẩm:</b> <span style='color: #166534;'>${act.product.take(220)}</span></p>")
+    sb.append("<p style='margin: 6px 0 4px 15px; font-weight: bold; font-size: 11.5pt; color: #0f172a;'><b>d) Tổ chức thực hiện:</b></p>")
+
+    sb.append("<table border='1' cellpadding='6' style='border-collapse: collapse; width: 100%; margin: 6px 0 10px 0; font-family: \"Times New Roman\", Times, serif; font-size: 11pt; border: 1px solid #94a3b8;'>")
+    sb.append("<thead><tr style='background-color: #f1f5f9; text-align: center; font-weight: bold; border-bottom: 2px solid #64748b;'>")
+    sb.append("<th style='width: 58%; padding: 8px; border: 1px solid #cbd5e1; color: #0f172a;'>HOẠT ĐỘNG CỦA GIÁO VIÊN VÀ HỌC SINH</th>")
+    sb.append("<th style='width: 42%; padding: 8px; border: 1px solid #cbd5e1; color: #0f172a; background-color: #f8fafc;'>SẢN PHẨM DỰ KIẾN / NỘI DUNG CẦN ĐẠT</th>")
+    sb.append("</tr></thead>")
+    sb.append("<tbody><tr>")
+    sb.append("<td style='vertical-align: top; padding: 10px; border: 1px solid #cbd5e1; line-height: 1.45;'>")
+    sb.append(formatImplementationStepsHtml(act.implementation))
+    sb.append("</td>")
+    sb.append("<td style='vertical-align: top; padding: 10px; border: 1px solid #cbd5e1; line-height: 1.45; background-color: #fafafa;'>")
+    sb.append(formatExpectedProductHtml(
+        if (act.expectedContent.isNotBlank()) act.expectedContent else act.content,
+        if (act.expectedProduct.isNotBlank()) act.expectedProduct else act.product
+    ))
+    sb.append("</td>")
+    sb.append("</tr></tbody></table>")
+    sb.append("</div>")
+    return sb.toString()
+}
 
 /**
  * Kế hoạch bài dạy chuẩn Công văn 5512/BGDĐT-GDTrH (THCS, THPT, GDTX)
@@ -73,31 +208,42 @@ data class LessonPlan5512Result(
     val teacherEquipment: String,
     val studentEquipment: String,
     val activities: List<Activity5512>,
+    val appliedSkill: String = "Mô hình 5E / Bàn tay nặn bột",
+    val appliedStyle: String = "Tương tác thực chứng",
     val referenceCitations: String = "Công văn 5512/BGDĐT-GDTrH của Bộ GD&ĐT; Chương trình Giáo dục Phổ thông 2018"
 ) {
     fun toHtmlDocument(): String {
+        val totalMinutes = durationPeriods * 45
+        val t1 = (totalMinutes * 0.12).toInt().coerceAtLeast(5)
+        val t2 = (totalMinutes * 0.50).toInt().coerceAtLeast(18)
+        val t3 = (totalMinutes * 0.26).toInt().coerceAtLeast(10)
+        val t4 = (totalMinutes - t1 - t2 - t3).coerceAtLeast(4)
+
         val sb = StringBuilder()
         sb.append("<!DOCTYPE html><html><head><meta charset='UTF-8'><style>")
-        sb.append("body { font-family: 'Times New Roman', Times, serif; font-size: 14pt; line-height: 1.5; color: #000; padding: 20px; }")
-        sb.append("h1, h2, h3 { text-align: center; margin: 5px 0; }")
-        sb.append("h1 { font-size: 16pt; font-weight: bold; text-transform: uppercase; }")
-        sb.append("h2 { font-size: 14pt; font-weight: bold; }")
-        sb.append("h3 { font-size: 13pt; font-style: italic; }")
-        sb.append(".header-table { width: 100%; border: none; margin-bottom: 20px; }")
+        sb.append("body { font-family: 'Times New Roman', Times, serif; font-size: 13pt; line-height: 1.4; color: #000; padding: 20px; }")
+        sb.append("h1, h2, h3 { text-align: center; margin: 4px 0; }")
+        sb.append("h1 { font-size: 15pt; font-weight: bold; text-transform: uppercase; }")
+        sb.append("h2 { font-size: 13pt; font-weight: bold; color: #1e3a8a; }")
+        sb.append(".header-table { width: 100%; border: none; margin-bottom: 15px; }")
         sb.append(".header-table td { border: none; vertical-align: top; }")
-        sb.append(".section-title { font-weight: bold; text-transform: uppercase; margin-top: 15px; }")
-        sb.append(".activity-box { border: 1px solid #333; padding: 12px; margin: 10px 0; border-radius: 4px; background: #fafafa; }")
-        sb.append(".citation-box { background-color: #f0fdf4; border: 1.5px solid #16a34a; border-radius: 6px; padding: 10px 14px; margin: 15px 0; font-size: 11pt; color: #166534; }")
+        sb.append(".citation-box { background-color: #f0fdf4; border: 1.5px solid #16a34a; border-radius: 6px; padding: 8px 12px; margin: 12px 0; font-size: 10.5pt; color: #166534; }")
+        sb.append("table { border-collapse: collapse; width: 100%; }")
+        sb.append("th, td { border: 1px solid #94a3b8; }")
         sb.append("</style></head><body>")
 
+        // 1. Tiêu ngữ văn bản hành chính
         sb.append("<table class='header-table'><tr>")
         sb.append("<td style='width: 45%; text-align: center;'>TRƯỜNG: ....................................<br>TỔ BỘ MÔN: ...............................</td>")
         sb.append("<td style='width: 55%; text-align: center;'><b>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><u>Độc lập - Tự do - Hạnh phúc</u></td>")
         sb.append("</tr></table>")
 
-        sb.append("<h1>KẾ HOẠCH BÀI DẠY (GIÁO ÁN CHUẨN CV 5512)</h1>")
-        sb.append("<h2>MÔN: ${subject.uppercase()} - KHỐI/LỚP: $grade</h2>")
-        sb.append("<h3>Tên bài dạy: $lessonName (Thời lượng: $durationPeriods tiết)</h3>")
+        sb.append("<h1>KẾ HOẠCH BÀI DẠY (GIÁO ÁN)</h1>")
+        sb.append("<h2>BÀI: ${lessonName.uppercase()}</h2>")
+        sb.append("<p style='text-align: center; margin: 2px 0; font-style: italic;'>Môn học: $subject | Khối/Lớp: $grade | Thời lượng: $durationPeriods tiết (${durationPeriods * 45} phút)</p>")
+        if (appliedSkill.isNotBlank()) {
+            sb.append("<p style='text-align: center; margin: 4px 0 0 0; font-size: 10.5pt; color: #047857; font-weight: bold;'>[Bộ Skill Sư Phạm: $appliedSkill${if (appliedStyle.isNotBlank()) " • Phong cách: $appliedStyle" else ""}]</p>")
+        }
 
         if (referenceCitations.isNotBlank()) {
             sb.append("<div class='citation-box'>")
@@ -106,31 +252,78 @@ data class LessonPlan5512Result(
             sb.append("</div>")
         }
 
-        sb.append("<div class='section-title'>I. MỤC TIÊU BÀI HỌC</div>")
-        sb.append("<p><b>1. Về kiến thức:</b> $knowledgeObjective</p>")
-        sb.append("<p><b>2. Về năng lực:</b><br>")
+        // I. Mục tiêu bài dạy
+        sb.append("<p style='font-weight: bold; margin-bottom: 5px;'>I. MỤC TIÊU BÀI DẠY</p>")
+        sb.append("<p style='margin: 3px 0 3px 20px;'><b>1. Về kiến thức:</b> $knowledgeObjective</p>")
+        sb.append("<p style='margin: 3px 0 3px 20px;'><b>2. Về năng lực:</b><br>")
         sb.append("• <i>Năng lực chung:</i> $generalCompetence<br>")
         sb.append("• <i>Năng lực đặc thù:</i> $specificCompetence</p>")
-        sb.append("<p><b>3. Về phẩm chất:</b> $qualitiesObjective</p>")
+        sb.append("<p style='margin: 3px 0 15px 20px;'><b>3. Về phẩm chất:</b> $qualitiesObjective</p>")
 
-        sb.append("<div class='section-title'>II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU</div>")
-        sb.append("<p><b>1. Giáo viên:</b> $teacherEquipment</p>")
-        sb.append("<p><b>2. Học sinh:</b> $studentEquipment</p>")
+        // II. Thiết bị dạy học và học liệu
+        sb.append("<p style='font-weight: bold; margin-bottom: 5px;'>II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU</p>")
+        sb.append("<p style='margin: 3px 0 3px 20px;'><b>1. Giáo viên:</b> $teacherEquipment</p>")
+        sb.append("<p style='margin: 3px 0 15px 20px;'><b>2. Học sinh:</b> $studentEquipment</p>")
 
-        sb.append("<div class='section-title'>III. TIẾN TRÌNH DẠY HỌC (4 HOẠT ĐỘNG CHUẨN)</div>")
+        // III. Tiến trình dạy học
+        sb.append("<p style='font-weight: bold; margin: 18px 0 6px 0; font-size: 13pt;'>III. TIẾN TRÌNH DẠY HỌC</p>")
+
+        // III.1. BẢNG TIẾN TRÌNH DẠY HỌC TỔNG THỂ (MA TRẬN 5 CỘT)
+        sb.append("<p style='font-weight: bold; margin: 6px 0 4px 10px; font-size: 11.5pt; color: #1e3a8a;'>")
+        sb.append("1. Bảng ma trận tiến trình dạy học tổng thể (Chuẩn CV 5512/BGDĐT-GDTrH):")
+        sb.append("</p>")
+
+        val defaultDurations = listOf(t1, t2, t3, t4)
+        val defaultMethods = listOf(
+            "Trực quan, Gợi mở vấn đáp, Kỹ thuật KWL / Tia chớp",
+            "Dạy học hợp tác, Thảo luận nhóm, Sơ đồ tư duy ($appliedSkill)",
+            "Luyện tập thực hành, Chia sẻ cặp đôi (Think-Pair-Share)",
+            "Dự án học tập, Nghiên cứu trường hợp, Giao việc tự học"
+        )
+        val defaultAssessments = listOf(
+            "Đánh giá qua câu trả lời và thái độ hào hứng của HS",
+            "Đánh giá quá trình qua Phiếu học tập số 1 và câu hỏi phản biện",
+            "Đánh giá kết quả bài làm theo barem đáp án chuẩn",
+            "Đánh giá sản phẩm đề án thực tiễn theo Rubric tiêu chí"
+        )
+
+        sb.append("<table style='margin: 6px 0 18px 0; font-size: 10.5pt;'>")
+        sb.append("<thead><tr style='background-color: #e0f2fe; text-align: center; font-weight: bold;'>")
+        sb.append("<th style='width: 22%; padding: 8px; color: #0369a1;'>Tên Hoạt Động (Thời gian)</th>")
+        sb.append("<th style='width: 26%; padding: 8px; color: #0369a1;'>Mục Tiêu Hoạt Động</th>")
+        sb.append("<th style='width: 20%; padding: 8px; color: #0369a1;'>Phương Pháp & Kỹ Thuật</th>")
+        sb.append("<th style='width: 16%; padding: 8px; color: #0369a1;'>Phương Án Đánh Giá</th>")
+        sb.append("<th style='width: 16%; padding: 8px; color: #0369a1;'>Hồ Sơ / Sản Phẩm</th>")
+        sb.append("</tr></thead><tbody>")
+
         activities.forEachIndexed { idx, act ->
-            sb.append("<div class='activity-box'>")
-            sb.append("<h4 style='margin: 0 0 8px 0; color: #003399;'>${act.title} (${act.durationMinutes} phút)</h4>")
-            sb.append("<p><b>a) Mục tiêu:</b> ${act.objective}</p>")
-            sb.append("<p><b>b) Nội dung:</b> ${act.content}</p>")
-            sb.append("<p><b>c) Sản phẩm học tập:</b> ${act.product}</p>")
-            sb.append("<p><b>d) Tổ chức thực hiện:</b><br>${act.implementation.replace("\n", "<br>")}</p>")
-            sb.append("</div>")
+            val dTime = if (idx < defaultDurations.size) defaultDurations[idx] else act.durationMinutes
+            val method = if (act.pedagogicalMethod.isNotBlank()) act.pedagogicalMethod else defaultMethods.getOrElse(idx) { "Dạy học tích cực" }
+            val assess = if (act.assessmentMethod.isNotBlank()) act.assessmentMethod else defaultAssessments.getOrElse(idx) { "Đánh giá quá trình" }
+
+            sb.append("<tr>")
+            sb.append("<td style='padding: 6px 8px; vertical-align: top;'><b>${act.title}</b><br><span style='color: #0369a1; font-style: italic;'>($dTime phút)</span></td>")
+            sb.append("<td style='padding: 6px 8px; vertical-align: top;'>${act.objective}</td>")
+            sb.append("<td style='padding: 6px 8px; vertical-align: top;'>$method</td>")
+            sb.append("<td style='padding: 6px 8px; vertical-align: top;'>$assess</td>")
+            sb.append("<td style='padding: 6px 8px; vertical-align: top;'>${act.product}</td>")
+            sb.append("</tr>")
+        }
+        sb.append("</tbody></table>")
+
+        // III.2. CÁC HOẠT ĐỘNG HỌC CHI TIẾT THEO BẢNG 2 CỘT
+        sb.append("<p style='font-weight: bold; margin: 16px 0 8px 10px; font-size: 11.5pt; color: #1e3a8a;'>")
+        sb.append("2. Các hoạt động học chi tiết (Kế hoạch tổ chức dạy học theo Bảng 2 cột chuẩn Bộ GD&ĐT):")
+        sb.append("</p>")
+
+        activities.forEachIndexed { idx, act ->
+            sb.append(renderActivity5512Html(idx + 1, act))
         }
 
+        // Bảng ký duyệt cuối bài
         sb.append("<br><table style='width: 100%; border: none; text-align: center; margin-top: 30px;'><tr>")
-        sb.append("<td style='width: 50%;'><b>XÁC NHẬN CỦA TỔ CHUYÊN MÔN</b><br><br><br><br>................................................</td>")
-        sb.append("<td style='width: 50%;'><i>Ngày ..... tháng ..... năm 2026</i><br><b>GIÁO VIÊN SOẠN BÀI</b><br><br><br><br>................................................</td>")
+        sb.append("<td style='width: 50%; border: none;'><b>XÁC NHẬN CỦA TỔ CHUYÊN MÔN</b><br><br><br><br>................................................</td>")
+        sb.append("<td style='width: 50%; border: none;'><i>Ngày ..... tháng ..... năm 2026</i><br><b>GIÁO VIÊN SOẠN BÀI</b><br><br><br><br>................................................</td>")
         sb.append("</tr></table>")
 
         sb.append("</body></html>")
@@ -142,12 +335,31 @@ data class LessonPlan5512Result(
  * Cấu trúc các bước tích hợp/thực hành xưởng theo Công văn 2634/GDNN
  */
 data class Step2634(
+    val stepNumber: Int = 1,
     val stepName: String, // 1. Ổn định lớp & An toàn, 2. Hướng dẫn ban đầu, 3. Hướng dẫn thường xuyên, 4. Hướng dẫn kết thúc
     val durationMinutes: Int,
     val teacherActivity: String,
     val studentActivity: String,
-    val notesAndSafety: String
-)
+    val equipmentAndSafety: String = "",
+    val notesAndSafety: String = ""
+) {
+    // Constructor phụ hỗ trợ gọi 5 tham số kiểu cũ
+    constructor(
+        stepName: String,
+        durationMinutes: Int,
+        teacherActivity: String,
+        studentActivity: String,
+        notesAndSafety: String
+    ) : this(
+        stepNumber = 1,
+        stepName = stepName,
+        durationMinutes = durationMinutes,
+        teacherActivity = teacherActivity,
+        studentActivity = studentActivity,
+        equipmentAndSafety = "",
+        notesAndSafety = notesAndSafety
+    )
+}
 
 /**
  * Kế hoạch bài giảng chuẩn Công văn 2634/GDNN (Giáo dục Nghề nghiệp, Trung cấp, Cao đẳng)
@@ -165,20 +377,29 @@ data class LessonPlan2634Result(
     val materialsAndDrawings: String,
     val safetyGear: String,
     val steps: List<Step2634>,
+    val appliedSkill: String = "Luyện tập phân đoạn & Toàn phần",
+    val appliedStyle: String = "Thao tác mẫu 3 lần",
     val referenceCitations: String = "Công văn 2634/GDNN của Tổng cục GDNN; Tiêu chuẩn An toàn xưởng và 5S"
 ) {
     fun toHtmlDocument(): String {
+        val totalMinutes = (durationHours * 60).toInt().coerceAtLeast(60)
+        val t1 = (totalMinutes * 0.10).toInt().coerceAtLeast(5)
+        val t2 = (totalMinutes * 0.15).toInt().coerceAtLeast(10)
+        val t3 = (totalMinutes * 0.65).toInt().coerceAtLeast(30)
+        val t4 = (totalMinutes - t1 - t2 - t3).coerceAtLeast(5)
+
         val sb = StringBuilder()
         sb.append("<!DOCTYPE html><html><head><meta charset='UTF-8'><style>")
         sb.append("body { font-family: 'Times New Roman', Times, serif; font-size: 13pt; line-height: 1.4; color: #000; padding: 20px; }")
         sb.append("h1, h2, h3 { text-align: center; margin: 4px 0; }")
         sb.append("h1 { font-size: 15pt; font-weight: bold; text-transform: uppercase; }")
+        sb.append("h2 { font-size: 13.5pt; font-weight: bold; color: #c2410c; }")
         sb.append(".header-table { width: 100%; border: none; margin-bottom: 15px; }")
         sb.append(".header-table td { border: none; vertical-align: top; }")
-        sb.append(".step-table { width: 100%; border-collapse: collapse; margin-top: 10px; }")
-        sb.append(".step-table th, .step-table td { border: 1px solid #000; padding: 8px; font-size: 12pt; }")
-        sb.append(".step-table th { background-color: #f2f2f2; text-align: center; }")
-        sb.append(".citation-box { background-color: #fefce8; border: 1.5px solid #ca8a04; border-radius: 6px; padding: 10px 14px; margin: 15px 0; font-size: 11pt; color: #854d0e; }")
+        sb.append(".step-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11pt; border: 1px solid #fdba74; }")
+        sb.append(".step-table th, .step-table td { border: 1px solid #fed7aa; padding: 7px 8px; vertical-align: top; }")
+        sb.append(".step-table th { background-color: #ffedd5; text-align: center; color: #9a3412; font-weight: bold; }")
+        sb.append(".citation-box { background-color: #fefce8; border: 1.5px solid #ca8a04; border-radius: 6px; padding: 8px 12px; margin: 12px 0; font-size: 10.5pt; color: #854d0e; }")
         sb.append("</style></head><body>")
 
         sb.append("<table class='header-table'><tr>")
@@ -186,10 +407,12 @@ data class LessonPlan2634Result(
         sb.append("<td style='width: 55%; text-align: center;'><b>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><u>Độc lập - Tự do - Hạnh phúc</u></td>")
         sb.append("</tr></table>")
 
-        sb.append("<h1>GIÁO ÁN TÍCH HỢP / THỰC HÀNH (CHUẨN CÔNG VĂN 2634/GDNN)</h1>")
-        sb.append("<h2 style='text-align: center;'>MODULE/MÔN: ${moduleName.uppercase()}</h2>")
-        sb.append("<h3 style='text-align: center;'>Bài học: $lessonName</h3>")
-        sb.append("<p style='text-align: center;'><i>Nghề: $profession • Trình độ: $trainingLevel • Thời lượng: $durationHours giờ</i></p>")
+        sb.append("<h1>GIÁO ÁN BÀI DẠY THỰC HÀNH NGHỀ</h1>")
+        sb.append("<h2>BÀI: ${lessonName.uppercase()}</h2>")
+        sb.append("<p style='text-align: center; margin: 2px 0; font-style: italic;'>Module: $moduleName | Nghề: $profession | Trình độ: $trainingLevel | Thời lượng: $durationHours giờ ($totalMinutes phút)</p>")
+        if (appliedSkill.isNotBlank()) {
+            sb.append("<p style='text-align: center; margin: 4px 0 0 0; font-size: 10.5pt; color: #c2410c; font-weight: bold;'>[Bộ Skill Sư Phạm: $appliedSkill${if (appliedStyle.isNotBlank()) " • Phong cách: $appliedStyle" else ""}]</p>")
+        }
 
         if (referenceCitations.isNotBlank()) {
             sb.append("<div class='citation-box'>")
@@ -198,33 +421,54 @@ data class LessonPlan2634Result(
             sb.append("</div>")
         }
 
-        sb.append("<p><b>I. MỤC TIÊU BÀI HỌC:</b></p>")
-        sb.append("<p><b>1. Kiến thức:</b> $knowledgeObjective</p>")
-        sb.append("<p><b>2. Kỹ năng nghề:</b> $skillObjective</p>")
-        sb.append("<p><b>3. Năng lực tự chủ và trách nhiệm:</b> $autonomyAndResponsibility</p>")
+        sb.append("<p style='font-weight: bold; margin-bottom: 5px;'>I. MỤC TIÊU BÀI DẠY</p>")
+        sb.append("<p style='margin: 3px 0 3px 20px;'><b>1. Kiến thức nghề:</b> $knowledgeObjective</p>")
+        sb.append("<p style='margin: 3px 0 3px 20px;'><b>2. Kỹ năng thực hành:</b> $skillObjective</p>")
+        sb.append("<p style='margin: 3px 0 15px 20px;'><b>3. Năng lực tự chủ và ATLĐ:</b> $autonomyAndResponsibility</p>")
 
-        sb.append("<p><b>II. ĐIỀU KIỆN THỰC HIỆN BÀI HỌC:</b></p>")
-        sb.append("<p>• <b>Máy móc, thiết bị xưởng:</b> $machineryAndEquipment</p>")
-        sb.append("<p>• <b>Phôi mẫu, dụng cụ cắt & bản vẽ:</b> $materialsAndDrawings</p>")
-        sb.append("<p>• <b>Trang bị bảo hộ lao động (BHLĐ):</b> $safetyGear</p>")
+        sb.append("<p style='font-weight: bold; margin-bottom: 5px;'>II. ĐIỀU KIỆN THỰC HIỆN BÀI HỌC (XƯỞNG THỰC HÀNH)</p>")
+        sb.append("<p style='margin: 3px 0 3px 20px;'><b>1. Thiết bị, máy móc:</b> $machineryAndEquipment</p>")
+        sb.append("<p style='margin: 3px 0 3px 20px;'><b>2. Dụng cụ, vật tư, phôi mẫu:</b> $materialsAndDrawings</p>")
+        sb.append("<p style='margin: 3px 0 15px 20px;'><b>3. Trang bị ATLĐ và 5S:</b> $safetyGear</p>")
 
-        sb.append("<p><b>III. TIẾN TRÌNH THỰC HIỆN BÀI HỌC:</b></p>")
+        sb.append("<p style='font-weight: bold; margin: 15px 0 6px 0;'>III. TIẾN TRÌNH DẠY HỌC THỰC HÀNH TẠI XƯỞNG (BẢNG 6 CỘT CHUẨN CV 2634/GDNN)</p>")
+
         sb.append("<table class='step-table'>")
-        sb.append("<tr><th style='width: 20%;'>Các bước thực hiện</th><th style='width: 8%;'>Thời gian</th><th style='width: 36%;'>Hoạt động của Giáo viên</th><th style='width: 36%;'>Hoạt động của Học sinh / Sinh viên</th></tr>")
+        sb.append("<thead><tr>")
+        sb.append("<th style='width: 5%;'>TT</th>")
+        sb.append("<th style='width: 20%;'>Các bước & Nội dung công việc</th>")
+        sb.append("<th style='width: 9%;'>Thời gian</th>")
+        sb.append("<th style='width: 25%;'>Hoạt động của Giáo viên</th>")
+        sb.append("<th style='width: 21%;'>Hoạt động của Học sinh</th>")
+        sb.append("<th style='width: 20%;'>Thiết bị, Tiêu chuẩn kỹ thuật, ATLĐ & 5S</th>")
+        sb.append("</tr></thead><tbody>")
 
-        steps.forEach { st ->
+        val stepTimes = listOf(t1, t2, t3, t4)
+        steps.forEachIndexed { idx, st ->
+            val tMin = if (st.durationMinutes > 0) st.durationMinutes else stepTimes.getOrElse(idx) { 15 }
+            val equipSafety = if (st.equipmentAndSafety.isNotBlank()) {
+                st.equipmentAndSafety
+            } else when (idx) {
+                0 -> "• Thiết bị: $machineryAndEquipment<br><br><b style='color: #dc2626;'>⚠️ Điểm then chốt ATLĐ:</b> ${st.notesAndSafety.ifBlank { "Yêu cầu 100% không đeo găng tay khi vận hành trục quay máy; kiểm tra khóa liên động." }}"
+                1 -> "• Phôi & Dụng cụ: $materialsAndDrawings<br><br><b style='color: #dc2626;'>⚠️ Trọng tâm kỹ thuật:</b> ${st.notesAndSafety.ifBlank { "Tư thế đứng chuẩn, làm mẫu 3 lần, kiểm tra kích thước dao cắt." }}"
+                2 -> "• Tiêu chuẩn: Đúng bản vẽ kỹ thuật.<br><br><b style='color: #dc2626;'>⚠️ Điểm dừng an toàn:</b> ${st.notesAndSafety.ifBlank { "Tập trung cao độ; dừng máy hoàn toàn trước khi đo kiểm." }}"
+                else -> "• Đánh giá: Nghiệm thu định lượng.<br><br><b style='color: #dc2626;'>⚠️ Nề nếp 5S:</b> ${st.notesAndSafety.ifBlank { "Ngắt cầu dao điện tổng, lau dầu máy móc và quét dọn xưởng sạch sẽ." }}"
+            }
+
             sb.append("<tr>")
-            sb.append("<td><b>${st.stepName}</b><br><small style='color: red;'>⚠️ ${st.notesAndSafety}</small></td>")
-            sb.append("<td style='text-align: center;'>${st.durationMinutes}p</td>")
-            sb.append("<td>${st.teacherActivity.replace("\n", "<br>")}</td>")
-            sb.append("<td>${st.studentActivity.replace("\n", "<br>")}</td>")
+            sb.append("<td style='text-align: center; font-weight: bold;'>${idx + 1}</td>")
+            sb.append("<td><b>${st.stepName}</b></td>")
+            sb.append("<td style='text-align: center; font-weight: bold; color: #ea580c;'>${tMin} phút</td>")
+            sb.append("<td style='line-height: 1.45;'>${st.teacherActivity.replace("\n", "<br>")}</td>")
+            sb.append("<td style='line-height: 1.45;'>${st.studentActivity.replace("\n", "<br>")}</td>")
+            sb.append("<td style='font-size: 10pt; line-height: 1.4; background-color: #fffaf5;'>$equipSafety</td>")
             sb.append("</tr>")
         }
-        sb.append("</table>")
+        sb.append("</tbody></table>")
 
         sb.append("<br><table style='width: 100%; border: none; text-align: center; margin-top: 25px;'><tr>")
-        sb.append("<td style='width: 50%;'><b>TRƯỞNG KHOA / TỔ TRƯỞNG DUYỆT</b><br><br><br><br>................................................</td>")
-        sb.append("<td style='width: 50%;'><i>Ngày ..... tháng ..... năm 2026</i><br><b>GIÁO VIÊN SOẠN GIÁO ÁN</b><br><br><br><br>................................................</td>")
+        sb.append("<td style='width: 50%; border: none;'><b>TRƯỞNG KHOA / TỔ TRƯỞNG DUYỆT</b><br><br><br><br>................................................</td>")
+        sb.append("<td style='width: 50%; border: none;'><i>Ngày ..... tháng ..... năm 2026</i><br><b>GIÁO VIÊN SOẠN GIÁO ÁN</b><br><br><br><br>................................................</td>")
         sb.append("</tr></table>")
 
         sb.append("</body></html>")
@@ -578,6 +822,8 @@ data class LessonTeachingPack(
     val miniGame: LessonMiniGame,
     val mindmap: LessonMindmap,
     val videoResource: LessonVideoResource,
-    val rubricScore: LessonRubricScore
+    val rubricScore: LessonRubricScore,
+    val plan5512: LessonPlan5512Result? = null,
+    val plan2634: LessonPlan2634Result? = null
 )
 

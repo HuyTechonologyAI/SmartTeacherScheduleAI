@@ -1,12 +1,15 @@
 package com.smartteacher.schedule.feature.ai
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -533,6 +536,8 @@ fun AILessonPlannerView(
                             referenceContext = refContext
                         )
                         teachingPack = pack
+                        result5512 = pack.plan5512
+                        result2634 = pack.plan2634
 
                         // Tạo bản lưu tạm cho giáo án chính
                         val cleanName = "GiaoAn_${if (selectedStandard == 0) "5512" else "2634"}_${pack.lessonPlanName.take(25).replace(" ", "_")}.doc"
@@ -745,27 +750,37 @@ fun AILessonPlannerView(
 
                                 Divider()
 
-                                Text(
-                                    "KẾ HOẠCH BÀI DẠY: " + pack.lessonPlanName,
-                                    fontWeight = FontWeight.Bold,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Text(
-                                    "Môn: " + subject.ifBlank { "Chung" } + " • Lớp/Khối: " + className.ifBlank { "Phổ thông" },
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                                )
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
+                                if (pack.plan5512 != null) {
+                                    LessonPlan5512FullView(plan = pack.plan5512)
+                                } else if (pack.plan2634 != null) {
+                                    LessonPlan2634FullView(plan = pack.plan2634)
+                                } else if (result5512 != null) {
+                                    LessonPlan5512FullView(plan = result5512!!)
+                                } else if (result2634 != null) {
+                                    LessonPlan2634FullView(plan = result2634!!)
+                                } else {
                                     Text(
-                                        text = "Kế hoạch bài dạy đã được chuyển đổi sang chuẩn HTML Word UTF-8 với đầy đủ các mục Mục tiêu, Thiết bị học liệu và Tiến trình sư phạm. Bấm 'Xem trước' để đọc mượt mà toàn màn hình.",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        modifier = Modifier.padding(10.dp)
+                                        "KẾ HOẠCH BÀI DẠY: " + pack.lessonPlanName,
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.primary
                                     )
+                                    Text(
+                                        "Môn: " + subject.ifBlank { "Chung" } + " • Lớp/Khối: " + className.ifBlank { "Phổ thông" },
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                    )
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = "Kế hoạch bài dạy đã được chuyển đổi sang chuẩn HTML Word UTF-8 với đầy đủ các mục Mục tiêu, Thiết bị học liệu và Tiến trình sư phạm. Bấm 'Xem trước' để đọc mượt mà toàn màn hình.",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            modifier = Modifier.padding(10.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -1420,21 +1435,537 @@ fun AILessonPlannerView(
 }
 
 @Composable
-fun Activity5512Item(stepLabel: String, activity: Activity5512) {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(stepLabel, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 13.sp)
-            Text("• Thời gian: ${activity.durationMinutes} phút", style = MaterialTheme.typography.labelSmall)
-            Text("• Mục tiêu: ${activity.objective}", style = MaterialTheme.typography.bodySmall)
-            Text("• Nội dung: ${activity.content}", style = MaterialTheme.typography.bodySmall)
-            Text("• Sản phẩm: ${activity.product}", style = MaterialTheme.typography.bodySmall)
-            Text("• Tổ chức thực hiện: ${activity.implementation}", style = MaterialTheme.typography.bodySmall)
+fun LessonPlan5512FullView(plan: LessonPlan5512Result) {
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        // Administrative Title
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = Color(0xFFEFF6FF),
+            border = BorderStroke(1.dp, Color(0xFFBFDBFE)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF1E3A8A))
+                Text("Độc lập - Tự do - Hạnh phúc", fontSize = 10.sp, color = Color(0xFF3B82F6))
+                Spacer(modifier = Modifier.height(6.dp))
+                Text("KẾ HOẠCH BÀI DẠY (GIÁO ÁN)", fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = Color(0xFF1E3A8A))
+                Text("BÀI: ${plan.lessonName.uppercase()}", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF2563EB))
+                Text(
+                    "Môn: ${plan.subject} • Lớp: ${plan.grade} • Thời lượng: ${plan.durationPeriods} tiết (${plan.durationPeriods * 45} phút)",
+                    fontSize = 11.sp,
+                    color = Color(0xFF475569)
+                )
+                if (plan.appliedSkill.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color(0xFFDCFCE7),
+                        border = BorderStroke(1.dp, Color(0xFF86EFAC))
+                    ) {
+                        Text(
+                            text = "✨ Bộ Skill: ${plan.appliedSkill}${if (plan.appliedStyle.isNotBlank()) " • ${plan.appliedStyle}" else ""}",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF15803D),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Căn cứ pháp lý box
+        if (plan.referenceCitations.isNotBlank()) {
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = Color(0xFFF0FDF4),
+                border = BorderStroke(1.dp, Color(0xFF86EFAC)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.Top) {
+                    Icon(Icons.Default.Shield, contentDescription = null, tint = Color(0xFF16A34A), modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text("🛡️ CĂN CỨ PHÁP LÝ & TƯ LIỆU ĐỐI CHIẾU CHUẨN:", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF166534))
+                        Text(plan.referenceCitations, fontSize = 10.sp, color = Color(0xFF14532D))
+                    }
+                }
+            }
+        }
+
+        // I. Mục tiêu bài dạy
+        Surface(
+            shape = RoundedCornerShape(10.dp),
+            color = Color(0xFFF8FAFC),
+            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("I. MỤC TIÊU BÀI DẠY", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF1E3A8A))
+                Text("1. Về kiến thức: ${plan.knowledgeObjective}", fontSize = 11.sp, color = Color(0xFF334155))
+                Text("2. Về năng lực chung: ${plan.generalCompetence}", fontSize = 11.sp, color = Color(0xFF334155))
+                Text("3. Về năng lực đặc thù: ${plan.specificCompetence}", fontSize = 11.sp, color = Color(0xFF334155))
+                Text("4. Về phẩm chất: ${plan.qualitiesObjective}", fontSize = 11.sp, color = Color(0xFF334155))
+            }
+        }
+
+        // II. Thiết bị dạy học và học liệu
+        Surface(
+            shape = RoundedCornerShape(10.dp),
+            color = Color(0xFFF8FAFC),
+            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF1E3A8A))
+                Text("• Giáo viên: ${plan.teacherEquipment}", fontSize = 11.sp, color = Color(0xFF334155))
+                Text("• Học sinh: ${plan.studentEquipment}", fontSize = 11.sp, color = Color(0xFF334155))
+            }
+        }
+
+        // III.1 BẢNG MA TRẬN TIẾN TRÌNH DẠY HỌC TỔNG THỂ (5 CỘT)
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "III.1. TIẾN TRÌNH DẠY HỌC TỔNG THỂ (BẢNG 5 CỘT)",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    color = Color(0xFF1E3A8A)
+                )
+                Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    color = Color(0xFFEFF6FF),
+                    border = BorderStroke(1.dp, Color(0xFFBFDBFE))
+                ) {
+                    Text(
+                        "CV 5512",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF2563EB),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            // Scrollable 5-column table
+            val scrollState = rememberScrollState()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(scrollState)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                    color = Color.White,
+                    modifier = Modifier.width(680.dp)
+                ) {
+                    Column {
+                        // Header row
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFFF1F5F9))
+                                .padding(8.dp)
+                        ) {
+                            Text("Hoạt động & Thời lượng", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF1E293B), modifier = Modifier.width(140.dp))
+                            Text("Mục tiêu hoạt động", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF1E293B), modifier = Modifier.width(140.dp))
+                            Text("Phương pháp & Kỹ thuật", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF1E293B), modifier = Modifier.width(130.dp))
+                            Text("Phương án đánh giá", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF1E293B), modifier = Modifier.width(130.dp))
+                            Text("Sản phẩm dự kiến", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF047857), modifier = Modifier.width(140.dp))
+                        }
+                        Divider(color = Color(0xFFCBD5E1))
+
+                        // Body rows
+                        plan.activities.forEachIndexed { idx, act ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(if (idx % 2 == 0) Color.White else Color(0xFFF8FAFC))
+                                    .padding(8.dp)
+                            ) {
+                                Column(modifier = Modifier.width(140.dp)) {
+                                    Text(act.title, fontWeight = FontWeight.Bold, fontSize = 10.5.sp, color = Color(0xFF1E3A8A))
+                                    Text("(${act.durationMinutes} phút)", fontSize = 10.sp, color = Color(0xFF2563EB), fontWeight = FontWeight.Medium)
+                                }
+                                Text(act.objective, fontSize = 10.sp, color = Color(0xFF334155), modifier = Modifier.width(140.dp).padding(horizontal = 4.dp))
+                                Text(act.pedagogicalMethod.ifBlank { "Gợi mở vấn đáp, Kỹ thuật KWL" }, fontSize = 10.sp, color = Color(0xFF475569), modifier = Modifier.width(130.dp).padding(horizontal = 4.dp))
+                                Text(act.assessmentMethod.ifBlank { "Đánh giá thường xuyên" }, fontSize = 10.sp, color = Color(0xFF475569), modifier = Modifier.width(130.dp).padding(horizontal = 4.dp))
+                                Text(act.product, fontSize = 10.sp, color = Color(0xFF15803D), modifier = Modifier.width(140.dp).padding(horizontal = 4.dp))
+                            }
+                            if (idx < plan.activities.size - 1) {
+                                Divider(color = Color(0xFFE2E8F0))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // III.2 CHI TIẾT TỔ CHỨC HOẠT ĐỘNG HỌC (BẢNG 2 CỘT CHUẨN BỘ GD&ĐT)
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "III.2. CHI TIẾT HOẠT ĐỘNG (BẢNG 2 CỘT)",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    color = Color(0xFF1E3A8A)
+                )
+                Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    color = Color(0xFFECFDF5),
+                    border = BorderStroke(1.dp, Color(0xFFA7F3D0))
+                ) {
+                    Text(
+                        "Bố cục 2 Cột GV-HS",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF059669),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            plan.activities.forEachIndexed { actIdx, act ->
+                Activity5512ItemCard(actIdx = actIdx, act = act)
+            }
         }
     }
+}
+
+@Composable
+fun Activity5512ItemCard(actIdx: Int, act: Activity5512) {
+    val steps = parseImplementationSteps(act.implementation)
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(act.title, fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = Color(0xFF1E3A8A), modifier = Modifier.weight(1f))
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = Color(0xFFEFF6FF)
+                ) {
+                    Text(
+                        "HĐ ${actIdx + 1} • ${act.durationMinutes}p",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF2563EB),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            Text("a) Mục tiêu: ${act.objective}", fontSize = 11.sp, color = Color(0xFF334155))
+            Text("b) Nội dung tóm tắt: ${act.content}", fontSize = 11.sp, color = Color(0xFF475569))
+            Text("c) Sản phẩm: ${act.product}", fontSize = 11.sp, color = Color(0xFF15803D))
+
+            Text("d) Tổ chức thực hiện (Bảng phân chia 2 cột đối ứng):", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF1E293B))
+
+            // 2-Column Table
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                color = Color.White,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column {
+                    // Header Row
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFF1F5F9))
+                            .padding(6.dp)
+                    ) {
+                        Text(
+                            "HOẠT ĐỘNG CỦA GV VÀ HS",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 10.sp,
+                            color = Color(0xFF0F172A),
+                            modifier = Modifier.weight(0.58f)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            "SẢN PHẨM DỰ KIẾN / CẦN ĐẠT",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 10.sp,
+                            color = Color(0xFF0F172A),
+                            modifier = Modifier.weight(0.42f)
+                        )
+                    }
+                    Divider(color = Color(0xFFCBD5E1))
+
+                    // Content Row (2 Columns)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(6.dp)
+                    ) {
+                        // Left Column: 4 Steps
+                        Column(
+                            modifier = Modifier
+                                .weight(0.58f)
+                                .padding(end = 4.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            if (steps.isNotEmpty()) {
+                                steps.forEach { st ->
+                                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        Text(st.stepTitle, fontWeight = FontWeight.Bold, fontSize = 10.5.sp, color = Color(0xFF1E3A8A))
+                                        Text(st.content, fontSize = 10.sp, color = Color(0xFF334155), lineHeight = 14.sp)
+                                    }
+                                }
+                            } else {
+                                Text(act.implementation, fontSize = 10.sp, color = Color(0xFF334155))
+                            }
+                        }
+
+                        // Vertical divider line
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .fillMaxHeight()
+                                .background(Color(0xFFE2E8F0))
+                        )
+
+                        // Right Column: Expected Content & Product
+                        Column(
+                            modifier = Modifier
+                                .weight(0.42f)
+                                .padding(start = 4.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color(0xFFEFF6FF),
+                                border = BorderStroke(1.dp, Color(0xFFBFDBFE)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.padding(6.dp)) {
+                                    Text("📌 Nội dung trọng tâm cần đạt:", fontWeight = FontWeight.Bold, fontSize = 9.5.sp, color = Color(0xFF1E40AF))
+                                    Text(
+                                        if (act.expectedContent.isNotBlank()) act.expectedContent else act.content,
+                                        fontSize = 9.5.sp,
+                                        color = Color(0xFF1E293B),
+                                        lineHeight = 13.sp
+                                    )
+                                }
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color(0xFFF0FDF4),
+                                border = BorderStroke(1.dp, Color(0xFFBBF7D0)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.padding(6.dp)) {
+                                    Text("🎯 Sản phẩm học sinh hoàn thành:", fontWeight = FontWeight.Bold, fontSize = 9.5.sp, color = Color(0xFF166534))
+                                    Text(
+                                        if (act.expectedProduct.isNotBlank()) act.expectedProduct else act.product,
+                                        fontSize = 9.5.sp,
+                                        color = Color(0xFF14532D),
+                                        lineHeight = 13.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun LessonPlan2634FullView(plan: LessonPlan2634Result) {
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        // Administrative Title
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = Color(0xFFFFFBEB),
+            border = BorderStroke(1.dp, Color(0xFFFDE68A)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("GIÁO ÁN BÀI DẠY THỰC HÀNH NGHỀ", fontWeight = FontWeight.ExtraBold, fontSize = 15.sp, color = Color(0xFF92400E))
+                Text("BÀI: ${plan.lessonName.uppercase()}", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFFB45309))
+                Text(
+                    "Module: ${plan.moduleName} • Nghề: ${plan.profession} • Trình độ: ${plan.trainingLevel} • Thời lượng: ${plan.durationHours} giờ",
+                    fontSize = 11.sp,
+                    color = Color(0xFF78350F)
+                )
+                if (plan.appliedSkill.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color(0xFFFEF3C7),
+                        border = BorderStroke(1.dp, Color(0xFFFCD34D))
+                    ) {
+                        Text(
+                            text = "✨ Bộ Skill: ${plan.appliedSkill}${if (plan.appliedStyle.isNotBlank()) " • ${plan.appliedStyle}" else ""}",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFB45309),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Căn cứ pháp lý
+        if (plan.referenceCitations.isNotBlank()) {
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = Color(0xFFFEFCE8),
+                border = BorderStroke(1.dp, Color(0xFFFDE047)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.Top) {
+                    Icon(Icons.Default.Shield, contentDescription = null, tint = Color(0xFFCA8A04), modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text("🛡️ CĂN CỨ VĂN BẢN & TIÊU CHUẨN XƯỞNG ĐỐI CHIẾU:", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF854D0E))
+                        Text(plan.referenceCitations, fontSize = 10.sp, color = Color(0xFF713F12))
+                    }
+                }
+            }
+        }
+
+        // I. Mục tiêu bài dạy
+        Surface(
+            shape = RoundedCornerShape(10.dp),
+            color = Color(0xFFF8FAFC),
+            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("I. MỤC TIÊU BÀI DẠY THỰC HÀNH", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF92400E))
+                Text("1. Kiến thức nghề: ${plan.knowledgeObjective}", fontSize = 11.sp, color = Color(0xFF334155))
+                Text("2. Kỹ năng thực hành: ${plan.skillObjective}", fontSize = 11.sp, color = Color(0xFF334155))
+                Text("3. Năng lực tự chủ và ATLĐ: ${plan.autonomyAndResponsibility}", fontSize = 11.sp, color = Color(0xFF334155))
+            }
+        }
+
+        // II. Điều kiện thực hiện (Xưởng thực hành)
+        Surface(
+            shape = RoundedCornerShape(10.dp),
+            color = Color(0xFFF8FAFC),
+            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("II. ĐIỀU KIỆN THỰC HIỆN BÀI HỌC (XƯỞNG THỰC HÀNH)", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF92400E))
+                Text("• Máy móc thiết bị: ${plan.machineryAndEquipment}", fontSize = 11.sp, color = Color(0xFF334155))
+                Text("• Dụng cụ, vật tư, phôi: ${plan.materialsAndDrawings}", fontSize = 11.sp, color = Color(0xFF334155))
+                Text("• Trang bị ATLĐ & 5S: ${plan.safetyGear}", fontSize = 11.sp, color = Color(0xFFDC2626), fontWeight = FontWeight.Medium)
+            }
+        }
+
+        // III. BẢNG TIẾN TRÌNH THỰC HÀNH 6 CỘT CHUẨN XƯỞNG
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "III. TIẾN TRÌNH THỰC HÀNH (BẢNG 6 CỘT CHUẨN XƯỞNG)",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    color = Color(0xFF92400E)
+                )
+                Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    color = Color(0xFFFEF3C7),
+                    border = BorderStroke(1.dp, Color(0xFFFCD34D))
+                ) {
+                    Text(
+                        "CV 2634/GDNN",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFB45309),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            val scrollState = rememberScrollState()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(scrollState)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, Color(0xFFFED7AA)),
+                    color = Color.White,
+                    modifier = Modifier.width(760.dp)
+                ) {
+                    Column {
+                        // Header row
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFFFFEDD5))
+                                .padding(8.dp)
+                        ) {
+                            Text("TT", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF9A3412), modifier = Modifier.width(40.dp))
+                            Text("Các bước & Nội dung công việc", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF9A3412), modifier = Modifier.width(160.dp))
+                            Text("Thời gian", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF9A3412), modifier = Modifier.width(70.dp))
+                            Text("Hoạt động của Giáo viên", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF9A3412), modifier = Modifier.width(170.dp))
+                            Text("Hoạt động của Học sinh", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF9A3412), modifier = Modifier.width(150.dp))
+                            Text("Thiết bị, ATLĐ & 5S", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFFDC2626), modifier = Modifier.width(170.dp))
+                        }
+                        Divider(color = Color(0xFFFED7AA))
+
+                        // Rows
+                        plan.steps.forEachIndexed { idx, st ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(if (idx % 2 == 0) Color.White else Color(0xFFFFFBEB))
+                                    .padding(8.dp)
+                            ) {
+                                Text("${idx + 1}", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF9A3412), modifier = Modifier.width(40.dp))
+                                Text(st.stepName, fontWeight = FontWeight.Bold, fontSize = 10.5.sp, color = Color(0xFF1E293B), modifier = Modifier.width(160.dp))
+                                Text("${st.durationMinutes}p", fontWeight = FontWeight.Bold, fontSize = 10.5.sp, color = Color(0xFFEA580C), modifier = Modifier.width(70.dp))
+                                Text(st.teacherActivity, fontSize = 10.sp, color = Color(0xFF334155), modifier = Modifier.width(170.dp).padding(horizontal = 4.dp))
+                                Text(st.studentActivity, fontSize = 10.sp, color = Color(0xFF334155), modifier = Modifier.width(150.dp).padding(horizontal = 4.dp))
+                                Column(modifier = Modifier.width(170.dp).padding(horizontal = 4.dp)) {
+                                    Text(st.equipmentAndSafety.ifBlank { st.notesAndSafety }, fontSize = 9.5.sp, color = Color(0xFF78350F), lineHeight = 13.sp)
+                                }
+                            }
+                            if (idx < plan.steps.size - 1) {
+                                Divider(color = Color(0xFFFED7AA))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun Activity5512Item(stepLabel: String, activity: Activity5512) {
+    Activity5512ItemCard(actIdx = 0, act = activity)
 }
 
 @Composable
@@ -1449,7 +1980,7 @@ fun Step2634Item(stepLabel: String, step: Step2634) {
             Text("• Thời gian: ${step.durationMinutes} phút", style = MaterialTheme.typography.labelSmall)
             Text("• Hoạt động của GV: ${step.teacherActivity}", style = MaterialTheme.typography.bodySmall)
             Text("• Hoạt động của HS: ${step.studentActivity}", style = MaterialTheme.typography.bodySmall)
-            Text("• Lưu ý & ATLĐ: ${step.notesAndSafety}", style = MaterialTheme.typography.bodySmall, color = Color(0xFFDC2626))
+            Text("• Thiết bị & ATLĐ 5S: ${step.equipmentAndSafety.ifBlank { step.notesAndSafety }}", style = MaterialTheme.typography.bodySmall, color = Color(0xFFDC2626))
         }
     }
 }

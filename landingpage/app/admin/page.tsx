@@ -492,10 +492,10 @@ export default function SuperAdminPage() {
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                   </div>
                   <div className="text-sm font-semibold text-white">
-                    v{metrics?.infrastructure.versionApi.latestVersion || '2.1.0'} Active
+                    v{metrics?.infrastructure.versionApi.latestVersion || '2.2.0'} Active
                   </div>
                   <div className="text-[11px] text-slate-400 flex items-center justify-between">
-                    <span>Version Code: {metrics?.infrastructure.versionApi.versionCode || 21}</span>
+                    <span>Version Code: {metrics?.infrastructure.versionApi.versionCode || 22}</span>
                     <span className="text-emerald-400 font-bold">Auto-Update On</span>
                   </div>
                 </div>

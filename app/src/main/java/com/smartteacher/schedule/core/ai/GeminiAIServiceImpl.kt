@@ -758,38 +758,56 @@ class GeminiAIServiceImpl(
                   "teacherEquipment": "Thiết bị, phiếu học tập, đồ dùng dạy học của GV",
                   "studentEquipment": "Sách vở, dụng cụ học tập của HS",
                   "referenceCitations": "Công văn 5512/BGDĐT-GDTrH; CT GDPT 2018; các tài liệu đã đối chiếu",
+                  "appliedSkill": "Mô hình 5E / Dạy học giải quyết vấn đề",
+                  "appliedStyle": "Tương tác thực chứng",
                   "activities": [
                     {
-                      "title": "Hoạt động 1: Mở đầu / Khởi động",
+                      "title": "Hoạt động 1: Mở đầu / Khởi động (Tạo tình huống có vấn đề)",
                       "durationMinutes": 7,
                       "objective": "Tạo hứng thú, kết nối bài mới",
                       "content": "Câu hỏi hoặc tình huống khơi gợi",
                       "product": "Câu trả lời của HS",
-                      "implementation": "1. Chuyển giao nhiệm vụ\n2. HS thực hiện\n3. Báo cáo, thảo luận\n4. GV kết luận"
+                      "pedagogicalMethod": "Trực quan, Gợi mở vấn đáp, Kỹ thuật KWL / Tia chớp",
+                      "assessmentMethod": "Đánh giá qua câu trả lời và thái độ tham gia của HS",
+                      "expectedContent": "Nội dung nhận thức ban đầu cần đạt của học sinh",
+                      "expectedProduct": "Ý kiến phát biểu, câu trả lời trên bảng phụ hoặc phiếu",
+                      "implementation": "* Bước 1: Chuyển giao nhiệm vụ: GV giao nhiệm vụ... HS tiếp nhận...\n* Bước 2: Thực hiện nhiệm vụ: HS làm việc cá nhân... GV quan sát...\n* Bước 3: Báo cáo, thảo luận: Đại diện HS báo cáo... các bạn khác phản biện...\n* Bước 4: Kết luận, nhận định: GV nhận xét, chuẩn hóa kiến thức và kết nối bài học."
                     },
                     {
-                      "title": "Hoạt động 2: Hình thành kiến thức mới",
+                      "title": "Hoạt động 2: Hình thành kiến thức mới (Chiếm lĩnh tri thức trọng tâm)",
                       "durationMinutes": 20,
                       "objective": "Chiếm lĩnh kiến thức trọng tâm",
                       "content": "Nhiệm vụ học tập cụ thể theo từng phần",
                       "product": "Kết quả ghi chép, sản phẩm nhóm",
-                      "implementation": "Tổ chức hoạt động dạy học chi tiết"
+                      "pedagogicalMethod": "Dạy học hợp tác nhóm, Giải quyết vấn đề, Kỹ thuật Mảnh ghép",
+                      "assessmentMethod": "Đánh giá qua sản phẩm phiếu học tập và câu hỏi phản biện",
+                      "expectedContent": "Nội dung kiến thức cốt lõi học sinh cần ghi nhớ",
+                      "expectedProduct": "Phiếu học tập hoàn chỉnh, bản ghi chép của học sinh",
+                      "implementation": "* Bước 1: Chuyển giao nhiệm vụ: GV chia nhóm và giao phiếu học tập số 1...\n* Bước 2: Thực hiện nhiệm vụ: Các nhóm thảo luận, tra cứu tài liệu SGK... GV hỗ trợ...\n* Bước 3: Báo cáo, thảo luận: Đại diện các nhóm báo cáo kết quả, tranh luận phản biện...\n* Bước 4: Kết luận, nhận định: GV chuẩn hóa kiến thức và kết luận nội dung trọng tâm."
                     },
                     {
-                      "title": "Hoạt động 3: Luyện tập",
+                      "title": "Hoạt động 3: Luyện tập (Củng cố và rèn luyện kỹ năng)",
                       "durationMinutes": 12,
                       "objective": "Củng cố, khắc sâu kiến thức",
                       "content": "Bài tập, câu hỏi củng cố",
                       "product": "Bài giải của HS",
-                      "implementation": "Tổ chức làm bài và nhận xét"
+                      "pedagogicalMethod": "Thực hành luyện tập, Trò chơi học tập, Kỹ thuật Khăn trải bàn",
+                      "assessmentMethod": "Đánh giá kết quả làm bài tập tự luận / trắc nghiệm",
+                      "expectedContent": "Vận dụng kiến thức giải quyết các dạng bài tập cụ thể",
+                      "expectedProduct": "Bài giải chi tiết trong vở hoặc phiếu bài tập",
+                      "implementation": "* Bước 1: Chuyển giao nhiệm vụ: GV giao hệ thống câu hỏi và bài tập tự luyện...\n* Bước 2: Thực hiện nhiệm vụ: HS suy nghĩ độc lập và giải bài tập vào vở...\n* Bước 3: Báo cáo, thảo luận: GV chỉ định HS lên bảng chữa bài, lớp nhận xét...\n* Bước 4: Kết luận, nhận định: GV chốt đáp án đúng, chỉ rõ các lỗi sai thường gặp."
                     },
                     {
-                      "title": "Hoạt động 4: Vận dụng",
+                      "title": "Hoạt động 4: Vận dụng (Gắn liền bài học với thực tiễn)",
                       "durationMinutes": 6,
                       "objective": "Ứng dụng kiến thức vào thực tế",
                       "content": "Nhiệm vụ mở rộng tìm tòi",
                       "product": "Sản phẩm thực tế của HS",
-                      "implementation": "Giao nhiệm vụ về nhà"
+                      "pedagogicalMethod": "Dự án học tập, Nghiên cứu trường hợp thực tế, Giao việc tự học",
+                      "assessmentMethod": "Đánh giá đề án thực tiễn theo Rubric tiêu chí",
+                      "expectedContent": "Liên hệ thực tiễn và giải quyết các bài toán đời sống",
+                      "expectedProduct": "Bản báo cáo ngắn, sản phẩm sáng tạo nộp buổi sau",
+                      "implementation": "* Bước 1: Chuyển giao nhiệm vụ: GV hướng dẫn câu hỏi vận dụng hoặc dự án nhỏ về nhà...\n* Bước 2: Thực hiện nhiệm vụ: HS tự nghiên cứu ngoài giờ lên lớp...\n* Bước 3: Báo cáo, thảo luận: Báo cáo kết quả hoặc nộp sản phẩm vào buổi học kế tiếp...\n* Bước 4: Kết luận, nhận định: GV đánh giá, nhận xét và xếp loại sản phẩm sáng tạo."
                     }
                   ]
                 }
@@ -892,10 +910,10 @@ class GeminiAIServiceImpl(
         referenceContext: String
     ): LessonPlan5512Result {
         val totalMin = durationPeriods * 45
-        val warmMin = (totalMin * 0.15).toInt().coerceAtLeast(5)
-        val newMin = (totalMin * 0.45).toInt().coerceAtLeast(15)
-        val pracMin = (totalMin * 0.25).toInt().coerceAtLeast(10)
-        val appMin = totalMin - warmMin - newMin - pracMin
+        val warmMin = (totalMin * 0.12).toInt().coerceAtLeast(5)
+        val newMin = (totalMin * 0.50).toInt().coerceAtLeast(18)
+        val pracMin = (totalMin * 0.26).toInt().coerceAtLeast(10)
+        val appMin = (totalMin - warmMin - newMin - pracMin).coerceAtLeast(4)
 
         val citations = if (referenceContext.isNotBlank()) {
             "Công văn 5512/BGDĐT-GDTrH; CT GDPT 2018;\nTư liệu chuẩn đối chiếu từ Kho dữ liệu: " + referenceContext.take(180) + "..."
@@ -959,8 +977,12 @@ class GeminiAIServiceImpl(
                     durationMinutes = warmMin,
                     objective = "Kích thích tư duy, tạo mâu thuẫn nhận thức để học sinh sẵn sàng tiếp thu bài '$lessonName'.",
                     content = act1Content,
-                    product = "Câu trả lời, ý kiến thảo luận sôi nổi của học sinh ghi trên bảng phụ.",
-                    implementation = "1. Giao nhiệm vụ: GV trình chiếu câu hỏi khởi động.\n2. Thực hiện: HS suy nghĩ cá nhân trong 2 phút.\n3. Báo cáo: Đại diện 2 HS phát biểu ý kiến.\n4. Kết luận: GV nhận xét, dẫn dắt vào bài mới."
+                    product = "Câu trả lời, ý kiến thảo luận sôi nổi của học sinh ghi trên bảng phụ hoặc phiếu học tập.",
+                    pedagogicalMethod = "Trực quan, Gợi mở vấn đáp, Kỹ thuật KWL / Tia chớp",
+                    assessmentMethod = "Đánh giá qua câu trả lời và thái độ tham gia của HS",
+                    expectedContent = "Nhận biết vấn đề thực tiễn dẫn dắt đến nội dung bài học '$lessonName'.",
+                    expectedProduct = "Ý kiến trả lời và các phương án dự đoán ban đầu của học sinh.",
+                    implementation = "* Bước 1: Chuyển giao nhiệm vụ: GV trình chiếu câu hỏi khởi động và tình huống thực tiễn.\n* Bước 2: Thực hiện nhiệm vụ: HS suy nghĩ cá nhân trong 2 phút và trao đổi cặp đôi.\n* Bước 3: Báo cáo, thảo luận: Đại diện 2 HS phát biểu ý kiến, các bạn nhận xét bổ sung.\n* Bước 4: Kết luận, nhận định: GV nhận xét, dẫn dắt kết nối vào bài học mới."
                 ),
                 Activity5512(
                     title = "Hoạt động 2: Hình thành kiến thức mới (Chiếm lĩnh tri thức trọng tâm)",
@@ -968,15 +990,23 @@ class GeminiAIServiceImpl(
                     objective = "Học sinh hiểu rõ nội dung, định nghĩa, công thức và quy trình của bài '$lessonName'.",
                     content = act2Content,
                     product = "Bản tổng hợp kiến thức đã hoàn thành trên phiếu học tập số 1 của các nhóm.",
-                    implementation = "1. Giao nhiệm vụ: Chia lớp thành các nhóm, giao phiếu học tập.\n2. Thực hiện: Các nhóm thảo luận, GV quan sát hỗ trợ.\n3. Báo cáo: Nhóm 1 báo cáo, các nhóm khác phản biện.\n4. Kết luận: GV chuẩn hóa kiến thức trên slide."
+                    pedagogicalMethod = "Dạy học hợp tác nhóm, Giải quyết vấn đề, Kỹ thuật Mảnh ghép",
+                    assessmentMethod = "Đánh giá qua sản phẩm phiếu học tập và câu hỏi phản biện",
+                    expectedContent = "Nắm vững bản chất, quy luật, các khái niệm trọng tâm của bài học.",
+                    expectedProduct = "Phiếu học tập hoàn chỉnh, sơ đồ tư duy tóm tắt kiến thức của nhóm.",
+                    implementation = "* Bước 1: Chuyển giao nhiệm vụ: GV chia lớp thành các nhóm 4-6 HS, phát phiếu học tập số 1 và giao nhiệm vụ nghiên cứu.\n* Bước 2: Thực hiện nhiệm vụ: Các nhóm thảo luận, tra cứu tài liệu SGK và hoàn thành phiếu học tập. GV quan sát và hỗ trợ các nhóm gặp khó khăn.\n* Bước 3: Báo cáo, thảo luận: Đại diện nhóm 1 và nhóm 2 báo cáo kết quả; các nhóm khác lắng nghe, nhận xét và phản biện.\n* Bước 4: Kết luận, nhận định: GV chuẩn hóa kiến thức trên slide, chốt lại các nội dung cốt lõi và hướng dẫn HS ghi bài vào vở."
                 ),
                 Activity5512(
                     title = "Hoạt động 3: Luyện tập (Củng cố và rèn luyện kỹ năng)",
                     durationMinutes = pracMin,
                     objective = "Khắc sâu kiến thức, vận dụng trực tiếp vào bài tập hoặc câu hỏi tình huống.",
                     content = act3Content,
-                    product = "Bài giải chi tiết của học sinh trong vở ghi.",
-                    implementation = "1. Giao nhiệm vụ: GV giao bài tập tự luyện trên màn hình.\n2. Thực hiện: HS độc lập làm bài.\n3. Báo cáo: Gọi 2 HS lên bảng chữa bài.\n4. Kết luận: GV nhận xét, chốt đáp án đúng và phân tích lỗi sai."
+                    product = "Bài giải chi tiết của học sinh trong vở ghi hoặc phiếu học tập số 2.",
+                    pedagogicalMethod = "Thực hành luyện tập, Trò chơi học tập, Kỹ thuật Khăn trải bàn",
+                    assessmentMethod = "Đánh giá kết quả làm bài tập tự luận / trắc nghiệm",
+                    expectedContent = "Vận dụng công thức và kiến thức vừa học để giải quyết các bài tập định mức.",
+                    expectedProduct = "Lời giải chi tiết và đáp án bài tập của học sinh trong vở.",
+                    implementation = "* Bước 1: Chuyển giao nhiệm vụ: GV giao bài tập tự luyện trên màn hình hoặc phiếu trắc nghiệm/tự luận.\n* Bước 2: Thực hiện nhiệm vụ: HS độc lập làm bài trong 7 phút. GV đi quanh lớp bao quát, hướng dẫn học sinh còn yếu.\n* Bước 3: Báo cáo, thảo luận: GV gọi 2 HS lên bảng trình bày bài giải; các HS khác đối chiếu đáp án và nhận xét.\n* Bước 4: Kết luận, nhận định: GV nhận xét, chốt đáp án chuẩn xác và phân tích các lỗi sai học sinh thường mắc phải."
                 ),
                 Activity5512(
                     title = "Hoạt động 4: Vận dụng (Gắn liền bài học với thực tiễn)",
@@ -984,9 +1014,15 @@ class GeminiAIServiceImpl(
                     objective = "Vận dụng kiến thức bài '$lessonName' để giải thích hiện tượng hoặc làm sản phẩm thực tiễn.",
                     content = act4Content,
                     product = "Bản báo cáo ngắn gọn hoặc sản phẩm sáng tạo nộp vào tiết học sau.",
-                    implementation = "1. Giao nhiệm vụ: GV hướng dẫn câu hỏi vận dụng mở rộng.\n2. Thực hiện: HS thực hiện ngoài giờ lên lớp.\n3. Đánh giá: Thu sản phẩm đánh giá vào buổi học tới."
+                    pedagogicalMethod = "Dự án học tập, Nghiên cứu trường hợp thực tế, Giao việc tự học",
+                    assessmentMethod = "Đánh giá đề án thực tiễn theo Rubric tiêu chí",
+                    expectedContent = "Mở rộng liên hệ thực tế cuộc sống hoặc ứng dụng công nghệ của bài học.",
+                    expectedProduct = "Bản báo cáo nhỏ, video ngắn hoặc sản phẩm sáng tạo của cá nhân/nhóm.",
+                    implementation = "* Bước 1: Chuyển giao nhiệm vụ: GV hướng dẫn câu hỏi vận dụng thực tế hoặc dự án nhỏ về nhà.\n* Bước 2: Thực hiện nhiệm vụ: HS tìm hiểu tài liệu ngoài giờ học, thực hiện dự án cá nhân hoặc nhóm.\n* Bước 3: Báo cáo, thảo luận: Nộp sản phẩm qua nhóm học tập hoặc báo cáo đầu giờ buổi học kế tiếp.\n* Bước 4: Kết luận, nhận định: GV đánh giá, tuyên dương các sản phẩm sáng tạo và chấm điểm cộng tích cực."
                 )
             ),
+            appliedSkill = "Mô hình 5E / Dạy học giải quyết vấn đề",
+            appliedStyle = "Tương tác thực chứng",
             referenceCitations = citations
         )
     }
@@ -1163,34 +1199,44 @@ class GeminiAIServiceImpl(
             safetyGear = if (customSafety.isNotBlank()) customSafety else "Quần áo bảo hộ xưởng cơ khí, kính bảo hộ chống phoi bắn, giày bảo hộ mũi lót thép, không đeo găng tay khi vận hành trục chính.",
             steps = listOf(
                 Step2634(
+                    stepNumber = 1,
                     stepName = "1. Ổn định lớp & Nhắc nhở an toàn xưởng",
                     durationMinutes = 5,
                     teacherActivity = "Điểm danh quân số, kiểm tra tác phong và trang bị BHLĐ cá nhân của học sinh. Phổ biến quy tắc an toàn xưởng trước khi đóng điện nguồn.",
                     studentActivity = "Tập trung đúng giờ, mặc BHLĐ theo quy định, báo cáo sĩ số và lắng nghe hướng dẫn an toàn.",
-                    notesAndSafety = "Tuyệt đối không mang điện thoại cá nhân vào khu vực gia công máy."
+                    notesAndSafety = "Tuyệt đối không mang điện thoại cá nhân vào khu vực gia công máy.",
+                    equipmentAndSafety = "• Thiết bị: Tủ điện nguồn, sơ đồ thoát hiểm xưởng.\n⚠️ Điểm then chốt ATLĐ: 100% trang phục BHLĐ, cài nút gọn gàng, không đeo trang sức/găng tay khi vận hành máy."
                 ),
                 Step2634(
+                    stepNumber = 2,
                     stepName = "2. Hướng dẫn ban đầu",
                     durationMinutes = 20,
                     teacherActivity = step2Teacher,
                     studentActivity = "Quan sát tỉ mỉ từng thao tác của giáo viên, ghi chép thông số công nghệ vào phiếu thực tập.",
-                    notesAndSafety = "Đứng cách máy tối thiểu 0.8m trong khi giáo viên thao tác mẫu."
+                    notesAndSafety = "Đứng cách máy tối thiểu 0.8m trong khi giáo viên thao tác mẫu.",
+                    equipmentAndSafety = "• Phôi & Dụng cụ: Phôi chuẩn, dao tiện/phay, thước kẹp 0.01mm.\n⚠️ Trọng tâm kỹ thuật: Thao tác mẫu 2 lần (tốc độ thường & phân tích chi tiết từng bước)."
                 ),
                 Step2634(
+                    stepNumber = 3,
                     stepName = "3. Hướng dẫn thường xuyên",
                     durationMinutes = (durationHours * 60 - 40).toInt().coerceAtLeast(60),
                     teacherActivity = "Phân công học sinh về từng vị trí máy. Đi tuần xưởng, theo dõi tư thế thao tác, nhắc nhở quy tắc an toàn, kịp thời chấn chỉnh sai sót và giải đáp thắc mắc.",
                     studentActivity = "Học sinh độc lập gá phôi, rà dao, nhập chương trình và thực hiện gia công chi tiết theo phiếu quy trình công nghệ.",
-                    notesAndSafety = "Đóng kín cửa bảo vệ máy trước khi bấm Cycle Start. Luôn để tay gần nút E-STOP."
+                    notesAndSafety = "Đóng kín cửa bảo vệ máy trước khi bấm Cycle Start. Luôn để tay gần nút E-STOP.",
+                    equipmentAndSafety = "• Tiêu chuẩn: Đúng bản vẽ kỹ thuật, dung sai kích thước ±0.02mm.\n⚠️ Điểm dừng an toàn: Dừng trục chính hoàn toàn trước khi đo kiểm hoặc gạt phoi vụn."
                 ),
                 Step2634(
+                    stepNumber = 4,
                     stepName = "4. Hướng dẫn kết thúc",
                     durationMinutes = 15,
                     teacherActivity = "Thu sản phẩm, cùng học sinh đo kiểm kích thước, chỉ ra nguyên nhân các chi tiết bị phế phẩm. Đánh giá thái độ học tập và chấm điểm sản phẩm. Nhận xét buổi học.",
                     studentActivity = "Nộp sản phẩm cho giáo viên. Tắt nguồn điện máy, quét dọn phoi vụn, lau chùi máy, bôi dầu bảo quản băng máy và sắp xếp dụng cụ theo 5S.",
-                    notesAndSafety = "Cắt aptomat tổng trước khi vệ sinh xưởng."
+                    notesAndSafety = "Cắt aptomat tổng trước khi vệ sinh xưởng.",
+                    equipmentAndSafety = "• Đánh giá: Nghiệm thu sản phẩm theo phiếu chấm điểm định lượng.\n⚠️ Nề nếp 5S: Cắt aptomat tổng, bảo dưỡng bề mặt kim loại, bàn giao xưởng sạch sẽ."
                 )
             ),
+            appliedSkill = "Kỹ năng huấn luyện thực hành 4 bước (TWi)",
+            appliedStyle = "Thao tác chuẩn mực & Kỷ luật xưởng 5S",
             referenceCitations = citations
         )
     }
@@ -1416,6 +1462,8 @@ class GeminiAIServiceImpl(
         // 1. Soạn Giáo án / Kế hoạch bài dạy
         val lessonPlanHtml: String
         val lessonTitleDisplay: String
+        val res5512: LessonPlan5512Result?
+        val res2634: LessonPlan2634Result?
         if (standard == 1) {
             val plan2634 = generateLessonPlan2634(
                 moduleName = subject,
@@ -1428,6 +1476,8 @@ class GeminiAIServiceImpl(
             )
             lessonPlanHtml = plan2634.toHtmlDocument()
             lessonTitleDisplay = plan2634.lessonName
+            res2634 = plan2634
+            res5512 = null
         } else {
             val plan5512 = generateLessonPlan5512(
                 lessonName = lessonName,
@@ -1439,6 +1489,8 @@ class GeminiAIServiceImpl(
             )
             lessonPlanHtml = plan5512.toHtmlDocument()
             lessonTitleDisplay = plan5512.lessonName
+            res5512 = plan5512
+            res2634 = null
         }
 
         // 2. Slide Thuyết Trình Bài Dạy
@@ -1463,7 +1515,9 @@ class GeminiAIServiceImpl(
             miniGame = miniGame,
             mindmap = mindmap,
             videoResource = videoResource,
-            rubricScore = rubricScore
+            rubricScore = rubricScore,
+            plan5512 = res5512,
+            plan2634 = res2634
         )
     }
 

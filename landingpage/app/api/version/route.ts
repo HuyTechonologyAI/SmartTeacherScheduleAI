@@ -2,19 +2,19 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   return NextResponse.json({
-    versionName: '2.1.0',
-    versionCode: 21,
+    versionName: '2.2.0',
+    versionCode: 22,
     minRequiredVersion: 18,
-    releaseDate: '2026-09-15',
-    title: 'Bản Cập Nhật v2.1.0 - Hệ Sinh Thái Giáo Dục Thông Minh & Điều Phối 14 AI Toàn Diện',
+    releaseDate: '2026-09-16',
+    title: 'Bản Cập Nhật v2.2.0 - Khung Skill Sư Phạm Toàn Diện & Kế Hoạch Bài Dạy Chuẩn Chia Cột CV 5512 / CV 2634',
     releaseNotes: [
-      'Điều phối tự động 14 công cụ AI trong AI Central Hub (huycncdsai.io.vn) theo từng cấu phần giáo án: Slide, Sơ đồ tư duy, 4 ảnh kỹ thuật ComfyUI, Video vi mô và VietTTS.',
-      'Trình chiếu Slide 16:9 Widescreen Canvas tương tác trực tiếp trên trình duyệt web, hiển thị 2 cột chuẩn mực sư phạm, điều hướng bàn phím, thumbnail và chế độ toàn màn hình.',
-      'Động cơ Giọng Đọc Sư Phạm Đa Tầng (VietTTS Neural Voice) với 4 hồ sơ giọng chuẩn (Cô Hoài My, Thầy Nam Minh, Cô Mai Linh) và cơ chế tự động Audio Fallback.',
-      'Tính năng Chỉnh Sửa Trực Tiếp Toàn Diện trên cả 6 cấu phần học liệu trước khi xuất bản file (.doc, .pptx, .txt, .svg).',
-      'Công cụ SlideEditorModal hỗ trợ chỉnh sửa nhanh nội dung từng slide trực tiếp trên thẻ slide hoặc từ thanh trình chiếu.',
-      'Cổng thanh toán tự động VietQR Napas 24/7 & Webhook 3 giây (ACB STK: 37780997 NGO QUOC HUY).',
-      'Liên thông dữ liệu đồng bộ chéo giữa Master Hub huycncdsai.io.vn, SmartTax AI và Smart Teacher Schedule AI.'
+      'Chuẩn hóa Kế hoạch bài dạy (Giáo án) theo bố cục BẢNG 2 CỘT CHUẨN BỘ GD&ĐT (Công văn 5512/BGDĐT-GDTrH): Cột trái 4 bước sư phạm GV-HS mạch lạc, Cột phải kiến thức trọng tâm & sản phẩm học sinh cần đạt.',
+      'Bổ sung Bảng Ma Trận Tiến Trình Dạy Học Tổng Thể (5 cột) ở đầu Mục III: Phân bổ khoa học tên hoạt động, mục tiêu, phương pháp, phương án đánh giá và hồ sơ sản phẩm.',
+      'Chuẩn hóa Giáo án thực hành nghề nghiệp (Công văn 2634/GDNN) theo BẢNG 6 CỘT CHUẨN XƯỞNG: Thao tác mẫu 3 lần, giám sát phân đoạn & tổng hợp, nghiệm thu định lượng và kỷ luật ATLĐ - 5S xưởng.',
+      'Bộ Kỹ Năng Sư Phạm Đa Phương Pháp (Pedagogical Skills Framework) với 7 quy trình giảng dạy tân tiến (5E, Trạm, STEM, PBL, KWLH, Bàn tay nặn bột, Thực hành 5S) và 4 phong cách sư phạm cá nhân hóa.',
+      'Cơ chế Quản Lý & Tặng Mã Voucher Khuyến Mãi cho Admin Hub: Tạo, sửa, cấp quyền, cấu hình chiết khấu và theo dõi lịch sử quy đổi trực tiếp.',
+      'Khắc phục triệt để lỗi tải file rỗng bằng Universal Parameter Auto-Detection trên toàn bộ các tệp Word (.doc).',
+      'Đồng bộ hóa giao diện hiển thị bảng biểu Dark/Light mode trên toàn bộ hệ sinh thái Web, Android và Windows Desktop.'
     ],
     ecosystem: {
       masterHub: 'https://huycncdsai.io.vn',
@@ -25,24 +25,24 @@ export async function GET() {
     },
     platforms: {
       android: {
-        versionName: '2.1.0',
-        versionCode: 21,
-        downloadUrl: 'https://www.gvcncdsai.io.vn/downloads/SmartTeacherSchedule_v2.1.0.apk',
-        backupUrl: 'https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v2.1.0/SmartTeacherSchedule_v2.1.0.apk',
-        fileName: 'SmartTeacherSchedule_v2.1.0.apk',
+        versionName: '2.2.0',
+        versionCode: 22,
+        downloadUrl: 'https://www.gvcncdsai.io.vn/downloads/SmartTeacherSchedule_v2.2.0.apk',
+        backupUrl: 'https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v2.2.0/SmartTeacherSchedule_v2.2.0.apk',
+        fileName: 'SmartTeacherSchedule_v2.2.0.apk',
         fileSizeMb: 15.85,
         isForceUpdate: false
       },
       windows: {
-        versionName: '2.1.0',
-        versionCode: 21,
-        setupUrl: 'https://www.gvcncdsai.io.vn/downloads/SmartTeacherSchedule_Setup_v2.1.0.exe',
-        backupUrl: 'https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v2.1.0/SmartTeacherSchedule_Setup_v2.1.0.exe',
-        fileName: 'SmartTeacherSchedule_Setup_v2.1.0.exe',
+        versionName: '2.2.0',
+        versionCode: 22,
+        setupUrl: 'https://www.gvcncdsai.io.vn/downloads/SmartTeacherSchedule_Setup_v2.2.0.exe',
+        backupUrl: 'https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v2.2.0/SmartTeacherSchedule_Setup_v2.2.0.exe',
+        fileName: 'SmartTeacherSchedule_Setup_v2.2.0.exe',
         isForceUpdate: false
       },
       web: {
-        versionName: '2.1.0',
+        versionName: '2.2.0',
         url: 'https://www.gvcncdsai.io.vn/app'
       }
     }

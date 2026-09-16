@@ -4,13 +4,15 @@ Chào mừng Quý Thầy/Cô, Ban Giám Hiệu, Học sinh và Phụ huynh đế
 
 ---
 
-## 🚀 Tải về nhanh bản phát hành mới nhất: **v1.8.0 (Trí Tuệ Nhân Tạo Sư Phạm & Liên Thông Sổ Điểm Học Bạ Điện Tử)**
+## 🚀 Tải về nhanh bản phát hành mới nhất: **v2.2.0 (Trí Tuệ Sư Phạm Chuẩn Bố Cục Công Văn 5512 & 2634 / Quản Trị Voucher / Đồng Bộ Đa Nền Tảng)**
 
 | Tệp tin | Định dạng | Dung lượng | Mục đích sử dụng | Tải trực tiếp |
 | :--- | :---: | :---: | :--- | :---: |
-| **`SmartTeacherSchedule_v1.8.0_Release.apk`** | `.apk` | ~15.7 MB | Cài đặt trực tiếp lên điện thoại/máy tính bảng Android (Samsung, Xiaomi, Tecno, OPPO, Vivo...) | [📲 **Tải APK v1.8.0**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.8.0/SmartTeacherSchedule_v1.8.0_Release.apk) |
-| **`SmartTeacherSchedule_v1.8.0_Release.aab`** | `.aab` | ~15.3 MB | Gói Android App Bundle ký số đưa lên Google Play Store | [📦 **Tải AAB v1.8.0**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.8.0/SmartTeacherSchedule_v1.8.0_Release.aab) |
-| **`SmartTeacherSchedule_v1.8.0_Desktop.zip`** | `.zip` | ~2.4 MB | Bản Desktop chạy trên máy tính Windows, macOS, Linux có menu 4 cổng | [💻 **Tải Desktop**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.8.0/SmartTeacherSchedule_v1.8.0_Desktop.zip) |
+| **`SmartTeacherSchedule_v2.2.0_Release.apk`** | `.apk` | ~15.8 MB | Cài đặt trực tiếp lên điện thoại/máy tính bảng Android (Samsung, Xiaomi, Tecno, OPPO, Vivo...) | [📲 **Tải APK v2.2.0**](https://gvcncdsai.io.vn/api/download/android) |
+| **`SmartTeacherSchedule_Setup_v2.2.0.exe`** | `.exe` (Setup) | ~83.2 MB | Bộ cài đặt chuyên nghiệp cho máy tính Windows (Tự động cập nhật, biểu tượng Desktop, Start Menu) | [💻 **Tải Windows Setup**](https://gvcncdsai.io.vn/api/download/windows) |
+| **`SmartTeacherSchedule_v2.2.0_Portable.exe`** | `.exe` (Portable) | ~82.8 MB | Bản chạy ngay không cần cài đặt cho Windows (chạy trực tiếp từ USB hoặc thư mục bất kỳ) | [⚡ **Tải Windows Portable**](https://gvcncdsai.io.vn/api/download/portable) |
+| **`SmartTeacherSchedule_v2.2.0_Release.aab`** | `.aab` | ~15.5 MB | Gói Android App Bundle ký số đưa lên Google Play Store | [📦 **Tải AAB v2.2.0**](https://gvcncdsai.io.vn/api/download/aab) |
+| **`SmartTeacherSchedule_v2.2.0_Desktop.zip`** | `.zip` | ~610 KB | Gói mã nguồn đóng gói Desktop nhẹ nhàng dành cho quản trị viên và môi trường tùy biến | [🗜️ **Tải Desktop Zip**](https://gvcncdsai.io.vn/api/download/zip) |
 | **`Bản iOS (iPhone & iPad)`** | `PWA / ISO` | Safari Web App | Hỗ trợ iPhone, iPad (iOS 16.4+), Web Push Notification, Thêm vào MH chính 1-chạm | [🍎 **Mở trên iOS**](https://gvcncdsai.io.vn/app) |
 | **`Feature_Graphic_1024x500.png`** | `.png` | ~1.05 MB | Đồ họa nổi bật chuẩn Google Play Store | [🖼️ **Tải Banner**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.6.0/Feature_Graphic_1024x500.png) |
 | **`SmartTeacher_AppIcon_AI.png`** | `.png` | ~483 KB | Biểu tượng nhận diện ứng dụng độ phân giải cao | [🎨 **Tải Icon**](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/download/v1.6.0/SmartTeacher_AppIcon_AI.png) |
@@ -20,29 +22,25 @@ Chào mừng Quý Thầy/Cô, Ban Giám Hiệu, Học sinh và Phụ huynh đế
 
 ---
 
-## 🌟 Điểm mới nổi bật trên phiên bản v1.8.0:
-1. **Liên Thông Sổ Điểm & Học Bạ Điện Tử Chuẩn Thông Tư 22/2021/TT-BGDĐT**:
-   - Tự động tính toán điểm trung bình môn ($\text{ĐTB}_{\text{mhk}}$) theo đúng hệ số quy định: ĐGTX (hs 1), ĐGGK (hs 2), ĐGCK (hs 3).
-   - Tự động xếp loại học tập và rèn luyện 4 mức độ: Tốt, Khá, Đạt, Chưa đạt.
-   - Xuất sổ điểm chuẩn Microsoft Excel (`.xlsx`) cho Giáo viên.
-   - Xuất Phiếu liên lạc / Học bạ điện tử chuẩn A4 in ấn / PDF cho Phụ huynh.
-   - Xuất Báo cáo chất lượng giáo dục chuẩn văn bản hành chính (`.doc`) gửi Phòng/Sở GD&ĐT cho Nhà trường.
-2. **Bộ Công Cụ Trí Tuệ Nhân Tạo Sư Phạm Thế Hệ Mới (Next-Gen AI)**:
-   - **Trợ lý AI Soạn Đề Thi Chuẩn Ma Trận Đặc Tả**: Sinh đề 15 phút, 1 tiết, học kỳ với ma trận 4 mức độ tư duy kèm đáp án và thang điểm chi tiết.
-   - **Gia Sư Giọng Nói AI (Voice AI Tutor)**: Hỗ trợ học sinh luyện phát âm tiếng Anh chuẩn ngữ âm và nghe hướng dẫn giải bài bằng giọng tiếng Việt thân thiện.
-   - **Semantic Caching & Token Economy**: Tối ưu 100% thời gian phản hồi và chi phí token cho các câu hỏi trùng lặp.
-3. **Quản Lý & Điều Chỉnh Bộ Lọc Môn Học Linh Hoạt**:
-   - Cho phép giáo viên đổi tên môn học trực tiếp, tự động cập nhật hàng loạt toàn bộ ca dạy trên lịch.
-   - Xoá môn học an toàn (hỗ trợ xoá ca dạy hoặc chuyển sang môn khác) và modal quản lý danh mục môn tập trung.
-4. **Kiến Trúc Lưu Trữ Sức Chứa Hàng Gigabyte (IndexedDB Storage Engine)**:
-   - Thay thế triệt để giới hạn 5MB của LocalStorage bằng IndexedDB, giải quyết hoàn toàn lỗi `QuotaExceededError`.
-   - Cơ chế phát hiện và giải quyết xung đột dữ liệu ngoại tuyến (Offline Concurrency Conflict Resolver).
+## 🌟 Điểm mới nổi bật trên phiên bản v2.2.0:
+1. **Bố Cục Kế Hoạch Bài Dạy Chuẩn Hóa Theo Công Văn 5512/BGDĐT-GDTrH & 2634/BGDĐT-GDTrH**:
+   - **Phân chia cột chuyên sâu**:
+     - *Bảng Tổng Quan Tiến Trình (5 Cột)*: Hoạt động | Mục tiêu | Nội dung | Sản phẩm | Phương thức tổ chức thực hiện.
+     - *Bảng Chi Tiết Hoạt Động (2 Cột Song Song)*: Hoạt động của Giáo viên (Chuyển giao nhiệm vụ, Theo dõi hướng dẫn) song song Hoạt động của Học sinh (Tiếp nhận nhiệm vụ, Báo cáo thảo luận, Kết luận ghi nhận).
+     - *Khung Bài Thực Hành/Thí Nghiệm (6 Cột - CV 2634)*: STT | Nội dung thực hành | Thiết bị - Dụng cụ | Các bước tiến hành | Tiêu chí đánh giá | Sản phẩm thu hoạch.
+2. **Khắc Phục Triệt Để Lỗi Tải Xuất Tài Liệu AI (Universal Document Exporter)**:
+   - Toàn bộ tài liệu do AI sinh ra (Kế hoạch bài dạy, Đề thi trắc nghiệm & tự luận, Giáo án stem, Báo cáo sư phạm) khi tải về định dạng Word (`.doc`) hoặc in ấn/sao lưu được bảo toàn 100% nội dung HTML/Styling có cấu trúc, hoàn toàn không còn tình trạng tệp tin rỗng.
+3. **Bộ Quản Trị Khuyến Mãi & Voucher Hub Toàn Diện (Admin Center)**:
+   - Giao diện Admin quản trị mã khuyến mãi (`/admin/vouchers`): Tạo mới, chỉnh sửa % giảm giá, số tiền cố định, thời hạn sử dụng, giới hạn lượt dùng và theo dõi thống kê thực tế.
+4. **Hạ Tầng Tự Động Cập Nhật Đa Nền Tảng (Single Source of Truth v2.2.0 - Build 22)**:
+   - Các cổng ứng dụng Android, Windows Desktop và Web PWA tự động nhận diện bản cập nhật mới nhất qua API `https://gvcncdsai.io.vn/api/version`.
+   - Cung cấp link tải trực tiếp đa nền tảng thông qua API Gateway chuẩn `/api/download/[platform]`.
 
 ---
 
 ## 🔗 Liên kết chính thức:
 - 🏷️ **GitHub Releases:** [https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases)
-- 📌 **Bản phát hành v1.8.0:** [https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/tag/v1.8.0](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/tag/v1.8.0)
+- 📌 **Bản phát hành v2.2.0:** [https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/tag/v2.2.0](https://github.com/HuyTechonologyAI/SmartTeacherScheduleAI/releases/tag/v2.2.0)
 - 🌐 **Hệ sinh thái Web / PWA:**
   - 🏛️ Cổng Trường: [https://gvcncdsai.io.vn/school](https://gvcncdsai.io.vn/school)
   - 👨‍🏫 Cổng Giáo Viên: [https://gvcncdsai.io.vn/app](https://gvcncdsai.io.vn/app)

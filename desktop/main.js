@@ -231,9 +231,9 @@ function checkForUpdates(manual = false) {
     res.on('end', () => {
       try {
         const data = JSON.parse(rawData);
-        const currentVersionCode = 21; // v2.1.0
-        const remoteVersionCode = data.versionCode || 20;
-        const remoteVersionName = data.versionName || '2.1.0';
+        const currentVersionCode = 22; // v2.2.0
+        const remoteVersionCode = data.versionCode || 21;
+        const remoteVersionName = data.versionName || '2.2.0';
 
         if (remoteVersionCode > currentVersionCode) {
           dialog.showMessageBox(mainWindow, {
@@ -246,7 +246,7 @@ function checkForUpdates(manual = false) {
             cancelId: 1
           }).then((result) => {
             if (result.response === 0) {
-              const downloadUrl = data.platforms?.windows?.setupUrl || 'https://www.gvcncdsai.io.vn/downloads/SmartTeacherSchedule_Setup_v2.1.0.exe';
+              const downloadUrl = data.platforms?.windows?.setupUrl || 'https://www.gvcncdsai.io.vn/downloads/SmartTeacherSchedule_Setup_v2.2.0.exe';
               shell.openExternal(downloadUrl);
             }
           });

@@ -239,7 +239,8 @@ import {
   CheckCheck,
   CreditCard,
   Phone,
-  Apple
+  Apple,
+  Cpu
 } from 'lucide-react';
 
 export interface CalendarEventItem {
@@ -7570,7 +7571,7 @@ export default function UnifiedTeacherScheduleApp() {
             </div>
 
             {/* ========================================================================= */}
-            {/* 1. PHIÊN BẢN CÀI ĐẶT & HỆ THỐNG ĐA NỀN TẢNG (v2.1.0 RELEASE MATRIX) */}
+            {/* 1. PHIÊN BẢN CÀI ĐẶT & HỆ THỐNG ĐA NỀN TẢNG (v2.2.0 RELEASE MATRIX) */}
             {/* ========================================================================= */}
             <div className="bg-white dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl p-6 space-y-6 shadow-sm">
               <div className="flex items-center justify-between flex-wrap gap-4 pb-4 border-b border-slate-100 dark:border-slate-700/60">
@@ -7584,14 +7585,14 @@ export default function UnifiedTeacherScheduleApp() {
                         Smart Teacher Schedule AI
                       </h3>
                       <span className="px-3 py-0.5 rounded-full bg-gradient-to-r from-rose-600 to-amber-600 text-white text-xs font-mono font-bold shadow-xs">
-                        v2.1.0 Chính Thức
+                        v2.2.0 Chính Thức
                       </span>
                       <span className="px-2.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold">
-                        Build 21 • Bản Mới Nhất
+                        Build 22 • Bản Mới Nhất
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      Giải pháp chuyển đổi số toàn diện cho Nhà trường, Giáo viên, Phụ huynh và Học sinh theo Thông tư 22/2021/TT-BGDĐT
+                      Giải pháp chuyển đổi số toàn diện cho Nhà trường, Giáo viên, Phụ huynh và Học sinh theo Thông tư 22/2021/TT-BGDĐT & CV 5512
                     </p>
                   </div>
                 </div>
@@ -7629,7 +7630,7 @@ export default function UnifiedTeacherScheduleApp() {
                           Android APK
                         </span>
                         <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 font-bold">
-                          ~15.7 MB
+                          ~15.8 MB
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
@@ -7654,11 +7655,11 @@ export default function UnifiedTeacherScheduleApp() {
                         <span>Hướng dẫn & Tải</span>
                       </button>
                       <a
-                        href="/SmartTeacherSchedule_v2.1.0_Release.apk"
-                        download="SmartTeacherSchedule_v2.1.0_Release.apk"
+                        href="/downloads/SmartTeacherSchedule_v2.2.0_Release.apk"
+                        download="SmartTeacherSchedule_v2.2.0_Release.apk"
                         onClick={(e) => {
                           e.stopPropagation();
-                          trackDownload('android', '2.1.0', 'Settings Android APK');
+                          trackDownload('android', '2.2.0', 'Settings Android APK');
                         }}
                         title="Tải trực tiếp file APK"
                         className="p-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950 dark:hover:bg-emerald-900 text-emerald-800 dark:text-emerald-200 text-xs transition-colors shrink-0"
@@ -7668,7 +7669,7 @@ export default function UnifiedTeacherScheduleApp() {
                     </div>
                   </div>
 
-                  {/* 2. iOS / iPhone & iPad (PWA / ISO) */}
+                  {/* 2. iOS WebApp */}
                   <div
                     onClick={() => {
                       setSelectedGuidePlatform('ios');
@@ -7679,19 +7680,19 @@ export default function UnifiedTeacherScheduleApp() {
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                          <Apple className="w-4 h-4 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform" />
-                          Bản iOS / iPhone
+                          <Laptop className="w-4 h-4 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform" />
+                          iOS WebApp
                         </span>
                         <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 font-bold">
-                          PWA iOS
+                          Safari PWA
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-                        Chạy mượt trên iPhone/iPad (iOS 16.4+), thông báo Web Push, thêm vào MH chính 1-chạm.
+                        Thêm vào Màn hình chính (Home Screen) trên Safari iOS chỉ với 2 chạm.
                       </p>
                       <div className="text-[10px] font-medium text-purple-600 dark:text-purple-400 flex items-center gap-1 pt-0.5">
                         <HelpCircle className="w-3 h-3" />
-                        <span>3 bước thêm vào Safari</span>
+                        <span>Xem mẹo ghim Safari iOS</span>
                       </div>
                     </div>
                     <button
@@ -7701,54 +7702,68 @@ export default function UnifiedTeacherScheduleApp() {
                         setSelectedGuidePlatform('ios');
                         setShowPlatformGuideModal(true);
                       }}
-                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
+                      className="w-full inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/50 text-xs font-bold transition-all cursor-pointer"
                     >
-                      <Apple className="w-3.5 h-3.5" />
-                      <span>Xem hướng dẫn iOS</span>
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>Thêm vào màn hình chính</span>
                     </button>
                   </div>
 
-                  {/* 3. Google Play Bundle */}
+                  {/* 3. Windows Portable (Không cần cài) */}
                   <div
                     onClick={() => {
-                      setSelectedGuidePlatform('googleplay');
+                      setSelectedGuidePlatform('portable');
                       setShowPlatformGuideModal(true);
                     }}
-                    className="group p-4 rounded-xl bg-gradient-to-b from-slate-50 to-blue-50/30 dark:from-slate-800/60 dark:to-blue-950/20 border border-slate-200/80 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md transition-all duration-200 flex flex-col justify-between space-y-3 cursor-pointer relative"
+                    className="group p-4 rounded-xl bg-gradient-to-b from-slate-50 to-sky-50/30 dark:from-slate-800/60 dark:to-sky-950/20 border border-slate-200/80 dark:border-slate-700 hover:border-sky-400 dark:hover:border-sky-500 hover:shadow-md transition-all duration-200 flex flex-col justify-between space-y-3 cursor-pointer relative"
                   >
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                          <Globe className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform" />
-                          Google Play AAB
+                          <Cpu className="w-4 h-4 text-sky-600 dark:text-sky-400 group-hover:scale-110 transition-transform" />
+                          Bản Chạy Ngay
                         </span>
-                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 font-bold">
-                          ~15.3 MB
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-100 dark:bg-sky-950/70 text-sky-800 dark:text-sky-300 font-bold">
+                          Portable .EXE
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-                        Gói xuất bản chính thức chuẩn Google Play App Bundle (Signed Release).
+                        Chạy trực tiếp từ USB hoặc máy tính cơ quan, không cần quyền Quản trị viên (Admin).
                       </p>
-                      <div className="text-[10px] font-medium text-blue-600 dark:text-blue-400 flex items-center gap-1 pt-0.5">
+                      <div className="text-[10px] font-medium text-sky-600 dark:text-sky-400 flex items-center gap-1 pt-0.5">
                         <HelpCircle className="w-3 h-3" />
-                        <span>Xem thông tin thẩm định</span>
+                        <span>Mẹo dùng trên máy trường học</span>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedGuidePlatform('googleplay');
-                        setShowPlatformGuideModal(true);
-                      }}
-                      className="w-full inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-xs font-bold transition-all cursor-pointer"
-                    >
-                      <Info className="w-3.5 h-3.5" />
-                      <span>Xem hướng dẫn AAB</span>
-                    </button>
+                    <div className="flex items-center gap-1.5 pt-1">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedGuidePlatform('portable');
+                          setShowPlatformGuideModal(true);
+                        }}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
+                      >
+                        <HelpCircle className="w-3.5 h-3.5" />
+                        <span>Hướng dẫn & Tải</span>
+                      </button>
+                      <a
+                        href="/downloads/SmartTeacherSchedule_v2.2.0_Portable.exe"
+                        download="SmartTeacherSchedule_v2.2.0_Portable.exe"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          trackDownload('windows_portable', '2.2.0', 'Settings Windows Portable');
+                        }}
+                        title="Tải trực tiếp bản Portable chạy ngay"
+                        className="p-1.5 rounded-lg bg-sky-100 hover:bg-sky-200 dark:bg-sky-950 dark:hover:bg-sky-900 text-sky-800 dark:text-sky-200 text-xs transition-colors shrink-0"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
                   </div>
 
-                  {/* 4. Desktop Electron */}
+                  {/* 4. Windows Desktop Setup */}
                   <div
                     onClick={() => {
                       setSelectedGuidePlatform('desktop');
@@ -7759,11 +7774,11 @@ export default function UnifiedTeacherScheduleApp() {
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                          <Laptop className="w-4 h-4 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform" />
-                          Máy tính Desktop
+                          <Monitor className="w-4 h-4 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform" />
+                          Windows Setup
                         </span>
                         <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950/70 text-indigo-800 dark:text-indigo-300 font-bold">
-                          ~2.4 MB
+                          Bản Cài Đặt
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
@@ -7788,11 +7803,11 @@ export default function UnifiedTeacherScheduleApp() {
                         <span>Hướng dẫn & Tải</span>
                       </button>
                       <a
-                        href="/downloads/SmartTeacherSchedule_Setup_v2.1.0.exe"
-                        download="SmartTeacherSchedule_Setup_v2.1.0.exe"
+                        href="/downloads/SmartTeacherSchedule_Setup_v2.2.0.exe"
+                        download="SmartTeacherSchedule_Setup_v2.2.0.exe"
                         onClick={(e) => {
                           e.stopPropagation();
-                          trackDownload('windows_setup', '2.1.0', 'Settings Windows Setup');
+                          trackDownload('windows_setup', '2.2.0', 'Settings Windows Setup');
                         }}
                         title="Tải bộ cài đặt Windows Setup .exe có logo"
                         className="p-1.5 rounded-lg bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-950 dark:hover:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-xs transition-colors shrink-0"
@@ -7844,36 +7859,36 @@ export default function UnifiedTeacherScheduleApp() {
                 </div>
               </div>
 
-              {/* v2.1.0 Highlight Feature Matrix */}
+              {/* v2.2.0 Highlight Feature Matrix */}
               <div className="bg-slate-50 dark:bg-slate-900/60 rounded-xl p-4 border border-slate-200/70 dark:border-slate-800 space-y-2.5">
                 <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <Zap className="w-4 h-4 text-amber-500" />
-                  <span>Những tính năng cốt lõi mới trên bản phát hành v2.1.0:</span>
+                  <span>Những tính năng cốt lõi mới trên bản phát hành v2.2.0:</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-300">
                   <div className="flex items-start gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></span>
-                    <span><strong>Sổ điểm & Học bạ điện tử (TT 22):</strong> Tự động tính điểm môn, điểm rèn luyện, xếp loại và liên thông 4 cổng nhà trường - giáo viên - phụ huynh.</span>
+                    <span><strong>Kế hoạch bài dạy chuẩn phân cột CV 5512:</strong> Bảng ma trận tiến trình 5 cột tổng thể & Bảng 2 cột tổ chức hoạt động học đối ứng với sản phẩm cần đạt.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></span>
-                    <span><strong>Trợ lý AI Đề thi Ma trận đặc tả:</strong> Tự động sinh đề kiểm tra 4 mức độ nhận thức (Nhận biết, Thông hiểu, Vận dụng, Vận dụng cao) kèm đáp án chi tiết.</span>
+                    <span><strong>Giáo án thực hành nghề nghiệp CV 2634:</strong> Bảng 6 cột chuẩn xưởng, quy trình thao tác mẫu 3 lần, kiểm soát dung sai bản vẽ & an toàn 5S.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></span>
-                    <span><strong>Voice AI Tutor giọng nói:</strong> Luyện phát âm Tiếng Anh chuẩn IPA và trợ giảng giải bài tập bằng giọng tiếng Việt truyền cảm.</span>
+                    <span><strong>Bộ Kỹ năng Sư phạm & Phong cách Giảng dạy:</strong> Tích hợp 7 phương pháp (5E, STEM, Trạm, PBL, KWLH, Bàn tay nặn bột, Xưởng 5S) kết hợp 4 phong cách cá nhân hóa.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></span>
-                    <span><strong>Bộ lọc môn học chủ động:</strong> Cho phép giáo viên thêm môn giảng dạy mới, đổi tên hoặc xóa môn trực tiếp trên bộ lọc.</span>
+                    <span><strong>Quản lý & Tặng Mã Voucher Khuyến Mãi:</strong> Admin Hub toàn quyền tạo mã, cấp quyền, điều chỉnh mức chiết khấu và theo dõi quy đổi trực tiếp.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></span>
-                    <span><strong>Bộ đệm Semantic Caching AI:</strong> Tiết kiệm hơn 90% chi phí Token, phản hồi giáo án tức thì & không bị gián đoạn định mức API.</span>
+                    <span><strong>Khắc phục triệt để lỗi tải file rỗng:</strong> Cơ chế Universal Parameter Auto-Detection tự động bảo đảm nội dung Word (.doc) xuất bản 100% đầy đủ.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></span>
-                    <span><strong>Kho lưu trữ Client IndexedDB:</strong> Sức chứa dữ liệu hàng GB, hoạt động ngoại tuyến 100% không lo quá tải LocalStorage.</span>
+                    <span><strong>Sổ điểm & Học bạ điện tử (TT 22) + Voice AI:</strong> Tự động tính điểm môn, xếp loại học lực, luyện phát âm chuẩn IPA và liên thông 4 cổng giáo dục.</span>
                   </div>
                 </div>
               </div>

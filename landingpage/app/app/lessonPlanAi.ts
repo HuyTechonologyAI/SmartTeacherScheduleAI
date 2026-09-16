@@ -1649,7 +1649,7 @@ export function generateTechnicalDiagramsCycle(
       parameters: [
         { label: 'Phương pháp nghiên cứu', value: 'Quy nạp & Thực nghiệm' },
         { label: 'Tính chất khoa học', value: 'Chính xác & Khách quan' },
-        { label: 'Công cụ mô phỏng', value: 'AI Sư Phạm v2.1.0' }
+        { label: 'Công cụ mô phỏng', value: 'AI Sư Phạm v2.2.0' }
       ],
       keySafetyNotes: 'Thao tác tư duy phản biện, đối chiếu kết quả với các ví dụ chuẩn mực.',
       svgContent: `<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;border-radius:14px;background:linear-gradient(135deg,#172554 0%,#1e1b4b 100%);border:1px solid #60a5fa44;">

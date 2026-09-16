@@ -24,9 +24,9 @@ export const metadata: Metadata = {
     canonical: "https://huycncdsai.io.vn",
   },
   openGraph: {
-    title: "Smart Teacher Schedule AI - Trợ lý Sư Phạm & Lịch Dạy Giáo Viên v2.1.0",
+    title: "Smart Teacher Schedule AI - Trợ lý Sư Phạm & Lịch Dạy Giáo Viên v2.2.0",
     description:
-      "Tải app v2.1.0 chính thức: Hệ sinh thái Đa Nền Tảng (Android, Web, Desktop), Sổ điểm & Học bạ điện tử Thông tư 22, Trợ lý AI Soạn bài CV 5512, Đề thi Ma trận đặc tả, Voice AI Tutor và Bản quyền Huy Technology AI.",
+      "Tải app v2.2.0 chính thức: Hệ sinh thái Đa Nền Tảng (Android, Web, Desktop), Giáo án phân cột chuẩn CV 5512 & CV 2634, Bộ Skill Sư Phạm 5E/STEM/PBL, Sổ điểm TT 22 và Voucher Hub Huy Technology AI.",
     images: [
       {
         url: "/feature_banner.jpg",

@@ -159,8 +159,8 @@ export async function GET() {
       },
       versionApi: {
         status: 'Operational',
-        latestVersion: '2.1.0',
-        versionCode: 21
+        latestVersion: '2.2.0',
+        versionCode: 22
       }
     },
     ecosystemUsers: {

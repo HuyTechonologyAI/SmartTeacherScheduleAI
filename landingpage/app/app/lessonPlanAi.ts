@@ -2260,7 +2260,40 @@ ${miniGameToTxt(pkg.miniGame, pkg.lessonTitle)}
   `;
 }
 
-export function downloadWordDoc(htmlContent: string, fileName: string): void {
+export function downloadWordDoc(arg1: string, arg2: string): void {
+  if (typeof window === 'undefined') return;
+
+  // Tự động nhận diện thứ tự tham số (htmlContent, fileName) hoặc (fileName, htmlContent)
+  // để chống tuyệt đối lỗi đảo ngược tham số làm file Word rỗng hoặc hỏng
+  let htmlContent = '';
+  let fileName = '';
+
+  const isArg1Html = typeof arg1 === 'string' && (/<[a-z][\s\S]*>/i.test(arg1) || arg1.includes('KẾ HOẠCH BÀI DẠY') || arg1.length > 250);
+  const isArg2Html = typeof arg2 === 'string' && (/<[a-z][\s\S]*>/i.test(arg2) || arg2.includes('KẾ HOẠCH BÀI DẠY') || arg2.length > 250);
+
+  if (isArg1Html && !isArg2Html) {
+    htmlContent = arg1;
+    fileName = arg2;
+  } else if (!isArg1Html && isArg2Html) {
+    fileName = arg1;
+    htmlContent = arg2;
+  } else if (arg1 && (arg1.endsWith('.doc') || arg1.endsWith('.docx') || arg1.endsWith('.txt'))) {
+    fileName = arg1;
+    htmlContent = arg2;
+  } else {
+    htmlContent = arg1;
+    fileName = arg2;
+  }
+
+  // Làm sạch tên file để tránh các ký tự không hợp lệ trong Windows/MacOS
+  let cleanName = (fileName || 'Giao_An_Bai_Giang.doc')
+    .replace(/[\\/:*?"<>|\r\n]+/g, '_')
+    .replace(/\s+/g, '_')
+    .trim();
+  if (!cleanName.toLowerCase().endsWith('.doc')) {
+    cleanName += '.doc';
+  }
+
   const header = `
     <html xmlns:o='urn:schemas-microsoft-com:office:office'
           xmlns:w='urn:schemas-microsoft-com:office:word'
@@ -2295,13 +2328,17 @@ export function downloadWordDoc(htmlContent: string, fileName: string): void {
     </html>
   `;
 
-  const blob = new Blob(['\ufeff', header], { type: 'application/msword' });
+  const blob = new Blob(['\ufeff', header], { type: 'application/msword;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = fileName.endsWith('.doc') ? fileName : `${fileName}.doc`;
+  a.download = cleanName;
   document.body.appendChild(a);
   a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  setTimeout(() => {
+    try {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (_) {}
+  }, 300);
 }

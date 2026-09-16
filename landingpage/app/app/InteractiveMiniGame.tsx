@@ -157,15 +157,19 @@ export const InteractiveMiniGame: React.FC<InteractiveMiniGameProps> = ({
   // Tải file .txt cho Kahoot / Quizizz
   const handleDownloadTxt = () => {
     const txt = miniGameToTxt(localQuestions, lessonTitle);
-    const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+    const blob = new Blob(['\ufeff', txt], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `MiniGame_${(lessonTitle || 'Bai_Hoc').replace(/[^a-zA-Z0-9\u00C0-\u1EF9]/g, '_')}.txt`;
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    setTimeout(() => {
+      try {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (_) {}
+    }, 300);
   };
 
   const handleCopyTxt = () => {

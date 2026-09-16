@@ -5156,7 +5156,7 @@ export default function UnifiedTeacherScheduleApp() {
                             onClick={() => {
                               const html = fullPackageToDocHtml(plannerFullPackage);
                               const fName = `HoSo_BaiGiang_${plannerFullPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
-                              downloadWordDoc(fName, html);
+                              downloadWordDoc(html, fName);
                             }}
                             className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-600/25 transition-all cursor-pointer"
                             title="Tải toàn bộ Hồ sơ gồm Giáo án, Slide, Game, Video Script và Bảng chấm điểm vào 1 file Word duy nhất"
@@ -5185,11 +5185,11 @@ export default function UnifiedTeacherScheduleApp() {
                             if (plannerResult5512) {
                               const html = lessonPlan5512ToHtml(plannerResult5512);
                               const fName = `GiaoAn_5512_${plannerResult5512.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
-                              downloadWordDoc(fName, html);
+                              downloadWordDoc(html, fName);
                             } else if (plannerResult2634) {
                               const html = lessonPlan2634ToHtml(plannerResult2634);
                               const fName = `GiaoAn_2634_${plannerResult2634.moduleTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
-                              downloadWordDoc(fName, html);
+                              downloadWordDoc(html, fName);
                             }
                           }}
                           className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow transition-all cursor-pointer"
@@ -5648,7 +5648,7 @@ export default function UnifiedTeacherScheduleApp() {
                               type="button"
                               onClick={() => {
                                 const html = slidesToHtml(plannerFullPackage.slides, plannerFullPackage.lessonTitle, plannerFullPackage.subject);
-                                downloadWordDoc(`Slide_${plannerFullPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`, html);
+                                downloadWordDoc(html, `Slide_${plannerFullPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`);
                               }}
                               className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-medium text-xs flex items-center gap-1.5 border border-slate-700 transition-all cursor-pointer"
                               title="Tải kịch bản dạng tài liệu Word"
@@ -5753,7 +5753,7 @@ export default function UnifiedTeacherScheduleApp() {
                             type="button"
                             onClick={() => {
                               const html = videoScriptToHtml(plannerFullPackage.videoScript, plannerFullPackage.lessonTitle, plannerFullPackage.subject);
-                              downloadWordDoc(`KichBan_Video_${plannerFullPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`, html);
+                              downloadWordDoc(html, `KichBan_Video_${plannerFullPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`);
                             }}
                             className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold flex items-center gap-1 cursor-pointer"
                           >
@@ -5882,7 +5882,7 @@ export default function UnifiedTeacherScheduleApp() {
                               type="button"
                               onClick={() => {
                                 const html = fullPackageToDocHtml(plannerFullPackage);
-                                downloadWordDoc(`HoSo_DanhGia_${plannerFullPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`, html);
+                                downloadWordDoc(html, `HoSo_DanhGia_${plannerFullPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`);
                               }}
                               className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5"
                             >
@@ -6083,7 +6083,7 @@ export default function UnifiedTeacherScheduleApp() {
                           onClick={() => {
                             const html = examMatrixToHtml(examResult);
                             const fName = `DeThi_MaTran_${examResult.topic.replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
-                            downloadWordDoc(fName, html);
+                            downloadWordDoc(html, fName);
                           }}
                           className="px-3.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 shadow transition-all cursor-pointer"
                         >
@@ -9514,7 +9514,7 @@ export default function UnifiedTeacherScheduleApp() {
                                                     <button
                             type="button"
                             onClick={() => {
-                              downloadWordDoc(kbViewingDoc.fileName || `${kbViewingDoc.title}.doc`, kbViewingDoc.content);
+                              downloadWordDoc(kbViewingDoc.content, kbViewingDoc.fileName || `${kbViewingDoc.title}.doc`);
                             }}
                             className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-blue-600/25 transition-all"
                             title="Tải giáo án chuẩn Microsoft Word (.doc)"
@@ -10009,7 +10009,7 @@ export default function UnifiedTeacherScheduleApp() {
                             : viewingLessonPackage.plan2634
                             ? lessonPlan2634ToHtml(viewingLessonPackage.plan2634)
                             : '';
-                          downloadWordDoc(`GiaoAn_${viewingLessonPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`, html);
+                          downloadWordDoc(html, `GiaoAn_${viewingLessonPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`);
                         }}
                         className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 shadow transition-all cursor-pointer"
                       >
@@ -10097,7 +10097,7 @@ export default function UnifiedTeacherScheduleApp() {
                         type="button"
                         onClick={() => {
                           const html = slidesToHtml(viewingLessonPackage.slides, viewingLessonPackage.lessonTitle, viewingLessonPackage.subject);
-                          downloadWordDoc(`Slide_${viewingLessonPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`, html);
+                          downloadWordDoc(html, `Slide_${viewingLessonPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`);
                         }}
                         className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-medium flex items-center gap-1.5 border border-slate-700 transition-all cursor-pointer"
                         title="Tải kịch bản dạng tài liệu Word"
@@ -10191,7 +10191,7 @@ export default function UnifiedTeacherScheduleApp() {
                       type="button"
                       onClick={() => {
                         const html = videoScriptToHtml(viewingLessonPackage.videoScript, viewingLessonPackage.lessonTitle, viewingLessonPackage.subject);
-                        downloadWordDoc(`KichBan_Video_${viewingLessonPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`, html);
+                        downloadWordDoc(html, `KichBan_Video_${viewingLessonPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`);
                       }}
                       className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold flex items-center gap-1.5 shadow transition-all cursor-pointer"
                     >
@@ -10249,7 +10249,7 @@ export default function UnifiedTeacherScheduleApp() {
                       type="button"
                       onClick={() => {
                         const html = fullPackageToDocHtml(viewingLessonPackage);
-                        downloadWordDoc(`HoSo_DanhGia_${viewingLessonPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`, html);
+                        downloadWordDoc(html, `HoSo_DanhGia_${viewingLessonPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`);
                       }}
                       className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow transition-all cursor-pointer"
                     >
@@ -10352,7 +10352,7 @@ export default function UnifiedTeacherScheduleApp() {
                       onClick={() => {
                         const html = fullPackageToDocHtml(viewingLessonPackage);
                         const fName = `HoSo_BaiGiang_${viewingLessonPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
-                        downloadWordDoc(fName, html);
+                        downloadWordDoc(html, fName);
                       }}
                       className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
                     >
@@ -10381,7 +10381,7 @@ export default function UnifiedTeacherScheduleApp() {
                   onClick={() => {
                     const html = fullPackageToDocHtml(viewingLessonPackage);
                     const fName = `HoSo_BaiGiang_${viewingLessonPackage.lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
-                    downloadWordDoc(fName, html);
+                    downloadWordDoc(html, fName);
                   }}
                   className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-emerald-600/25 transition-all cursor-pointer"
                   title="Tải toàn bộ hồ sơ gồm cả 6 hạng mục vào 1 file Word duy nhất"

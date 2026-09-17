@@ -13,6 +13,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -269,7 +271,7 @@ fun AILessonPlannerView(
                         )
                     }
                     Icon(
-                        imageVector = Icons.Default.ArrowForwardIos,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
                         contentDescription = null,
                         tint = Color(0xFF059669),
                         modifier = Modifier.size(14.dp)
@@ -449,7 +451,7 @@ fun AILessonPlannerView(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        if (selectedDocId > 0L) Icons.Default.MenuBook else Icons.Default.AutoAwesome,
+                        if (selectedDocId > 0L) Icons.AutoMirrored.Filled.MenuBook else Icons.Default.AutoAwesome,
                         contentDescription = null,
                         tint = if (selectedDocId > 0L) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(24.dp)
@@ -748,7 +750,7 @@ fun AILessonPlannerView(
                                     }
                                 }
 
-                                Divider()
+                                HorizontalDivider()
 
                                 if (pack.plan5512 != null) {
                                     LessonPlan5512FullView(plan = pack.plan5512)
@@ -1305,7 +1307,7 @@ fun AILessonPlannerView(
             onDismissRequest = { showDocSelectDialog = false },
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.MenuBook, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Chọn tài liệu làm căn cứ cho AI", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
@@ -1341,7 +1343,7 @@ fun AILessonPlannerView(
                                 Text("Hệ thống tự đối chiếu và dùng tài liệu phù hợp", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
                             }
                         }
-                        Divider(modifier = Modifier.padding(vertical = 4.dp))
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                     }
 
                     if (allActiveDocs.isEmpty()) {
@@ -1387,7 +1389,7 @@ fun AILessonPlannerView(
                     }
 
                     item {
-                        Divider(modifier = Modifier.padding(vertical = 4.dp))
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -1578,7 +1580,7 @@ fun LessonPlan5512FullView(plan: LessonPlan5512Result) {
                             Text("Phương án đánh giá", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF1E293B), modifier = Modifier.width(130.dp))
                             Text("Sản phẩm dự kiến", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF047857), modifier = Modifier.width(140.dp))
                         }
-                        Divider(color = Color(0xFFCBD5E1))
+                        HorizontalDivider(color = Color(0xFFCBD5E1))
 
                         // Body rows
                         plan.activities.forEachIndexed { idx, act ->
@@ -1598,7 +1600,7 @@ fun LessonPlan5512FullView(plan: LessonPlan5512Result) {
                                 Text(act.product, fontSize = 10.sp, color = Color(0xFF15803D), modifier = Modifier.width(140.dp).padding(horizontal = 4.dp))
                             }
                             if (idx < plan.activities.size - 1) {
-                                Divider(color = Color(0xFFE2E8F0))
+                                HorizontalDivider(color = Color(0xFFE2E8F0))
                             }
                         }
                     }
@@ -1709,7 +1711,7 @@ fun Activity5512ItemCard(actIdx: Int, act: Activity5512) {
                             modifier = Modifier.weight(0.42f)
                         )
                     }
-                    Divider(color = Color(0xFFCBD5E1))
+                    HorizontalDivider(color = Color(0xFFCBD5E1))
 
                     // Content Row (2 Columns)
                     Row(
@@ -1933,7 +1935,7 @@ fun LessonPlan2634FullView(plan: LessonPlan2634Result) {
                             Text("Hoạt động của Học sinh", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFF9A3412), modifier = Modifier.width(150.dp))
                             Text("Thiết bị, ATLĐ & 5S", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color(0xFFDC2626), modifier = Modifier.width(170.dp))
                         }
-                        Divider(color = Color(0xFFFED7AA))
+                        HorizontalDivider(color = Color(0xFFFED7AA))
 
                         // Rows
                         plan.steps.forEachIndexed { idx, st ->
@@ -1953,7 +1955,7 @@ fun LessonPlan2634FullView(plan: LessonPlan2634Result) {
                                 }
                             }
                             if (idx < plan.steps.size - 1) {
-                                Divider(color = Color(0xFFFED7AA))
+                                HorizontalDivider(color = Color(0xFFFED7AA))
                             }
                         }
                     }
@@ -2082,7 +2084,7 @@ fun AIExamMatrixView(
                         )
                     }
                     Icon(
-                        imageVector = Icons.Default.ArrowForwardIos,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
                         contentDescription = null,
                         tint = Color(0xFF16A34A),
                         modifier = Modifier.size(14.dp)
@@ -2286,7 +2288,7 @@ fun AIExamMatrixView(
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
 
-                        Divider()
+                        HorizontalDivider()
 
                         Text("Phân bổ 4 mức độ nhận thức:", fontWeight = FontWeight.Bold)
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -2298,7 +2300,7 @@ fun AIExamMatrixView(
                             Text("4. Vận dụng cao: ${res.highApplicationCount} câu", style = MaterialTheme.typography.bodySmall)
                         }
 
-                        Divider()
+                        HorizontalDivider()
 
                         Text("Danh sách câu hỏi & Đáp án:", fontWeight = FontWeight.Bold)
                         res.questions.forEach { q ->

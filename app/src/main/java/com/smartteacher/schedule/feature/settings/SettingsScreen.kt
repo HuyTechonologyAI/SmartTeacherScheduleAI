@@ -22,6 +22,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -390,7 +393,7 @@ fun SettingsScreen(
                     SettingsItem(
                         title = "Hướng dẫn Màn hình khóa (Tecno / Samsung / Xiaomi)",
                         subtitle = "Mẹo hiển thị rõ nội dung và widget trên từng dòng máy",
-                        icon = Icons.Default.HelpOutline,
+                        icon = Icons.AutoMirrored.Filled.HelpOutline,
                         onClick = { showLockScreenGuideDialog = true }
                     )
                 }
@@ -414,14 +417,14 @@ fun SettingsScreen(
                     SettingsItem(
                         title = "Telegram Bot",
                         subtitle = if (telegramEnabled) "Đang hoạt động (Gửi nhắc lịch tự động)" else "Chưa bật cấu hình",
-                        icon = Icons.Default.Send,
+                        icon = Icons.AutoMirrored.Filled.Send,
                         onClick = { showTelegramDialog = true }
                     )
                     HorizontalDivider()
                     SettingsItem(
                         title = "Zalo Official Account",
                         subtitle = "Kiến trúc tích hợp qua Zalo OpenAPI chính thức",
-                        icon = Icons.Default.Chat,
+                        icon = Icons.AutoMirrored.Filled.Chat,
                         onClick = { showZaloDialog = true }
                     )
                 }

@@ -159,9 +159,10 @@ export async function GET() {
       },
       versionApi: {
         status: 'Operational',
-        latestVersion: '2.2.0',
-        versionCode: 22
+        latestVersion: '2.3.0',
+        versionCode: 23
       }
+
     },
     ecosystemUsers: {
       totalTeachers,

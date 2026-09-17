@@ -71,8 +71,9 @@ export default function PlatformMatrixSection() {
     },
     {
       title: "Cài đặt trực tiếp",
-      android: "File APK (v2.2.0)",
+      android: "File APK (v2.3.0)",
       desktop: "File Setup (.exe / portable)",
+
       web: "Truy cập trực tiếp qua trình duyệt",
       ios: "PWA Safari (Thêm vào MH chính)",
       isInstall: true

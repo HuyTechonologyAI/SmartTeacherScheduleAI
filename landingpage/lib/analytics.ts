@@ -2,7 +2,8 @@
  * Client-side Telemetry & Analytics Utility for Smart Teacher Schedule
  */
 
-export function trackDownload(platform: string, version: string = '2.2.0', source: string = 'Website Direct') {
+export function trackDownload(platform: string, version: string = '2.3.0', source: string = 'Website Direct') {
+
   try {
     if (typeof window === 'undefined') return;
     fetch('/api/analytics/downloads', {

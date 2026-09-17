@@ -49,7 +49,7 @@ export async function GET() {
       const response = await fetch('https://www.huycncdsai.io.vn/api/resources', {
         headers: {
           'Accept': 'application/json',
-          'User-Agent': 'EduViet-SmartTeacher-SyncAgent/2.2.0'
+          'User-Agent': 'EduViet-SmartTeacher-SyncAgent/2.3.0'
         },
         signal: controller.signal,
         next: { revalidate: 60 } // Cache 60s
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
       const checkRes = await fetch('https://www.huycncdsai.io.vn/api/resources', {
         headers: {
           'Accept': 'application/json',
-          'User-Agent': 'EduViet-SmartTeacher-SyncAgent/2.2.0'
+          'User-Agent': 'EduViet-SmartTeacher-SyncAgent/2.3.0'
         },
         signal: controller.signal
       });
@@ -245,7 +245,8 @@ export async function POST(request: NextRequest) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'User-Agent': 'EduViet-SmartTeacher-SyncAgent/2.2.0',
+          'User-Agent': 'EduViet-SmartTeacher-SyncAgent/2.3.0',
+
           'X-Ecosystem-Source': 'EduViet-SmartTeacher',
           'X-Ecosystem-Token': 'HuyTech_EcoSync_Secret_2026_Secure'
         },

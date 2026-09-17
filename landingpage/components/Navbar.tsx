@@ -28,8 +28,9 @@ export default function Navbar() {
                   Smart Teacher AI
                 </span>
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                  v2.2.0
+                  v2.3.0
                 </span>
+
               </div>
               <p className="text-xs text-slate-400 flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3 text-emerald-400" />
@@ -79,12 +80,12 @@ export default function Navbar() {
             </Link>
 
             <a
-              href="/downloads/SmartTeacherSchedule_v2.2.0_Release.apk"
-              download="SmartTeacherSchedule_v2.2.0_Release.apk"
+              href="/downloads/SmartTeacherSchedule_v2.3.0.apk"
+              download="SmartTeacherSchedule_v2.3.0.apk"
               className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-semibold text-sm shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all"
             >
               <Download className="w-4 h-4" />
-              <span>Tải APK v2.2.0</span>
+              <span>Tải APK v2.3.0</span>
             </a>
           </div>
 
@@ -107,7 +108,7 @@ export default function Navbar() {
             onClick={() => setMobileMenuOpen(false)}
             className="block px-3 py-2 rounded-lg text-base font-medium text-slate-200 hover:bg-white/5"
           >
-            📥 Tải App Ngay (v2.2.0)
+            📥 Tải App Ngay (v2.3.0)
           </a>
           <a
             href="#features"
@@ -159,16 +160,17 @@ export default function Navbar() {
             </Link>
 
             <a
-              href="/downloads/SmartTeacherSchedule_v2.2.0_Release.apk"
-              download="SmartTeacherSchedule_v2.2.0_Release.apk"
+              href="/downloads/SmartTeacherSchedule_v2.3.0.apk"
+              download="SmartTeacherSchedule_v2.3.0.apk"
               className="flex items-center justify-center space-x-2 w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-semibold text-center shadow-lg"
             >
               <Download className="w-4 h-4" />
-              <span>Tải APK Miễn Phí (v2.2.0)</span>
+              <span>Tải APK Miễn Phí (v2.3.0)</span>
             </a>
           </div>
         </div>
       )}
+
     </header>
   );
 }

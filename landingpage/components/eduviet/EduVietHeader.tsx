@@ -200,8 +200,9 @@ export default function EduVietHeader({
               >
                 <Download className="w-3.5 h-3.5 text-white" />
                 <span className="hidden sm:inline font-semibold">{lang === 'vi' ? 'Tải App' : 'Get App'}</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/20 font-mono">v2.2.0</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/20 font-mono">v2.3.0</span>
               </button>
+
             )}
 
             {/* Notification Bell: CHỈ BÁO KHI CÓ ĐƠN YÊU CẦU TỪ PHỤ HUYNH */}
@@ -321,7 +322,7 @@ export default function EduVietHeader({
                             <span>{lang === 'vi' ? 'Tải App (APK / Windows)' : 'Download App (APK / PC)'}</span>
                           </div>
                           <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-600 text-white font-bold">
-                            v2.2.0
+                            v2.3.0
                           </span>
                         </button>
                       )}
@@ -340,10 +341,11 @@ export default function EduVietHeader({
                             <span>{lang === 'vi' ? 'Cài đặt & Gói cước' : 'Settings & Plans'}</span>
                           </div>
                           <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 font-bold border border-rose-200 dark:border-rose-800">
-                            v2.2.0
+                            v2.3.0
                           </span>
                         </button>
                       )}
+
 
                       <button
                         type="button"

@@ -66,8 +66,9 @@ export default function PlatformInstallGuideModal({
       id: "android" as PlatformType,
       name: "Android APK",
       icon: Smartphone,
-      badge: "v2.2.0 • ~15.8 MB",
+      badge: "v2.3.0 • ~15.2 MB",
       color: "emerald",
+
       btnClass: "bg-emerald-600 hover:bg-emerald-700 text-white",
       borderActive: "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
     },
@@ -170,7 +171,7 @@ export default function PlatformInstallGuideModal({
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-sm text-emerald-900 dark:text-emerald-200">
-                      Phiên bản Android APK chính thức v2.2.0
+                      Phiên bản Android APK chính thức v2.3.0
                     </span>
                     <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-200 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300">
                       Mới Nhất
@@ -181,13 +182,13 @@ export default function PlatformInstallGuideModal({
                   </p>
                 </div>
                 <a
-                  href="/downloads/SmartTeacherSchedule_v2.2.0_Release.apk"
-                  download="SmartTeacherSchedule_v2.2.0_Release.apk"
-                  onClick={() => trackDownload('android', '2.2.0', 'Modal Android APK')}
+                  href="/downloads/SmartTeacherSchedule_v2.3.0.apk"
+                  download="SmartTeacherSchedule_v2.3.0.apk"
+                  onClick={() => trackDownload('android', '2.3.0', 'Modal Android APK')}
                   className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition-all shrink-0 cursor-pointer"
                 >
                   <Download className="w-4 h-4" />
-                  <span>Tải APK v2.2.0 (~15.8 MB)</span>
+                  <span>Tải APK v2.3.0 (~15.2 MB)</span>
                 </a>
               </div>
 
@@ -203,13 +204,14 @@ export default function PlatformInstallGuideModal({
                   </div>
                   <div className="space-y-1 text-xs">
                     <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-                      Bấm nút Tải APK v2.2.0
+                      Bấm nút Tải APK v2.3.0
                     </p>
                     <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                      Bấm nút màu xanh phía trên hoặc trên trang chủ. Trình duyệt sẽ bắt đầu tải tệp <code className="bg-slate-200 dark:bg-slate-700 px-1 py-0.5 rounded font-mono font-bold text-emerald-600">SmartTeacherSchedule_v2.2.0_Release.apk</code>.
+                      Bấm nút màu xanh phía trên hoặc trên trang chủ. Trình duyệt sẽ bắt đầu tải tệp <code className="bg-slate-200 dark:bg-slate-700 px-1 py-0.5 rounded font-mono font-bold text-emerald-600">SmartTeacherSchedule_v2.3.0.apk</code>.
                     </p>
                   </div>
                 </div>
+
 
                 <div className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800">
                   <div className="w-7 h-7 rounded-xl bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
@@ -359,7 +361,7 @@ export default function PlatformInstallGuideModal({
                       Bộ Cài Đặt Chính Thức Windows (.EXE) Có Logo
                     </span>
                     <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-indigo-200 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-300">
-                      v2.2.0 Chuẩn PE
+                      v2.3.0 Chuẩn PE
                     </span>
                   </div>
                   <p className="text-xs text-indigo-700 dark:text-indigo-300">
@@ -368,18 +370,18 @@ export default function PlatformInstallGuideModal({
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 shrink-0">
                   <a
-                    href="/downloads/SmartTeacherSchedule_Setup_v2.2.0.exe"
-                    download="SmartTeacherSchedule_Setup_v2.2.0.exe"
-                    onClick={() => trackDownload('windows_setup', '2.2.0', 'Modal Windows Setup')}
+                    href="/downloads/SmartTeacherSchedule_Setup_v2.3.0.exe"
+                    download="SmartTeacherSchedule_Setup_v2.3.0.exe"
+                    onClick={() => trackDownload('windows_setup', '2.3.0', 'Modal Windows Setup')}
                     className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md transition-all shrink-0 cursor-pointer"
                   >
                     <Download className="w-4 h-4" />
                     <span>Tải Bản Cài Đặt (.exe)</span>
                   </a>
                   <a
-                    href="/downloads/SmartTeacherSchedule_v2.2.0_Portable.exe"
-                    download="SmartTeacherSchedule_v2.2.0_Portable.exe"
-                    onClick={() => trackDownload('windows_portable', '2.2.0', 'Modal Windows Portable')}
+                    href="/downloads/SmartTeacherSchedule_v2.3.0_Portable.exe"
+                    download="SmartTeacherSchedule_v2.3.0_Portable.exe"
+                    onClick={() => trackDownload('windows_portable', '2.3.0', 'Modal Windows Portable')}
                     className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/60 dark:hover:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-xs font-bold transition-all shrink-0 cursor-pointer"
                     title="Chạy trực tiếp không cần cài đặt"
                   >
@@ -403,10 +405,11 @@ export default function PlatformInstallGuideModal({
                       Tải tệp cài đặt chính thức .exe
                     </p>
                     <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                      Bấm nút <strong className="text-indigo-600">"Tải Bản Cài Đặt (.exe)"</strong> ở trên để tải file <code className="bg-slate-200 dark:bg-slate-700 px-1 py-0.5 rounded font-mono font-bold">SmartTeacherSchedule_Setup_v2.2.0.exe</code> về máy tính.
+                      Bấm nút <strong className="text-indigo-600">"Tải Bản Cài Đặt (.exe)"</strong> ở trên để tải file <code className="bg-slate-200 dark:bg-slate-700 px-1 py-0.5 rounded font-mono font-bold">SmartTeacherSchedule_Setup_v2.3.0.exe</code> về máy tính.
                     </p>
                   </div>
                 </div>
+
 
                 <div className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800">
                   <div className="w-7 h-7 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
@@ -545,13 +548,13 @@ export default function PlatformInstallGuideModal({
                   </p>
                 </div>
                 <a
-                  href="/releases/SmartTeacherSchedule_v2.2.0_Release.aab"
-                  download="SmartTeacherSchedule_v2.2.0_Release.aab"
-                  onClick={() => trackDownload('android', '2.2.0', 'Modal Android AAB')}
+                  href="/releases/SmartTeacherSchedule_v2.3.0_Release.aab"
+                  download="SmartTeacherSchedule_v2.3.0_Release.aab"
+                  onClick={() => trackDownload('android', '2.3.0', 'Modal Android AAB')}
                   className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md transition-all shrink-0 cursor-pointer"
                 >
                   <Download className="w-4 h-4" />
-                  <span>Tải Tệp AAB (~15.5 MB)</span>
+                  <span>Tải Tệp AAB (~15.2 MB)</span>
                 </a>
               </div>
 
@@ -567,7 +570,7 @@ export default function PlatformInstallGuideModal({
                     <span>Dành cho Bộ phận CNTT Nhà trường & Quản trị viên (MDM):</span>
                   </div>
                   <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                    Tệp <code className="bg-slate-200 dark:bg-slate-700 px-1 py-0.5 rounded font-mono font-bold text-blue-600">SmartTeacherSchedule_v2.2.0_Release.aab</code> được biên dịch trực tiếp từ mã nguồn Android Studio với chữ ký số phát hành chính thức (Release Keystore SHA-256).
+                    Tệp <code className="bg-slate-200 dark:bg-slate-700 px-1 py-0.5 rounded font-mono font-bold text-blue-600">SmartTeacherSchedule_v2.3.0_Release.aab</code> được biên dịch trực tiếp từ mã nguồn Android Studio với chữ ký số phát hành chính thức (Release Keystore SHA-256).
                   </p>
                   <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
                     Phòng CNTT hoặc quản trị viên nhà trường có thể upload trực tiếp lên <strong>Google Play Console</strong> (Internal Testing / Closed Testing track) hoặc phân phối hàng loạt cho giáo viên thông qua <strong>Google Workspace for Education MDM</strong>.
@@ -600,8 +603,9 @@ export default function PlatformInstallGuideModal({
         {/* Modal Footer */}
         <div className="px-6 py-4 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
           <div className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
-            Hệ sinh thái Smart Teacher Schedule AI • Phiên bản 2.2.0
+            Hệ sinh thái Smart Teacher Schedule AI • Phiên bản 2.3.0
           </div>
+
           <div className="flex items-center gap-2 ml-auto">
             <button
               onClick={onClose}

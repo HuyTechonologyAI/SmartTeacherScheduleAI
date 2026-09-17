@@ -255,10 +255,11 @@ function checkForUpdates(manual = false) {
           dialog.showMessageBox(mainWindow, {
             type: 'info',
             title: 'Phiên bản mới nhất',
-            message: `Thầy cô đang sử dụng phiên bản v2.2.0 mới nhất của Smart Teacher Schedule AI.`,
+            message: `Thầy cô đang sử dụng phiên bản v2.3.0 mới nhất của Smart Teacher Schedule AI.`,
             buttons: ['Đồng ý']
           });
         }
+
       } catch (err) {
         if (manual) {
           dialog.showMessageBox(mainWindow, {

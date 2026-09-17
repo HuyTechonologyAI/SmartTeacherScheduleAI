@@ -1,7 +1,8 @@
 {
   "name": "smart-teacher-schedule-desktop",
   "productName": "Smart Teacher Schedule AI",
-  "version": "2.2.0",
+  "version": "2.3.0",
+
   "description": "Trợ lý Lịch Giảng Dạy và Quản Lý Sư Phạm Đa Nền Tảng (Windows, Mac, Linux)",
   "main": "main.js",
   "author": "Huy Technology AI <huytechnologyai2025@gmail.com>",

@@ -11,6 +11,7 @@ import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.view.ViewGroup
+import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -28,8 +29,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -521,8 +525,9 @@ private fun TopAppBarView(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onDismiss, modifier = Modifier.size(36.dp)) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Đóng", tint = MaterialTheme.colorScheme.onSurface)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Đóng", tint = MaterialTheme.colorScheme.onSurface)
             }
+
 
             Spacer(modifier = Modifier.width(4.dp))
 
@@ -646,37 +651,67 @@ private fun PdfDocumentViewer(
 
 /**
  * Trình kết xuất tài liệu HTML (Kế hoạch bài dạy CV 5512, CV 2634)
+ * v2.3.0: Thêm loading progress bar, cache LOAD_CACHE_ELSE_NETWORK, Force Dark API 29+
  */
 @Composable
 private fun HtmlDocumentViewer(htmlContent: String) {
-    AndroidView(
-        factory = { ctx ->
-            WebView(ctx).apply {
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
-                settings.apply {
-                    javaScriptEnabled = true
-                    domStorageEnabled = true
-                    useWideViewPort = true
-                    loadWithOverviewMode = true
-                    builtInZoomControls = true
-                    displayZoomControls = false
-                    defaultTextEncodingName = "utf-8"
-                    cacheMode = WebSettings.LOAD_NO_CACHE
+    var loadingProgress by remember { mutableStateOf(0) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        AndroidView(
+            factory = { ctx ->
+                WebView(ctx).apply {
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                    settings.apply {
+                        javaScriptEnabled = true
+                        domStorageEnabled = true
+                        useWideViewPort = true
+                        loadWithOverviewMode = true
+                        builtInZoomControls = true
+                        displayZoomControls = false
+                        defaultTextEncodingName = "utf-8"
+                        // v2.3.0: Cache cho phép load nhanh hơn lần thứ 2
+                        cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
+                        // v2.3.0: Force dark mode cho Android 10+ (API 29)
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                            @Suppress("DEPRECATION")
+                            forceDark = WebSettings.FORCE_DARK_AUTO
+                        }
+                    }
+                    webViewClient = WebViewClient()
+                    // v2.3.0: Nhận progress khi page load để hiện LinearProgressIndicator
+                    webChromeClient = object : WebChromeClient() {
+                        override fun onProgressChanged(view: WebView?, newProgress: Int) {
+                            loadingProgress = newProgress
+                        }
+                    }
+                    setBackgroundColor(AndroidColor.parseColor("#F8FAFC"))
+                    loadDataWithBaseURL("file:///android_asset/", htmlContent, "text/html", "UTF-8", null)
                 }
-                webViewClient = WebViewClient()
-                setBackgroundColor(AndroidColor.parseColor("#F8FAFC"))
-                loadDataWithBaseURL("file:///android_asset/", htmlContent, "text/html", "UTF-8", null)
-            }
-        },
-        update = { webView ->
-            webView.loadDataWithBaseURL("file:///android_asset/", htmlContent, "text/html", "UTF-8", null)
-        },
-        modifier = Modifier.fillMaxSize()
-    )
+            },
+            update = { webView ->
+                webView.loadDataWithBaseURL("file:///android_asset/", htmlContent, "text/html", "UTF-8", null)
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // Progress bar xuất hiện khi đang load (< 100%)
+        if (loadingProgress < 100) {
+            LinearProgressIndicator(
+                progress = { loadingProgress / 100f },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        }
+    }
 }
+
 
 /**
  * Trình xem văn bản thuần / Word DOCX trích xuất
@@ -826,10 +861,11 @@ private fun PdfErrorFallback(
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Icon(Icons.Default.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
+            Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
             Text("Mở bằng ứng dụng đọc PDF ngoài", fontWeight = FontWeight.Bold)
         }
+
     }
 }
 
@@ -881,9 +917,10 @@ private fun BottomFooterBar(
                     }
                 )
             ) {
-                Icon(Icons.Default.OpenInNew, contentDescription = null, modifier = Modifier.size(16.dp))
+                Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
+
                     text = when (extension) {
                         "doc", "docx" -> "Mở sửa bằng Word / WPS"
                         "pdf" -> "Mở bằng Adobe / Drive"

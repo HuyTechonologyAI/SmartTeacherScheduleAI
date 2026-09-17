@@ -1459,6 +1459,10 @@ class GeminiAIServiceImpl(
         customRequirements: String,
         referenceContext: String
     ): LessonTeachingPack = withContext(Dispatchers.IO) {
+        // Kiểm tra có API key không để biết sẽ online hay offline
+        val apiKey = apiKeyProvider()
+        val isOnlineMode = !apiKey.isNullOrBlank()
+
         // 1. Soạn Giáo án / Kế hoạch bài dạy
         val lessonPlanHtml: String
         val lessonTitleDisplay: String
@@ -1517,9 +1521,11 @@ class GeminiAIServiceImpl(
             videoResource = videoResource,
             rubricScore = rubricScore,
             plan5512 = res5512,
-            plan2634 = res2634
+            plan2634 = res2634,
+            generatedOnline = isOnlineMode
         )
     }
+
 
     private fun generateSlideDeck(
         lessonTitle: String,

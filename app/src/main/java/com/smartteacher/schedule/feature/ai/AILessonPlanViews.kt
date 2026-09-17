@@ -1,6 +1,7 @@
 package com.smartteacher.schedule.feature.ai
 
 import android.widget.Toast
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,6 +20,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -36,6 +39,7 @@ import com.smartteacher.schedule.core.database.entity.TeachingScheduleEntity
 import com.smartteacher.schedule.core.util.AttachmentFileHelper
 import com.smartteacher.schedule.feature.schedule.components.DocumentReaderDialog
 import kotlinx.coroutines.launch
+
 
 /**
  * Giao diện Soạn Kế Hoạch Bài Dạy Chuẩn Pháp Quy:
@@ -584,6 +588,17 @@ fun AILessonPlannerView(
                     )
                 }
             }
+        }
+
+        // Skeleton loading khi AI đang xử lý
+        if (isGenerating) {
+            item { LessonPlanSkeletonCard() }
+        }
+
+        // Banner trạng thái AI sau khi hoàn thành
+        val localPack = teachingPack
+        if (localPack != null && !isGenerating) {
+            item { AiStatusBanner(isOnlineMode = localPack.generatedOnline) }
         }
 
         // =====================================================================
@@ -2361,4 +2376,161 @@ private fun isDocGradeCompatible(doc: KnowledgeDocumentEntity, targetGrade: Stri
     val docGrade = extractGradeNum("${doc.targetLevel} ${doc.title}")
     if (docGrade.isBlank()) return true
     return docGrade == targetGrade
+}
+
+// =============================================================================
+// SKELETON LOADING — Hiển thị khi AI đang sinh giáo án
+// =============================================================================
+
+/**
+ * Shimmer skeleton card — Hiển thị placeholder animation khi AI đang sinh nội dung.
+ * Thay thế CircularProgressIndicator đơn giản, giúp người dùng hiểu đang xử lý thay vì tưởng bị treo.
+ */
+@Composable
+fun LessonPlanSkeletonCard() {
+    // Tạo shimmer animation — ánh sáng quét từ trái sang phải
+    val shimmerColors = listOf(
+        Color(0xFFE2E8F0),
+        Color(0xFFF8FAFC),
+        Color(0xFFE2E8F0)
+    )
+    val transition = rememberInfiniteTransition(label = "skeleton_shimmer")
+    val translateAnim by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmer_translate"
+    )
+    val brush = Brush.linearGradient(
+        colors = shimmerColors,
+        start = Offset(translateAnim - 500f, 0f),
+        end = Offset(translateAnim, 0f)
+    )
+
+    @Composable
+    fun SkeletonLine(width: Float = 1f, height: Int = 14) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(width)
+                .height(height.dp)
+                .background(brush = brush, shape = RoundedCornerShape(4.dp))
+        )
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F5F9)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Header placeholder
+            SkeletonLine(width = 0.6f, height = 18)
+            SkeletonLine(width = 0.45f, height = 12)
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Mục tiêu placeholder
+            SkeletonLine(width = 0.85f, height = 13)
+            SkeletonLine(width = 0.95f, height = 13)
+            SkeletonLine(width = 0.75f, height = 13)
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // 4 hoạt động placeholder
+            repeat(4) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE2E8F0))
+                ) {
+                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SkeletonLine(width = 0.55f, height = 14)
+                        SkeletonLine(width = 0.9f, height = 11)
+                        SkeletonLine(width = 0.80f, height = 11)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+            // Label
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color = Color(0xFF6366F1)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "AI đang soạn Kế hoạch bài dạy & Đóng gói 6 học liệu...",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF64748B)
+                )
+            }
+        }
+    }
+}
+
+// =============================================================================
+// AI STATUS BANNER — Hiển thị sau khi sinh giáo án hoàn thành
+// =============================================================================
+
+/**
+ * Banner thông báo chế độ AI sau khi generate xong.
+ * Online: Gemini API thành công — Offline: dùng mẫu dự phòng tĩnh.
+ */
+@Composable
+fun AiStatusBanner(isOnlineMode: Boolean) {
+    val containerColor = if (isOnlineMode) Color(0xFFECFDF5) else Color(0xFFFFFBEB)
+    val borderColor = if (isOnlineMode) Color(0xFF10B981) else Color(0xFFF59E0B)
+    val iconTint = if (isOnlineMode) Color(0xFF059669) else Color(0xFFD97706)
+    val icon = if (isOnlineMode) Icons.Default.CloudDone else Icons.Default.WifiOff
+    val title = if (isOnlineMode) "🌐 Gemini AI (Online)" else "⚡ Chế độ Offline"
+    val subtitle = if (isOnlineMode)
+        "Giáo án được sinh bởi Gemini AI — Nội dung chất lượng cao, có căn cứ pháp quy."
+    else
+        "Không có API key hoặc mất kết nối — Đang dùng mẫu giáo án chuẩn dự phòng tĩnh."
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        border = BorderStroke(1.dp, borderColor)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(22.dp)
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Column {
+                Text(
+                    text = title,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    color = iconTint
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isOnlineMode) Color(0xFF047857) else Color(0xFF92400E)
+                )
+            }
+        }
+    }
 }

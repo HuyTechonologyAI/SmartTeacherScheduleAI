@@ -220,8 +220,9 @@ data class LessonPlan5512Result(
         val t4 = (totalMinutes - t1 - t2 - t3).coerceAtLeast(4)
 
         val sb = StringBuilder()
-        sb.append("<!DOCTYPE html><html><head><meta charset='UTF-8'><style>")
-        sb.append("body { font-family: 'Times New Roman', Times, serif; font-size: 13pt; line-height: 1.4; color: #000; padding: 20px; }")
+        sb.append("<!DOCTYPE html><html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><style>")
+
+        sb.append("body { font-family: 'Times New Roman', Times, serif; font-size: 13pt; line-height: 1.4; color: #000; padding: 20px; background: #fff; }")
         sb.append("h1, h2, h3 { text-align: center; margin: 4px 0; }")
         sb.append("h1 { font-size: 15pt; font-weight: bold; text-transform: uppercase; }")
         sb.append("h2 { font-size: 13pt; font-weight: bold; color: #1e3a8a; }")
@@ -230,7 +231,19 @@ data class LessonPlan5512Result(
         sb.append(".citation-box { background-color: #f0fdf4; border: 1.5px solid #16a34a; border-radius: 6px; padding: 8px 12px; margin: 12px 0; font-size: 10.5pt; color: #166534; }")
         sb.append("table { border-collapse: collapse; width: 100%; }")
         sb.append("th, td { border: 1px solid #94a3b8; }")
+        // Dark mode support
+        sb.append("@media (prefers-color-scheme: dark) {")
+        sb.append("  body { background: #0f172a; color: #e2e8f0; }")
+        sb.append("  h2 { color: #93c5fd; }")
+        sb.append("  table { border-color: #334155; }")
+        sb.append("  th { background: #1e3a5f !important; color: #93c5fd !important; border-color: #334155; }")
+        sb.append("  td { background: #1e293b; color: #e2e8f0; border-color: #334155; }")
+        sb.append("  .header-table td { background: transparent; color: #e2e8f0; }")
+        sb.append("  .citation-box { background: #052e16; border-color: #16a34a; color: #86efac; }")
+        sb.append("  thead tr { background: #1e3a5f !important; }")
+        sb.append("}")
         sb.append("</style></head><body>")
+
 
         // 1. Tiêu ngữ văn bản hành chính
         sb.append("<table class='header-table'><tr>")
@@ -389,8 +402,8 @@ data class LessonPlan2634Result(
         val t4 = (totalMinutes - t1 - t2 - t3).coerceAtLeast(5)
 
         val sb = StringBuilder()
-        sb.append("<!DOCTYPE html><html><head><meta charset='UTF-8'><style>")
-        sb.append("body { font-family: 'Times New Roman', Times, serif; font-size: 13pt; line-height: 1.4; color: #000; padding: 20px; }")
+        sb.append("<!DOCTYPE html><html><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><style>")
+        sb.append("body { font-family: 'Times New Roman', Times, serif; font-size: 13pt; line-height: 1.4; color: #000; padding: 20px; background: #fff; }")
         sb.append("h1, h2, h3 { text-align: center; margin: 4px 0; }")
         sb.append("h1 { font-size: 15pt; font-weight: bold; text-transform: uppercase; }")
         sb.append("h2 { font-size: 13.5pt; font-weight: bold; color: #c2410c; }")
@@ -400,7 +413,18 @@ data class LessonPlan2634Result(
         sb.append(".step-table th, .step-table td { border: 1px solid #fed7aa; padding: 7px 8px; vertical-align: top; }")
         sb.append(".step-table th { background-color: #ffedd5; text-align: center; color: #9a3412; font-weight: bold; }")
         sb.append(".citation-box { background-color: #fefce8; border: 1.5px solid #ca8a04; border-radius: 6px; padding: 8px 12px; margin: 12px 0; font-size: 10.5pt; color: #854d0e; }")
+        // Dark mode support
+        sb.append("@media (prefers-color-scheme: dark) {")
+        sb.append("  body { background: #0c0a09; color: #e7e5e4; }")
+        sb.append("  h2 { color: #fb923c; }")
+        sb.append("  .step-table { border-color: #431407; }")
+        sb.append("  .step-table th { background: #431407 !important; color: #fb923c !important; border-color: #7c2d12; }")
+        sb.append("  .step-table td { background: #1c0a00; color: #e7e5e4; border-color: #7c2d12; }")
+        sb.append("  .header-table td { background: transparent; color: #e7e5e4; }")
+        sb.append("  .citation-box { background: #422006; border-color: #ca8a04; color: #fde68a; }")
+        sb.append("}")
         sb.append("</style></head><body>")
+
 
         sb.append("<table class='header-table'><tr>")
         sb.append("<td style='width: 45%; text-align: center;'>KHOA: CƠ KHÍ - ĐỘNG LỰC<br>TỔ BỘ MÔN: THỰC HÀNH CÔNG NGHỆ</td>")
@@ -824,6 +848,8 @@ data class LessonTeachingPack(
     val videoResource: LessonVideoResource,
     val rubricScore: LessonRubricScore,
     val plan5512: LessonPlan5512Result? = null,
-    val plan2634: LessonPlan2634Result? = null
+    val plan2634: LessonPlan2634Result? = null,
+    /** true = được sinh bởi Gemini API (Online), false = dùng mẫu offline dự phòng */
+    val generatedOnline: Boolean = false
 )
 

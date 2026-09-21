@@ -1,5 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 
+export const isSupabaseConfigured = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL &&
+  !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("kdpouzqjowbuxtfrqsds.supabase.co") &&
+  !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("your-project.supabase.co")
+);
+
 const supabaseUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL || "https://kdpouzqjowbuxtfrqsds.supabase.co";
 const supabaseAnonKey =

@@ -1742,6 +1742,16 @@ export default function UnifiedTeacherScheduleApp() {
           }
           return true;
         }
+      } else {
+        setSyncStatus('error');
+        if (isManual) {
+          if (res.status === 401) {
+            alert('Mã PIN bảo mật không chính xác hoặc chưa được cung cấp.');
+          } else {
+            alert(`Lỗi kết nối máy chủ đồng bộ đám mây (Mã lỗi ${res.status}).`);
+          }
+        }
+        return false;
       }
     } catch (e) {
       console.error('pullFromCloud error:', e);
@@ -1914,7 +1924,7 @@ export default function UnifiedTeacherScheduleApp() {
     setTestDataCount(initialTest.total);
 
     let savedCode = localStorage.getItem('smart_teacher_sync_code');
-    if (!savedCode || savedCode === '0961364600') {
+    if (!savedCode) {
       savedCode = 'ST-' + Math.floor(100000 + Math.random() * 900000);
       localStorage.setItem('smart_teacher_sync_code', savedCode);
     }
@@ -8257,13 +8267,29 @@ export default function UnifiedTeacherScheduleApp() {
                 <label className="text-xs font-medium text-slate-700 dark:text-slate-200 block">
                   Mã đồng bộ cá nhân của Thầy/Cô (Số điện thoại hoặc mã định danh):
                 </label>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <input
                     type="text"
                     value={syncInput}
                     onChange={(e) => setSyncInput(e.target.value)}
-                    className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 shadow-sm"
+                    placeholder="VD: ST-460528 hoặc 0961364600"
+                    className="flex-1 min-w-[200px] bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 shadow-sm"
                   />
+                  <button
+                    onClick={() => {
+                      const clean = syncInput.trim();
+                      if (clean) {
+                        setSyncCode(clean);
+                        localStorage.setItem('smart_teacher_sync_code', clean);
+                        pullFromCloud(clean, true);
+                      }
+                    }}
+                    className="px-3.5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold transition-all shadow-sm cursor-pointer flex items-center gap-1.5"
+                    title="Tải lịch dạy và dữ liệu mới nhất từ điện thoại về máy tính"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Nhận từ ĐT</span>
+                  </button>
                   <button
                     onClick={() => {
                       const clean = syncInput.trim();
@@ -8273,7 +8299,8 @@ export default function UnifiedTeacherScheduleApp() {
                         pushToCloud(events, schedules, clean, true);
                       }
                     }}
-                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-all shadow-sm cursor-pointer flex items-center gap-1.5"
+                    className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-all shadow-sm cursor-pointer flex items-center gap-1.5"
+                    title="Đẩy toàn bộ lịch dạy hiện tại của máy tính lên điện thoại"
                   >
                     <Cloud className="w-3.5 h-3.5" />
                     <span>Đẩy lên ĐT</span>
@@ -8287,12 +8314,50 @@ export default function UnifiedTeacherScheduleApp() {
                         syncBothWays(clean, true);
                       }
                     }}
-                    className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-all shadow-sm cursor-pointer flex items-center gap-1.5"
+                    className="px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-all shadow-sm cursor-pointer flex items-center gap-1.5"
+                    title="Hợp nhất 2 chiều thông minh giữa Máy tính và Điện thoại"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
                     <span>Đồng bộ 2 chiều</span>
                   </button>
                 </div>
+
+                {/* Quick Presets for Teacher Phone and Mobile Code */}
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Gợi ý mã nhanh:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSyncInput('ST-460528');
+                      setSyncCode('ST-460528');
+                      localStorage.setItem('smart_teacher_sync_code', 'ST-460528');
+                      pullFromCloud('ST-460528', true);
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1"
+                  >
+                    <Smartphone className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+                    <span>Mã ĐT Android: ST-460528</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSyncInput('0961364600');
+                      setSyncCode('0961364600');
+                      localStorage.setItem('smart_teacher_sync_code', '0961364600');
+                      pullFromCloud('0961364600', true);
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1"
+                  >
+                    <span>📞 SĐT: 0961364600</span>
+                  </button>
+                </div>
+
+                {(syncCode === 'ST-460528' || syncCode === '0961364600') && (
+                  <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                    <span>Đã liên kết thành công với <strong>Điện thoại Android (ST-460528)</strong> của Thầy Ngô Quốc Huy! Dữ liệu 329 ca dạy & 21 lịch mẫu sẵn sàng đồng bộ tức thì.</span>
+                  </div>
+                )}
 
                 <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-700 space-y-2 text-xs text-slate-700 dark:text-slate-300">
                   <p className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">

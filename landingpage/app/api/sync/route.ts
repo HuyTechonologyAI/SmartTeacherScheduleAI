@@ -1,7 +1,7 @@
 import { isTestStudent, isTestClassroom, isTestSyncData, sanitizePayload } from '@/app/app/testDataSanitizer';
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 const GIST_ID = process.env.SYNC_GIST_ID || '41b9d5b2c31bd3c543622a04b92188d3';
 const GITHUB_TOKEN = process.env.SYNC_GITHUB_TOKEN || process.env.GITHUB_TOKEN || ('gho_eCq3dHNiSNt8n' + 'F8OkdNkJg2ChXfHFs1HgBeG');
@@ -224,29 +224,51 @@ async function fetchSyncStore(syncCode: string): Promise<SyncPayload | null> {
     return cached.data;
   }
 
-  // 1. Check Supabase first
-  try {
-    const { data, error } = await supabase
-      .from('teacher_sync_stores')
-      .select('*')
-      .eq('sync_code', cleanCode)
-      .maybeSingle();
+  // 1. Check Supabase first ONLY if legitimately configured and online
+  if (isSupabaseConfigured) {
+    try {
+      const abortCtrl = new AbortController();
+      const timeoutId = setTimeout(() => abortCtrl.abort(), 2000);
+      const { data } = await supabase
+        .from('teacher_sync_stores')
+        .select('*')
+        .eq('sync_code', cleanCode)
+        .abortSignal(abortCtrl.signal)
+        .maybeSingle();
+      clearTimeout(timeoutId);
 
-    if (data && data.payload) {
-      const payload: SyncPayload = {
-        ...data.payload,
-        syncCode: cleanCode,
-        pinHash: data.pin_hash || data.payload.pinHash || undefined
-      };
-      memoryCache.set(cleanCode, { data: payload, timestamp: Date.now() });
-      return payload;
+      if (data && data.payload) {
+        const payload: SyncPayload = {
+          ...data.payload,
+          syncCode: cleanCode,
+          pinHash: data.pin_hash || data.payload.pinHash || undefined
+        };
+        memoryCache.set(cleanCode, { data: payload, timestamp: Date.now() });
+        return payload;
+      }
+    } catch (err) {
+      console.warn('Supabase fetch fallback to gist:', err);
     }
-  } catch (err) {
-    console.warn('Supabase fetch fallback to gist:', err);
   }
 
-  // 2. Fallback to Gist for backward compatibility
-  const fromGist = await getFromGist(cleanCode);
+  // 2. Primary / Fast Resilient Storage: Gist
+  let fromGist = await getFromGist(cleanCode);
+
+  // Link phone number 0961364600 with phone sync code ST-460528
+  if (!fromGist || (fromGist.events.length === 0 && fromGist.schedules.length === 0)) {
+    if (cleanCode === '0961364600') {
+      const alt = await getFromGist('ST-460528');
+      if (alt && (alt.events.length > 0 || alt.schedules.length > 0)) {
+        fromGist = { ...alt, syncCode: '0961364600' };
+      }
+    } else if (cleanCode === 'ST-460528') {
+      const alt = await getFromGist('0961364600');
+      if (alt && (alt.events.length > 0 || alt.schedules.length > 0) && (!fromGist || alt.updatedAt > fromGist.updatedAt)) {
+        fromGist = { ...alt, syncCode: 'ST-460528' };
+      }
+    }
+  }
+
   if (fromGist) {
     memoryCache.set(cleanCode, { data: fromGist, timestamp: Date.now() });
     return fromGist;
@@ -264,27 +286,30 @@ async function saveSyncStore(payload: SyncPayload, pinToSet?: string): Promise<b
     computedPinHash = hashPin(pinToSet);
   }
 
-  // 1. Try Supabase
+  // 1. Try Supabase ONLY if configured (with 2s max timeout)
   let savedSupabase = false;
-  try {
-    const { error } = await supabase
-      .from('teacher_sync_stores')
-      .upsert({
-        sync_code: cleanCode,
-        pin_hash: computedPinHash || null,
-        payload: { ...payload, pinHash: computedPinHash },
-        version: '1.6.0',
-        device_name: payload.deviceName || 'Smart Device',
-        platform: payload.platform || 'web',
-        updated_at: payload.updatedAt
-      });
-    if (!error) {
-      savedSupabase = true;
-    } else {
-      console.warn('Supabase upsert notice:', error.message);
+  if (isSupabaseConfigured) {
+    try {
+      const abortCtrl = new AbortController();
+      const timeoutId = setTimeout(() => abortCtrl.abort(), 2000);
+      const { error } = await supabase
+        .from('teacher_sync_stores')
+        .upsert({
+          sync_code: cleanCode,
+          pin_hash: computedPinHash || null,
+          payload: { ...payload, pinHash: computedPinHash },
+          version: '2.3.0',
+          device_name: payload.deviceName || 'Smart Device',
+          platform: payload.platform || 'web',
+          updated_at: payload.updatedAt
+        }, { abortSignal: abortCtrl.signal } as any);
+      clearTimeout(timeoutId);
+      if (!error) {
+        savedSupabase = true;
+      }
+    } catch (err) {
+      console.warn('Supabase save error:', err);
     }
-  } catch (err) {
-    console.warn('Supabase save error:', err);
   }
 
   // 2. Resilient backup to Gist
@@ -323,12 +348,14 @@ async function getFromGist(syncCode: string): Promise<SyncPayload | null> {
     }
 
     let fileText = file.content;
-    if (file.truncated && file.raw_url) {
+    const shouldFetchRaw = file.truncated || !fileText || (typeof file.size === 'number' && file.size > 50000);
+
+    if (shouldFetchRaw && file.raw_url) {
       try {
         const rawRes = await fetch(file.raw_url, {
           headers: {
-            'Authorization': `token ${GITHUB_TOKEN}`,
-            'User-Agent': 'SmartTeacherScheduleSync'
+            'User-Agent': 'SmartTeacherScheduleSync',
+            'Cache-Control': 'no-cache'
           },
           cache: 'no-store'
         });
@@ -344,7 +371,34 @@ async function getFromGist(syncCode: string): Promise<SyncPayload | null> {
       return null;
     }
 
-    const parsed = JSON.parse(fileText);
+    let parsed: any;
+    try {
+      parsed = JSON.parse(fileText);
+    } catch (parseErr) {
+      console.warn('JSON parse failed on initial content, trying raw_url:', parseErr);
+      if (file.raw_url) {
+        try {
+          const rawRes = await fetch(file.raw_url, {
+            headers: { 'User-Agent': 'SmartTeacherScheduleSync' },
+            cache: 'no-store'
+          });
+          if (rawRes.ok) {
+            fileText = await rawRes.text();
+            parsed = JSON.parse(fileText);
+          }
+        } catch (rawErr2) {
+          console.error('Error parsing raw Gist content fallback:', rawErr2);
+          return null;
+        }
+      } else {
+        return null;
+      }
+    }
+
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+
     const schedules: SchedulePayload[] = Array.isArray(parsed.schedules) ? parsed.schedules : [];
     let events: CalendarEventPayload[] = Array.isArray(parsed.events) ? parsed.events : [];
 
@@ -399,6 +453,22 @@ async function saveToGist(payload: SyncPayload): Promise<boolean> {
 
   memoryCache.set(cleanCode, { data: payload, timestamp: Date.now() });
 
+  const filesObj: Record<string, { content: string }> = {
+    [fileName]: {
+      content: JSON.stringify(payload, null, 2)
+    }
+  };
+
+  // Mirrored synchronization between teacher's phone number 0961364600 and sync code ST-460528
+  const phone = payload.teacherProfile?.phone?.trim();
+  if (cleanCode === 'ST-460528' || phone === '0961364600' || cleanCode === '0961364600') {
+    const mirrorCode = (cleanCode === 'ST-460528') ? '0961364600' : 'ST-460528';
+    filesObj[`teacher_${mirrorCode}.json`] = {
+      content: JSON.stringify({ ...payload, syncCode: mirrorCode }, null, 2)
+    };
+    memoryCache.set(mirrorCode, { data: { ...payload, syncCode: mirrorCode }, timestamp: Date.now() });
+  }
+
   try {
     const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
       method: 'PATCH',
@@ -409,11 +479,7 @@ async function saveToGist(payload: SyncPayload): Promise<boolean> {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        files: {
-          [fileName]: {
-            content: JSON.stringify(payload, null, 2)
-          }
-        }
+        files: filesObj
       })
     });
 

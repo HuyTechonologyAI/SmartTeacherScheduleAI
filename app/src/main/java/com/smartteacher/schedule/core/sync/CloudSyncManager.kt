@@ -54,21 +54,31 @@ object CloudSyncManager {
 
     private fun com.google.gson.JsonElement?.asSafeInt(default: Int = 0): Int {
         if (this == null || this.isJsonNull) return default
-        return try { this.asInt } catch (e: Exception) { default }
+        return try {
+            if (this.isJsonPrimitive) {
+                if (this.asJsonPrimitive.isNumber) this.asInt
+                else this.asString.trim().toIntOrNull() ?: default
+            } else default
+        } catch (e: Exception) { default }
     }
 
     private fun com.google.gson.JsonElement?.asSafeLong(default: Long = 0L): Long {
         if (this == null || this.isJsonNull) return default
-        return try { this.asLong } catch (e: Exception) { default }
+        return try {
+            if (this.isJsonPrimitive) {
+                if (this.asJsonPrimitive.isNumber) this.asLong
+                else this.asString.trim().toLongOrNull() ?: default
+            } else default
+        } catch (e: Exception) { default }
     }
 
     private val httpClient = OkHttpClient.Builder()
         .followRedirects(true)
         .followSslRedirects(true)
         .retryOnConnectionFailure(true)
-        .connectTimeout(20, TimeUnit.SECONDS)
-        .readTimeout(25, TimeUnit.SECONDS)
-        .writeTimeout(25, TimeUnit.SECONDS)
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(45, TimeUnit.SECONDS)
+        .writeTimeout(45, TimeUnit.SECONDS)
         .build()
 
     private val gson = Gson()
@@ -96,7 +106,7 @@ object CloudSyncManager {
     fun getSyncCode(context: Context): String {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         var code = prefs.getString(KEY_SYNC_CODE, null)
-        if (code.isNullOrBlank() || code == "0961364600") {
+        if (code.isNullOrBlank()) {
             val randomNum = (100000..999999).random()
             code = "ST-$randomNum"
             prefs.edit().putString(KEY_SYNC_CODE, code).apply()
@@ -632,82 +642,88 @@ object CloudSyncManager {
                     for (elem in schedulesArray) {
                         if (!elem.isJsonObject) continue
                         val item = elem.asJsonObject
-                    val rawIdStr = item.get("id")?.asString?.replace("sch_", "")?.trim() ?: ""
-                    val numId = rawIdStr.toLongOrNull()
-                    val subject = item.get("subject")?.asString ?: ""
-                    val className = item.get("className")?.asString ?: ""
-                    val room = item.get("room")?.asString ?: ""
-                    val rawDay = item.get("dayOfWeek")?.asInt ?: 1
-                    val dayOfWeek = if (item.has("dayOfWeekVn")) {
-                        rawDay
-                    } else if (rawDay in 2..8) {
-                        if (rawDay == 8) 7 else rawDay - 1
-                    } else {
-                        rawDay.coerceIn(1, 7)
-                    }
+                        try {
+                            val rawIdStr = item.get("id").asSafeString().replace("sch_", "").trim()
+                            val numId = rawIdStr.toLongOrNull()
+                            val subject = item.get("subject").asSafeString()
+                            val className = item.get("className").asSafeString()
+                            val room = item.get("room").asSafeString()
+                            val rawDay = item.get("dayOfWeek").asSafeInt(1)
+                            val dayOfWeek = if (item.has("dayOfWeekVn")) {
+                                rawDay
+                            } else if (rawDay in 2..8) {
+                                if (rawDay == 8) 7 else rawDay - 1
+                            } else {
+                                rawDay.coerceIn(1, 7)
+                            }
 
-                    val startTime = item.get("startTime")?.asString ?: "07:00"
-                    val endTime = item.get("endTime")?.asString ?: "07:45"
-                    val sessionType = item.get("sessionType")?.asString ?: if (item.get("type")?.asString == "practice") "Thực hành" else "Lý thuyết"
-                    val startDate = item.get("startDate")?.asString ?: "2026-09-07"
-                    val endDate = item.get("endDate")?.asString ?: "2027-02-15"
-                    val notes = item.get("notes")?.asString ?: ""
-                    val itemUpdatedAt = item.get("updatedAt")?.asLong ?: System.currentTimeMillis()
-
-                    val existing = (if (numId != null && numId > 0) currentSchedules.find { it.id == numId } else null)
-                        ?: currentSchedules.find {
-                            it.subject.equals(subject, ignoreCase = true) &&
-                            it.className.equals(className, ignoreCase = true) &&
-                            it.dayOfWeek == dayOfWeek
-                        }
-
-                    if (existing != null) {
-                        val isDiff = existing.room != room ||
-                                     existing.startTime != startTime ||
-                                     existing.endTime != endTime ||
-                                     existing.sessionType != sessionType ||
-                                     existing.startDate != startDate ||
-                                     existing.endDate != endDate ||
-                                     existing.notes != notes ||
-                                     existing.subject != subject ||
-                                     existing.className != className ||
-                                     existing.dayOfWeek != dayOfWeek
-
-                        if (isDiff && itemUpdatedAt >= existing.updatedAt) {
-                            val updated = existing.copy(
-                                subject = subject,
-                                className = className,
-                                dayOfWeek = dayOfWeek,
-                                room = room,
-                                startTime = startTime,
-                                endTime = endTime,
-                                sessionType = sessionType,
-                                startDate = startDate,
-                                endDate = endDate,
-                                notes = notes,
-                                updatedAt = itemUpdatedAt
+                            val startTime = item.get("startTime").asSafeString("07:00")
+                            val endTime = item.get("endTime").asSafeString("07:45")
+                            val sessionType = item.get("sessionType").asSafeString(
+                                if (item.get("type").asSafeString() == "practice") "Thực hành" else "Lý thuyết"
                             )
-                            db.teachingScheduleDao().updateSchedule(updated)
-                            changedCount++
+                            val startDate = item.get("startDate").asSafeString("2026-09-07")
+                            val endDate = item.get("endDate").asSafeString("2027-02-15")
+                            val notes = item.get("notes").asSafeString()
+                            val itemUpdatedAt = item.get("updatedAt").asSafeLong(System.currentTimeMillis())
+
+                            val existing = (if (numId != null && numId > 0) currentSchedules.find { it.id == numId } else null)
+                                ?: currentSchedules.find {
+                                    it.subject.equals(subject, ignoreCase = true) &&
+                                    it.className.equals(className, ignoreCase = true) &&
+                                    it.dayOfWeek == dayOfWeek
+                                }
+
+                            if (existing != null) {
+                                val isDiff = existing.room != room ||
+                                             existing.startTime != startTime ||
+                                             existing.endTime != endTime ||
+                                             existing.sessionType != sessionType ||
+                                             existing.startDate != startDate ||
+                                             existing.endDate != endDate ||
+                                             existing.notes != notes ||
+                                             existing.subject != subject ||
+                                             existing.className != className ||
+                                             existing.dayOfWeek != dayOfWeek
+
+                                if (isDiff && itemUpdatedAt >= existing.updatedAt) {
+                                    val updated = existing.copy(
+                                        subject = subject,
+                                        className = className,
+                                        dayOfWeek = dayOfWeek,
+                                        room = room,
+                                        startTime = startTime,
+                                        endTime = endTime,
+                                        sessionType = sessionType,
+                                        startDate = startDate,
+                                        endDate = endDate,
+                                        notes = notes,
+                                        updatedAt = itemUpdatedAt
+                                    )
+                                    db.teachingScheduleDao().updateSchedule(updated)
+                                    changedCount++
+                                }
+                            } else {
+                                val newSchedule = TeachingScheduleEntity(
+                                    subject = subject,
+                                    className = className,
+                                    room = room,
+                                    dayOfWeek = dayOfWeek,
+                                    startTime = startTime,
+                                    endTime = endTime,
+                                    sessionType = sessionType,
+                                    startDate = startDate,
+                                    endDate = endDate,
+                                    notes = notes,
+                                    updatedAt = itemUpdatedAt
+                                )
+                                db.teachingScheduleDao().insertSchedule(newSchedule)
+                                changedCount++
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
                         }
-                    } else {
-                        val newSchedule = TeachingScheduleEntity(
-                            subject = subject,
-                            className = className,
-                            room = room,
-                            dayOfWeek = dayOfWeek,
-                            startTime = startTime,
-                            endTime = endTime,
-                            sessionType = sessionType,
-                            startDate = startDate,
-                            endDate = endDate,
-                            notes = notes,
-                            updatedAt = itemUpdatedAt
-                        )
-                        db.teachingScheduleDao().insertSchedule(newSchedule)
-                        changedCount++
                     }
-                }
                 }
             }
 
@@ -721,81 +737,90 @@ object CloudSyncManager {
                     for (elem in eventsArray) {
                         if (!elem.isJsonObject) continue
                         val item = elem.asJsonObject
-                    val rawIdStr = item.get("id")?.asString?.replace("ev_", "")?.trim() ?: ""
-                    val numId = rawIdStr.toLongOrNull()
-                    val subject = item.get("subject")?.asString ?: item.get("title")?.asString ?: ""
-                    val className = item.get("className")?.asString ?: ""
-                    val room = item.get("room")?.asString ?: ""
-                    val date = item.get("date")?.asString ?: ""
-                    val startTime = item.get("startTime")?.asString ?: ""
-                    val endTime = item.get("endTime")?.asString ?: ""
-                    val sessionType = item.get("sessionType")?.asString ?: "Lý thuyết"
-                    val notes = item.get("notes")?.asString ?: ""
-                    val colorHex = item.get("colorHex")?.asString ?: (if (sessionType.contains("thực hành", true)) "#10B981" else "#0066FF")
-                    val tId = if (item.has("teachingScheduleId") && !item.get("teachingScheduleId").isJsonNull) item.get("teachingScheduleId").asLong else null
-                    val itemUpdatedAt = item.get("updatedAt")?.asLong ?: System.currentTimeMillis()
+                        try {
+                            val rawIdStr = item.get("id").asSafeString().replace("ev_", "").trim()
+                            val numId = rawIdStr.toLongOrNull()
+                            val subject = item.get("subject").asSafeString().ifBlank { item.get("title").asSafeString() }
+                            val className = item.get("className").asSafeString()
+                            val room = item.get("room").asSafeString()
+                            val date = item.get("date").asSafeString()
+                            val startTime = item.get("startTime").asSafeString()
+                            val endTime = item.get("endTime").asSafeString()
+                            val sessionType = item.get("sessionType").asSafeString("Lý thuyết")
+                            val notes = item.get("notes").asSafeString()
+                            val colorHex = item.get("colorHex").asSafeString(
+                                if (sessionType.contains("thực hành", true)) "#10B981" else "#0066FF"
+                            )
+                            val tIdElem = item.get("teachingScheduleId")
+                            val tId = if (tIdElem != null && !tIdElem.isJsonNull) {
+                                tIdElem.asSafeString().replace("sch_", "").trim().toLongOrNull()
+                            } else null
+                            val itemUpdatedAt = item.get("updatedAt").asSafeLong(System.currentTimeMillis())
 
-                    // Đối soát thông minh: ưu tiên ID nguyên bản, sau đó cặp khóa lịch (tId + date), cuối cùng là (date + startTime + class)
-                    val existing = (if (numId != null && numId > 0) currentEvents.find { it.id == numId } else null)
-                        ?: (if (tId != null) currentEvents.find { it.teachingScheduleId == tId && it.date == date } else null)
-                        ?: currentEvents.find { it.date == date && it.startTime == startTime && it.className.equals(className, ignoreCase = true) }
+                            // Đối soát thông minh: ưu tiên ID nguyên bản, sau đó cặp khóa lịch (tId + date), cuối cùng là (date + startTime + class)
+                            val existing = (if (numId != null && numId > 0) currentEvents.find { it.id == numId } else null)
+                                ?: (if (tId != null) currentEvents.find { it.teachingScheduleId == tId && it.date == date } else null)
+                                ?: currentEvents.find { it.date == date && it.startTime == startTime && it.className.equals(className, ignoreCase = true) }
 
-                    if (existing != null) {
-                        val isDiff = existing.room != room ||
-                                     existing.subject != subject ||
-                                     existing.className != className ||
-                                     existing.date != date ||
-                                     existing.startTime != startTime ||
-                                     existing.endTime != endTime ||
-                                     existing.sessionType != sessionType ||
-                                     existing.notes != notes ||
-                                     existing.colorHex != colorHex
+                            if (existing != null) {
+                                val isDiff = existing.room != room ||
+                                             existing.subject != subject ||
+                                             existing.className != className ||
+                                             existing.date != date ||
+                                             existing.startTime != startTime ||
+                                             existing.endTime != endTime ||
+                                             existing.sessionType != sessionType ||
+                                             existing.notes != notes ||
+                                             existing.colorHex != colorHex
 
-                        if (isDiff && itemUpdatedAt >= existing.updatedAt) {
-                            toUpdate.add(
-                                existing.copy(
-                                    title = subject,
-                                    subject = subject,
-                                    className = className,
-                                    room = room,
-                                    date = date,
-                                    startTime = startTime,
-                                    endTime = endTime,
-                                    sessionType = sessionType,
-                                    notes = notes,
-                                    colorHex = colorHex,
-                                    updatedAt = itemUpdatedAt
+                                if (isDiff && itemUpdatedAt >= existing.updatedAt) {
+                                    toUpdate.add(
+                                        existing.copy(
+                                            title = subject,
+                                            subject = subject,
+                                            className = className,
+                                            room = room,
+                                            date = date,
+                                            startTime = startTime,
+                                            endTime = endTime,
+                                            sessionType = sessionType,
+                                            notes = notes,
+                                            colorHex = colorHex,
+                                            updatedAt = itemUpdatedAt
+                                        )
+                                    )
+                                }
+                            } else if (date.isNotBlank() && startTime.isNotBlank()) {
+                                toInsert.add(
+                                    CalendarEventEntity(
+                                        teachingScheduleId = tId,
+                                        title = subject,
+                                        subject = subject,
+                                        className = className,
+                                        room = room,
+                                        date = date,
+                                        startTime = startTime,
+                                        endTime = endTime,
+                                        sessionType = sessionType,
+                                        notes = notes,
+                                        colorHex = colorHex,
+                                        updatedAt = itemUpdatedAt
+                                    )
                                 )
-                            )
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
                         }
-                    } else if (date.isNotBlank() && startTime.isNotBlank()) {
-                        toInsert.add(
-                            CalendarEventEntity(
-                                teachingScheduleId = tId,
-                                title = subject,
-                                subject = subject,
-                                className = className,
-                                room = room,
-                                date = date,
-                                startTime = startTime,
-                                endTime = endTime,
-                                sessionType = sessionType,
-                                notes = notes,
-                                colorHex = colorHex,
-                                updatedAt = itemUpdatedAt
-                            )
-                        )
                     }
-                }
 
-                if (toUpdate.isNotEmpty()) {
-                    db.calendarEventDao().updateEvents(toUpdate)
-                    changedCount += toUpdate.size
-                }
-                if (toInsert.isNotEmpty()) {
-                    db.calendarEventDao().insertEvents(toInsert)
-                    changedCount += toInsert.size
-                }
+                    if (toUpdate.isNotEmpty()) {
+                        db.calendarEventDao().updateEvents(toUpdate)
+                        changedCount += toUpdate.size
+                    }
+                    if (toInsert.isNotEmpty()) {
+                        db.calendarEventDao().insertEvents(toInsert)
+                        changedCount += toInsert.size
+                    }
                 }
             }
 

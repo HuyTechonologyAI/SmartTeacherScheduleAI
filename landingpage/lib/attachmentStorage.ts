@@ -3,7 +3,7 @@
 // Hỗ trợ lưu trữ Supabase Storage (Online) & IndexedDB Blob Store (Offline)
 // ============================================================================
 
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from './supabase';
 import { dbSetBlob, dbGetBlob } from './storageEngine';
 
 export interface UploadResult {
@@ -32,8 +32,8 @@ export async function uploadAttachmentFile(
   const mimeType = file.type || 'application/octet-stream';
   const size = file.size;
 
-  // 1. Thử upload lên Supabase Storage nếu online
-  if (typeof navigator !== 'undefined' && navigator.onLine) {
+  // 1. Thử upload lên Supabase Storage nếu online và Supabase được cấu hình hợp lệ
+  if (isSupabaseConfigured && typeof navigator !== 'undefined' && navigator.onLine) {
     try {
       const { data, error } = await supabase.storage
         .from(BUCKET_NAME)

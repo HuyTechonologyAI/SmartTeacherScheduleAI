@@ -406,6 +406,36 @@ async function getFromGist(syncCode: string): Promise<SyncPayload | null> {
       events = generateEventsFromSchedules(schedules);
     }
 
+    // Dedup: loại bỏ sự kiện trùng (cùng teachingScheduleId+date hoặc cùng date+startTime+className+subject)
+    if (events.length > 0) {
+      const dedupMap = new Map<string, CalendarEventPayload>();
+      for (const e of events) {
+        // Primary key: teachingScheduleId + date
+        let key: string;
+        if (e.teachingScheduleId) {
+          key = `sch_${e.teachingScheduleId}_${e.date}`;
+        } else if (e.date && e.className && e.startTime && e.subject) {
+          key = `${e.date}_${(e.className || '').toLowerCase().trim()}_${(e.startTime || '').trim()}_${(e.subject || '').toLowerCase().trim()}`;
+        } else {
+          key = `fallback_${e.id}`;
+        }
+        const prev = dedupMap.get(key);
+        if (!prev || (Number(e.updatedAt) || 0) >= (Number(prev.updatedAt) || 0)) {
+          dedupMap.set(key, e);
+        }
+      }
+      // Secondary dedup pass: natural time slot key
+      const slotMap = new Map<string, CalendarEventPayload>();
+      for (const e of dedupMap.values()) {
+        const slotKey = `${e.date}_${(e.startTime || '').trim()}_${(e.className || '').toLowerCase().trim()}_${(e.subject || '').toLowerCase().trim()}`;
+        const prev = slotMap.get(slotKey);
+        if (!prev || (Number(e.updatedAt) || 0) >= (Number(prev.updatedAt) || 0)) {
+          slotMap.set(slotKey, e);
+        }
+      }
+      events = Array.from(slotMap.values());
+    }
+
     const deletedKDocs = new Set((parsed.deletedKnowledgeDocKeys || []).map((k: string) => k.toLowerCase().trim()));
     const deletedStudents = new Set(parsed.deletedStudentIds || []);
     const deletedClasses = new Set((parsed.deletedClassroomIds || []).map((c: string) => c.toLowerCase().trim()));
@@ -870,15 +900,24 @@ function mergeAttendance(existing: AttendanceRecordPayload[], incoming: Attendan
 function mergeEvents(existing: CalendarEventPayload[], incoming: CalendarEventPayload[], deletedEventIds: Set<string> = new Set()): CalendarEventPayload[] {
   const map = new Map<string, CalendarEventPayload>();
 
+  // FIX: Ưu tiên teachingScheduleId+date làm khóa chính thay vì ID số thô từ DB Android
+  // Nguyên nhân trùng: Android push event id=5 (tId=1, date=2026-10-05) và server cũng có id=338 (tId=1, date=2026-10-05)
+  // Cả 2 có cùng lịch dạy, cùng ngày nhưng khác ID → bị getKey cũ coi là 2 event riêng biệt
   const getKey = (e: CalendarEventPayload) => {
+    // Priority 1: teachingScheduleId + date (chính xác nhất cho ca dạy sinh từ lịch mẫu)
+    if (e.teachingScheduleId) {
+      return `sch_${e.teachingScheduleId}_${e.date}`;
+    }
+    // Priority 2: Composite natural key (date + class + startTime + subject)
+    if (e.date && e.className && e.startTime && e.subject) {
+      return `${e.date}_${e.className.toLowerCase().trim()}_${e.startTime.trim()}_${e.subject.toLowerCase().trim()}`;
+    }
+    // Priority 3: Numeric ID fallback (chỉ khi không có thông tin lịch mẫu)
     const numId = Number(e.id);
     if (!isNaN(numId) && numId > 0) {
       return `id_${numId}`;
     }
-    if (e.teachingScheduleId) {
-      return `sch_${e.teachingScheduleId}_${e.date}`;
-    }
-    return `${e.date}_${e.className.toLowerCase().trim()}_${e.startTime.trim()}_${e.subject.toLowerCase().trim()}`;
+    return `${e.date || ''}_${(e.className || '').toLowerCase().trim()}_${(e.startTime || '').trim()}_${(e.subject || '').toLowerCase().trim()}`;
   };
 
   for (const e of existing) {
@@ -903,7 +942,17 @@ function mergeEvents(existing: CalendarEventPayload[], incoming: CalendarEventPa
     }
   }
 
-  return Array.from(map.values()).sort((a, b) => {
+  // Final dedup pass: loại bỏ các event có cùng (date + startTime + className + subject) nhưng khác teachingScheduleId
+  const slotMap = new Map<string, CalendarEventPayload>();
+  for (const e of map.values()) {
+    const slotKey = `${e.date}_${(e.startTime || '').trim()}_${(e.className || '').toLowerCase().trim()}_${(e.subject || '').toLowerCase().trim()}`;
+    const existing = slotMap.get(slotKey);
+    if (!existing || (Number(e.updatedAt) || 0) >= (Number(existing.updatedAt) || 0)) {
+      slotMap.set(slotKey, e);
+    }
+  }
+
+  return Array.from(slotMap.values()).sort((a, b) => {
     if (a.date !== b.date) return a.date.localeCompare(b.date);
     return a.startTime.localeCompare(b.startTime);
   });

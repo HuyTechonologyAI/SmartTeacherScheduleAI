@@ -757,9 +757,10 @@ object CloudSyncManager {
                             } else null
                             val itemUpdatedAt = item.get("updatedAt").asSafeLong(System.currentTimeMillis())
 
-                            // Đối soát thông minh: ưu tiên ID nguyên bản, sau đó cặp khóa lịch (tId + date), cuối cùng là (date + startTime + class)
-                            val existing = (if (numId != null && numId > 0) currentEvents.find { it.id == numId } else null)
-                                ?: (if (tId != null) currentEvents.find { it.teachingScheduleId == tId && it.date == date } else null)
+                            // Đối soát thông minh: ưu tiên tId+date, rồi date+startTime+class+subject, cuối cùng ID nguyên bản
+                            val existing = (if (tId != null) currentEvents.find { it.teachingScheduleId == tId && it.date == date } else null)
+                                ?: currentEvents.find { it.date == date && it.startTime == startTime && it.className.equals(className, ignoreCase = true) && it.subject.equals(subject, ignoreCase = true) }
+                                ?: (if (numId != null && numId > 0) currentEvents.find { it.id == numId } else null)
                                 ?: currentEvents.find { it.date == date && it.startTime == startTime && it.className.equals(className, ignoreCase = true) }
 
                             if (existing != null) {
@@ -818,8 +819,18 @@ object CloudSyncManager {
                         changedCount += toUpdate.size
                     }
                     if (toInsert.isNotEmpty()) {
-                        db.calendarEventDao().insertEvents(toInsert)
-                        changedCount += toInsert.size
+                        // Dedup toInsert: loại bỏ ca dạy trùng (cùng date+startTime+className+subject)
+                        val insertSlotMap = mutableMapOf<String, CalendarEventEntity>()
+                        for (e in toInsert) {
+                            val slotKey = "${e.date}_${e.startTime}_${e.className.lowercase().trim()}_${e.subject.lowercase().trim()}"
+                            val prev = insertSlotMap[slotKey]
+                            if (prev == null || (e.updatedAt) >= (prev.updatedAt)) {
+                                insertSlotMap[slotKey] = e
+                            }
+                        }
+                        val dedupedInsert = insertSlotMap.values.toList()
+                        db.calendarEventDao().insertEvents(dedupedInsert)
+                        changedCount += dedupedInsert.size
                     }
                 }
             }

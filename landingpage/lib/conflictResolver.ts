@@ -118,10 +118,16 @@ export function detectAndResolveEventConflicts(
 } {
   const localMap = new Map<string, any>();
   const getKey = (e: any) => {
+    // Priority 1: teachingScheduleId + date (khớp với mergeEvents phía server)
+    if (e.teachingScheduleId) return `sch_${e.teachingScheduleId}_${e.date}`;
+    // Priority 2: Composite natural key
+    if (e.date && e.className && e.startTime && e.subject) {
+      return `${e.date}_${(e.className || '').toLowerCase().trim()}_${(e.startTime || '').trim()}_${(e.subject || '').toLowerCase().trim()}`;
+    }
+    // Priority 3: Numeric ID fallback
     const numId = Number(e.id);
     if (!isNaN(numId) && numId > 0) return `id_${numId}`;
-    if (e.teachingScheduleId) return `sch_${e.teachingScheduleId}_${e.date}`;
-    return `${e.date}_${(e.className || '').toLowerCase().trim()}_${(e.startTime || '').trim()}_${(e.subject || '').toLowerCase().trim()}`;
+    return `${e.date || ''}_${(e.className || '').toLowerCase().trim()}_${(e.startTime || '').trim()}_${(e.subject || '').toLowerCase().trim()}`;
   };
 
   localEvents.forEach(e => {

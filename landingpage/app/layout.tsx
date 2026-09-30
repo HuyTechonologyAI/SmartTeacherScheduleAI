@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   creator: "Ngô Quốc Huy - Huy Technology AI",
   publisher: "Huy Technology AI Hub",
   alternates: {
-    canonical: "https://huycncdsai.io.vn",
+    canonical: "https://www.gvcncdsai.io.vn",
   },
   openGraph: {
     title: "Smart Teacher Schedule AI - Trợ lý Sư Phạm & Lịch Dạy Giáo Viên v2.3.0",

@@ -52,16 +52,16 @@ export const AVATAR_PRESETS = [
   { id: "teacher_8", label: "Thân thiện Vàng", url: "https://api.dicebear.com/7.x/bottts/svg?seed=TeacherYellow" }
 ];
 
-export const DEFAULT_TEACHER_PROFILE: TeacherProfile = {
+export const ADMIN_TEACHER_PROFILE: TeacherProfile = {
   id: "GV-202688",
   avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=EduVietTeacher",
-  fullName: "Nguyễn Minh Anh",
+  fullName: "Ngô Quốc Huy",
   phone: "0961364600",
-  birthDate: "1990-05-15",
-  gender: "Nữ",
-  email: "nguyenminhanh.edu@gmail.com",
-  schools: ["Trường THPT Việt Nam", "Trường THPT Chuyên Sư Phạm"],
-  subjects: ["Toán học", "Tin học"],
+  birthDate: "1990-01-01",
+  gender: "Nam",
+  email: "huytechnologyai2025@gmail.com",
+  schools: ["Trường Cao Đẳng Kỹ Thuật - Công Nghệ Đồng Nai"],
+  subjects: ["Cơ Khí Chế Tạo Máy"],
   loginType: "phone",
   loginIdentifier: "0961364600",
   bioQuote: "Mỗi giờ lên lớp là một hành trình gieo hạt yêu thương!",
@@ -69,23 +69,63 @@ export const DEFAULT_TEACHER_PROFILE: TeacherProfile = {
   lastLoginAt: new Date().toISOString()
 };
 
+export const DEFAULT_TEACHER_PROFILE: TeacherProfile = {
+  id: "",
+  avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=NewTeacher",
+  fullName: "",
+  phone: "",
+  birthDate: "1995-01-01",
+  gender: "Nam",
+  email: "",
+  schools: [],
+  subjects: [],
+  loginType: "phone",
+  loginIdentifier: "",
+  bioQuote: "",
+  isLoggedIn: false,
+  lastLoginAt: undefined
+};
+
 const STORAGE_KEY_CURRENT = "edu_viet_teacher_profile";
 const STORAGE_KEY_SAVED_LIST = "edu_viet_saved_teacher_accounts";
 
-export function getStoredTeacherProfile(): TeacherProfile {
+export function getStoredTeacherProfile(syncCode?: string): TeacherProfile {
   if (typeof window === "undefined") return DEFAULT_TEACHER_PROFILE;
   try {
     const raw = localStorage.getItem(STORAGE_KEY_CURRENT);
+    const code = syncCode || localStorage.getItem('smart_teacher_sync_code') || '';
+    const isAdminAccount = code === '0961364600' || code === 'ST-460528';
+
     if (!raw) {
-      saveTeacherProfile(DEFAULT_TEACHER_PROFILE);
+      if (isAdminAccount) {
+        saveTeacherProfile(ADMIN_TEACHER_PROFILE);
+        return ADMIN_TEACHER_PROFILE;
+      }
       return DEFAULT_TEACHER_PROFILE;
     }
+
     const parsed = JSON.parse(raw);
+    // Nếu là tài khoản Admin nhưng hồ sơ đang bị lưu đè tên khác thì phục hồi đúng tên Thầy Ngô Quốc Huy
+    if (isAdminAccount && (!parsed.fullName || parsed.fullName === 'Nguyễn Minh Anh' || parsed.phone === '0961364600')) {
+      const restored: TeacherProfile = {
+        ...ADMIN_TEACHER_PROFILE,
+        ...parsed,
+        fullName: parsed.fullName && parsed.fullName !== 'Nguyễn Minh Anh' ? parsed.fullName : ADMIN_TEACHER_PROFILE.fullName,
+        school: parsed.school || ADMIN_TEACHER_PROFILE.schools[0],
+        schools: Array.isArray(parsed.schools) && parsed.schools.length > 0 ? parsed.schools : ADMIN_TEACHER_PROFILE.schools,
+        subjects: Array.isArray(parsed.subjects) && parsed.subjects.length > 0 ? parsed.subjects : ADMIN_TEACHER_PROFILE.subjects,
+        email: parsed.email || ADMIN_TEACHER_PROFILE.email,
+        phone: '0961364600'
+      };
+      saveTeacherProfile(restored);
+      return restored;
+    }
+
     return {
       ...DEFAULT_TEACHER_PROFILE,
       ...parsed,
-      schools: Array.isArray(parsed.schools) && parsed.schools.length > 0 ? parsed.schools : DEFAULT_TEACHER_PROFILE.schools,
-      subjects: Array.isArray(parsed.subjects) && parsed.subjects.length > 0 ? parsed.subjects : DEFAULT_TEACHER_PROFILE.subjects
+      schools: Array.isArray(parsed.schools) ? parsed.schools : [],
+      subjects: Array.isArray(parsed.subjects) ? parsed.subjects : []
     };
   } catch (e) {
     console.error("Error reading stored teacher profile:", e);

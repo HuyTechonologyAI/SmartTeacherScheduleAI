@@ -563,6 +563,8 @@ export default function UnifiedTeacherScheduleApp() {
   const [syncStatus, setSyncStatus] = useState<'idle' | 'synced' | 'syncing' | 'error'>('synced');
   const [lastSyncTime, setLastSyncTime] = useState<string>('Vừa xong');
   const [alertBanner, setAlertBanner] = useState<string | null>(null);
+  const [updateNotice, setUpdateNotice] = useState<{ versionName: string; versionCode: number; title: string; releaseNotes: string[] } | null>(null);
+  const [showUpdateDetailsModal, setShowUpdateDetailsModal] = useState<boolean>(false);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [showPortalShareModal, setShowPortalShareModal] = useState<boolean>(false);
   const [showStorageModal, setShowStorageModal] = useState<boolean>(false);
@@ -1636,23 +1638,8 @@ export default function UnifiedTeacherScheduleApp() {
         let cloudEvents: CalendarEventItem[] = Array.isArray(data.events) ? data.events : [];
         let cloudSchedules: ScheduleItem[] = Array.isArray(data.schedules) ? data.schedules : [];
 
-        // Tự động kết nối tới mã đồng bộ chuẩn ST-460528 nếu mã ngẫu nhiên chưa có dữ liệu trên đám mây
-        if (cloudEvents.length === 0 && cloudSchedules.length === 0 && code !== 'ST-460528' && code !== '0961364600') {
-          try {
-            const fallbackRes = await fetch('/api/sync?code=ST-460528');
-            if (fallbackRes.ok) {
-              const fallbackData = await fallbackRes.json();
-              if (Array.isArray(fallbackData.events) && fallbackData.events.length > 0) {
-                data = fallbackData;
-                cloudEvents = fallbackData.events;
-                cloudSchedules = fallbackData.schedules || [];
-                setSyncCode('ST-460528');
-                setSyncInput('ST-460528');
-                localStorage.setItem('smart_teacher_sync_code', 'ST-460528');
-              }
-            }
-          } catch (_) {}
-        }
+        // Dữ liệu người dùng hoàn toàn độc lập, không tự ý kéo dữ liệu của tài khoản khác
+
 
         // If cloud only has schedules, generate the 288 events
         if (cloudEvents.length === 0 && cloudSchedules.length > 0) {
@@ -1927,6 +1914,20 @@ export default function UnifiedTeacherScheduleApp() {
       window.addEventListener('online', handleOnline);
       window.addEventListener('offline', handleOffline);
     }
+
+    // Tự động kiểm tra bản cập nhật mới v2.4.0
+    fetch('/api/version')
+      .then(res => res.ok ? res.json() : null)
+      .then(vData => {
+        if (vData && (vData.versionCode || 0) > 23) {
+          const dismissed = sessionStorage.getItem('dismissed_update_' + vData.versionCode);
+          if (!dismissed) {
+            setUpdateNotice(vData);
+          }
+        }
+      })
+      .catch(() => {});
+
     // Tự động quét và thanh lọc dữ liệu kiểm thử (mock / sample test data)
     const rosterPurge = purgeTestRosterData();
     const storedCls = getStoredClassrooms();
@@ -1943,11 +1944,18 @@ export default function UnifiedTeacherScheduleApp() {
 
     let savedCode = localStorage.getItem('smart_teacher_sync_code');
     if (!savedCode) {
-      savedCode = 'ST-460528';
+      // Người dùng mới hoàn toàn: Cung cấp mã định danh ngẫu nhiên riêng biệt, dữ liệu sạch hoàn toàn
+      savedCode = 'ST-' + Math.floor(100000 + Math.random() * 900000);
       localStorage.setItem('smart_teacher_sync_code', savedCode);
     }
     setSyncCode(savedCode);
     setSyncInput(savedCode);
+
+    // Tự động phục hồi hồ sơ chuẩn nếu đây là tài khoản Thầy Ngô Quốc Huy
+    if (savedCode === 'ST-460528' || savedCode === '0961364600') {
+      const adminProfile = getStoredTeacherProfile(savedCode);
+      setTeacherProfile(adminProfile);
+    }
 
     const savedPin = localStorage.getItem('smart_teacher_sync_pin') || '';
     setSyncPin(savedPin);
@@ -1956,13 +1964,15 @@ export default function UnifiedTeacherScheduleApp() {
     if (savedTasks) {
       try { setTasks(JSON.parse(savedTasks)); } catch (e) {}
     } else {
-      const defaultTasks: TaskItem[] = [
+      const defaultTasks: TaskItem[] = (savedCode === 'ST-460528' || savedCode === '0961364600') ? [
         { id: 't1', title: 'Soạn giáo án Module Tiện CNC Lớp CG24TC34', date: todayStr, isCompleted: false, priority: 'high' },
         { id: 't2', title: 'Kiểm tra vật tư dao phay và phôi nhôm xưởng thực hành', date: todayStr, isCompleted: true, priority: 'medium' },
         { id: 't3', title: 'Ghi sổ đầu bài và cập nhật tiến độ đào tạo', date: todayStr, isCompleted: false, priority: 'low' }
-      ];
+      ] : [];
       setTasks(defaultTasks);
-      localStorage.setItem('smart_teacher_tasks', JSON.stringify(defaultTasks));
+      if (defaultTasks.length > 0) {
+        localStorage.setItem('smart_teacher_tasks', JSON.stringify(defaultTasks));
+      }
     }
 
     const savedEvStr = localStorage.getItem('smart_teacher_events');
@@ -2025,8 +2035,8 @@ export default function UnifiedTeacherScheduleApp() {
       const lastFocusPull = Number(sessionStorage.getItem('smart_teacher_last_focus_pull') || 0);
       if (now - lastFocusPull > 45000) {
         sessionStorage.setItem('smart_teacher_last_focus_pull', String(now));
-        const activeCode = localStorage.getItem('smart_teacher_sync_code') || 'ST-460528';
-        pullFromCloud(activeCode, false);
+        const activeCode = localStorage.getItem('smart_teacher_sync_code');
+        if (activeCode) pullFromCloud(activeCode, false);
       }
     };
     window.addEventListener('focus', handleFocusSync);
@@ -3192,6 +3202,35 @@ export default function UnifiedTeacherScheduleApp() {
         </div>
       )}
 
+      {/* Update Notice Banner */}
+      {updateNotice && (
+        <div className="bg-gradient-to-r from-indigo-700 via-purple-700 to-rose-600 text-white text-xs py-2 px-4 flex items-center justify-between shadow-md">
+          <div className="flex items-center gap-2 mx-auto flex-wrap justify-center">
+            <span className="flex items-center gap-1.5 font-bold">
+              <Sparkles className="w-4 h-4 text-amber-300 animate-pulse shrink-0" />
+              Đã có bản cập nhật mới v{updateNotice.versionName}:
+            </span>
+            <span className="opacity-95">{updateNotice.title}</span>
+            <button
+              onClick={() => setShowUpdateDetailsModal(true)}
+              className="ml-2 px-2.5 py-0.5 rounded-full bg-white text-indigo-900 font-bold hover:bg-amber-100 transition-all text-[11px] cursor-pointer shadow-xs"
+            >
+              Xem chi tiết & Tải bản mới
+            </button>
+          </div>
+          <button
+            onClick={() => {
+              sessionStorage.setItem('dismissed_update_' + updateNotice.versionCode, 'true');
+              setUpdateNotice(null);
+            }}
+            className="text-white/80 hover:text-white text-sm font-bold ml-2 cursor-pointer"
+            title="Đóng thông báo"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* 2. NAVIGATION BAR (EDUVIET UNIFIED LIGHT TABS - CHỈ HIỆN KHI Ở TAB CON) */}
       {activeTab !== 'eduviet' && (
         <nav className="border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-[#0F172A]/95 sticky top-14 z-30 px-4 shadow-xs transition-colors">
@@ -3840,11 +3879,46 @@ export default function UnifiedTeacherScheduleApp() {
                 )}
               </div>
 
-              {filteredEvents.length === 0 ? (
+              {events.length === 0 ? (
+                <div className="bg-gradient-to-br from-indigo-50/70 via-white to-sky-50/50 dark:from-slate-800/80 dark:via-slate-800/60 dark:to-slate-900/80 border border-indigo-100 dark:border-slate-700 rounded-3xl p-8 sm:p-12 text-center shadow-sm space-y-4">
+                  <div className="w-16 h-16 rounded-2xl bg-indigo-600 text-white flex items-center justify-center mx-auto shadow-lg shadow-indigo-500/20">
+                    <Calendar className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Chào Mừng Thầy/Cô Đến Với EduViet!</h3>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 max-w-lg mx-auto mt-2 leading-relaxed">
+                      Lịch dạy cá nhân của Thầy/Cô hiện đang ở trạng thái mới hoàn toàn (0 ca dạy). Thầy/Cô có thể chủ động khởi tạo hoặc kết nối dữ liệu:
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                    <button
+                      onClick={() => setShowAddEventModal(true)}
+                      className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-md shadow-indigo-600/20 flex items-center gap-2 transition-all cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" /> Thêm Ca Dạy Mới
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('roster')}
+                      className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold shadow-md shadow-emerald-600/20 flex items-center gap-2 transition-all cursor-pointer"
+                    >
+                      <Users className="w-4 h-4" /> Danh Sách Lớp & Nhập Excel
+                    </button>
+                    <button
+                      onClick={() => setShowSyncModal(true)}
+                      className="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 text-sm font-semibold shadow-sm flex items-center gap-2 transition-all cursor-pointer"
+                    >
+                      <Cloud className="w-4 h-4" /> Nhập Mã Đồng Bộ / SĐT
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 pt-1">
+                    Mã thiết bị của Thầy/Cô: <span className="font-mono font-bold text-slate-600 dark:text-slate-400">{syncCode}</span> • Mọi dữ liệu được bảo mật riêng tư tuyệt đối
+                  </p>
+                </div>
+              ) : filteredEvents.length === 0 ? (
                 <div className="bg-white dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-12 text-center space-y-2 shadow-sm">
                   <Calendar className="w-10 h-10 text-slate-400 mx-auto" />
-                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Không tìm thấy ca dạy nào phù hợp với bộ lọc!</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Thầy/Cô có thể đổi ngày hoặc chọn chế độ "Xem toàn bộ 288 ca" ở trên.</p>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Không tìm thấy ca dạy nào phù hợp với bộ lọc trong ngày đã chọn!</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Thầy/Cô có thể đổi ngày hoặc chọn chế độ xem toàn bộ ca ở thanh công cụ phía trên.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-28">
@@ -7641,10 +7715,10 @@ export default function UnifiedTeacherScheduleApp() {
                         Smart Teacher Schedule AI
                       </h3>
                       <span className="px-3 py-0.5 rounded-full bg-gradient-to-r from-rose-600 to-amber-600 text-white text-xs font-mono font-bold shadow-xs">
-                        v2.3.0 Chính Thức
+                        v2.4.0 Chính Thức
                       </span>
                       <span className="px-2.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold">
-                        Build 23 • Bản Mới Nhất
+                        Build 24 • Bản Mới Nhất
                       </span>
                     </div>
 
@@ -7712,11 +7786,11 @@ export default function UnifiedTeacherScheduleApp() {
                         <span>Hướng dẫn & Tải</span>
                       </button>
                       <a
-                        href="/downloads/SmartTeacherSchedule_v2.3.0.apk"
-                        download="SmartTeacherSchedule_v2.3.0.apk"
+                        href="/downloads/SmartTeacherSchedule_v2.4.0.apk"
+                        download="SmartTeacherSchedule_v2.4.0.apk"
                         onClick={(e) => {
                           e.stopPropagation();
-                          trackDownload('android', '2.3.0', 'Settings Android APK');
+                          trackDownload('android', '2.4.0', 'Settings Android APK');
                         }}
                         title="Tải trực tiếp file APK"
                         className="p-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950 dark:hover:bg-emerald-900 text-emerald-800 dark:text-emerald-200 text-xs transition-colors shrink-0"
@@ -7806,11 +7880,11 @@ export default function UnifiedTeacherScheduleApp() {
                         <span>Hướng dẫn & Tải</span>
                       </button>
                       <a
-                        href="/downloads/SmartTeacherSchedule_v2.3.0_Portable.exe"
-                        download="SmartTeacherSchedule_v2.3.0_Portable.exe"
+                        href="/downloads/SmartTeacherSchedule_v2.4.0_Portable.exe"
+                        download="SmartTeacherSchedule_v2.4.0_Portable.exe"
                         onClick={(e) => {
                           e.stopPropagation();
-                          trackDownload('windows_portable', '2.3.0', 'Settings Windows Portable');
+                          trackDownload('windows_portable', '2.4.0', 'Settings Windows Portable');
                         }}
                         title="Tải trực tiếp bản Portable chạy ngay"
                         className="p-1.5 rounded-lg bg-sky-100 hover:bg-sky-200 dark:bg-sky-950 dark:hover:bg-sky-900 text-sky-800 dark:text-sky-200 text-xs transition-colors shrink-0"
@@ -7860,11 +7934,11 @@ export default function UnifiedTeacherScheduleApp() {
                         <span>Hướng dẫn & Tải</span>
                       </button>
                       <a
-                        href="/downloads/SmartTeacherSchedule_Setup_v2.3.0.exe"
-                        download="SmartTeacherSchedule_Setup_v2.3.0.exe"
+                        href="/downloads/SmartTeacherSchedule_Setup_v2.4.0.exe"
+                        download="SmartTeacherSchedule_Setup_v2.4.0.exe"
                         onClick={(e) => {
                           e.stopPropagation();
-                          trackDownload('windows_setup', '2.3.0', 'Settings Windows Setup');
+                          trackDownload('windows_setup', '2.4.0', 'Settings Windows Setup');
                         }}
                         title="Tải bộ cài đặt Windows Setup .exe có logo"
                         className="p-1.5 rounded-lg bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-950 dark:hover:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-xs transition-colors shrink-0"
@@ -11017,6 +11091,71 @@ export default function UnifiedTeacherScheduleApp() {
           setTimeout(() => setAlertBanner(null), 3500);
         }}
       />
+
+      {/* Modal Thông Báo & Tải Bản Cập Nhật Mới v2.4.0 */}
+      {showUpdateDetailsModal && updateNotice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-5 animate-scale-in">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-rose-600 text-white flex items-center justify-center shadow-md">
+                  <Sparkles className="w-5 h-5 text-amber-300" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Bản Cập Nhật v{updateNotice.versionName}</h3>
+                  <p className="text-xs text-slate-500">Mã phát hành Build {updateNotice.versionCode} • Chính thức</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowUpdateDetailsModal(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                {updateNotice.title}
+              </h4>
+              <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 space-y-2 text-xs text-slate-600 dark:text-slate-300 max-h-56 overflow-y-auto">
+                <p className="font-semibold text-slate-800 dark:text-slate-200">Điểm mới trong phiên bản này:</p>
+                <ul className="space-y-1.5 list-disc pl-4 leading-relaxed">
+                  {(updateNotice.releaseNotes || []).map((note, idx) => (
+                    <li key={idx}>{note}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">Tải về hoặc cập nhật thiết bị:</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <a
+                  href={`/downloads/SmartTeacherSchedule_v${updateNotice.versionName}.apk`}
+                  download={`SmartTeacherSchedule_v${updateNotice.versionName}.apk`}
+                  className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm flex items-center justify-center gap-2 transition-all"
+                >
+                  <Smartphone className="w-4 h-4" /> Bản Android APK
+                </a>
+                <a
+                  href={`/downloads/SmartTeacherSchedule_Setup_v${updateNotice.versionName}.exe`}
+                  download={`SmartTeacherSchedule_Setup_v${updateNotice.versionName}.exe`}
+                  className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm flex items-center justify-center gap-2 transition-all"
+                >
+                  <Download className="w-4 h-4" /> Bản Windows Setup
+                </a>
+              </div>
+              <button
+                onClick={() => window.location.reload()}
+                className="w-full mt-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <RefreshCw className="w-3.5 h-3.5" /> Làm Mới Giao Diện Web (F5)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

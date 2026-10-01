@@ -140,8 +140,8 @@ function createMenu() {
           click: () => shell.openExternal('https://gvcncdsai.io.vn')
         },
         {
-          label: '📱 Tải bản Android APK v2.3.0',
-          click: () => shell.openExternal('https://www.gvcncdsai.io.vn/downloads/SmartTeacherSchedule_v2.3.0.apk')
+          label: '📱 Tải bản Android APK v2.4.0',
+          click: () => shell.openExternal('https://www.gvcncdsai.io.vn/downloads/SmartTeacherSchedule_v2.4.0.apk')
         },
         {
           label: '💬 Hỗ trợ Zalo: 0961364600',
@@ -149,12 +149,12 @@ function createMenu() {
         },
         { type: 'separator' },
         {
-          label: 'Về ứng dụng Smart Teacher Schedule AI v2.3.0',
+          label: 'Về ứng dụng Smart Teacher Schedule AI v2.4.0',
           click: () => {
             if (Notification.isSupported()) {
               new Notification({
                 title: 'Smart Teacher Schedule AI Desktop',
-                body: 'Phiên bản v2.3.0 - Hệ sinh thái đa nền tảng, tự động hóa sư phạm, đồng bộ đám mây và trợ lý giáo viên AI.'
+                body: 'Phiên bản v2.4.0 - Hệ sinh thái đa nền tảng, tự động hóa sư phạm, đồng bộ an toàn và trợ lý giáo viên AI.'
               }).show();
             }
           }
@@ -231,9 +231,9 @@ function checkForUpdates(manual = false) {
     res.on('end', () => {
       try {
         const data = JSON.parse(rawData);
-        const currentVersionCode = 23; // v2.3.0
-        const remoteVersionCode = data.versionCode || 23;
-        const remoteVersionName = data.versionName || '2.3.0';
+        const currentVersionCode = 24; // v2.4.0
+        const remoteVersionCode = data.versionCode || 24;
+        const remoteVersionName = data.versionName || '2.4.0';
 
         if (remoteVersionCode > currentVersionCode) {
           dialog.showMessageBox(mainWindow, {
@@ -246,16 +246,15 @@ function checkForUpdates(manual = false) {
             cancelId: 1
           }).then((result) => {
             if (result.response === 0) {
-              const downloadUrl = data.platforms?.windows?.setupUrl || 'https://www.gvcncdsai.io.vn/downloads/SmartTeacherSchedule_Setup_v2.3.0.exe';
+              const downloadUrl = data.platforms?.windows?.setupUrl || 'https://www.gvcncdsai.io.vn/downloads/SmartTeacherSchedule_Setup_v2.4.0.exe';
               shell.openExternal(downloadUrl);
-
             }
           });
         } else if (manual) {
           dialog.showMessageBox(mainWindow, {
             type: 'info',
             title: 'Phiên bản mới nhất',
-            message: `Thầy cô đang sử dụng phiên bản v2.3.0 mới nhất của Smart Teacher Schedule AI.`,
+            message: `Thầy cô đang sử dụng phiên bản v2.4.0 mới nhất của Smart Teacher Schedule AI.`,
             buttons: ['Đồng ý']
           });
         }

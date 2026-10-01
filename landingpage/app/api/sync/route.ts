@@ -328,7 +328,7 @@ async function saveSyncStore(payload: SyncPayload, pinToSet?: string): Promise<b
         sync_code: cleanCode,
         pin_hash: computedPinHash || null,
         payload: { ...payload, pinHash: computedPinHash },
-        version: '2.3.0',
+        version: '2.4.0',
         device_name: payload.deviceName || 'Smart Device',
         platform: payload.platform || 'web',
         updated_at: payload.updatedAt
@@ -1094,13 +1094,23 @@ export async function POST(req: NextRequest) {
       finalAttendance = incomingAttendance.filter(a => !isTestSyncItem(a));
       finalLeaveRequests = incomingLeaveRequests;
     } else if (existing && !body.forceOverwrite) {
-      // Hợp nhất ca dạy, lịch mẫu và tài liệu theo mốc thời gian sửa đổi (Last-Write-Wins per item)
-      finalSchedules = mergeSchedules(existing.schedules || [], incomingSchedules);
-      const combinedDeletedEventIds = new Set([
-        ...incomingDeletedEventIds,
-        ...(((existing as any)?.deletedEventIds || []).map(String))
-      ]);
-      finalEvents = mergeEvents(existing.events || [], incomingEvents, combinedDeletedEventIds);
+      // Bảo vệ chống ghi đè rỗng: Nếu client gửi mảng rỗng nhưng đám mây đã có dữ liệu, giữ nguyên dữ liệu đám mây
+      const hasExistingEvents = (existing.events && existing.events.length > 0) || (existing.schedules && existing.schedules.length > 0);
+      const isIncomingEmpty = incomingEvents.length === 0 && incomingSchedules.length === 0;
+
+      if (isIncomingEmpty && hasExistingEvents) {
+        finalSchedules = existing.schedules || [];
+        finalEvents = existing.events || [];
+      } else {
+        // Hợp nhất ca dạy, lịch mẫu và tài liệu theo mốc thời gian sửa đổi (Last-Write-Wins per item)
+        finalSchedules = mergeSchedules(existing.schedules || [], incomingSchedules);
+        const combinedDeletedEventIds = new Set([
+          ...incomingDeletedEventIds,
+          ...(((existing as any)?.deletedEventIds || []).map(String))
+        ]);
+        finalEvents = mergeEvents(existing.events || [], incomingEvents, combinedDeletedEventIds);
+      }
+
       finalKnowledgeDocs = mergeKnowledgeDocs(existing.knowledgeDocs || [], incomingKnowledgeDocs, combinedDeletedKeys);
       const combinedDeletedStudentIds = new Set([
         ...incomingDeletedStudentIds,
@@ -1124,14 +1134,51 @@ export async function POST(req: NextRequest) {
       Date.now()
     );
 
-    let finalTeacherProfile: TeacherProfilePayload | undefined = body.teacherProfile || existing?.teacherProfile;
+    // Bảo vệ và hợp nhất hồ sơ giáo viên (không để tên rỗng/mẫu đè thông tin thật của Thầy Huy)
+    const isTeacherHuy = cleanCode === '0961364600' || cleanCode === 'ST-460528';
+    let finalTeacherProfile: TeacherProfilePayload | undefined = existing?.teacherProfile || body.teacherProfile;
+
     if (body.teacherProfile && existing?.teacherProfile) {
+      const validIncomingName = body.teacherProfile.fullName && 
+        body.teacherProfile.fullName.trim() && 
+        body.teacherProfile.fullName !== 'Nguyễn Minh Anh' && 
+        body.teacherProfile.fullName !== 'Giáo viên mới';
+
       finalTeacherProfile = {
         ...existing.teacherProfile,
         ...body.teacherProfile,
-        schools: Array.isArray(body.teacherProfile.schools) && body.teacherProfile.schools.length > 0 ? body.teacherProfile.schools : (existing.teacherProfile.schools || (body.teacherProfile.school ? [body.teacherProfile.school] : undefined)),
-        subjects: Array.isArray(body.teacherProfile.subjects) && body.teacherProfile.subjects.length > 0 ? body.teacherProfile.subjects : (existing.teacherProfile.subjects || (body.teacherProfile.department ? [body.teacherProfile.department] : undefined)),
+        fullName: isTeacherHuy
+          ? (validIncomingName ? body.teacherProfile.fullName : (existing.teacherProfile.fullName || 'Ngô Quốc Huy'))
+          : (validIncomingName ? body.teacherProfile.fullName : (existing.teacherProfile.fullName || '')),
+        school: isTeacherHuy
+          ? (body.teacherProfile.school && !body.teacherProfile.school.includes('Việt Nam') ? body.teacherProfile.school : (existing.teacherProfile.school || 'Trường Cao Đẳng Kỹ Thuật - Công Nghệ Đồng Nai'))
+          : (body.teacherProfile.school || existing.teacherProfile.school || ''),
+        schools: Array.isArray(body.teacherProfile.schools) && body.teacherProfile.schools.length > 0 
+          ? body.teacherProfile.schools 
+          : (existing.teacherProfile.schools || (isTeacherHuy ? ['Trường Cao Đẳng Kỹ Thuật - Công Nghệ Đồng Nai'] : [])),
+        subjects: Array.isArray(body.teacherProfile.subjects) && body.teacherProfile.subjects.length > 0 
+          ? body.teacherProfile.subjects 
+          : (existing.teacherProfile.subjects || (isTeacherHuy ? ['Cơ Khí Chế Tạo Máy'] : [])),
+        department: isTeacherHuy
+          ? (body.teacherProfile.department || existing.teacherProfile.department || 'Cơ Khí Chế Tạo Máy')
+          : (body.teacherProfile.department || existing.teacherProfile.department || ''),
+        phone: isTeacherHuy ? '0961364600' : (body.teacherProfile.phone || existing.teacherProfile.phone || ''),
+        email: isTeacherHuy ? (body.teacherProfile.email || existing.teacherProfile.email || 'huytechnologyai2025@gmail.com') : (body.teacherProfile.email || existing.teacherProfile.email || ''),
         updatedAt: Math.max(Number(body.teacherProfile.updatedAt) || 0, Number(existing.teacherProfile.updatedAt) || 0, Date.now())
+      };
+    } else if (isTeacherHuy && !finalTeacherProfile) {
+      finalTeacherProfile = {
+        fullName: 'Ngô Quốc Huy',
+        name: 'Ngô Quốc Huy',
+        school: 'Trường Cao Đẳng Kỹ Thuật - Công Nghệ Đồng Nai',
+        schools: ['Trường Cao Đẳng Kỹ Thuật - Công Nghệ Đồng Nai'],
+        department: 'Cơ Khí Chế Tạo Máy',
+        subjects: ['Cơ Khí Chế Tạo Máy'],
+        email: 'huytechnologyai2025@gmail.com',
+        phone: '0961364600',
+        gender: 'Nam',
+        bioQuote: 'Mỗi giờ lên lớp là một hành trình gieo hạt yêu thương!',
+        updatedAt: Date.now()
       };
     }
 

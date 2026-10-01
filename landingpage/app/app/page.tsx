@@ -1622,7 +1622,7 @@ export default function UnifiedTeacherScheduleApp() {
     try {
       const res = await fetch(`/api/sync?code=${encodeURIComponent(code)}${syncPin ? `&pin=${encodeURIComponent(syncPin)}` : ''}`);
       if (res.ok) {
-        const data = await res.json();
+        let data = await res.json();
         const cloudUpdatedAt = Number(data.updatedAt) || 0;
         const lastLocalUpdate = Number(localStorage.getItem('smart_teacher_last_local_update') || 0);
 
@@ -1635,6 +1635,24 @@ export default function UnifiedTeacherScheduleApp() {
 
         let cloudEvents: CalendarEventItem[] = Array.isArray(data.events) ? data.events : [];
         let cloudSchedules: ScheduleItem[] = Array.isArray(data.schedules) ? data.schedules : [];
+
+        // Tự động kết nối tới mã đồng bộ chuẩn ST-460528 nếu mã ngẫu nhiên chưa có dữ liệu trên đám mây
+        if (cloudEvents.length === 0 && cloudSchedules.length === 0 && code !== 'ST-460528' && code !== '0961364600') {
+          try {
+            const fallbackRes = await fetch('/api/sync?code=ST-460528');
+            if (fallbackRes.ok) {
+              const fallbackData = await fallbackRes.json();
+              if (Array.isArray(fallbackData.events) && fallbackData.events.length > 0) {
+                data = fallbackData;
+                cloudEvents = fallbackData.events;
+                cloudSchedules = fallbackData.schedules || [];
+                setSyncCode('ST-460528');
+                setSyncInput('ST-460528');
+                localStorage.setItem('smart_teacher_sync_code', 'ST-460528');
+              }
+            }
+          } catch (_) {}
+        }
 
         // If cloud only has schedules, generate the 288 events
         if (cloudEvents.length === 0 && cloudSchedules.length > 0) {
@@ -1925,7 +1943,7 @@ export default function UnifiedTeacherScheduleApp() {
 
     let savedCode = localStorage.getItem('smart_teacher_sync_code');
     if (!savedCode) {
-      savedCode = 'ST-' + Math.floor(100000 + Math.random() * 900000);
+      savedCode = 'ST-460528';
       localStorage.setItem('smart_teacher_sync_code', savedCode);
     }
     setSyncCode(savedCode);
@@ -2001,9 +2019,27 @@ export default function UnifiedTeacherScheduleApp() {
       });
     }
 
+    // Tự động kiểm tra và đồng bộ khi người dùng quay lại tab/cửa sổ (Focus / Visibility Sync)
+    const handleFocusSync = () => {
+      const now = Date.now();
+      const lastFocusPull = Number(sessionStorage.getItem('smart_teacher_last_focus_pull') || 0);
+      if (now - lastFocusPull > 45000) {
+        sessionStorage.setItem('smart_teacher_last_focus_pull', String(now));
+        const activeCode = localStorage.getItem('smart_teacher_sync_code') || 'ST-460528';
+        pullFromCloud(activeCode, false);
+      }
+    };
+    window.addEventListener('focus', handleFocusSync);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') handleFocusSync();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
     return () => {
       clearTimeout(midnightTimer);
       if (midnightInterval) clearInterval(midnightInterval);
+      window.removeEventListener('focus', handleFocusSync);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
 
@@ -3030,11 +3066,21 @@ export default function UnifiedTeacherScheduleApp() {
                   <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${syncStatus === 'synced' ? 'bg-emerald-400 opacity-75' : 'bg-amber-400 opacity-75'}`}></span>
                   <span className={`relative inline-flex rounded-full h-2 w-2 ${syncStatus === 'synced' ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
                 </span>
-                <span className="font-semibold text-slate-700">
+                <span className="font-semibold text-slate-700 dark:text-slate-300">
                   {events.length > 0 ? `${events.length} ca dạy` : 'Đang tải...'}
                 </span>
-                <span className="text-slate-300">|</span>
-                <button onClick={() => setShowSyncModal(true)} className="text-indigo-600 hover:text-indigo-700 font-mono font-bold cursor-pointer" title="Cài đặt mã ghép nối">Mã: {syncCode}</button>
+                <span className="text-slate-300 dark:text-slate-600">|</span>
+                <button 
+                  onClick={() => setShowSyncModal(true)} 
+                  className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 font-mono font-bold cursor-pointer flex items-center gap-1" 
+                  title="Cài đặt đồng bộ Đa Nền tảng (Web ⟷ Windows ⟷ Android)"
+                >
+                  <span className="text-[11px] text-slate-400 font-normal">Mã:</span>
+                  <span>{syncCode}</span>
+                  {(syncCode === 'ST-460528' || syncCode === '0961364600') && (
+                    <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded-full font-sans font-semibold">Khớp Android</span>
+                  )}
+                </button>
               </div>
 
               <button

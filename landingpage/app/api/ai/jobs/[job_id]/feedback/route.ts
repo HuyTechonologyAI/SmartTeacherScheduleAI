@@ -11,10 +11,10 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { job_id: string } }
+  { params }: { params: Promise<{ job_id: string }> }
 ) {
   try {
-    const jobId = params.job_id;
+    const { job_id: jobId } = await params;
     if (!jobId) {
       return NextResponse.json({ error: "Missing job_id" }, { status: 400 });
     }

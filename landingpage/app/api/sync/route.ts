@@ -228,20 +228,51 @@ async function fetchSyncStore(syncCode: string): Promise<SyncPayload | null> {
   if (isSupabaseConfigured) {
     try {
       const abortCtrl = new AbortController();
-      const timeoutId = setTimeout(() => abortCtrl.abort(), 2000);
-      const { data } = await supabase
+      const timeoutId = setTimeout(() => abortCtrl.abort(), 5000);
+      
+      let storeRecord: any = null;
+      const { data, error } = await supabase
         .from('teacher_sync_stores')
         .select('*')
         .eq('sync_code', cleanCode)
         .abortSignal(abortCtrl.signal)
         .maybeSingle();
+
+      if (data && data.payload && (Array.isArray(data.payload.events) || Array.isArray(data.payload.schedules))) {
+        storeRecord = data;
+      }
+
+      // Check linked alias if record not found or has 0 schedules and 0 events
+      const hasEvents = storeRecord?.payload?.events?.length > 0 || storeRecord?.payload?.schedules?.length > 0;
+      if (!storeRecord || !hasEvents) {
+        let altCode: string | null = null;
+        if (cleanCode === '0961364600' || cleanCode.replace(/\D/g, '') === '0961364600') {
+          altCode = 'ST-460528';
+        } else if (cleanCode === 'ST-460528' || cleanCode.includes('460528')) {
+          altCode = '0961364600';
+        }
+
+        if (altCode) {
+          const { data: altData } = await supabase
+            .from('teacher_sync_stores')
+            .select('*')
+            .eq('sync_code', altCode)
+            .abortSignal(abortCtrl.signal)
+            .maybeSingle();
+
+          if (altData && altData.payload && (altData.payload.events?.length > 0 || altData.payload.schedules?.length > 0)) {
+            storeRecord = altData;
+          }
+        }
+      }
+
       clearTimeout(timeoutId);
 
-      if (data && data.payload) {
+      if (storeRecord && storeRecord.payload) {
         const payload: SyncPayload = {
-          ...data.payload,
+          ...storeRecord.payload,
           syncCode: cleanCode,
-          pinHash: data.pin_hash || data.payload.pinHash || undefined
+          pinHash: storeRecord.pin_hash || storeRecord.payload.pinHash || undefined
         };
         memoryCache.set(cleanCode, { data: payload, timestamp: Date.now() });
         return payload;
@@ -251,17 +282,17 @@ async function fetchSyncStore(syncCode: string): Promise<SyncPayload | null> {
     }
   }
 
-  // 2. Primary / Fast Resilient Storage: Gist
+  // 2. Resilient Fallback Storage: Gist
   let fromGist = await getFromGist(cleanCode);
 
   // Link phone number 0961364600 with phone sync code ST-460528
   if (!fromGist || (fromGist.events.length === 0 && fromGist.schedules.length === 0)) {
-    if (cleanCode === '0961364600') {
+    if (cleanCode === '0961364600' || cleanCode.replace(/\D/g, '') === '0961364600') {
       const alt = await getFromGist('ST-460528');
       if (alt && (alt.events.length > 0 || alt.schedules.length > 0)) {
         fromGist = { ...alt, syncCode: '0961364600' };
       }
-    } else if (cleanCode === 'ST-460528') {
+    } else if (cleanCode === 'ST-460528' || cleanCode.includes('460528')) {
       const alt = await getFromGist('0961364600');
       if (alt && (alt.events.length > 0 || alt.schedules.length > 0) && (!fromGist || alt.updatedAt > fromGist.updatedAt)) {
         fromGist = { ...alt, syncCode: 'ST-460528' };
@@ -286,23 +317,40 @@ async function saveSyncStore(payload: SyncPayload, pinToSet?: string): Promise<b
     computedPinHash = hashPin(pinToSet);
   }
 
-  // 1. Try Supabase ONLY if configured (with 2s max timeout)
+  // 1. Try Supabase ONLY if configured (with 5s max timeout)
   let savedSupabase = false;
   if (isSupabaseConfigured) {
     try {
       const abortCtrl = new AbortController();
-      const timeoutId = setTimeout(() => abortCtrl.abort(), 2000);
+      const timeoutId = setTimeout(() => abortCtrl.abort(), 5000);
+      
+      const record = {
+        sync_code: cleanCode,
+        pin_hash: computedPinHash || null,
+        payload: { ...payload, pinHash: computedPinHash },
+        version: '2.3.0',
+        device_name: payload.deviceName || 'Smart Device',
+        platform: payload.platform || 'web',
+        updated_at: payload.updatedAt
+      };
+
       const { error } = await supabase
         .from('teacher_sync_stores')
-        .upsert({
-          sync_code: cleanCode,
-          pin_hash: computedPinHash || null,
-          payload: { ...payload, pinHash: computedPinHash },
-          version: '2.3.0',
-          device_name: payload.deviceName || 'Smart Device',
-          platform: payload.platform || 'web',
-          updated_at: payload.updatedAt
-        }, { abortSignal: abortCtrl.signal } as any);
+        .upsert(record, { abortSignal: abortCtrl.signal } as any);
+
+      // Dual-write to ensure 0961364600 and ST-460528 stay in 100% sync
+      const isTeacherHuy = cleanCode === '0961364600' || cleanCode === 'ST-460528' || payload.teacherProfile?.phone === '0961364600';
+      if (isTeacherHuy) {
+        const altCode = cleanCode === '0961364600' ? 'ST-460528' : '0961364600';
+        await supabase
+          .from('teacher_sync_stores')
+          .upsert({
+            ...record,
+            sync_code: altCode,
+            payload: { ...payload, syncCode: altCode, pinHash: computedPinHash }
+          }, { abortSignal: abortCtrl.signal } as any);
+      }
+
       clearTimeout(timeoutId);
       if (!error) {
         savedSupabase = true;
@@ -314,6 +362,10 @@ async function saveSyncStore(payload: SyncPayload, pinToSet?: string): Promise<b
 
   // 2. Resilient backup to Gist
   const savedGist = await saveToGist({ ...payload, pinHash: computedPinHash });
+  if (cleanCode === '0961364600' || cleanCode === 'ST-460528') {
+    const altCode = cleanCode === '0961364600' ? 'ST-460528' : '0961364600';
+    saveToGist({ ...payload, syncCode: altCode, pinHash: computedPinHash }).catch(() => {});
+  }
   return savedSupabase || savedGist;
 }
 

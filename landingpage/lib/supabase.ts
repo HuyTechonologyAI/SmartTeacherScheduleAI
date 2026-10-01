@@ -1,19 +1,27 @@
 import { createClient } from "@supabase/supabase-js";
 
+const CANONICAL_SUPABASE_URL = "https://bdeluacbzbdflxubhpha.supabase.co";
+const CANONICAL_ANON_KEY = "sb_publishable_2nBo7eIeJtB3pVL1v239Ag_TJIMHNgq";
+
+const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const isLegacyUrl = rawUrl && (rawUrl.includes("kdpouzqjowbuxtfrqsds") || rawUrl.includes("your-project"));
+
+const supabaseUrl = (rawUrl && !isLegacyUrl) ? rawUrl : CANONICAL_SUPABASE_URL;
+
+// On server side (Node.js/Next API), prefer service role key if available for full RLS bypass
+const supabaseKey = 
+  (typeof window === "undefined" && process.env.SUPABASE_SERVICE_ROLE_KEY) ||
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.SUPABASE_ANON_KEY ||
+  CANONICAL_ANON_KEY;
+
 export const isSupabaseConfigured = Boolean(
-  process.env.NEXT_PUBLIC_SUPABASE_URL &&
-  !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("kdpouzqjowbuxtfrqsds.supabase.co") &&
-  !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("your-project.supabase.co")
+  supabaseUrl && !supabaseUrl.includes("your-project.supabase.co") && !supabaseUrl.includes("kdpouzqjowbuxtfrqsds")
 );
 
-const supabaseUrl =
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://kdpouzqjowbuxtfrqsds.supabase.co";
-const supabaseAnonKey =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkcG91enFqb3didXh0ZnJxc2RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgzOTQ5MDcsImV4cCI6MjEwMzk3MDkwN30.WfJ-tqnluu8iPgveNiFXDzrssshsEKAh86h8hNb5C8Y";
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
     persistSession: false,
   },
 });
+

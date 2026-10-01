@@ -7990,11 +7990,11 @@ export default function UnifiedTeacherScheduleApp() {
                 </div>
               </div>
 
-              {/* v2.3.0 Highlight Feature Matrix */}
+              {/* v2.4.0 Highlight Feature Matrix */}
               <div className="bg-slate-50 dark:bg-slate-900/60 rounded-xl p-4 border border-slate-200/70 dark:border-slate-800 space-y-2.5">
                 <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <Zap className="w-4 h-4 text-amber-500" />
-                  <span>Những tính năng cốt lõi mới trên bản phát hành v2.3.0:</span>
+                  <span>Những tính năng cốt lõi mới trên bản phát hành v2.4.0:</span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-300">

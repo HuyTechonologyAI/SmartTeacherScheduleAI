@@ -4,7 +4,7 @@ import PWAOfflineBanner from "@/components/PWAOfflineBanner";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://gvcncdsai.io.vn"),
-  title: "EduViet - Cùng tri thức, Vững tương lai | Smart Teacher Schedule AI v2.3.0",
+  title: "EduViet - Cùng tri thức, Vững tương lai | Smart Teacher Schedule AI v2.4.0",
   description:
     "Hệ sinh thái Đa Nền Tảng (Android, Web, Desktop, iOS) cho giáo viên: Báo thức ca dạy kép 60m & 15m, tối ưu hóa đa tầng chống tắt ngầm, Sổ lớp & Điểm danh 1 chạm, Đồng bộ đám mây và Trợ lý AI Sư phạm CV 5512.",
   keywords: [
@@ -25,9 +25,9 @@ export const metadata: Metadata = {
     canonical: "https://www.gvcncdsai.io.vn",
   },
   openGraph: {
-    title: "Smart Teacher Schedule AI - Trợ lý Sư Phạm & Lịch Dạy Giáo Viên v2.3.0",
+    title: "Smart Teacher Schedule AI - Trợ lý Sư Phạm & Lịch Dạy Giáo Viên v2.4.0",
     description:
-      "Tải app v2.3.0 chính thức: Hệ sinh thái Đa Nền Tảng (Android, Web, Desktop), Giáo án phân cột chuẩn CV 5512 & CV 2634, Bộ Skill Sư Phạm 5E/STEM/PBL, Sổ điểm TT 22 và Voucher Hub Huy Technology AI.",
+      "Tải app v2.4.0 chính thức: Hệ sinh thái Đa Nền Tảng (Android, Web, Desktop), Giáo án phân cột chuẩn CV 5512 & CV 2634, Bộ Skill Sư Phạm 5E/STEM/PBL, Sổ điểm TT 22 và Voucher Hub Huy Technology AI.",
     images: [
       {
         url: "/feature_banner.jpg",
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Smart Teacher Schedule AI v2.3.0",
+    title: "Smart Teacher Schedule AI v2.4.0",
     description: "Hệ sinh thái Đa Nền Tảng cho giáo viên Việt Nam - Trợ lý AI Sư phạm CV 5512 & CV 2634",
     images: ["/feature_banner.jpg"],
   },

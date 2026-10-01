@@ -159,8 +159,8 @@ export async function GET() {
       },
       versionApi: {
         status: 'Operational',
-        latestVersion: '2.3.0',
-        versionCode: 23
+        latestVersion: '2.4.0',
+        versionCode: 24
       }
 
     },

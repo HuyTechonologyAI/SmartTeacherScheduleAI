@@ -1,0 +1,161 @@
+From 36c5506ad1abe1c445f36a992695aaed9b00659d Mon Sep 17 00:00:00 2001
+From: Antigravity <huytechnologyai2025@gmail.com>
+Date: Wed, 7 Oct 2026 11:09:49 +0700
+Subject: [PATCH] fix(lint): convert let to const to safely reduce 13 lint
+ errors on GVCN
+
+---
+ landingpage/app/api/analytics/downloads/route.ts | 2 +-
+ landingpage/app/api/analytics/traffic/route.ts   | 2 +-
+ landingpage/app/api/ecosystem/resources/route.ts | 2 +-
+ landingpage/app/app/knowledgeBaseData.ts         | 2 +-
+ landingpage/app/app/page.tsx                     | 8 ++++----
+ landingpage/app/app/studentRosterData.ts         | 6 +++---
+ landingpage/app/lib/voucherStore.ts              | 2 +-
+ landingpage/app/student/studentProfileData.ts    | 2 +-
+ 8 files changed, 13 insertions(+), 13 deletions(-)
+
+diff --git a/landingpage/app/api/analytics/downloads/route.ts b/landingpage/app/api/analytics/downloads/route.ts
+index eb7e46f..6324427 100644
+--- a/landingpage/app/api/analytics/downloads/route.ts
++++ b/landingpage/app/api/analytics/downloads/route.ts
+@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
+ import { supabase } from '@/lib/supabase';
+ 
+ // Khởi tạo bộ đếm chuẩn thực tế bắt đầu từ 0
+-let inMemoryStats = {
++const inMemoryStats = {
+   total: 0,
+   platforms: {
+     android: 0,
+diff --git a/landingpage/app/api/analytics/traffic/route.ts b/landingpage/app/api/analytics/traffic/route.ts
+index aa27a62..f33ff5e 100644
+--- a/landingpage/app/api/analytics/traffic/route.ts
++++ b/landingpage/app/api/analytics/traffic/route.ts
+@@ -8,7 +8,7 @@ const deviceCounts = {
+   tablet: 0
+ };
+ 
+-let trafficStats = {
++const trafficStats = {
+   totalPageviews: 0,
+   uniqueVisitors: 0,
+   activeTeachersToday: 0,
+diff --git a/landingpage/app/api/ecosystem/resources/route.ts b/landingpage/app/api/ecosystem/resources/route.ts
+index abc56cb..7d150bc 100644
+--- a/landingpage/app/api/ecosystem/resources/route.ts
++++ b/landingpage/app/api/ecosystem/resources/route.ts
+@@ -13,7 +13,7 @@ interface HubResource {
+ }
+ 
+ // Bộ nhớ đệm tài liệu đã đồng bộ giữa EduViet và huycncdsai.io.vn
+-let localEcosystemResources: Array<{
++const localEcosystemResources: Array<{
+   id: string | number;
+   title: string;
+   description: string;
+diff --git a/landingpage/app/app/knowledgeBaseData.ts b/landingpage/app/app/knowledgeBaseData.ts
+index 813317f..5f1265e 100644
+--- a/landingpage/app/app/knowledgeBaseData.ts
++++ b/landingpage/app/app/knowledgeBaseData.ts
+@@ -392,7 +392,7 @@ export function saveKnowledgeDocument(doc: KnowledgeDocument): boolean {
+ 
+   try {
+     const raw = localStorage.getItem(STORAGE_KEY);
+-    let customDocs: KnowledgeDocument[] = raw ? JSON.parse(raw) : [];
++    const customDocs: KnowledgeDocument[] = raw ? JSON.parse(raw) : [];
+ 
+     if (doc.fileData) {
+       saveOriginalFileToStorage(doc.id, doc.fileData);
+diff --git a/landingpage/app/app/page.tsx b/landingpage/app/app/page.tsx
+index 6302c3e..d75f037 100644
+--- a/landingpage/app/app/page.tsx
++++ b/landingpage/app/app/page.tsx
+@@ -1397,7 +1397,7 @@ export default function UnifiedTeacherScheduleApp() {
+     try {
+       const res = await protectedApiFetch(`/api/sync?code=${encodeURIComponent(code)}${syncPin ? `&pin=${encodeURIComponent(syncPin)}` : ''}`);
+       if (res.ok) {
+-        let data = await res.json();
++        const data = await res.json();
+         const cloudUpdatedAt = Number(data.updatedAt) || 0;
+         const lastLocalUpdate = Number(localStorage.getItem('smart_teacher_last_local_update') || 0);
+ 
+@@ -1409,7 +1409,7 @@ export default function UnifiedTeacherScheduleApp() {
+         }
+ 
+         let cloudEvents: CalendarEventItem[] = Array.isArray(data.events) ? data.events : [];
+-        let cloudSchedules: ScheduleItem[] = Array.isArray(data.schedules) ? data.schedules : [];
++        const cloudSchedules: ScheduleItem[] = Array.isArray(data.schedules) ? data.schedules : [];
+ 
+         // Dữ liệu người dùng hoàn toàn độc lập, không tự ý kéo dữ liệu của tài khoản khác
+ 
+@@ -1492,7 +1492,7 @@ export default function UnifiedTeacherScheduleApp() {
+           const cleanSavedEvents = currentSavedEvents.filter((e: any) => !isTestSyncData(e) && !deletedEvents.has(String(e.id)));
+           // Phân tích và phát hiện xung đột dữ liệu ngoại tuyến
+           const conflictAnalysis = detectAndResolveEventConflicts(cleanSavedEvents, cleanCloudEvents, lastLocalUpdate);
+-          let mergedEvents = conflictAnalysis.autoMergedEvents;
++          const mergedEvents = conflictAnalysis.autoMergedEvents;
+ 
+           if (conflictAnalysis.conflicts.length > 0) {
+             setDetectedConflicts(conflictAnalysis.conflicts);
+@@ -2201,7 +2201,7 @@ export default function UnifiedTeacherScheduleApp() {
+       updatedAt: Date.now()
+     };
+ 
+-    let updatedEvents = [createdEvent, ...events.filter(e => e.id !== newEvId)];
++    const updatedEvents = [createdEvent, ...events.filter(e => e.id !== newEvId)];
+     let updatedSchedules = [...schedules];
+ 
+     if (newCreateRecurring) {
+diff --git a/landingpage/app/app/studentRosterData.ts b/landingpage/app/app/studentRosterData.ts
+index 7a30465..b5cd312 100644
+--- a/landingpage/app/app/studentRosterData.ts
++++ b/landingpage/app/app/studentRosterData.ts
+@@ -554,15 +554,15 @@ export async function parseStudentFile(
+         if (!fullName || fullName.length < 2) continue;
+         if (fullName.toLowerCase().includes('tổng cộng') || fullName.toLowerCase().includes('chữ ký') || fullName.toLowerCase().includes('ngày')) continue;
+ 
+-        let code = codeCol >= 0 && row[codeCol] ? String(row[codeCol]).trim() : '';
++        const code = codeCol >= 0 && row[codeCol] ? String(row[codeCol]).trim() : '';
+         let gender: 'Nam' | 'Nữ' = 'Nam';
+         if (genderCol >= 0 && row[genderCol]) {
+           const gStr = String(row[genderCol]).toLowerCase().trim();
+           if (gStr.includes('nữ') || gStr === 'f' || gStr === 'female') gender = 'Nữ';
+         }
+ 
+-        let phone = phoneCol >= 0 && row[phoneCol] ? String(row[phoneCol]).replace(/[^0-9]/g, '') : '';
+-        let note = noteCol >= 0 && row[noteCol] ? String(row[noteCol]).trim() : '';
++        const phone = phoneCol >= 0 && row[phoneCol] ? String(row[phoneCol]).replace(/[^0-9]/g, '') : '';
++        const note = noteCol >= 0 && row[noteCol] ? String(row[noteCol]).trim() : '';
+ 
+         parsedItems.push({
+           studentCode: code,
+diff --git a/landingpage/app/lib/voucherStore.ts b/landingpage/app/lib/voucherStore.ts
+index 388d48a..bbb5932 100644
+--- a/landingpage/app/lib/voucherStore.ts
++++ b/landingpage/app/lib/voucherStore.ts
+@@ -170,7 +170,7 @@ const INITIAL_REDEMPTIONS: VoucherRedemption[] = [];
+ 
+ // In-Memory Storage Cache để bảo đảm phản hồi siêu tốc và an toàn
+ let inMemoryVouchers: Voucher[] = [...INITIAL_VOUCHERS];
+-let inMemoryRedemptions: VoucherRedemption[] = [...INITIAL_REDEMPTIONS];
++const inMemoryRedemptions: VoucherRedemption[] = [...INITIAL_REDEMPTIONS];
+ 
+ /**
+  * Lấy toàn bộ danh sách voucher
+diff --git a/landingpage/app/student/studentProfileData.ts b/landingpage/app/student/studentProfileData.ts
+index e83b743..31f1d38 100644
+--- a/landingpage/app/student/studentProfileData.ts
++++ b/landingpage/app/student/studentProfileData.ts
+@@ -136,7 +136,7 @@ export function syncStudentWithTeacherRoster(profile: StudentProfile): StudentPr
+   try {
+     // 1. Kiểm tra trong danh sách học sinh của giáo viên
+     const matched = findStudentInTeacherRoster(profile.studentCode || profile.id);
+-    let updatedProfile = { ...profile };
++    const updatedProfile = { ...profile };
+ 
+     if (matched) {
+       // Học sinh đã có trong danh sách chính thức do nhà trường xếp
+-- 
+2.43.0
+

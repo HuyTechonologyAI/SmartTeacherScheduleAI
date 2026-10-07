@@ -13,7 +13,7 @@ interface HubResource {
 }
 
 // Bộ nhớ đệm tài liệu đã đồng bộ giữa EduViet và huycncdsai.io.vn
-let localEcosystemResources: Array<{
+const localEcosystemResources: Array<{
   id: string | number;
   title: string;
   description: string;

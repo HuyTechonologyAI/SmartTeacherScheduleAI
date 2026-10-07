@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
 // Khởi tạo bộ đếm chuẩn thực tế bắt đầu từ 0
-let inMemoryStats = {
+const inMemoryStats = {
   total: 0,
   platforms: {
     android: 0,

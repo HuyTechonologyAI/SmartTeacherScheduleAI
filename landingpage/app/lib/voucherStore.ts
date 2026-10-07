@@ -170,7 +170,7 @@ const INITIAL_REDEMPTIONS: VoucherRedemption[] = [];
 
 // In-Memory Storage Cache để bảo đảm phản hồi siêu tốc và an toàn
 let inMemoryVouchers: Voucher[] = [...INITIAL_VOUCHERS];
-let inMemoryRedemptions: VoucherRedemption[] = [...INITIAL_REDEMPTIONS];
+const inMemoryRedemptions: VoucherRedemption[] = [...INITIAL_REDEMPTIONS];
 
 /**
  * Lấy toàn bộ danh sách voucher

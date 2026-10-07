@@ -554,15 +554,15 @@ export async function parseStudentFile(
         if (!fullName || fullName.length < 2) continue;
         if (fullName.toLowerCase().includes('tổng cộng') || fullName.toLowerCase().includes('chữ ký') || fullName.toLowerCase().includes('ngày')) continue;
 
-        let code = codeCol >= 0 && row[codeCol] ? String(row[codeCol]).trim() : '';
+        const code = codeCol >= 0 && row[codeCol] ? String(row[codeCol]).trim() : '';
         let gender: 'Nam' | 'Nữ' = 'Nam';
         if (genderCol >= 0 && row[genderCol]) {
           const gStr = String(row[genderCol]).toLowerCase().trim();
           if (gStr.includes('nữ') || gStr === 'f' || gStr === 'female') gender = 'Nữ';
         }
 
-        let phone = phoneCol >= 0 && row[phoneCol] ? String(row[phoneCol]).replace(/[^0-9]/g, '') : '';
-        let note = noteCol >= 0 && row[noteCol] ? String(row[noteCol]).trim() : '';
+        const phone = phoneCol >= 0 && row[phoneCol] ? String(row[phoneCol]).replace(/[^0-9]/g, '') : '';
+        const note = noteCol >= 0 && row[noteCol] ? String(row[noteCol]).trim() : '';
 
         parsedItems.push({
           studentCode: code,

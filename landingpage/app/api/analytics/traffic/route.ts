@@ -8,7 +8,7 @@ const deviceCounts = {
   tablet: 0
 };
 
-let trafficStats = {
+const trafficStats = {
   totalPageviews: 0,
   uniqueVisitors: 0,
   activeTeachersToday: 0,

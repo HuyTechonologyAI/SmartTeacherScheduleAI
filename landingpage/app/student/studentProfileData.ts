@@ -136,7 +136,7 @@ export function syncStudentWithTeacherRoster(profile: StudentProfile): StudentPr
   try {
     // 1. Kiểm tra trong danh sách học sinh của giáo viên
     const matched = findStudentInTeacherRoster(profile.studentCode || profile.id);
-    let updatedProfile = { ...profile };
+    const updatedProfile = { ...profile };
 
     if (matched) {
       // Học sinh đã có trong danh sách chính thức do nhà trường xếp

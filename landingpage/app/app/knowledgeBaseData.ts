@@ -392,7 +392,7 @@ export function saveKnowledgeDocument(doc: KnowledgeDocument): boolean {
 
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    let customDocs: KnowledgeDocument[] = raw ? JSON.parse(raw) : [];
+    const customDocs: KnowledgeDocument[] = raw ? JSON.parse(raw) : [];
 
     if (doc.fileData) {
       saveOriginalFileToStorage(doc.id, doc.fileData);

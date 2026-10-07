@@ -1624,7 +1624,7 @@ export default function UnifiedTeacherScheduleApp() {
     try {
       const res = await fetch(`/api/sync?code=${encodeURIComponent(code)}${syncPin ? `&pin=${encodeURIComponent(syncPin)}` : ''}`);
       if (res.ok) {
-        let data = await res.json();
+        const data = await res.json();
         const cloudUpdatedAt = Number(data.updatedAt) || 0;
         const lastLocalUpdate = Number(localStorage.getItem('smart_teacher_last_local_update') || 0);
 
@@ -1636,7 +1636,7 @@ export default function UnifiedTeacherScheduleApp() {
         }
 
         let cloudEvents: CalendarEventItem[] = Array.isArray(data.events) ? data.events : [];
-        let cloudSchedules: ScheduleItem[] = Array.isArray(data.schedules) ? data.schedules : [];
+        const cloudSchedules: ScheduleItem[] = Array.isArray(data.schedules) ? data.schedules : [];
 
         // Dữ liệu người dùng hoàn toàn độc lập, không tự ý kéo dữ liệu của tài khoản khác
 
@@ -1719,7 +1719,7 @@ export default function UnifiedTeacherScheduleApp() {
           const cleanSavedEvents = currentSavedEvents.filter((e: any) => !isTestSyncData(e) && !deletedEvents.has(String(e.id)));
           // Phân tích và phát hiện xung đột dữ liệu ngoại tuyến
           const conflictAnalysis = detectAndResolveEventConflicts(cleanSavedEvents, cleanCloudEvents, lastLocalUpdate);
-          let mergedEvents = conflictAnalysis.autoMergedEvents;
+          const mergedEvents = conflictAnalysis.autoMergedEvents;
 
           if (conflictAnalysis.conflicts.length > 0) {
             setDetectedConflicts(conflictAnalysis.conflicts);
@@ -2428,7 +2428,7 @@ export default function UnifiedTeacherScheduleApp() {
       updatedAt: Date.now()
     };
 
-    let updatedEvents = [createdEvent, ...events.filter(e => e.id !== newEvId)];
+    const updatedEvents = [createdEvent, ...events.filter(e => e.id !== newEvId)];
     let updatedSchedules = [...schedules];
 
     if (newCreateRecurring) {

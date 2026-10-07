@@ -1,7 +1,6 @@
 {
   "name": "smart-teacher-schedule-web",
   "version": "2.4.0",
-
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -31,6 +30,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "eslint-plugin-unused-imports": "^4.4.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

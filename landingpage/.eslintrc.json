@@ -5,5 +5,10 @@
     "no-unused-expressions": "warn",
     "@typescript-eslint/no-unused-expressions": "warn",
     "@typescript-eslint/no-require-imports": "warn"
-  }
+  },
+  "ignorePatterns": [
+    "public/pdfjs/*",
+    "public/sw.js",
+    "scripts/*"
+  ]
 }

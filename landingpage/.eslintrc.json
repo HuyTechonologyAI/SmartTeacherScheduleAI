@@ -10,5 +10,6 @@
     "public/pdfjs/*",
     "public/sw.js",
     "scripts/*"
-  ]
+  ],
+  "parser": "@typescript-eslint/parser"
 }

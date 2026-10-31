@@ -102,56 +102,7 @@ export const STORAGE_GRADEBOOK_PREFIX = 'smart_gradebook_v1_';
 // ----------------------------------------------------------------------------
 // TÍNH TOÁN ĐIỂM TRUNG BÌNH & XẾP LOẠI (THÔNG TƯ 22/2021/TT-BGDĐT)
 // ----------------------------------------------------------------------------
-
-/**
- * Tính điểm trung bình môn học kỳ (DTBmhk) theo Thông tư 22
- * DTBmhk = (Tổng ĐĐGtx + 2*ĐĐGgk + 3*ĐĐGck) / (Số ĐĐGtx + 2 + 3)
- */
-export function calculateSubjectAverage(
-  regularScores: (number | null)[],
-  midtermScore: number | null,
-  finalScore: number | null
-): number | null {
-  const validRegular = regularScores.filter((s): s is number => s !== null && s !== undefined && !isNaN(s) && s >= 0 && s <= 10);
-  
-  if (validRegular.length === 0 && (midtermScore === null || isNaN(midtermScore as number)) && (finalScore === null || isNaN(finalScore as number))) {
-    return null;
-  }
-
-  let totalPoints = 0;
-  let totalWeights = 0;
-
-  validRegular.forEach(s => {
-    totalPoints += s;
-    totalWeights += 1;
-  });
-
-  if (midtermScore !== null && !isNaN(midtermScore) && midtermScore >= 0 && midtermScore <= 10) {
-    totalPoints += midtermScore * 2;
-    totalWeights += 2;
-  }
-
-  if (finalScore !== null && !isNaN(finalScore) && finalScore >= 0 && finalScore <= 10) {
-    totalPoints += finalScore * 3;
-    totalWeights += 3;
-  }
-
-  if (totalWeights === 0) return null;
-
-  const rawAvg = totalPoints / totalWeights;
-  return Math.round(rawAvg * 10) / 10;
-}
-
-/**
- * Xếp loại mức kết quả học tập môn học theo TT 22
- */
-export function evaluateAcademicLevelFromAverage(average: number | null): AcademicLevel | null {
-  if (average === null || average === undefined || isNaN(average)) return null;
-  if (average >= 8.0) return 'Tốt';
-  if (average >= 6.5) return 'Khá';
-  if (average >= 5.0) return 'Đạt';
-  return 'Chưa đạt';
-}
+export { calculateSubjectAverage, evaluateAcademicLevelFromAverage } from './aiGradingEngine';
 
 // ----------------------------------------------------------------------------
 // DỮ LIỆU SỔ ĐIỂM MẪU CHUẨN ĐỒNG BỘ 3 CỔNG

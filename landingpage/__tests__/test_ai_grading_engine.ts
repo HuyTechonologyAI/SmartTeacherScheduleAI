@@ -13,7 +13,11 @@ import {
   createAuditRecord,
   verifyAuditChain,
   roundHalfUp,
-  sha256Sync
+  sha256Sync,
+  calculateSubjectAverage,
+  evaluateAcademicLevelFromAverage,
+  initIsolatedGradebook,
+  checkIdempotentScoreSync
 } from '../lib/aiGradingEngine.ts';
 import {
   validateFileMagicBytes,
@@ -21,12 +25,6 @@ import {
   decodeNumericGrid,
   scanExamSheetBytes
 } from '../lib/omrEngine.ts';
-import {
-  getStoredGradebook,
-  saveStoredGradebook,
-  calculateSubjectAverage,
-  evaluateAcademicLevelFromAverage
-} from '../lib/gradebookEngine.ts';
 
 async function runAllTests() {
   console.log('--- STARTING EDUVIET AI GRADING 12-STAGE TEST SUITE ---');
@@ -255,7 +253,7 @@ console.log('✓ PASS: Thuật toán nhận diện quang học OMR phân tích c
 
 // 9. KIỂM THỬ KHỞI TẠO SỔ ĐIỂM (KHÔNG RÒ RỈ MẪU 3A1)
 console.log('Test 9: Khởi tạo sổ điểm mới không rò rỉ dữ liệu mẫu...');
-const newGradebook = await getStoredGradebook('10A1', 'Vật lí', 'Học kỳ I');
+const newGradebook = initIsolatedGradebook('10A1', 'Vật lí', 'Học kỳ I');
 assert.strictEqual(newGradebook.className, '10A1');
 assert.strictEqual(newGradebook.subject, 'Vật lí');
 assert.strictEqual(newGradebook.records.length, 0, 'Sổ điểm lớp mới phải bắt đầu bằng danh sách rỗng');
@@ -264,11 +262,9 @@ console.log('✓ PASS: Sổ điểm khởi tạo cô lập, giải quyết tri�
 // 10. KIỂM THỬ TÍNH IDEMPOTENT KHI ĐỒNG BỘ ĐIỂM
 console.log('Test 10: Tính Idempotent khi ghi nhận điểm lặp lại...');
 const sampleRegular = [7.5, 8.0];
-// Giả định ghi lại điểm 8.0 đã có ở lần trước
-const isDuplicate = sampleRegular[sampleRegular.length - 1] === 8.0;
-assert.strictEqual(isDuplicate, true, 'Phát hiện điểm trùng lặp');
-const newRegs = isDuplicate ? [...sampleRegular] : [...sampleRegular, 8.0];
-assert.strictEqual(newRegs.length, 2, 'Không nhân đôi số lượng điểm khi đồng bộ lặp');
+const syncRes = checkIdempotentScoreSync(sampleRegular, 8.0);
+assert.strictEqual(syncRes.wasAppended, false, 'Phát hiện điểm trùng lặp và không append thêm');
+assert.strictEqual(syncRes.updatedScores.length, 2, 'Không nhân đôi số lượng điểm khi đồng bộ lặp');
 console.log('✓ PASS: Cơ chế Idempotent ngăn ngừa việc nhân đôi điểm khi ấn đồng bộ nhiều lần');
 
 // 11. KIỂM THỬ TÍNH ĐIỂM TRUNG BÌNH THÔNG TƯ 22

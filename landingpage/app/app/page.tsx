@@ -85,6 +85,7 @@ import { InteractiveAiVideoPlayer } from './InteractiveAiVideoPlayer';
 import { InteractiveSlidePlayer } from './InteractiveSlidePlayer';
 import { LessonPlanEditorModal } from './LessonPlanEditorModal';
 import { SlideEditorModal } from './SlideEditorModal';
+import EduVietAiGradingModal from './EduVietAiGradingModal';
 import { speakVietnamese, stopSpeaking } from '@/lib/voiceAiService';
 import { InteractiveMiniGame } from './InteractiveMiniGame';
 import { AutomatedPaymentModal } from './AutomatedPaymentModal';
@@ -947,6 +948,7 @@ export default function UnifiedTeacherScheduleApp() {
   const [isExportingPptx, setIsExportingPptx] = useState(false);
   const [plannerStepProgress, setPlannerStepProgress] = useState('');
   const [isLessonPlanEditorOpen, setIsLessonPlanEditorOpen] = useState(false);
+  const [isAiGradingModalOpen, setIsAiGradingModalOpen] = useState(false);
   const [isSlideEditorOpen, setIsSlideEditorOpen] = useState(false);
   const [editingSlideIndex, setEditingSlideIndex] = useState(0);
 
@@ -3298,6 +3300,17 @@ export default function UnifiedTeacherScheduleApp() {
             >
               <FileSpreadsheet className="w-3.5 h-3.5" />
               <span>{lang === 'en' ? 'Teaching Log' : 'Sổ Báo Giảng'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsAiGradingModalOpen(true)}
+              className="px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white shadow-xs shadow-rose-500/25"
+              title="Phan he Cham bai AI chuan Bo GD-DT va GDNN"
+            >
+              <Award className="w-3.5 h-3.5 text-amber-300" />
+              <span>Chấm Bài AI</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-white/20 text-white">MỚI</span>
             </button>
 
             <button
@@ -11091,6 +11104,16 @@ export default function UnifiedTeacherScheduleApp() {
           setTimeout(() => setAlertBanner(null), 3500);
         }}
       />
+
+        {/* Phan he Cham Bai AI Chuan GDPT 2018 & TT 22 / TT 04 */}
+        <EduVietAiGradingModal
+          isOpen={isAiGradingModalOpen}
+          onClose={() => setIsAiGradingModalOpen(false)}
+          onSyncToGradebook={(records) => {
+            setAlertBanner(`GREEN: Da dong bo ${records.length} diem so vao So diem dien tu TT 22!`);
+            setTimeout(() => setAlertBanner(null), 4000);
+          }}
+        />
 
       {/* Modal Thông Báo & Tải Bản Cập Nhật Mới v2.4.0 */}
       {showUpdateDetailsModal && updateNotice && (

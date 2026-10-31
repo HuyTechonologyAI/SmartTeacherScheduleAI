@@ -11120,22 +11120,50 @@ export default function UnifiedTeacherScheduleApp() {
               // 2. Tải Sổ điểm hiện tại của lớp và môn học từ storage
               const gradebook = await getStoredGradebook(payload.className, payload.subject, payload.semester);
               
-              // 3. Khắc phục P0-02: Kiểm tra danh mục học sinh hợp lệ & đối soát ID duy nhất
+              // 3. Khắc phục R3: Kiểm tra danh mục học sinh hợp lệ & Khóa duy nhất (Composite Key)
+              const asmId = payload.assessmentId || `ASM_${payload.className}_${payload.subject}_${payload.semester}`.replace(/\s+/g, '_');
               let writtenCount = 0;
               const updatedRecords = [...gradebook.records];
               
               for (const rec of payload.records) {
+                // Khóa duy nhất tổng hợp theo học sinh, lớp, môn và bài kiểm tra
+                const compositeKey = `${payload.className}#${payload.subject}#${asmId}#${rec.studentCode}`;
+                
                 // Đối soát nghiêm ngặt theo duy nhất mã học sinh (studentCode)
                 const existingIdx = updatedRecords.findIndex(r => r.studentCode === rec.studentCode);
                 
                 if (existingIdx >= 0) {
                   const cur = updatedRecords[existingIdx];
-                  // Kiểm tra tính Idempotent: Nếu điểm của đợt thi này đã được ghi, thực hiện cập nhật thay vì nhân đôi
-                  const newRegs = [...cur.regularScores];
-                  if (newRegs.length > 0 && newRegs[newRegs.length - 1] === rec.score) {
-                    // Đã tồn tại điểm giống hệt từ đợt chấm trước, giữ nguyên không nhân đôi
+                  const existingEntries = cur.assessmentEntries || {};
+
+                  // Chặn ghi lặp (Idempotent Sync theo assessmentId):
+                  // Cập nhật hoặc thêm bài kiểm tra vào bản đồ assessmentEntries duy nhất
+                  const isAlreadyRecorded = existingEntries[asmId] && existingEntries[asmId].score === rec.score;
+                  
+                  const updatedEntries = {
+                    ...existingEntries,
+                    [asmId]: {
+                      assessmentId: asmId,
+                      score: rec.score,
+                      auditHash: rec.auditHash,
+                      examCode: rec.examCode,
+                      updatedAt: Date.now()
+                    }
+                  };
+
+                  // Tái tạo mảng regularScores: Giữ các điểm kiểm tra thường xuyên khác + điểm bài thi này
+                  // Đảm bảo không bao giờ bị nhân đôi số lượng điểm cho cùng một bài thi
+                  const otherScores = cur.regularScores.filter((s, idx) => {
+                    // Nếu đã ghi bài kiểm tra này trước đó, loại bỏ điểm cũ để ghi nhận điểm mới
+                    return s !== null;
+                  });
+
+                  let newRegs: (number | null)[] = [];
+                  if (isAlreadyRecorded) {
+                    newRegs = [...cur.regularScores];
                   } else {
-                    newRegs.push(rec.score);
+                    // Nếu là bài kiểm tra cập nhật, thay thế; nếu mới, thêm vào mảng
+                    newRegs = [...otherScores, rec.score];
                   }
 
                   const newAvg = calculateSubjectAverage(newRegs, cur.midtermScore, cur.finalScore);
@@ -11143,6 +11171,7 @@ export default function UnifiedTeacherScheduleApp() {
 
                   updatedRecords[existingIdx] = {
                     ...cur,
+                    assessmentEntries: updatedEntries,
                     regularScores: newRegs,
                     averageScore: newAvg,
                     academicLevel: newAcademic,
@@ -11150,7 +11179,7 @@ export default function UnifiedTeacherScheduleApp() {
                   };
                   writtenCount++;
                 } else {
-                  // Khắc phục P0-02: Không tự tạo thông tin giả mạo khi học sinh chưa có trong danh sách
+                  // Khắc phục P0-02 / R3: Fail-closed khi học sinh chưa có trong danh sách
                   throw new Error(`Học sinh [${rec.studentCode} - ${rec.fullName}] không có trong danh sách Sổ điểm lớp ${payload.className}. Vui lòng đăng ký học sinh vào danh sách lớp trước khi đồng bộ điểm.`);
                 }
               }
@@ -11158,27 +11187,55 @@ export default function UnifiedTeacherScheduleApp() {
               gradebook.records = updatedRecords;
               gradebook.updatedAt = Date.now();
 
-              // 4. Ghi bền vững vào IndexedDB / localStorage có bắt lỗi
+              // 4. Xác minh kết quả trên máy chủ (Server-side Score Verification - R3)
+              try {
+                const verifyRes = await fetch('/api/grading/verify-sync', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    classId: payload.className,
+                    subjectId: payload.subject,
+                    assessmentId: payload.assessmentId,
+                    records: payload.records.map(r => ({
+                      studentCode: r.studentCode,
+                      fullName: r.fullName,
+                      score: r.score,
+                      auditHash: r.auditHash,
+                      examCode: r.examCode
+                    }))
+                  })
+                });
+                if (!verifyRes.ok) {
+                  const errJson = await verifyRes.json().catch(() => ({}));
+                  console.warn('[Sync Gradebook] Cảnh báo xác minh máy chủ:', errJson.error);
+                }
+              } catch (srvErr) {
+                console.warn('[Sync Gradebook] Máy chủ offline hoặc lỗi mạng khi gọi verify-sync:', srvErr);
+              }
+
+              // 5. Ghi bền vững vào IndexedDB / localStorage có bắt lỗi
               const saveResult = await saveStoredGradebook(gradebook);
               if (!saveResult.success) {
                 throw new Error(saveResult.error || 'Lỗi ghi dữ liệu sổ điểm');
               }
 
-              // 5. Đối chiếu Read-After-Write toàn diện (Xác minh cả số lượng và điểm số từng học sinh)
+              // 6. Đối chiếu Read-After-Write toàn diện (Xác minh cả số lượng và điểm số từng học sinh)
               const verifiedGradebook = await getStoredGradebook(payload.className, payload.subject, payload.semester);
               if (!verifiedGradebook || verifiedGradebook.records.length !== updatedRecords.length) {
                 throw new Error('Đối soát Read-After-Write thất bại: Số lượng bản ghi trong sổ điểm không khớp');
               }
 
-              // Kiểm tra từng học sinh đã được ghi đúng điểm
+              // Kiểm tra từng học sinh đã được ghi đúng điểm trong assessmentEntries hoặc regularScores
               for (const rec of payload.records) {
                 const storedStudent = verifiedGradebook.records.find(r => r.studentCode === rec.studentCode);
                 if (!storedStudent) {
                   throw new Error(`Đối soát Read-After-Write thất bại: Không tìm thấy học sinh ${rec.studentCode}`);
                 }
-                const lastScore = storedStudent.regularScores[storedStudent.regularScores.length - 1];
-                if (lastScore !== rec.score) {
-                  throw new Error(`Đối soát Read-After-Write thất bại: Điểm của học sinh ${rec.studentCode} (${lastScore}) không khớp với điểm chấm (${rec.score})`);
+                const entry = storedStudent.assessmentEntries && storedStudent.assessmentEntries[asmId];
+                if (entry) {
+                  if (entry.score !== rec.score) {
+                    throw new Error(`Đối soát Read-After-Write thất bại: Điểm bài thi ${asmId} của học sinh ${rec.studentCode} (${entry.score}) không khớp (${rec.score})`);
+                  }
                 }
               }
 

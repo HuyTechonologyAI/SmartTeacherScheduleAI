@@ -22,6 +22,14 @@ export interface StudentScoreRecord {
   academicLevel: AcademicLevel | null;
   conductLevel: ConductLevel;
   teacherComments: string;
+  // Khắc phục R3: Khóa duy nhất theo bài kiểm tra ngăn chặn ghi lặp điểm (Idempotent sync)
+  assessmentEntries?: Record<string, {
+    assessmentId: string;
+    score: number;
+    auditHash: string;
+    examCode?: string;
+    updatedAt: number;
+  }>;
 }
 
 export interface ClassGradebook {

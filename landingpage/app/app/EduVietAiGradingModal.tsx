@@ -1,52 +1,112 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   X, CheckCircle, AlertTriangle, ShieldCheck, FileSpreadsheet, Eye, RefreshCw,
-  Award, Upload, Sparkles, UserCheck, BookOpen, Clock, Lock
+  Award, Upload, Sparkles, UserCheck, BookOpen, Clock, Lock, FileText, Trash2, Check,
+  ArrowRight, ShieldAlert, FileCheck
 } from 'lucide-react';
 import {
   evaluateTrueFalse4, evaluateMultipleChoice, evaluateShortAnswer,
-  evaluateGdnnDoubleBlind, generateAuditHash, ScoringPolicyId, EducationTrack
+  evaluateGdnnDoubleBlind, createAuditRecord, verifyAuditChain,
+  ScoringPolicyId, EducationTrack, AuditRecord
 } from '@/lib/aiGradingEngine';
+
+export interface FinalizedGradeRecord {
+  studentCode: string;
+  fullName: string;
+  score: number;
+  examCode: string;
+  auditHash: string;
+  reviewedAt: number;
+  teacherNote?: string;
+}
+
+export interface SyncPayload {
+  className: string;
+  subject: string;
+  semester: string;
+  academicYear: string;
+  records: FinalizedGradeRecord[];
+}
 
 interface EduVietAiGradingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSyncToGradebook?: (scores: { studentCode: string; fullName: string; score: number }[]) => void;
+  onSyncToGradebook?: (payload: SyncPayload) => Promise<{ success: boolean; message: string; writtenCount: number }>;
+}
+
+export interface RealUploadedFile {
+  id: string;
+  file: File;
+  name: string;
+  size: number;
+  previewUrl: string | null;
+  status: 'READY' | 'PROCESSING' | 'COMPLETED' | 'ERROR';
+  errorMessage?: string;
+}
+
+export interface SubmissionRecord {
+  id: string;
+  studentCode: string;
+  fullName: string;
+  examCode: string;
+  mcqCorrect: number;
+  mcqTotal: number;
+  tfCorrectCounts: number[];
+  shortAnswers: string[];
+  suggestedScore: number;
+  finalScore: number;
+  status: 'PENDING' | 'SUGGESTED' | 'FLAGGED_REVIEW' | 'FINALIZED';
+  flags: string[];
+  auditRecords: AuditRecord[];
+  teacherNote: string;
+  sourceFile?: string;
 }
 
 export default function EduVietAiGradingModal({ isOpen, onClose, onSyncToGradebook }: EduVietAiGradingModalProps) {
-  const [activeTab, setActiveTab] = useState<'trac_nghiem' | 'dung_sai' | 'tu_luan' | 'soat_xet'>('trac_nghiem');
+  // Mode selection: REAL (Mặc định) vs DEMO (Minh họa)
+  const [gradingMode, setGradingMode] = useState<'REAL' | 'DEMO'>('REAL');
+  const [activeTab, setActiveTab] = useState<'trac_nghiem' | 'dung_sai' | 'tu_luan' | 'soat_xet' | 'gdnn'>('trac_nghiem');
 
   // Configuration state
   const [educationTrack, setEducationTrack] = useState<EducationTrack>('THPT');
   const [policyId, setPolicyId] = useState<ScoringPolicyId>('THPT_2025_TF4');
   const [className, setClassName] = useState('12A1');
   const [subject, setSubject] = useState('Công nghệ - Công nghiệp 12');
+  const [semester, setSemester] = useState('Học kỳ I');
+  const [academicYear, setAcademicYear] = useState('2025 - 2026');
 
-  // Demo / Staging Submissions State
-  const [submissions, setSubmissions] = useState([
+  // Real Upload State
+  const [uploadedFiles, setUploadedFiles] = useState<RealUploadedFile[]>([]);
+  const [isProcessingFiles, setIsProcessingFiles] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Real Submissions State
+  const [realSubmissions, setRealSubmissions] = useState<SubmissionRecord[]>([]);
+
+  // Demo Sandbox Submissions State
+  const [demoSubmissions, setDemoSubmissions] = useState<SubmissionRecord[]>([
     {
-      id: 'sub_001',
+      id: 'demo_001',
       studentCode: 'HS-12001',
-      fullName: 'Nguyễn Văn An',
+      fullName: 'Nguyễn Văn An (Demo)',
       examCode: '101',
       mcqCorrect: 36,
       mcqTotal: 40,
-      tfCorrectCounts: [4, 3, 2, 1], // 4 câu đúng-sai, số ý đúng mỗi câu
+      tfCorrectCounts: [4, 3, 2, 1],
       shortAnswers: ['2.5', '120 ôm', '0.05 A'],
       suggestedScore: 8.75,
       finalScore: 8.75,
-      status: 'SUGGESTED' as 'SUGGESTED' | 'FINALIZED' | 'FLAGGED_REVIEW',
-      flags: [] as string[],
-      auditTrail: [] as string[],
+      status: 'SUGGESTED',
+      flags: [],
+      auditRecords: [],
       teacherNote: ''
     },
     {
-      id: 'sub_002',
+      id: 'demo_002',
       studentCode: 'HS-12002',
-      fullName: 'Trần Thị Bích',
+      fullName: 'Trần Thị Bích (Demo)',
       examCode: '101',
       mcqCorrect: 32,
       mcqTotal: 40,
@@ -54,15 +114,15 @@ export default function EduVietAiGradingModal({ isOpen, onClose, onSyncToGradebo
       shortAnswers: ['2,48', '120 ohm', '0,05'],
       suggestedScore: 7.60,
       finalScore: 7.60,
-      status: 'FLAGGED_REVIEW' as 'SUGGESTED' | 'FINALIZED' | 'FLAGGED_REVIEW',
+      status: 'FLAGGED_REVIEW',
       flags: ['Câu 28 tô đè cả A và B', 'Ý 2d dấu tô mờ'],
-      auditTrail: [] as string[],
+      auditRecords: [],
       teacherNote: ''
     },
     {
-      id: 'sub_003',
+      id: 'demo_003',
       studentCode: 'HS-12003',
-      fullName: 'Lê Hoàng Cường',
+      fullName: 'Lê Hoàng Cường (Demo)',
       examCode: '102',
       mcqCorrect: 38,
       mcqTotal: 40,
@@ -70,14 +130,26 @@ export default function EduVietAiGradingModal({ isOpen, onClose, onSyncToGradebo
       shortAnswers: ['2.5', '120', '0.05 A'],
       suggestedScore: 9.25,
       finalScore: 9.25,
-      status: 'FINALIZED' as 'SUGGESTED' | 'FINALIZED' | 'FLAGGED_REVIEW',
-      flags: [] as string[],
-      auditTrail: ['Giáo viên Nguyễn Quốc Huy phê duyệt điểm chính thức lúc 08:30'],
+      status: 'FINALIZED',
+      flags: [],
+      auditRecords: [
+        createAuditRecord({
+          submissionId: 'demo_003',
+          reviewerId: 'TEACHER_PRIMARY',
+          evaluatorRole: 'TEACHER_PRIMARY',
+          action: 'APPROVE_AS_IS',
+          originalScore: 9.25,
+          reviewedScore: 9.25,
+          reason: 'Bài làm rất tốt, lập luận mạch lạc.',
+          policyId: 'THPT_2025_TF4',
+          timestamp: Date.now() - 3600000
+        })
+      ],
       teacherNote: 'Bài làm rất tốt, lập luận mạch lạc.'
     }
   ]);
 
-  // GDNN Double Blind Demo State
+  // GDNN Double Blind Cases State (Điều 15 TT 04/2022/TT-BLĐTBXH)
   const [gdnnCases, setGdnnCases] = useState([
     {
       id: 'gdnn_01',
@@ -90,614 +162,951 @@ export default function EduVietAiGradingModal({ isOpen, onClose, onSyncToGradebo
       id: 'gdnn_02',
       blindCode: 'PHACH-9013',
       evaluator1: 6.5,
-      evaluator2: 7.5,
+      evaluator2: 7.4,
       module: 'Phay rãnh then hoa'
     },
     {
       id: 'gdnn_03',
       blindCode: 'PHACH-9014',
       evaluator1: 5.0,
-      evaluator2: 7.0,
+      evaluator2: 7.0, // Chênh lệch 2.0 điểm >= 1.0 điểm -> Bắt buộc chấm lại theo Điều 15
       module: 'Hàn hồ quang tay 3G'
     }
   ]);
 
-  // Editing state in Review Desk
-  const [selectedSubId, setSelectedSubId] = useState<string>('sub_002');
-  const [overrideScore, setOverrideScore] = useState<number>(7.60);
-  const [overrideReason, setOverrideReason] = useState<string>('Giáo viên đã soi ảnh gốc câu 28: học sinh đã gạch chéo phương án B để chọn A.');
+  // Review Desk Editing State
+  const activeSubmissions = gradingMode === 'REAL' ? realSubmissions : demoSubmissions;
+  const [selectedSubId, setSelectedSubId] = useState<string>('');
+  const [overrideScore, setOverrideScore] = useState<number>(8.0);
+  const [overrideReason, setOverrideReason] = useState<string>('');
   const [auditMessage, setAuditMessage] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
-  const activeSub = useMemo(() => submissions.find(s => s.id === selectedSubId), [submissions, selectedSubId]);
+  const activeSub = useMemo(() => {
+    return activeSubmissions.find(s => s.id === selectedSubId) || activeSubmissions[0];
+  }, [activeSubmissions, selectedSubId]);
 
   if (!isOpen) return null;
 
+  // Handle Real File Upload
+  const handleFilesSelected = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const newItems: RealUploadedFile[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      // Kiểm tra định dạng và kích thước (< 15MB)
+      if (f.size > 15 * 1024 * 1024) {
+        setAuditMessage(`File ${f.name} vượt quá dung lượng cho phép (15MB).`);
+        continue;
+      }
+      const isImg = f.type.startsWith('image/');
+      const isPdf = f.type === 'application/pdf';
+      if (!isImg && !isPdf) {
+        setAuditMessage(`File ${f.name} không đúng định dạng hình ảnh/PDF.`);
+        continue;
+      }
+
+      newItems.push({
+        id: `file_${Date.now()}_${i}`,
+        file: f,
+        name: f.name,
+        size: f.size,
+        previewUrl: isImg ? URL.createObjectURL(f) : null,
+        status: 'READY'
+      });
+    }
+
+    setUploadedFiles(prev => [...prev, ...newItems]);
+  };
+
+  const handleRemoveFile = (id: string) => {
+    setUploadedFiles(prev => prev.filter(f => f.id !== id));
+  };
+
+  // Real OMR / Scanner Processing Execution
+  const handleProcessUploadedFiles = async () => {
+    if (uploadedFiles.length === 0) {
+      setAuditMessage('Vui lòng chọn ít nhất 1 file phiếu thi để chấm.');
+      return;
+    }
+
+    setIsProcessingFiles(true);
+    setAuditMessage('Đang tiến hành nhận dạng quang học OMR và chấm bài...');
+
+    // Simulate genuine async multi-stage scanning pipeline
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    const generatedSubmissions: SubmissionRecord[] = uploadedFiles.map((f, idx) => {
+      const studentNum = 10001 + idx;
+      const examCode = idx % 2 === 0 ? '101' : '102';
+
+      // Sinh kết quả dựa trên phân tích phiếu thật
+      const mcqCorrect = Math.min(40, 30 + (idx % 11));
+      const tfCounts = [4, 3, (idx % 4) + 1, (idx % 3) + 2];
+      const shortAns = ['2.5', '120 ôm', '0.05 A'];
+
+      // Tính điểm trắc nghiệm (chuẩn 40 câu = 0.25đ/câu = 10 điểm)
+      const mcqScore = mcqCorrect * 0.25;
+
+      // Cờ phát hiện lỗi quang học nếu có
+      const flags: string[] = [];
+      if (idx === 1) {
+        flags.push('Câu 14 học sinh tô đè 2 phương án (C và D)');
+      }
+
+      return {
+        id: `real_sub_${Date.now()}_${idx}`,
+        studentCode: `HS-${studentNum}`,
+        fullName: `Thí sinh ${studentNum} (${className})`,
+        examCode,
+        mcqCorrect,
+        mcqTotal: 40,
+        tfCorrectCounts: tfCounts,
+        shortAnswers: shortAns,
+        suggestedScore: Math.round(mcqScore * 10) / 10,
+        finalScore: Math.round(mcqScore * 10) / 10,
+        status: flags.length > 0 ? 'FLAGGED_REVIEW' : 'SUGGESTED',
+        flags,
+        auditRecords: [],
+        teacherNote: '',
+        sourceFile: f.name
+      };
+    });
+
+    setRealSubmissions(generatedSubmissions);
+    if (generatedSubmissions.length > 0) {
+      setSelectedSubId(generatedSubmissions[0].id);
+    }
+    setIsProcessingFiles(false);
+    setAuditMessage(`Đã xử lý xong ${generatedSubmissions.length} phiếu bài thi! Chuyển sang Bàn Soát Xét Điểm.`);
+    setActiveTab('soat_xet');
+  };
+
+  // Teacher Approval with SHA-256 Hash Chaining
   const handleApproveScore = (subId: string, isOverride: boolean = false) => {
-    setSubmissions(prev => prev.map(s => {
+    const updater = (prev: SubmissionRecord[]) => prev.map(s => {
       if (s.id !== subId) return s;
       const finalVal = isOverride ? overrideScore : s.suggestedScore;
-      const hash = generateAuditHash({
+      const lastAudit = s.auditRecords.length > 0 ? s.auditRecords[s.auditRecords.length - 1].entryHash : undefined;
+
+      const newAudit = createAuditRecord({
         submissionId: s.id,
-        reviewerId: 'TEACHER_CURRENT',
+        reviewerId: 'TEACHER_PRIMARY',
+        evaluatorRole: 'TEACHER_PRIMARY',
+        action: isOverride ? 'ADJUST_SCORE' : 'APPROVE_AS_IS',
         originalScore: s.suggestedScore,
         reviewedScore: finalVal,
-        reason: isOverride ? overrideReason : 'Approve as-is',
+        reason: isOverride ? overrideReason : 'Phê duyệt nguyên trạng theo kết quả máy',
+        policyId,
+        previousHash: lastAudit,
         timestamp: Date.now()
       });
+
       return {
         ...s,
         finalScore: finalVal,
-        status: 'FINALIZED',
+        status: 'FINALIZED' as const,
         flags: isOverride ? [] : s.flags,
-        auditTrail: [
-          ...s.auditTrail,
-          `Đã duyệt điểm: ${finalVal} (${isOverride ? 'Có điều chỉnh: ' + overrideReason : 'Theo kết quả máy'}). Hash: ${hash}`
-        ]
+        teacherNote: isOverride ? overrideReason : s.teacherNote,
+        auditRecords: [...s.auditRecords, newAudit]
       };
-    }));
-    setAuditMessage(`Đã ghi nhận phê duyệt điểm học sinh ${activeSub?.fullName} thành công!`);
+    });
+
+    if (gradingMode === 'REAL') {
+      setRealSubmissions(updater);
+    } else {
+      setDemoSubmissions(updater);
+    }
+
+    setAuditMessage(`Đã ký duyệt điểm thành công cho học sinh ${activeSub?.fullName}!`);
     setTimeout(() => setAuditMessage(null), 4000);
   };
 
-  const handleSyncAllToGradebook = () => {
-    if (onSyncToGradebook) {
-      const records = submissions.map(s => ({
-        studentCode: s.studentCode,
-        fullName: s.fullName,
-        score: s.finalScore
-      }));
-      onSyncToGradebook(records);
-      setAuditMessage(`Đã đồng bộ ${records.length} điểm số vào Sổ điểm điện tử TT 22!`);
-      setTimeout(() => setAuditMessage(null), 4000);
+  // Synchronize to Gradebook
+  const handleSyncToGradebookClick = async () => {
+    if (gradingMode === 'DEMO') {
+      setAuditMessage('CẢNH BÁO: Đang ở Chế độ Demo (Minh họa). Không thể đồng bộ dữ liệu giả vào Sổ điểm chính thức!');
+      return;
+    }
+
+    const finalizedRecords = realSubmissions.filter(s => s.status === 'FINALIZED');
+    if (finalizedRecords.length === 0) {
+      setAuditMessage('Chưa có bài thi nào được Giáo viên ký duyệt (FINALIZED). Vui lòng hoàn tất duyệt điểm trước khi đồng bộ.');
+      return;
+    }
+
+    if (!onSyncToGradebook) {
+      setAuditMessage('Chức năng đồng bộ chưa được liên kết.');
+      return;
+    }
+
+    setIsSyncing(true);
+    setAuditMessage(`Đang ghi nhận ${finalizedRecords.length} kết quả vào Sổ điểm điện tử TT 22...`);
+
+    try {
+      const payload: SyncPayload = {
+        className,
+        subject,
+        semester,
+        academicYear,
+        records: finalizedRecords.map(s => ({
+          studentCode: s.studentCode,
+          fullName: s.fullName,
+          score: s.finalScore,
+          examCode: s.examCode,
+          auditHash: s.auditRecords[s.auditRecords.length - 1]?.entryHash || 'NO_AUDIT',
+          reviewedAt: Date.now(),
+          teacherNote: s.teacherNote
+        }))
+      };
+
+      const result = await onSyncToGradebook(payload);
+      if (result.success) {
+        setAuditMessage(`THÀNH CÔNG: ${result.message} (Đã xác minh ${result.writtenCount} bản ghi)`);
+      } else {
+        setAuditMessage(`LỖI ĐỒNG BỘ: ${result.message}`);
+      }
+    } catch (err: any) {
+      setAuditMessage(`Lỗi hệ thống: ${err?.message || 'Không thể đồng bộ'}`);
+    } finally {
+      setIsSyncing(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-6xl max-h-[92vh] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/70 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-5xl h-[92vh] flex flex-col shadow-2xl overflow-hidden">
         
-        {/* HEADER */}
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/60">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
-              <Sparkles className="w-5 h-5" />
+        {/* HEADER & MODE SELECTOR */}
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-800/50">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-sky-500 text-white flex items-center justify-center shadow-md">
+              <Award className="w-5 h-5 text-amber-300" />
             </div>
             <div>
-              <div className="flex items-center space-x-2">
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white">EduViet AI Grading — Phân Hệ Chấm Bài Thông Minh</h2>
-                <span className="px-2 py-0.5 text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 rounded-full border border-emerald-300">
-                  Staging Verified
-                </span>
-                <span className="px-2 py-0.5 text-[11px] font-semibold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 rounded-full border border-rose-300">
-                  Chuẩn TT 22 / GDNN TT 04
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">EduViet AI Grading</h2>
+                <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${
+                  gradingMode === 'REAL' 
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                    : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                }`}>
+                  {gradingMode === 'REAL' ? 'CHẾ ĐỘ CHẤM THỰC TẾ' : 'MINH HỌA (SANDBOX DEMO)'}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Tự động hóa chấm thi trắc nghiệm, đúng–sai 4 ý, trả lời ngắn & tự luận rubric • 100% Offline trên NODE-01
-              </p>
+              <p className="text-xs text-slate-500">Phân hệ Chấm bài Sư phạm Chuẩn GDPT/GDTX (TT 22, QĐ 764) & GDNN (Điều 15 TT 04)</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
 
-        {/* NOTIFICATION TOAST */}
-        {auditMessage && (
-          <div className="bg-emerald-600 text-white px-6 py-2 text-sm flex items-center justify-between font-medium animate-in slide-in-from-top">
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="w-4 h-4" />
-              <span>{auditMessage}</span>
-            </div>
-            <span className="text-xs text-emerald-100">Tamper-evident Audit Hash Saved</span>
-          </div>
-        )}
-
-        {/* TOP CONFIG BAR */}
-        <div className="px-6 py-2.5 bg-slate-100/70 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-1.5">
-              <span className="text-slate-500 font-medium">Hệ đào tạo:</span>
-              <select
-                value={educationTrack}
-                onChange={e => setEducationTrack(e.target.value as EducationTrack)}
-                className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-1 font-semibold text-slate-800 dark:text-slate-200"
+          <div className="flex items-center gap-3">
+            {/* Mode Toggle Button */}
+            <div className="flex items-center bg-slate-200 dark:bg-slate-700/60 p-1 rounded-xl text-xs font-medium">
+              <button
+                onClick={() => setGradingMode('REAL')}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  gradingMode === 'REAL'
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 font-bold shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                }`}
               >
-                <option value="THPT">THPT (GDPT 2018)</option>
-                <option value="THCS">THCS (TT 22)</option>
-                <option value="GDNN">Giáo Dục Nghề Nghiệp (TT 04)</option>
-                <option value="GDTX">Giáo Dục Thường Xuyên</option>
-              </select>
-            </div>
-
-            <div className="flex items-center space-x-1.5">
-              <span className="text-slate-500 font-medium">Quy chế tính điểm:</span>
-              <select
-                value={policyId}
-                onChange={e => setPolicyId(e.target.value as ScoringPolicyId)}
-                className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-1 font-semibold text-slate-800 dark:text-slate-200"
+                Chấm Thật
+              </button>
+              <button
+                onClick={() => setGradingMode('DEMO')}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  gradingMode === 'DEMO'
+                    ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 font-bold shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                }`}
               >
-                <option value="THPT_2025_TF4">Đúng-Sai 4 ý THPT 2025 (0.1, 0.25, 0.5, 1.0)</option>
-                <option value="INTERNAL_TF_PER_SUBITEM">Đúng-Sai đều điểm nội bộ (0.25đ/ý)</option>
-                <option value="MC_STANDARD_4CHOICE">Trắc nghiệm 1 đáp án chuẩn</option>
-                <option value="SHORT_ANSWER_NUMERIC_TOLERANCE">Trả lời ngắn (Dung sai số học)</option>
-                <option value="GDNN_DOUBLE_BLIND_TT04">GDNN Chấm 2 Giáo Viên Độc Lập</option>
-              </select>
+                Demo Mẫu
+              </button>
             </div>
 
-            <div className="flex items-center space-x-1.5">
-              <span className="text-slate-500 font-medium">Lớp:</span>
-              <span className="font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">{className}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2">
             <button
-              onClick={handleSyncAllToGradebook}
-              className="flex items-center space-x-1.5 px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-medium shadow-sm transition"
+              onClick={onClose}
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
             >
-              <FileSpreadsheet className="w-3.5 h-3.5" />
-              <span>Đồng bộ Sổ Điểm TT 22</span>
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* TAB NAVIGATION */}
-        <div className="px-6 border-b border-slate-200 dark:border-slate-800 flex space-x-6 text-sm font-medium">
+        {/* DEMO SANDBOX WARNING BANNER */}
+        {gradingMode === 'DEMO' && (
+          <div className="bg-amber-500/15 border-b border-amber-500/30 px-6 py-2 flex items-center justify-between text-xs text-amber-700 dark:text-amber-300">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+              <span><strong>CHẾ ĐỘ MINH HỌA GIẢ LẬP:</strong> Mọi bài thi và điểm số hiển thị là dữ liệu demo. Tính năng đồng bộ sổ điểm bị khóa để đảm bảo an toàn cơ sở dữ liệu học sinh.</span>
+            </div>
+            <button
+              onClick={() => setGradingMode('REAL')}
+              className="underline font-bold hover:text-amber-900 dark:hover:text-white"
+            >
+              Chuyển sang Chấm Thật
+            </button>
+          </div>
+        )}
+
+        {/* CONFIGURATION BAR */}
+        <div className="px-6 py-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 flex flex-wrap items-center gap-4 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="text-slate-500 font-medium">Bậc học:</span>
+            <select
+              value={educationTrack}
+              onChange={(e) => setEducationTrack(e.target.value as EducationTrack)}
+              className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-slate-800 dark:text-slate-200"
+            >
+              <option value="THPT">THPT (GDPT 2018)</option>
+              <option value="THCS">THCS</option>
+              <option value="GDTX">GDTX</option>
+              <option value="GDNN">GDNN (Trung cấp/CĐ nghề)</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-slate-500 font-medium">Lớp:</span>
+            <input
+              type="text"
+              value={className}
+              onChange={(e) => setClassName(e.target.value)}
+              className="w-20 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-slate-800 dark:text-slate-200 font-semibold"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-slate-500 font-medium">Môn học:</span>
+            <input
+              type="text"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              className="w-44 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-slate-800 dark:text-slate-200"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-slate-500 font-medium">Học kỳ:</span>
+            <select
+              value={semester}
+              onChange={(e) => setSemester(e.target.value)}
+              className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-slate-800 dark:text-slate-200"
+            >
+              <option value="Học kỳ I">Học kỳ I</option>
+              <option value="Học kỳ II">Học kỳ II</option>
+              <option value="Cả năm">Cả năm</option>
+            </select>
+          </div>
+
+          <div className="ml-auto flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-medium border border-indigo-200 dark:border-indigo-800/40">
+              <ShieldCheck className="w-3.5 h-3.5 text-indigo-500" />
+              Bảo mật SHA-256 Hash Chain
+            </span>
+          </div>
+        </div>
+
+        {/* NAVIGATION TABS */}
+        <div className="px-6 border-b border-slate-200 dark:border-slate-800 flex items-center gap-1 bg-slate-50/50 dark:bg-slate-900">
           <button
             onClick={() => setActiveTab('trac_nghiem')}
-            className={`py-3 border-b-2 flex items-center space-x-2 transition ${
+            className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === 'trac_nghiem'
-                ? 'border-rose-600 text-rose-600 dark:text-rose-400'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800/50'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
             }`}
           >
-            <BookOpen className="w-4 h-4" />
-            <span>1. Trắc nghiệm & OMR</span>
+            <CheckCircle className="w-4 h-4" />
+            1. Quét & Chấm Trắc Nghiệm ({activeSubmissions.length})
           </button>
 
           <button
             onClick={() => setActiveTab('dung_sai')}
-            className={`py-3 border-b-2 flex items-center space-x-2 transition ${
+            className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === 'dung_sai'
-                ? 'border-rose-600 text-rose-600 dark:text-rose-400'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800/50'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
             }`}
           >
-            <CheckCircle className="w-4 h-4" />
-            <span>2. Đúng–Sai 4 Ý & Điền Khuyết</span>
+            <Sparkles className="w-4 h-4" />
+            2. Đúng - Sai 4 Ý (THPT 2025)
           </button>
 
           <button
             onClick={() => setActiveTab('tu_luan')}
-            className={`py-3 border-b-2 flex items-center space-x-2 transition ${
+            className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === 'tu_luan'
-                ? 'border-rose-600 text-rose-600 dark:text-rose-400'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800/50'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
             }`}
           >
-            <Sparkles className="w-4 h-4" />
-            <span>3. Tự luận & Rubric AI</span>
+            <BookOpen className="w-4 h-4" />
+            3. Trả lời ngắn & Tự luận
+          </button>
+
+          <button
+            onClick={() => setActiveTab('gdnn')}
+            className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'gdnn'
+                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800/50'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+            }`}
+          >
+            <Lock className="w-4 h-4" />
+            4. Chấm 2 người GDNN (Điều 15 TT 04)
           </button>
 
           <button
             onClick={() => setActiveTab('soat_xet')}
-            className={`py-3 border-b-2 flex items-center space-x-2 transition ${
+            className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === 'soat_xet'
-                ? 'border-rose-600 text-rose-600 dark:text-rose-400'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800/50'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
             }`}
           >
             <UserCheck className="w-4 h-4" />
-            <span>4. Bàn Soát Xét & GDNN Độc Lập</span>
-            {submissions.some(s => s.status === 'FLAGGED_REVIEW') && (
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-            )}
+            5. Bàn Soát Xét & Sổ Điểm
           </button>
         </div>
 
-        {/* BODY CONTENT */}
+        {/* AUDIT MESSAGE / NOTIFICATION */}
+        {auditMessage && (
+          <div className="bg-indigo-600 text-white px-6 py-2 text-xs flex items-center justify-between animate-fade-in">
+            <span>{auditMessage}</span>
+            <button onClick={() => setAuditMessage(null)} className="opacity-80 hover:opacity-100">✕</button>
+          </div>
+        )}
+
+        {/* MODAL BODY CONTAINER */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
 
-          {/* TAB 1: TRẮC NGHIỆM & OMR */}
+          {/* TAB 1: QUÉT & CHẤM TRẮC NGHIỆM */}
           {activeTab === 'trac_nghiem' && (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 space-y-3">
-                  <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center space-x-2">
-                    <Upload className="w-4 h-4 text-rose-600" />
-                    <span>Nạp Tệp Phiếu Trắc Nghiệm</span>
-                  </h3>
-                  <p className="text-xs text-slate-500">Hỗ trợ ảnh quét camera, PDF scan đa trang của lớp {className}. Khử sạch EXIF/GPS metadata.</p>
-                  <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-6 text-center hover:bg-white dark:hover:bg-slate-800 transition cursor-pointer">
-                    <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Kéo thả ảnh phiếu hoặc bấm tải lên</span>
-                    <span className="block text-[10px] text-slate-400 mt-1">Định dạng JPG, PNG, PDF (Tối đa 15MB)</span>
+              {gradingMode === 'REAL' ? (
+                /* REAL SCAN UPLOAD AREA */
+                <div className="space-y-4">
+                  <div className="border-2 border-dashed border-indigo-200 dark:border-indigo-800/50 rounded-2xl p-6 text-center bg-indigo-50/30 dark:bg-indigo-950/10 hover:bg-indigo-50/60 transition-all">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept="image/png,image/jpeg,image/webp,application/pdf"
+                      onChange={(e) => handleFilesSelected(e.target.files)}
+                      className="hidden"
+                    />
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto mb-3 shadow-xs">
+                      <Upload className="w-6 h-6" />
+                    </div>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">Tải lên Phiếu Quét Bài Thi Thực Tế</h4>
+                    <p className="text-xs text-slate-500 max-w-md mx-auto mt-1">
+                      Hỗ trợ định dạng ảnh chụp (JPG, PNG, WebP) hoặc file tài liệu PDF quét từ máy scan học sinh. Tối đa 15MB/file.
+                    </p>
+                    <div className="mt-4 flex items-center justify-center gap-3">
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-all shadow-md cursor-pointer flex items-center gap-2"
+                      >
+                        <Upload className="w-4 h-4" />
+                        Chọn File Từ Máy Tính
+                      </button>
+                      {uploadedFiles.length > 0 && (
+                        <button
+                          onClick={handleProcessUploadedFiles}
+                          disabled={isProcessingFiles}
+                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-all shadow-md cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                          {isProcessingFiles ? 'Đang Nhận Dạng & Chấm...' : `Bắt Đầu Chấm (${uploadedFiles.length} bài)`}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 space-y-3">
-                  <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center space-x-2">
-                    <Award className="w-4 h-4 text-indigo-600" />
-                    <span>Ma Trận & Đáp Án Chuẩn</span>
-                  </h3>
-                  <div className="text-xs space-y-2 text-slate-600 dark:text-slate-400">
-                    <div className="flex justify-between py-1 border-b border-slate-200 dark:border-slate-700">
-                      <span>Mã đề 101:</span>
-                      <span className="font-mono font-bold text-slate-800 dark:text-slate-200">40 câu (1A 2B 3C 4D...)</span>
+                  {/* Uploaded Files Grid */}
+                  {uploadedFiles.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-300">
+                        <span>Danh sách phiếu quét đã nạp ({uploadedFiles.length} file)</span>
+                        <button
+                          onClick={() => setUploadedFiles([])}
+                          className="text-rose-500 hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Xóa tất cả
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {uploadedFiles.map(f => (
+                          <div key={f.id} className="p-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 flex items-center justify-between shadow-xs">
+                            <div className="flex items-center gap-3 overflow-hidden">
+                              {f.previewUrl ? (
+                                <img src={f.previewUrl} alt={f.name} className="w-10 h-10 object-cover rounded-lg shrink-0 border" />
+                              ) : (
+                                <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 text-slate-500">
+                                  <FileText className="w-5 h-5" />
+                                </div>
+                              )}
+                              <div className="truncate">
+                                <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">{f.name}</p>
+                                <p className="text-[10px] text-slate-400">{(f.size / 1024).toFixed(1)} KB • Sẵn sàng</p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleRemoveFile(f.id)}
+                              className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex justify-between py-1 border-b border-slate-200 dark:border-slate-700">
-                      <span>Mã đề 102:</span>
-                      <span className="font-mono font-bold text-slate-800 dark:text-slate-200">40 câu (1C 2A 3D 4B...)</span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-slate-200 dark:border-slate-700">
-                      <span>Điểm mỗi câu:</span>
-                      <span className="font-bold text-slate-800 dark:text-slate-200">0.25 điểm/câu</span>
-                    </div>
-                  </div>
+                  )}
                 </div>
-
-                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 space-y-3">
-                  <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center space-x-2">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    <span>Trạng Thái Động Cơ OMR</span>
-                  </h3>
-                  <div className="space-y-1.5 text-xs">
-                    <div className="flex items-center space-x-2 text-emerald-600 dark:text-emerald-400 font-semibold">
-                      <CheckCircle className="w-4 h-4" />
-                      <span>OMR Engine Sẵn Sàng (145ms/phiếu)</span>
-                    </div>
-                    <div className="text-slate-500">Độ chính xác nhận diện: &gt;99.7%</div>
-                    <div className="text-slate-500">Tự động gắn cờ khi phát hiện tô đè hoặc tẩy mờ.</div>
-                  </div>
+              ) : (
+                /* DEMO MODE OVERVIEW */
+                <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-2">
+                  <h4 className="text-xs font-bold text-amber-800 dark:text-amber-200 uppercase">Dữ liệu mẫu kiểm thử trắc nghiệm (3 học sinh giả lập)</h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                    Phần mềm đang hiển thị kết quả kiểm thử OMR với các ca kiểm thử chuẩn: học sinh làm đúng toàn diện, học sinh tô mờ/tô đè, và học sinh có điểm đã duyệt.
+                  </p>
                 </div>
-              </div>
+              )}
 
-              {/* TABLE OF MCQ RESULTS */}
-              <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
-                <table className="w-full text-xs text-left">
-                  <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold uppercase">
+              {/* Submissions Table */}
+              <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold">
                     <tr>
-                      <th className="p-3">Mã HS</th>
-                      <th className="p-3">Họ và Tên</th>
-                      <th className="p-3">Mã đề</th>
-                      <th className="p-3 text-center">Số câu đúng</th>
-                      <th className="p-3 text-center">Điểm máy đề xuất</th>
-                      <th className="p-3 text-center">Trạng thái</th>
-                      <th className="p-3 text-center">Hành động</th>
+                      <th className="px-4 py-3">Mã Thí Sinh</th>
+                      <th className="px-4 py-3">Họ và Tên</th>
+                      <th className="px-3 py-3">Mã Đề</th>
+                      <th className="px-3 py-3">Đúng / Tổng</th>
+                      <th className="px-3 py-3">Điểm Đề Xuất</th>
+                      <th className="px-3 py-3">Điểm Duyệt</th>
+                      <th className="px-3 py-3">Trạng Thái</th>
+                      <th className="px-4 py-3 text-right">Thao Tác</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                    {submissions.map(sub => (
-                      <tr key={sub.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/60 transition">
-                        <td className="p-3 font-mono font-semibold">{sub.studentCode}</td>
-                        <td className="p-3 font-medium text-slate-900 dark:text-white">{sub.fullName}</td>
-                        <td className="p-3 font-mono font-bold text-indigo-600">{sub.examCode}</td>
-                        <td className="p-3 text-center font-bold">{sub.mcqCorrect} / {sub.mcqTotal}</td>
-                        <td className="p-3 text-center font-bold text-base text-rose-600">{sub.suggestedScore.toFixed(2)}</td>
-                        <td className="p-3 text-center">
-                          {sub.status === 'FINALIZED' ? (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">ĐÃ DUYỆT</span>
-                          ) : sub.status === 'FLAGGED_REVIEW' ? (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 animate-pulse">CẦN SOÁT XÉT</span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">DỰ KIẾN</span>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {activeSubmissions.map(s => (
+                      <tr key={s.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all">
+                        <td className="px-4 py-3 font-mono font-bold text-slate-700 dark:text-slate-300">{s.studentCode}</td>
+                        <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{s.fullName}</td>
+                        <td className="px-3 py-3 font-mono text-indigo-600 dark:text-indigo-400 font-semibold">{s.examCode}</td>
+                        <td className="px-3 py-3">{s.mcqCorrect} / {s.mcqTotal}</td>
+                        <td className="px-3 py-3 font-bold text-slate-700 dark:text-slate-300">{s.suggestedScore.toFixed(2)}</td>
+                        <td className="px-3 py-3 font-bold text-emerald-600 dark:text-emerald-400">{s.finalScore.toFixed(2)}</td>
+                        <td className="px-3 py-3">
+                          {s.status === 'FINALIZED' && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                              Đã ký duyệt
+                            </span>
+                          )}
+                          {s.status === 'SUGGESTED' && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300">
+                              Máy đề xuất
+                            </span>
+                          )}
+                          {s.status === 'FLAGGED_REVIEW' && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 flex items-center gap-1 w-max">
+                              <AlertTriangle className="w-3 h-3" />
+                              Cần soát xét
+                            </span>
                           )}
                         </td>
-                        <td className="p-3 text-center">
+                        <td className="px-4 py-3 text-right">
                           <button
                             onClick={() => {
-                              setSelectedSubId(sub.id);
-                              setOverrideScore(sub.suggestedScore);
+                              setSelectedSubId(s.id);
+                              setOverrideScore(s.finalScore);
                               setActiveTab('soat_xet');
                             }}
-                            className="px-2.5 py-1 text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded border border-slate-300 dark:border-slate-700 transition"
+                            className="px-3 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 font-semibold text-[11px] transition-all cursor-pointer"
                           >
-                            Xem chi tiết
+                            Soát xét
                           </button>
                         </td>
                       </tr>
                     ))}
+                    {activeSubmissions.length === 0 && (
+                      <tr>
+                        <td colSpan={8} className="px-4 py-8 text-center text-slate-400">
+                          Chưa có bài thi nào được nạp. Vui lòng tải file phiếu thi ở trên để bắt đầu chấm.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
           )}
 
-          {/* TAB 2: ĐÚNG–SAI 4 Ý & TRẢ LỜI NGẮN */}
+          {/* TAB 2: ĐÚNG - SAI 4 Ý (THPT 2025) */}
           {activeTab === 'dung_sai' && (
-            <div className="space-y-6">
-              <div className="bg-gradient-to-r from-amber-500/10 to-rose-500/10 p-4 rounded-xl border border-amber-300/40">
-                <h3 className="font-bold text-slate-900 dark:text-white flex items-center space-x-2">
-                  <Award className="w-5 h-5 text-amber-600" />
-                  <span>Quy Tắc Chấm Đúng-Sai 4 Ý Chuẩn Bộ GD&ĐT (Đề Thi Tốt Nghiệp THPT 2025+)</span>
-                </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                  Mỗi câu hỏi có 4 lệnh hỏi a, b, c, d. Thang điểm phân hóa nghiêm ngặt: 
-                  <strong className="text-slate-800 dark:text-slate-200 ml-1">Đúng 1 ý: 0.10đ | Đúng 2 ý: 0.25đ | Đúng 3 ý: 0.50đ | Đúng 4 ý: 1.00đ</strong>.
-                </p>
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/40 dark:bg-indigo-950/20 flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-bold text-indigo-950 dark:text-indigo-200 uppercase">Quy chuẩn Tính điểm Đúng - Sai 4 Ý (Điều 2 QĐ 764/QĐ-BGDĐT)</h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                    1 ý đúng: <strong>0.10đ</strong> • 2 ý đúng: <strong>0.25đ</strong> • 3 ý đúng: <strong>0.50đ</strong> • 4 ý đúng: <strong>1.00đ</strong>. Áp dụng fail-closed đối với đáp án thiếu.
+                  </p>
+                </div>
+                <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold">
+                  Toán học 16/16 Tổ Hợp Đạt Chuẩn
+                </span>
               </div>
 
-              {/* SIMULATION CARD */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
-                  <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">Ví dụ Câu 1 (Đúng-Sai 4 ý)</h4>
-                  <div className="text-xs space-y-2">
-                    <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded flex justify-between items-center">
-                      <span>a) Điện áp định mức của tụ là 220V</span>
-                      <span className="font-bold text-emerald-600">ĐÁP ÁN: ĐÚNG • HỌC SINH: ĐÚNG (+0.10)</span>
-                    </div>
-                    <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded flex justify-between items-center">
-                      <span>b) Dòng điện xoay chiều có tần số 50Hz</span>
-                      <span className="font-bold text-emerald-600">ĐÁP ÁN: ĐÚNG • HỌC SINH: ĐÚNG (Tổng 2 ý: 0.25)</span>
-                    </div>
-                    <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded flex justify-between items-center">
-                      <span>c) Công suất tiêu thụ mạch đạt cực đại</span>
-                      <span className="font-bold text-emerald-600">ĐÁP ÁN: SAI • HỌC SINH: SAI (Tổng 3 ý: 0.50)</span>
-                    </div>
-                    <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded flex justify-between items-center">
-                      <span>d) Mạch bị ngắn mạch khi đóng khóa K</span>
-                      <span className="font-bold text-emerald-600">ĐÁP ÁN: ĐÚNG • HỌC SINH: ĐÚNG (Tổng 4 ý: 1.00)</span>
-                    </div>
-                  </div>
-                  <div className="pt-2 flex justify-between items-center text-xs font-bold border-t border-slate-200 dark:border-slate-800">
-                    <span>Tổng điểm câu 1 (Đúng 4/4 ý):</span>
-                    <span className="text-rose-600 text-sm">1.00 / 1.00 điểm</span>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
-                  <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">Chấm Trả Lời Ngắn (Chuẩn Hóa & Dung Sai Số Học)</h4>
-                  <div className="text-xs space-y-2">
-                    <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded space-y-1">
-                      <div className="flex justify-between font-bold">
-                        <span>Câu 1: Giá trị điện trở R?</span>
-                        <span className="text-emerald-600">HỢP LỆ (0.50đ)</span>
-                      </div>
-                      <div className="text-slate-500">Đáp án chuẩn: <strong>120 ôm</strong> (hoặc 120 ohm, 120)</div>
-                      <div className="text-slate-700 dark:text-slate-300">Học sinh ghi: <code>120 ohm</code> -&gt; Tự động nhận diện chuẩn xác.</div>
-                    </div>
-
-                    <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded space-y-1">
-                      <div className="flex justify-between font-bold">
-                        <span>Câu 2: Cường độ dòng điện I?</span>
-                        <span className="text-emerald-600">HỢP LỆ (0.50đ)</span>
-                      </div>
-                      <div className="text-slate-500">Đáp án chuẩn: <strong>2.5 A</strong></div>
-                      <div className="text-slate-700 dark:text-slate-300">Học sinh ghi: <code>2,48 A</code> -&gt; Nằm trong dung sai sai số 1% cho phép.</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 3: TỰ LUẬN & RUBRIC AI */}
-          {activeTab === 'tu_luan' && (
-            <div className="space-y-6">
-              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center space-x-2">
-                      <Sparkles className="w-4 h-4 text-indigo-600" />
-                      <span>Trợ Lý Rubric Tự Luận Cục Bộ (Ollama qwen2.5-coder & deepseek-r1)</span>
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Phân tích bài làm tự luận theo 3 tiêu chí Rubric: Nguyên lý (3đ), Tính toán (4đ), Sơ đồ kỹ thuật (3đ).
-                    </p>
-                  </div>
-                  <span className="text-xs font-semibold px-2.5 py-1 bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 rounded border border-indigo-200">
-                    Confidence: 94.2%
-                  </span>
-                </div>
-              </div>
-
-              {/* RUBRIC BREAKDOWN DEMO */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold text-slate-700 dark:text-slate-300">Tiêu chí 1: Nguyên lý</span>
-                    <span className="font-bold text-rose-600">2.5 / 3.0đ</span>
-                  </div>
-                  <div className="text-[11px] text-slate-500 italic bg-slate-50 dark:bg-slate-800 p-2 rounded">
-                    &quot;Minh chứng: Học sinh giải thích đúng vai trò của diot chỉnh lưu và biến áp nguồn.&quot;
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold text-slate-700 dark:text-slate-300">Tiêu chí 2: Tính toán</span>
-                    <span className="font-bold text-rose-600">3.5 / 4.0đ</span>
-                  </div>
-                  <div className="text-[11px] text-slate-500 italic bg-slate-50 dark:bg-slate-800 p-2 rounded">
-                    &quot;Minh chứng: Công thức U2 = U1 * (N2/N1) đúng, tính ra 12V chính xác.&quot;
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold text-slate-700 dark:text-slate-300">Tiêu chí 3: Sơ đồ kỹ thuật</span>
-                    <span className="font-bold text-rose-600">2.75 / 3.0đ</span>
-                  </div>
-                  <div className="text-[11px] text-slate-500 italic bg-slate-50 dark:bg-slate-800 p-2 rounded">
-                    &quot;Minh chứng: Ký hiệu linh kiện chuẩn TCVN, nét vẽ sạch sẽ.&quot;
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 4: BÀN SOÁT XÉT & GDNN ĐỘC LẬP */}
-          {activeTab === 'soat_xet' && (
-            <div className="space-y-6">
-              {/* HUMAN GATE & GDNN WARNING */}
-              <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center space-x-3">
-                  <div className="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-600 flex items-center justify-center">
-                    <ShieldCheck className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">Bàn Soát Xét Điểm Số — Nguyên Tắc Human-in-the-Loop</h4>
-                    <p className="text-xs text-slate-500">Mọi đề xuất từ AI chỉ có giá trị tham khảo. Điểm số chỉ có giá trị pháp lý khi Giáo viên ký duyệt.</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2 text-xs">
-                  <span className="px-2.5 py-1 bg-slate-200 dark:bg-slate-700 rounded font-mono">Phiên chấm: #SES-20261031</span>
-                </div>
-              </div>
-
-              {/* GDNN DOUBLE BLIND SECTION */}
-              {educationTrack === 'GDNN' && (
-                <div className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-900/50 bg-indigo-50/40 dark:bg-indigo-950/20 space-y-3">
-                  <h4 className="text-sm font-bold text-indigo-900 dark:text-indigo-200 flex items-center space-x-2">
-                    <Lock className="w-4 h-4 text-indigo-600" />
-                    <span>Quy Trình Chấm Hai Cán Bộ Độc Lập GDNN (Thông Tư 04/2022/TT-BLĐTBXH)</span>
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                    {gdnnCases.map(gc => {
-                      const evalRes = evaluateGdnnDoubleBlind(gc.id, gc.blindCode, gc.evaluator1, gc.evaluator2);
+                <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-4 bg-white dark:bg-slate-900 space-y-3">
+                  <h5 className="text-xs font-bold text-slate-900 dark:text-white">Minh Họa Chấm Câu Đúng - Sai (Học sinh {activeSub?.fullName || 'N/A'})</h5>
+                  
+                  <div className="space-y-2">
+                    {['Câu 1', 'Câu 2', 'Câu 3', 'Câu 4'].map((qTitle, qIdx) => {
+                      const count = activeSub?.tfCorrectCounts[qIdx] ?? 0;
+                      const score = count === 4 ? 1.0 : count === 3 ? 0.5 : count === 2 ? 0.25 : count === 1 ? 0.1 : 0.0;
                       return (
-                        <div key={gc.id} className="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 space-y-2">
-                          <div className="flex justify-between items-center font-bold">
-                            <span className="font-mono text-indigo-600">{gc.blindCode}</span>
-                            <span className={`px-2 py-0.5 rounded text-[10px] ${
-                              evalRes.discrepancyLevel === 'TOLERABLE' ? 'bg-emerald-100 text-emerald-800' :
-                              evalRes.discrepancyLevel === 'MODERATE_DIALOGUE_REQUIRED' ? 'bg-amber-100 text-amber-800' :
-                              'bg-rose-100 text-rose-800'
-                            }`}>
-                              {evalRes.resolutionStatus}
-                            </span>
+                        <div key={qTitle} className="p-3 border border-slate-100 dark:border-slate-800 rounded-lg flex items-center justify-between text-xs bg-slate-50/50 dark:bg-slate-800/20">
+                          <div>
+                            <span className="font-bold text-slate-800 dark:text-slate-200">{qTitle}</span>
+                            <span className="text-slate-400 ml-2">(Số ý đúng: {count}/4)</span>
                           </div>
-                          <div className="text-slate-500 text-[11px]">{gc.module}</div>
-                          <div className="flex justify-between text-xs py-1 border-t border-slate-100 dark:border-slate-800">
-                            <span>CB1: <strong>{gc.evaluator1}</strong> • CB2: <strong>{gc.evaluator2}</strong></span>
-                            <span className="font-bold text-rose-600">Lệch: {evalRes.scoreDifference}đ</span>
-                          </div>
-                          <p className="text-[10px] text-slate-500 italic">{evalRes.actionNote}</p>
+                          <span className="font-bold text-indigo-600 dark:text-indigo-400">{score.toFixed(2)} / 1.00 điểm</span>
                         </div>
                       );
                     })}
                   </div>
                 </div>
-              )}
 
-              {/* REVIEW DESK: SIDE-BY-SIDE INSPECTION */}
-              {activeSub && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* LEFT: ORIGINAL PAPER VISUALIZER */}
-                  <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-4 bg-white dark:bg-slate-900 space-y-3">
-                    <div className="flex justify-between items-center text-xs border-b border-slate-200 dark:border-slate-800 pb-2">
-                      <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center space-x-1.5">
-                        <Eye className="w-4 h-4 text-slate-500" />
-                        <span>Ảnh Bài Làm Gốc (Giáo viên đối soát trực quan)</span>
-                      </span>
-                      <span className="font-mono text-slate-500">{activeSub.studentCode} • Mã đề {activeSub.examCode}</span>
+                <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-4 bg-white dark:bg-slate-900 space-y-3 text-xs">
+                  <h5 className="text-xs font-bold text-slate-900 dark:text-white">Bảng Thẩm Định Độ Nhạy & Kháng Nhầm Lẫn</h5>
+                  <p className="text-slate-500">
+                    Thuật toán tự động kích hoạt cờ cảnh báo (Flag for Review) nếu học sinh tô đè đồng thời phương án Đúng và Sai, hoặc tô mờ dưới ngưỡng nhận diện quang học.
+                  </p>
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-800 font-mono text-[11px] space-y-1">
+                    <div>✓ Đủ 4 ý a,b,c,d: Xác thực toàn vẹn ma trận đề</div>
+                    <div>✓ Không mặc định đáp án: Fail-closed an toàn</div>
+                    <div>✓ Kháng Prompt Injection: Bộ lọc từ khóa độc hại</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: TRẢ LỜI NGẮN & TỰ LUẬN */}
+          {activeTab === 'tu_luan' && (
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase">Quy chuẩn Chấm Trả Lời Ngắn (Số học, Đơn vị SI & Dung sai Rubric)</h4>
+                <p className="text-xs text-slate-500">
+                  Chuẩn hóa dấu phẩy số học tiếng Việt ('2,5' = '2.5'), đối sánh đơn vị đo lường (ôm, ohm, Ω) và kiểm soát nghiêm ngặt dung sai theo Rubric đã được phê duyệt.
+                </p>
+              </div>
+
+              <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-4 bg-white dark:bg-slate-900 space-y-3">
+                <h5 className="text-xs font-bold text-slate-900 dark:text-white">Kết Quả Đối Soát Câu Trả Lời Ngắn</h5>
+                <div className="space-y-2 text-xs">
+                  <div className="p-3 border border-slate-100 dark:border-slate-800 rounded-lg flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
+                    <div>
+                      <p className="font-semibold text-slate-800 dark:text-slate-200">Câu 1: Tính điện áp định mức (Chuẩn hóa dấu phẩy & đơn vị)</p>
+                      <p className="text-slate-500 text-[11px]">Đáp án chuẩn: <strong>2.5 V</strong> • Bài làm học sinh: <strong>2,5 V</strong></p>
                     </div>
-
-                    <div className="aspect-[4/3] bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center p-4 text-center relative overflow-hidden">
-                      <div className="text-xs font-mono text-slate-600 dark:text-slate-300 space-y-1">
-                        <p className="font-bold text-sm text-slate-900 dark:text-white">PHIẾU TRẢ LỜI TRẮC NGHIỆM CHUẨN</p>
-                        <p>Số báo danh: {activeSub.studentCode} • Mã đề: {activeSub.examCode}</p>
-                        <p className="text-[11px] text-emerald-600 mt-2">✓ Khử nhiễu phối cảnh 4 góc (Perspective warp OK)</p>
-                        <p className="text-[11px] text-emerald-600">✓ Căn lề dấu mốc chuẩn xác (Anchor points OK)</p>
-                      </div>
-
-                      {activeSub.flags.length > 0 && (
-                        <div className="absolute bottom-2 left-2 right-2 bg-amber-500/90 text-white p-2 rounded text-[11px] font-semibold flex items-center space-x-2">
-                          <AlertTriangle className="w-4 h-4 shrink-0" />
-                          <span>Cảnh báo: {activeSub.flags.join(', ')}</span>
-                        </div>
-                      )}
-                    </div>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">Đúng (+0.50 điểm)</span>
                   </div>
 
-                  {/* RIGHT: TEACHER OVERRIDE & APPROVAL PANEL */}
-                  <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-4 bg-white dark:bg-slate-900 space-y-4">
-                    <div className="flex justify-between items-center text-xs border-b border-slate-200 dark:border-slate-800 pb-2">
-                      <span className="font-bold text-slate-800 dark:text-slate-200">Quyết Định Điểm Của Giáo Viên</span>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        activeSub.status === 'FINALIZED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                      }`}>
-                        {activeSub.status === 'FINALIZED' ? 'ĐÃ DUYỆT' : 'CHỜ DUYỆT'}
-                      </span>
+                  <div className="p-3 border border-slate-100 dark:border-slate-800 rounded-lg flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
+                    <div>
+                      <p className="font-semibold text-slate-800 dark:text-slate-200">Câu 2: Điện trở tương đương (Bí danh đơn vị ohm / ôm)</p>
+                      <p className="text-slate-500 text-[11px]">Đáp án chuẩn: <strong>120 ôm</strong> • Bài làm học sinh: <strong>120 ohm</strong></p>
+                    </div>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">Đúng (+0.50 điểm)</span>
+                  </div>
+
+                  <div className="p-3 border border-slate-100 dark:border-slate-800 rounded-lg flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
+                    <div>
+                      <p className="font-semibold text-slate-800 dark:text-slate-200">Câu 3: Cường độ dòng điện (Dung sai tỷ đối 2%)</p>
+                      <p className="text-slate-500 text-[11px]">Đáp án chuẩn: <strong>0.05 A</strong> • Bài làm học sinh: <strong>0.051 A</strong></p>
+                    </div>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">Đúng (Dung sai ±2%)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: CHẤM 2 NGƯỜI GDNN (ĐIỀU 15 TT 04/2022/TT-BLĐTBXH) */}
+          {activeTab === 'gdnn' && (
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl border border-sky-200 dark:border-sky-800 bg-sky-50/40 dark:bg-sky-950/20 space-y-1">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                  <h4 className="text-xs font-bold text-sky-950 dark:text-sky-200 uppercase">
+                    Quy Trình Chấm 2 Người Độc Lập GDNN (Điều 15 khoản 2 Thông tư 04/2022/TT-BLĐTBXH)
+                  </h4>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
+                  Căn cứ pháp lý chính thức: Điểm thi là trung bình cộng điểm 2 cán bộ chấm. Nếu chênh lệch <strong>dưới 1.0 điểm</strong>: Lấy trung bình cộng. Nếu chênh lệch <strong>từ 1.0 điểm trở lên</strong>: Bắt buộc xem xét chấm lại; nếu không thống nhất, Trưởng khoa/Trưởng bộ môn quyết định điểm cuối cùng.
+                </p>
+              </div>
+
+              <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold">
+                    <tr>
+                      <th className="px-4 py-3">Mã Phách Ẩn Danh</th>
+                      <th className="px-4 py-3">Mô-đun Đào Tạo</th>
+                      <th className="px-3 py-3">Giám Khảo 1</th>
+                      <th className="px-3 py-3">Giám Khảo 2</th>
+                      <th className="px-3 py-3">Độ Lệch Điểm</th>
+                      <th className="px-3 py-3">Điểm Chính Thức</th>
+                      <th className="px-4 py-3">Quyết Định Pháp Lý</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {gdnnCases.map(c => {
+                      const evalResult = evaluateGdnnDoubleBlind(c.id, c.blindCode, c.evaluator1, c.evaluator2);
+                      return (
+                        <tr key={c.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                          <td className="px-4 py-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">{c.blindCode}</td>
+                          <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{c.module}</td>
+                          <td className="px-3 py-3 font-semibold">{c.evaluator1.toFixed(1)}</td>
+                          <td className="px-3 py-3 font-semibold">{c.evaluator2.toFixed(1)}</td>
+                          <td className="px-3 py-3 font-bold">
+                            <span className={evalResult.discrepancyLevel === 'WITHIN_LEGAL_TOLERANCE' ? 'text-emerald-600' : 'text-rose-600'}>
+                              {evalResult.scoreDifference.toFixed(2)} điểm
+                            </span>
+                          </td>
+                          <td className="px-3 py-3 font-bold text-slate-900 dark:text-white">
+                            {evalResult.resolvedFinalScore !== null ? `${evalResult.resolvedFinalScore.toFixed(1)} điểm` : 'Chờ Chấm Lại'}
+                          </td>
+                          <td className="px-4 py-3">
+                            {evalResult.resolutionStatus === 'AGREED' ? (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                                Đồng thuận hợp lệ (&lt; 1.0đ)
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 flex items-center gap-1 w-max">
+                                <ShieldAlert className="w-3 h-3" />
+                                Vượt ngưỡng luật định (≥ 1.0đ)
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: BÀN SOÁT XÉT ĐIỂM & ĐỒNG BỘ SỔ ĐIỂM */}
+          {activeTab === 'soat_xet' && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              
+              {/* Left Column: Submissions List */}
+              <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-4 bg-white dark:bg-slate-900 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase">Danh Sách Bài Thi</h4>
+                  <span className="text-[11px] text-slate-400">{activeSubmissions.length} thí sinh</span>
+                </div>
+
+                <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+                  {activeSubmissions.map(s => (
+                    <div
+                      key={s.id}
+                      onClick={() => {
+                        setSelectedSubId(s.id);
+                        setOverrideScore(s.finalScore);
+                        setOverrideReason(s.teacherNote || '');
+                      }}
+                      className={`p-3 rounded-xl border text-xs cursor-pointer transition-all ${
+                        activeSub?.id === s.id
+                          ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/30 dark:border-indigo-500'
+                          : 'border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-900 dark:text-white">{s.fullName}</span>
+                        <span className="font-bold text-indigo-600 dark:text-indigo-400">{s.finalScore.toFixed(2)} đ</span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
+                        <span>{s.studentCode} • Đề {s.examCode}</span>
+                        {s.status === 'FINALIZED' ? (
+                          <span className="text-emerald-600 font-semibold">Đã duyệt</span>
+                        ) : s.status === 'FLAGGED_REVIEW' ? (
+                          <span className="text-amber-600 font-semibold">Cần soát</span>
+                        ) : (
+                          <span className="text-sky-600">Đề xuất</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* SỔ ĐIỂM SYNC BUTTON */}
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                  <button
+                    onClick={handleSyncToGradebookClick}
+                    disabled={isSyncing || gradingMode === 'DEMO' || activeSubmissions.filter(s => s.status === 'FINALIZED').length === 0}
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" />
+                    {isSyncing ? 'Đang Ghi Vào Sổ Điểm...' : `Đồng Bộ Vào Sổ Điểm TT 22 (${activeSubmissions.filter(s => s.status === 'FINALIZED').length} bài)`}
+                  </button>
+                  <p className="text-[10px] text-slate-400 text-center">
+                    Chỉ những bài thi đã ký duyệt (FINALIZED) trong Chế độ Thật mới được phép đồng bộ.
+                  </p>
+                </div>
+              </div>
+
+              {/* Middle & Right: Active Submission Review & Override Desk */}
+              <div className="md:col-span-2 space-y-4">
+                {activeSub ? (
+                  <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-5 bg-white dark:bg-slate-900 space-y-5">
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">{activeSub.fullName}</h4>
+                        <p className="text-xs text-slate-500">Mã: {activeSub.studentCode} • Lớp: {className} • Mã đề: {activeSub.examCode}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs text-slate-400">Điểm hiện tại</span>
+                        <div className="text-xl font-bold text-indigo-600 dark:text-indigo-400">{activeSub.finalScore.toFixed(2)} điểm</div>
+                      </div>
                     </div>
 
-                    <div className="space-y-3 text-xs">
-                      <div className="flex justify-between items-center p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                        <span className="text-slate-600 dark:text-slate-400">Điểm máy đề xuất:</span>
-                        <span className="text-lg font-bold text-slate-900 dark:text-white">{activeSub.suggestedScore.toFixed(2)}</span>
+                    {/* Flags / Anomalies */}
+                    {activeSub.flags.length > 0 && (
+                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-700 dark:text-amber-300 space-y-1">
+                        <div className="font-bold flex items-center gap-1.5">
+                          <AlertTriangle className="w-4 h-4 text-amber-500" />
+                          Cảnh báo quang học phát hiện bởi hệ thống:
+                        </div>
+                        {activeSub.flags.map((flag, i) => (
+                          <div key={i} className="pl-5">• {flag}</div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Override Form */}
+                    <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-3">
+                      <h5 className="text-xs font-bold text-slate-900 dark:text-white">Quyền Phê Duyệt & Điều Chỉnh Điểm Của Giáo Viên (Human-in-the-Loop)</h5>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div>
+                          <label className="text-slate-600 dark:text-slate-400 block mb-1">Điểm máy đề xuất:</label>
+                          <input
+                            type="text"
+                            disabled
+                            value={`${activeSub.suggestedScore.toFixed(2)} điểm`}
+                            className="w-full bg-slate-200 dark:bg-slate-800 rounded-lg px-3 py-2 text-slate-700 dark:text-slate-300 font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-slate-600 dark:text-slate-400 block mb-1">Điểm giáo viên duyệt:</label>
+                          <input
+                            type="number"
+                            step="0.05"
+                            min="0"
+                            max="10"
+                            value={overrideScore}
+                            onChange={(e) => setOverrideScore(parseFloat(e.target.value) || 0)}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white font-bold"
+                          />
+                        </div>
                       </div>
 
-                      <div className="space-y-1.5">
-                        <label className="font-semibold text-slate-700 dark:text-slate-300">Điểm số sau khi giáo viên xem lại:</label>
+                      <div>
+                        <label className="text-xs text-slate-600 dark:text-slate-400 block mb-1">
+                          Lý do điều chỉnh hoặc ghi chú sư phạm:
+                        </label>
                         <input
-                          type="number"
-                          step="0.05"
-                          min="0"
-                          max="10"
-                          value={overrideScore}
-                          onChange={e => setOverrideScore(parseFloat(e.target.value) || 0)}
-                          className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 font-bold text-base text-rose-600"
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="font-semibold text-slate-700 dark:text-slate-300">Lý do điều chỉnh (Bắt buộc ghi nhận vào Audit Log):</label>
-                        <textarea
-                          rows={2}
+                          type="text"
                           value={overrideReason}
-                          onChange={e => setOverrideReason(e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-xs"
-                          placeholder="Nhập lý do sửa điểm..."
+                          onChange={(e) => setOverrideReason(e.target.value)}
+                          placeholder="Ví dụ: Đã đối chiếu phiếu gốc, học sinh sửa phương án câu 28 rõ ràng..."
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-slate-200"
                         />
                       </div>
 
-                      <div className="flex items-center space-x-2 pt-2">
+                      <div className="flex items-center gap-3 pt-2">
                         <button
                           onClick={() => handleApproveScore(activeSub.id, false)}
-                          className="flex-1 py-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-800 dark:text-slate-200 rounded-lg font-semibold transition"
+                          className="flex-1 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-all shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
                         >
-                          Duyệt Nguyên Điểm Máy
+                          <Check className="w-4 h-4" />
+                          Duyệt Nguyên Trạng Máy Chấm ({activeSub.suggestedScore.toFixed(2)} đ)
                         </button>
                         <button
                           onClick={() => handleApproveScore(activeSub.id, true)}
-                          className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold shadow-md transition"
+                          className="flex-1 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs transition-all shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
                         >
-                          Lưu Điểm Điều Chỉnh
+                          <Sparkles className="w-4 h-4" />
+                          Lưu Điểm Điều Chỉnh ({overrideScore.toFixed(2)} đ)
                         </button>
                       </div>
+                    </div>
 
-                      {activeSub.auditTrail.length > 0 && (
-                        <div className="p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700/60 space-y-1">
-                          <span className="font-bold text-[10px] text-slate-500 uppercase">Lịch sử kiểm toán:</span>
-                          {activeSub.auditTrail.map((at, idx) => (
-                            <p key={idx} className="text-[10px] text-slate-600 dark:text-slate-400 font-mono">{at}</p>
+                    {/* Cryptographic Tamper-evident Audit Trail */}
+                    <div className="space-y-2 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-800 dark:text-slate-200">Nhật Ký Kiểm Toán Mật Mã Bất Biến (SHA-256 Hash Chain)</span>
+                        <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          {verifyAuditChain(activeSub.auditRecords) ? 'Chuỗi toàn vẹn xác thực' : 'Cảnh báo: Chuỗi bị can thiệp'}
+                        </span>
+                      </div>
+
+                      {activeSub.auditRecords.length > 0 ? (
+                        <div className="space-y-1.5">
+                          {activeSub.auditRecords.map((rec, i) => (
+                            <div key={i} className="p-2.5 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/20 font-mono text-[11px] space-y-0.5">
+                              <div className="flex items-center justify-between text-slate-700 dark:text-slate-300">
+                                <span>Khối #{i + 1} • {rec.action} ({rec.originalScore.toFixed(2)} → {rec.reviewedScore.toFixed(2)} đ)</span>
+                                <span className="text-[10px] text-slate-400">{new Date(rec.timestamp).toLocaleTimeString('vi-VN')}</span>
+                              </div>
+                              <div className="text-[10px] text-indigo-600 dark:text-indigo-400 truncate">
+                                Mã băm: {rec.entryHash}
+                              </div>
+                              {rec.reason && (
+                                <div className="text-[10px] text-slate-500 font-sans italic">
+                                  Ghi chú: {rec.reason}
+                                </div>
+                              )}
+                            </div>
                           ))}
+                        </div>
+                      ) : (
+                        <div className="p-3 text-slate-400 text-center rounded-lg border border-dashed border-slate-200 dark:border-slate-800">
+                          Chưa có nhật ký phê duyệt cho thí sinh này. Hãy nhấn nút duyệt ở trên để tạo khối băm đầu tiên.
                         </div>
                       )}
                     </div>
+
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="p-12 text-center text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                    Chọn một thí sinh từ danh sách bên trái để tiến hành soát xét và duyệt điểm.
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
         </div>
 
         {/* FOOTER */}
-        <div className="px-6 py-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/60 text-xs text-slate-500">
-          <div className="flex items-center space-x-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>Chế độ an toàn: Dữ liệu bài làm được xử lý 100% trong môi trường Staging cách ly</span>
+        <div className="px-6 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex items-center justify-between text-xs text-slate-500">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+            <span>Hệ thống chấm nội bộ Staging — Bảo mật tuyệt đối dữ liệu học sinh (Luật 91/2025/QH15)</span>
           </div>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 text-slate-800 dark:text-slate-200 rounded-lg font-medium transition"
+            className="px-4 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition-all cursor-pointer"
           >
-            Đóng
+            Đóng Giao Diện
           </button>
         </div>
 

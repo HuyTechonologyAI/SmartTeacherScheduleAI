@@ -86,6 +86,7 @@ import { InteractiveSlidePlayer } from './InteractiveSlidePlayer';
 import { LessonPlanEditorModal } from './LessonPlanEditorModal';
 import { SlideEditorModal } from './SlideEditorModal';
 import EduVietAiGradingModal from './EduVietAiGradingModal';
+import { getStoredGradebook, saveStoredGradebook } from '@/lib/gradebookEngine';
 import { speakVietnamese, stopSpeaking } from '@/lib/voiceAiService';
 import { InteractiveMiniGame } from './InteractiveMiniGame';
 import { AutomatedPaymentModal } from './AutomatedPaymentModal';
@@ -11109,9 +11110,74 @@ export default function UnifiedTeacherScheduleApp() {
         <EduVietAiGradingModal
           isOpen={isAiGradingModalOpen}
           onClose={() => setIsAiGradingModalOpen(false)}
-          onSyncToGradebook={(records) => {
-            setAlertBanner(`GREEN: Da dong bo ${records.length} diem so vao So diem dien tu TT 22!`);
-            setTimeout(() => setAlertBanner(null), 4000);
+          onSyncToGradebook={async (payload) => {
+            try {
+              // 1. Tải Sổ điểm hiện tại của lớp và môn học từ storage
+              const gradebook = await getStoredGradebook(payload.className, payload.subject, payload.semester);
+              
+              // 2. Cập nhật hoặc thêm bản ghi điểm số cho từng học sinh đã duyệt
+              let writtenCount = 0;
+              const updatedRecords = [...gradebook.records];
+              
+              payload.records.forEach(rec => {
+                const existingIdx = updatedRecords.findIndex(r => r.studentCode === rec.studentCode || r.fullName === rec.fullName);
+                if (existingIdx >= 0) {
+                  const cur = updatedRecords[existingIdx];
+                  const newRegs = [...cur.regularScores, rec.score];
+                  updatedRecords[existingIdx] = {
+                    ...cur,
+                    regularScores: newRegs,
+                    teacherComments: rec.teacherNote ? `${cur.teacherComments ? cur.teacherComments + '; ' : ''}${rec.teacherNote}` : cur.teacherComments
+                  };
+                  writtenCount++;
+                } else {
+                  updatedRecords.push({
+                    studentId: `std_${rec.studentCode}`,
+                    studentCode: rec.studentCode,
+                    fullName: rec.fullName,
+                    gender: 'Nam',
+                    regularScores: [rec.score],
+                    midtermScore: null,
+                    finalScore: null,
+                    averageScore: rec.score,
+                    academicLevel: rec.score >= 8.0 ? 'Tốt' : rec.score >= 6.5 ? 'Khá' : rec.score >= 5.0 ? 'Đạt' : 'Chưa đạt',
+                    conductLevel: 'Tốt',
+                    teacherComments: rec.teacherNote || 'Điểm chấm tự động AI đã duyệt'
+                  });
+                  writtenCount++;
+                }
+              });
+
+              gradebook.records = updatedRecords;
+              gradebook.updatedAt = Date.now();
+
+              // 3. Ghi bền vững vào IndexedDB / localStorage
+              await saveStoredGradebook(gradebook);
+
+              // 4. Đối chiếu Read-After-Write để đảm bảo toàn vẹn dữ liệu
+              const verifiedGradebook = await getStoredGradebook(payload.className, payload.subject, payload.semester);
+              const isVerified = verifiedGradebook && verifiedGradebook.records.length >= updatedRecords.length;
+
+              if (isVerified) {
+                setAlertBanner(`GREEN: Đã đồng bộ và xác thực thành công ${writtenCount} điểm vào Sổ điểm điện tử TT 22 lớp ${payload.className}!`);
+                setTimeout(() => setAlertBanner(null), 5000);
+                return {
+                  success: true,
+                  message: `Đã lưu và đối soát thành công ${writtenCount} bản ghi vào Sổ điểm lớp ${payload.className}`,
+                  writtenCount
+                };
+              } else {
+                throw new Error('Đối soát dữ liệu Read-After-Write không khớp');
+              }
+            } catch (err: any) {
+              setAlertBanner(`RED: Lỗi đồng bộ sổ điểm: ${err?.message || 'Không xác định'}`);
+              setTimeout(() => setAlertBanner(null), 5000);
+              return {
+                success: false,
+                message: err?.message || 'Lỗi lưu trữ sổ điểm',
+                writtenCount: 0
+              };
+            }
           }}
         />
 

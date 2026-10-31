@@ -7,6 +7,7 @@
     "prebuild": "node scripts/sanitize-test-data.js",
     "build": "next build",
     "start": "next start",
+    "test:grading": "tsx __tests__/test_ai_grading_engine.ts",
     "clean-test-data": "node scripts/sanitize-test-data.js",
     "lint": "echo 'Linting passed'"
   },

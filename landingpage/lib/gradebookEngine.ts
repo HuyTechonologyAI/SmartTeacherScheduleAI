@@ -267,6 +267,13 @@ export const DEFAULT_GRADEBOOK_3A1_MATH: ClassGradebook = {
 // LƯU TRỮ VÀ ĐỒNG BỘ INDEXEDDB
 // ----------------------------------------------------------------------------
 
+export interface SaveGradebookResult {
+  success: boolean;
+  writtenCount: number;
+  checksum: string;
+  error?: string;
+}
+
 export async function getStoredGradebook(
   className: string = 'Lớp 3A1',
   subject: string = 'Toán học',
@@ -283,27 +290,74 @@ export async function getStoredGradebook(
       const rawLocal = localStorage.getItem(key);
       if (rawLocal) {
         const parsed = JSON.parse(rawLocal);
-        if (parsed && parsed.records) return parsed;
+        if (parsed && Array.isArray(parsed.records)) return parsed;
       }
     } catch {}
   }
 
-  // Mặc định trả về dữ liệu mẫu Lớp 3A1
-  return DEFAULT_GRADEBOOK_3A1_MATH;
+  // Khắc phục P0-02: Chỉ trả về dữ liệu mẫu nếu đúng là Lớp 3A1 Toán học HK1.
+  // Tuyệt đối không fallback dữ liệu mẫu cho các lớp khác!
+  const isDefaultDemoTarget = (
+    className.includes('3A1') &&
+    subject.includes('Toán') &&
+    semester.includes('Học kỳ I')
+  );
+
+  if (isDefaultDemoTarget) {
+    return DEFAULT_GRADEBOOK_3A1_MATH;
+  }
+
+  // Khởi tạo sổ điểm rỗng chuẩn hóa cho lớp mới yêu cầu
+  return {
+    id: `gb_${className}_${subject}_${semester}`.replace(/\s+/g, '_'),
+    classId: className,
+    className,
+    subject,
+    academicYear: '2025 - 2026',
+    semester: (semester as any) || 'Học kỳ I',
+    homeroomTeacher: 'Chưa phân công',
+    records: [],
+    updatedAt: Date.now()
+  };
 }
 
-export async function saveStoredGradebook(gradebook: ClassGradebook): Promise<void> {
+export async function saveStoredGradebook(gradebook: ClassGradebook): Promise<SaveGradebookResult> {
   const key = `${STORAGE_GRADEBOOK_PREFIX}${gradebook.className}_${gradebook.subject}_${gradebook.semester}`.replace(/\s+/g, '_');
   gradebook.updatedAt = Date.now();
+
+  const serialized = JSON.stringify(gradebook);
+  let hash = 0;
+  for (let i = 0; i < serialized.length; i++) {
+    hash = ((hash << 5) - hash) + serialized.charCodeAt(i);
+    hash |= 0;
+  }
+  const checksum = `chk_${Math.abs(hash).toString(16)}_${gradebook.records.length}`;
 
   if (typeof window !== 'undefined') {
     try {
       await dbSet(key, gradebook);
-      localStorage.setItem(key, JSON.stringify(gradebook));
-    } catch (e) {
+      localStorage.setItem(key, serialized);
+      return {
+        success: true,
+        writtenCount: gradebook.records.length,
+        checksum
+      };
+    } catch (e: any) {
       console.error('Error saving gradebook:', e);
+      return {
+        success: false,
+        writtenCount: 0,
+        checksum: '',
+        error: e?.message || 'Không thể ghi sổ điểm vào bộ nhớ lưu trữ'
+      };
     }
   }
+
+  return {
+    success: true,
+    writtenCount: gradebook.records.length,
+    checksum
+  };
 }
 
 /**

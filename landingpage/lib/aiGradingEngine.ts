@@ -13,7 +13,8 @@ export type ScoringPolicyId =
   | 'INTERNAL_TF_PER_SUBITEM'
   | 'MC_STANDARD_4CHOICE'
   | 'SHORT_ANSWER_RUBRIC'
-  | 'GDNN_DOUBLE_BLIND_TT04';
+  | 'GDNN_DOUBLE_BLIND_TT04'
+  | 'TT89_2026_DIGITAL_EXAM';
 
 export type SubmissionStatus = 'PENDING' | 'SUGGESTED' | 'FLAGGED_REVIEW' | 'FINALIZED';
 
@@ -74,7 +75,7 @@ export interface GdnnDoubleBlindEvaluation {
   scoreDifference: number;
   discrepancyLevel: 'WITHIN_LEGAL_TOLERANCE' | 'EXCEEDS_LEGAL_THRESHOLD';
   resolvedFinalScore: number | null;
-  resolutionStatus: 'AGREED' | 'RE_EVALUATION_REQUIRED' | 'DEPARTMENT_HEAD_DECISION_REQUIRED';
+  resolutionStatus: 'AGREED' | 'RE_EVALUATION_REQUIRED' | 'DEPARTMENT_HEAD_DECISION_REQUIRED' | 'ARBITRATED';
   statutoryBasis: string;
   actionNote: string;
 }
@@ -503,6 +504,25 @@ export function evaluateGdnnDoubleBlind(
       actionNote: `Độ lệch ${roundedDiff} điểm vượt ngưỡng quy định (>= 1.0 điểm) theo ${statutoryBasis}. Bắt buộc 2 cán bộ xem xét chấm lại; nếu không thống nhất, Trưởng khoa/Trưởng bộ môn quyết định điểm thi.`
     };
   }
+}
+
+/**
+ * Phân xử tranh chấp điểm thi GDNN khi 2 cán bộ chấm thi lệch >= 1.0 điểm
+ * Căn cứ: Điều 15 khoản 2 điểm b Thông tư 04/2022/TT-BLĐTBXH
+ */
+export function resolveGdnnArbitration(
+  evaluation: GdnnDoubleBlindEvaluation,
+  arbitratedScore: number,
+  departmentHeadId: string,
+  rationale: string = 'Trưởng khoa/Trưởng bộ môn phân xử và quyết định điểm chính thức'
+): GdnnDoubleBlindEvaluation {
+  const finalScore = roundHalfUp(arbitratedScore, 1);
+  return {
+    ...evaluation,
+    resolvedFinalScore: finalScore,
+    resolutionStatus: 'ARBITRATED',
+    actionNote: `Đã phân xử bởi Trưởng khoa (${departmentHeadId}): Điểm quyết định ${finalScore}. Lý do: ${rationale}`
+  };
 }
 
 // ----------------------------------------------------------------------------

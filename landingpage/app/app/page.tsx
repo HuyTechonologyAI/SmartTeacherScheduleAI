@@ -86,7 +86,7 @@ import { InteractiveSlidePlayer } from './InteractiveSlidePlayer';
 import { LessonPlanEditorModal } from './LessonPlanEditorModal';
 import { SlideEditorModal } from './SlideEditorModal';
 import EduVietAiGradingModal from './EduVietAiGradingModal';
-import { getStoredGradebook, saveStoredGradebook } from '@/lib/gradebookEngine';
+import { getStoredGradebook, saveStoredGradebook, calculateSubjectAverage, evaluateAcademicLevelFromAverage } from '@/lib/gradebookEngine';
 import { speakVietnamese, stopSpeaking } from '@/lib/voiceAiService';
 import { InteractiveMiniGame } from './InteractiveMiniGame';
 import { AutomatedPaymentModal } from './AutomatedPaymentModal';
@@ -11112,63 +11112,83 @@ export default function UnifiedTeacherScheduleApp() {
           onClose={() => setIsAiGradingModalOpen(false)}
           onSyncToGradebook={async (payload) => {
             try {
-              // 1. Tải Sổ điểm hiện tại của lớp và môn học từ storage
+              // 1. Chặn tuyệt đối ghi dữ liệu từ chế độ mô phỏng (P0-01)
+              if (payload.isDemo) {
+                throw new Error('Từ chối đồng bộ: Chế độ mô phỏng (Demo Sandbox) không được phép ghi dữ liệu vào Sổ điểm chính thức!');
+              }
+
+              // 2. Tải Sổ điểm hiện tại của lớp và môn học từ storage
               const gradebook = await getStoredGradebook(payload.className, payload.subject, payload.semester);
               
-              // 2. Cập nhật hoặc thêm bản ghi điểm số cho từng học sinh đã duyệt
+              // 3. Khắc phục P0-02: Kiểm tra danh mục học sinh hợp lệ & đối soát ID duy nhất
               let writtenCount = 0;
               const updatedRecords = [...gradebook.records];
               
-              payload.records.forEach(rec => {
-                const existingIdx = updatedRecords.findIndex(r => r.studentCode === rec.studentCode || r.fullName === rec.fullName);
+              for (const rec of payload.records) {
+                // Đối soát nghiêm ngặt theo duy nhất mã học sinh (studentCode)
+                const existingIdx = updatedRecords.findIndex(r => r.studentCode === rec.studentCode);
+                
                 if (existingIdx >= 0) {
                   const cur = updatedRecords[existingIdx];
-                  const newRegs = [...cur.regularScores, rec.score];
+                  // Kiểm tra tính Idempotent: Nếu điểm của đợt thi này đã được ghi, thực hiện cập nhật thay vì nhân đôi
+                  const newRegs = [...cur.regularScores];
+                  if (newRegs.length > 0 && newRegs[newRegs.length - 1] === rec.score) {
+                    // Đã tồn tại điểm giống hệt từ đợt chấm trước, giữ nguyên không nhân đôi
+                  } else {
+                    newRegs.push(rec.score);
+                  }
+
+                  const newAvg = calculateSubjectAverage(newRegs, cur.midtermScore, cur.finalScore);
+                  const newAcademic = evaluateAcademicLevelFromAverage(newAvg);
+
                   updatedRecords[existingIdx] = {
                     ...cur,
                     regularScores: newRegs,
+                    averageScore: newAvg,
+                    academicLevel: newAcademic,
                     teacherComments: rec.teacherNote ? `${cur.teacherComments ? cur.teacherComments + '; ' : ''}${rec.teacherNote}` : cur.teacherComments
                   };
                   writtenCount++;
                 } else {
-                  updatedRecords.push({
-                    studentId: `std_${rec.studentCode}`,
-                    studentCode: rec.studentCode,
-                    fullName: rec.fullName,
-                    gender: 'Nam',
-                    regularScores: [rec.score],
-                    midtermScore: null,
-                    finalScore: null,
-                    averageScore: rec.score,
-                    academicLevel: rec.score >= 8.0 ? 'Tốt' : rec.score >= 6.5 ? 'Khá' : rec.score >= 5.0 ? 'Đạt' : 'Chưa đạt',
-                    conductLevel: 'Tốt',
-                    teacherComments: rec.teacherNote || 'Điểm chấm tự động AI đã duyệt'
-                  });
-                  writtenCount++;
+                  // Khắc phục P0-02: Không tự tạo thông tin giả mạo khi học sinh chưa có trong danh sách
+                  throw new Error(`Học sinh [${rec.studentCode} - ${rec.fullName}] không có trong danh sách Sổ điểm lớp ${payload.className}. Vui lòng đăng ký học sinh vào danh sách lớp trước khi đồng bộ điểm.`);
                 }
-              });
+              }
 
               gradebook.records = updatedRecords;
               gradebook.updatedAt = Date.now();
 
-              // 3. Ghi bền vững vào IndexedDB / localStorage
-              await saveStoredGradebook(gradebook);
-
-              // 4. Đối chiếu Read-After-Write để đảm bảo toàn vẹn dữ liệu
-              const verifiedGradebook = await getStoredGradebook(payload.className, payload.subject, payload.semester);
-              const isVerified = verifiedGradebook && verifiedGradebook.records.length >= updatedRecords.length;
-
-              if (isVerified) {
-                setAlertBanner(`GREEN: Đã đồng bộ và xác thực thành công ${writtenCount} điểm vào Sổ điểm điện tử TT 22 lớp ${payload.className}!`);
-                setTimeout(() => setAlertBanner(null), 5000);
-                return {
-                  success: true,
-                  message: `Đã lưu và đối soát thành công ${writtenCount} bản ghi vào Sổ điểm lớp ${payload.className}`,
-                  writtenCount
-                };
-              } else {
-                throw new Error('Đối soát dữ liệu Read-After-Write không khớp');
+              // 4. Ghi bền vững vào IndexedDB / localStorage có bắt lỗi
+              const saveResult = await saveStoredGradebook(gradebook);
+              if (!saveResult.success) {
+                throw new Error(saveResult.error || 'Lỗi ghi dữ liệu sổ điểm');
               }
+
+              // 5. Đối chiếu Read-After-Write toàn diện (Xác minh cả số lượng và điểm số từng học sinh)
+              const verifiedGradebook = await getStoredGradebook(payload.className, payload.subject, payload.semester);
+              if (!verifiedGradebook || verifiedGradebook.records.length !== updatedRecords.length) {
+                throw new Error('Đối soát Read-After-Write thất bại: Số lượng bản ghi trong sổ điểm không khớp');
+              }
+
+              // Kiểm tra từng học sinh đã được ghi đúng điểm
+              for (const rec of payload.records) {
+                const storedStudent = verifiedGradebook.records.find(r => r.studentCode === rec.studentCode);
+                if (!storedStudent) {
+                  throw new Error(`Đối soát Read-After-Write thất bại: Không tìm thấy học sinh ${rec.studentCode}`);
+                }
+                const lastScore = storedStudent.regularScores[storedStudent.regularScores.length - 1];
+                if (lastScore !== rec.score) {
+                  throw new Error(`Đối soát Read-After-Write thất bại: Điểm của học sinh ${rec.studentCode} (${lastScore}) không khớp với điểm chấm (${rec.score})`);
+                }
+              }
+
+              setAlertBanner(`GREEN: Đã đồng bộ và xác thực thành công ${writtenCount} điểm vào Sổ điểm điện tử TT 22 lớp ${payload.className}!`);
+              setTimeout(() => setAlertBanner(null), 5000);
+              return {
+                success: true,
+                message: `Đã lưu và đối soát thành công ${writtenCount} bản ghi vào Sổ điểm lớp ${payload.className}`,
+                writtenCount
+              };
             } catch (err: any) {
               setAlertBanner(`RED: Lỗi đồng bộ sổ điểm: ${err?.message || 'Không xác định'}`);
               setTimeout(() => setAlertBanner(null), 5000);

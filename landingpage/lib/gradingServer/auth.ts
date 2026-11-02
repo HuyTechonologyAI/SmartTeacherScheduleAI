@@ -39,8 +39,8 @@ export function getRepo(): GradingRepo {
 }
 
 async function supabaseAuthVerifier(token: string): Promise<{ userId: string } | null> {
-  const url = process.env.GRADING_SUPABASE_URL;
-  const anon = process.env.GRADING_SUPABASE_ANON_KEY;
+  const url = process.env.GRADING_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anon = process.env.GRADING_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anon) throw new GradingConfigError('GRADING_SUPABASE_URL/GRADING_SUPABASE_ANON_KEY chưa cấu hình.');
   const c = createClient(url, anon, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data, error } = await c.auth.getUser(token); // server round-trip: validates signature + expiry

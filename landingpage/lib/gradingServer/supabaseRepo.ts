@@ -9,8 +9,8 @@ import {
 let client: SupabaseClient | null = null;
 function db(): SupabaseClient {
   if (client) return client;
-  const url = process.env.GRADING_SUPABASE_URL;
-  const key = process.env.GRADING_SUPABASE_SERVICE_KEY;
+  const url = process.env.GRADING_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.GRADING_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.GRADING_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) throw new GradingConfigError('GRADING_SUPABASE_URL/GRADING_SUPABASE_SERVICE_KEY chưa cấu hình.');
   client = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
   return client;

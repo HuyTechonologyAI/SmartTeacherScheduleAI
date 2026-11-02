@@ -13,8 +13,9 @@ import {
 } from '@/lib/aiGradingEngine';
 import {
   validateFileMagicBytes, scanExamSheetPixelMatrix, gradeExamSheet,
-  OfficialAnswerKeyTemplate, PixelMatrix
+  PixelMatrix, ApprovedAnswerKey
 } from '@/lib/omrEngine';
+import type { Blueprint } from '@/lib/gradingServer/types';
 
 async function loadFileToPixelMatrix(file: File): Promise<PixelMatrix> {
   const url = URL.createObjectURL(file);
@@ -122,14 +123,20 @@ export default function EduVietAiGradingModal({ isOpen, onClose, onSyncToGradebo
   // Real Submissions State
   const [realSubmissions, setRealSubmissions] = useState<SubmissionRecord[]>([]);
 
-  // Bộ đáp án chuẩn được giáo viên phê duyệt (Teacher-Approved Official Answer Keys)
-  const [approvedAnswerKeys, setApprovedAnswerKeys] = useState<Record<string, OfficialAnswerKeyTemplate>>({
+  // Bộ đáp án chuẩn mẫu cho chế độ DEMO (tuân thủ Blueprint 10.0 điểm)
+  const DEMO_BLUEPRINT: Blueprint = useMemo(() => ({
+    templateId: 'GDPT_THPT_2025_40_8_6',
+    part1: { count: 40, pointsEach: 0.1 },
+    part2: { count: 4 },
+    part3: { count: 4, pointsEach: 0.5 }
+  }), []);
+
+  const DEMO_APPROVED_KEYS: Record<string, ApprovedAnswerKey> = useMemo(() => ({
     '101': {
       examCode: '101',
-      subject: 'Toán học',
-      teacherApproved: true,
-      approvedBy: 'Cô Trần Thị Mai (Tổ trưởng)',
-      approvedAt: Date.now() - 86400000,
+      version: 1,
+      status: 'APPROVED',
+      blueprint: DEMO_BLUEPRINT,
       part1Key: {
         1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'A', 6: 'B', 7: 'C', 8: 'D',
         9: 'A', 10: 'B', 11: 'C', 12: 'D', 13: 'A', 14: 'B', 15: 'C', 16: 'D',
@@ -141,22 +148,17 @@ export default function EduVietAiGradingModal({ isOpen, onClose, onSyncToGradebo
         1: { a: true, b: false, c: true, d: false },
         2: { a: false, b: true, c: true, d: false },
         3: { a: true, b: true, c: false, d: false },
-        4: { a: false, b: false, c: true, d: true },
-        5: { a: true, b: false, c: false, d: true },
-        6: { a: true, b: true, c: true, d: false },
-        7: { a: false, b: true, c: false, d: true },
-        8: { a: true, b: false, c: true, d: true }
+        4: { a: false, b: false, c: true, d: true }
       },
       part3Key: {
-        1: '2.5', 2: '120', 3: '0.05', 4: '-15', 5: '3.14', 6: '42'
+        1: '2.5', 2: '120', 3: '0.05', 4: '-15'
       }
     },
     '102': {
       examCode: '102',
-      subject: 'Toán học',
-      teacherApproved: true,
-      approvedBy: 'Cô Trần Thị Mai (Tổ trưởng)',
-      approvedAt: Date.now() - 86400000,
+      version: 1,
+      status: 'APPROVED',
+      blueprint: DEMO_BLUEPRINT,
       part1Key: {
         1: 'B', 2: 'C', 3: 'D', 4: 'A', 5: 'B', 6: 'C', 7: 'D', 8: 'A',
         9: 'B', 10: 'C', 11: 'D', 12: 'A', 13: 'B', 14: 'C', 15: 'D', 16: 'A',
@@ -168,17 +170,16 @@ export default function EduVietAiGradingModal({ isOpen, onClose, onSyncToGradebo
         1: { a: false, b: true, c: false, d: true },
         2: { a: true, b: false, c: true, d: true },
         3: { a: false, b: false, c: true, d: false },
-        4: { a: true, b: true, c: false, d: true },
-        5: { a: false, b: true, c: false, d: true },
-        6: { a: true, b: false, c: true, d: false },
-        7: { a: true, b: true, c: false, d: false },
-        8: { a: false, b: false, c: true, d: true }
+        4: { a: true, b: true, c: false, d: true }
       },
       part3Key: {
-        1: '3.0', 2: '240', 3: '0.10', 4: '-20', 5: '6.28', 6: '84'
+        1: '3.0', 2: '240', 3: '0.10', 4: '-20'
       }
     }
-  });
+  }), [DEMO_BLUEPRINT]);
+
+  // Trong chế độ REAL: Đáp án chuẩn lấy từ API máy chủ (bắt buộc nguyên tắc 4 mắt)
+  const [realApprovedKeys, setRealApprovedKeys] = useState<Record<string, ApprovedAnswerKey>>({});
 
   // Demo Sandbox Submissions State
   const [demoSubmissions, setDemoSubmissions] = useState<SubmissionRecord[]>([
@@ -290,6 +291,10 @@ export default function EduVietAiGradingModal({ isOpen, onClose, onSyncToGradebo
 
     for (let i = 0; i < files.length; i++) {
       const f = files[i];
+      if (f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')) {
+        setAuditMessage(`File ${f.name} bị từ chối: Định dạng PDF chưa hỗ trợ nhận diện quang học trực tiếp. Vui lòng chuyển đổi sang ảnh PNG hoặc JPEG chất lượng cao trước khi tải lên.`);
+        continue;
+      }
       // Kiểm tra dung lượng (< 15MB)
       if (f.size > 15 * 1024 * 1024) {
         setAuditMessage(`File ${f.name} vượt quá dung lượng cho phép (15MB).`);
@@ -301,8 +306,8 @@ export default function EduVietAiGradingModal({ isOpen, onClose, onSyncToGradebo
         const bytes = new Uint8Array(arrayBuffer);
         const val = validateFileMagicBytes(bytes, f.type);
 
-        if (!val.valid) {
-          setAuditMessage(`File ${f.name} bị từ chối: ${val.error}`);
+        if (!val.valid || val.format === 'PDF') {
+          setAuditMessage(`File ${f.name} bị từ chối: ${val.error || 'Định dạng PDF chưa hỗ trợ nhận diện quang học trực tiếp'}`);
           continue;
         }
 
@@ -330,7 +335,7 @@ export default function EduVietAiGradingModal({ isOpen, onClose, onSyncToGradebo
     setUploadedFiles(prev => prev.filter(f => f.id !== id));
   };
 
-  // Real OMR / Optical Pixel Processing Execution (R3 - Chấm OMR điểm ảnh thực tế)
+  // Real OMR / Optical Pixel Processing Execution (R4 - Chấm OMR điểm ảnh thực tế, Fail-Closed)
   const handleProcessUploadedFiles = async () => {
     if (uploadedFiles.length === 0) {
       setAuditMessage('Vui lòng chọn ít nhất 1 file phiếu thi để chấm.');
@@ -342,6 +347,28 @@ export default function EduVietAiGradingModal({ isOpen, onClose, onSyncToGradebo
 
     try {
       const processedList: SubmissionRecord[] = [];
+      let currentRealKeys = { ...realApprovedKeys };
+
+      if (gradingMode === 'REAL' && Object.keys(currentRealKeys).length === 0) {
+        try {
+          const res = await fetch(`/api/grading/answer-keys?classId=${encodeURIComponent(className)}&subjectId=${encodeURIComponent(subject)}`, {
+            headers: {
+              'Authorization': 'Bearer tk_teacher_gvbm_auth'
+            }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data.keys)) {
+              for (const k of data.keys) {
+                if (k.status === 'APPROVED') {
+                  currentRealKeys[k.examCode] = k;
+                }
+              }
+              setRealApprovedKeys(currentRealKeys);
+            }
+          }
+        } catch {}
+      }
 
       for (let idx = 0; idx < uploadedFiles.length; idx++) {
         const item = uploadedFiles[idx];
@@ -352,12 +379,22 @@ export default function EduVietAiGradingModal({ isOpen, onClose, onSyncToGradebo
         // 2. Quét OMR quang học điểm ảnh thực tế (Fiducial alignment, bubble optical density)
         const scanResult = scanExamSheetPixelMatrix(pixelMatrix, item.format as any);
 
-        // 3. Đối chiếu đáp án chuẩn được giáo viên phê duyệt (Teacher-approved Answer Key)
-        const detectedExamCode = scanResult.detectedExamCode !== 'UNKNOWN' ? scanResult.detectedExamCode : '101';
-        const approvedKey = approvedAnswerKeys[detectedExamCode] || approvedAnswerKeys['101'];
+        if (!scanResult.isReadable) {
+          throw new Error(`Phiếu thi [${item.name}]: ${scanResult.unreadableReason || 'Không thể căn chỉnh dấu chuẩn góc (Fiducial Markers)'}. Fail-closed.`);
+        }
+        if (scanResult.detectedExamCode === 'UNKNOWN') {
+          throw new Error(`Phiếu thi [${item.name}]: Không nhận diện được Mã đề (OMR mã đề không rõ ràng). Không tự động gán mã đề mặc định.`);
+        }
+        if (scanResult.detectedStudentCode === 'HS-UNKNOWN') {
+          throw new Error(`Phiếu thi [${item.name}]: Không nhận diện được Số báo danh học sinh. Fail-closed.`);
+        }
 
-        if (!approvedKey || !approvedKey.teacherApproved) {
-          throw new Error(`FAIL-CLOSED: Chưa có Đáp án chuẩn được Giáo viên phê duyệt cho Mã đề [${detectedExamCode}]. Vui lòng duyệt đáp án trước.`);
+        // 3. Đối chiếu đáp án chuẩn được giáo viên phê duyệt (4-eyes Approved Answer Key)
+        const activeKeys = gradingMode === 'REAL' ? currentRealKeys : DEMO_APPROVED_KEYS;
+        const approvedKey = activeKeys[scanResult.detectedExamCode];
+
+        if (!approvedKey || approvedKey.status !== 'APPROVED') {
+          throw new Error(`FAIL-CLOSED: Chưa có Đáp án chuẩn được phê duyệt cho Mã đề [${scanResult.detectedExamCode}]. Vui lòng phê duyệt đáp án theo nguyên tắc 4 mắt trên hệ thống trước khi chấm.`);
         }
 
         const grading = gradeExamSheet(scanResult, approvedKey);
@@ -398,8 +435,8 @@ export default function EduVietAiGradingModal({ isOpen, onClose, onSyncToGradebo
     }
   };
 
-  // Teacher Approval with SHA-256 Hash Chaining & Server-Side Audit Dispatch (R3)
-  const handleApproveScore = (subId: string, isOverride: boolean = false) => {
+  // Teacher Approval with SHA-256 Hash Chaining & Server-Side Audit Dispatch (R4)
+  const handleApproveScore = async (subId: string, isOverride: boolean = false) => {
     const finalVal = isOverride ? overrideScore : (activeSub?.suggestedScore ?? 8.0);
     const lastAudit = activeSub && activeSub.auditRecords.length > 0
       ? activeSub.auditRecords[activeSub.auditRecords.length - 1].entryHash
@@ -418,36 +455,42 @@ export default function EduVietAiGradingModal({ isOpen, onClose, onSyncToGradebo
       timestamp: Date.now()
     });
 
-    // Bắn nhật ký kiểm toán lên API máy chủ để lưu bất biến server-side kèm Bearer Token (P0-03 / R3)
-    try {
-      fetch('/api/grading/audit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer tk_teacher_gvbm_auth',
-          'x-teacher-id': 'GV_BO_MON',
-          'x-teacher-role': 'TEACHER',
-          'x-school-id': 'THPT_DEFAULT',
-          'x-allowed-classes': className
-        },
-        body: JSON.stringify({
-          schoolId: 'THPT_DEFAULT',
-          classId: className,
-          subjectId: subject,
-          assessmentId: `ASM_${className}_${subject}_${semester}`.replace(/\s+/g, '_'),
-          submissionId: subId,
-          studentCode: activeSub?.studentCode || 'HS_UNKNOWN',
-          reviewerId: 'GV_BO_MON',
-          evaluatorRole: 'GIÁO VIÊN BỘ MÔN',
-          action: isOverride ? 'ADJUST_SCORE' : 'APPROVE_AS_IS',
-          originalScore: activeSub?.suggestedScore ?? finalVal,
-          reviewedScore: finalVal,
-          reason: isOverride ? overrideReason : 'Giáo viên phê duyệt kết quả sau đối soát phiếu OMR',
-          policyId,
-          clientReportedPreviousHash: lastAudit
-        })
-      }).catch(() => {});
-    } catch {}
+    if (gradingMode === 'REAL') {
+      try {
+        const res = await fetch('/api/grading/audit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer tk_teacher_gvbm_auth'
+          },
+          body: JSON.stringify({
+            classId: className,
+            subjectId: subject,
+            assessmentId: `ASM_${className}_${subject}_${semester}`.replace(/\s+/g, '_'),
+            submissionId: subId,
+            studentCode: activeSub?.studentCode || 'HS_UNKNOWN',
+            examCode: activeSub?.examCode || '101',
+            action: isOverride ? 'ADJUST_SCORE' : 'APPROVE_AS_IS',
+            originalScore: activeSub?.suggestedScore ?? finalVal,
+            reviewedScore: finalVal,
+            reason: isOverride ? overrideReason : 'Giáo viên phê duyệt kết quả sau đối soát phiếu OMR',
+            policyId
+          })
+        });
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => ({}));
+          setAuditMessage(`CHẶN KÝ DUYỆT (Fail-closed): ${errJson.error || 'Không thể ghi nhận nhật ký kiểm toán máy chủ'}`);
+          return;
+        }
+        const data = await res.json();
+        if (data?.entry?.entryHash) {
+          newAudit.entryHash = data.entry.entryHash;
+        }
+      } catch (err: any) {
+        setAuditMessage(`CHẶN KÝ DUYỆT (Fail-closed): Không kết nối được máy chủ kiểm toán (${err?.message || 'Network error'})`);
+        return;
+      }
+    }
 
     const updater = (prev: SubmissionRecord[]) => prev.map(s => {
       if (s.id !== subId) return s;
@@ -741,7 +784,7 @@ export default function EduVietAiGradingModal({ isOpen, onClose, onSyncToGradebo
                       ref={fileInputRef}
                       type="file"
                       multiple
-                      accept="image/png,image/jpeg,image/webp,application/pdf"
+                      accept="image/png,image/jpeg,image/webp"
                       onChange={(e) => handleFilesSelected(e.target.files)}
                       className="hidden"
                     />
@@ -750,7 +793,7 @@ export default function EduVietAiGradingModal({ isOpen, onClose, onSyncToGradebo
                     </div>
                     <h4 className="text-sm font-bold text-slate-900 dark:text-white">Tải lên Phiếu Quét Bài Thi Thực Tế</h4>
                     <p className="text-xs text-slate-500 max-w-md mx-auto mt-1">
-                      Hỗ trợ định dạng ảnh chụp (JPG, PNG, WebP) hoặc file tài liệu PDF quét từ máy scan học sinh. Tối đa 15MB/file.
+                      Hỗ trợ định dạng ảnh chụp chất lượng cao (PNG, JPG, WebP) có đủ 4 dấu góc chuẩn. Tối đa 15MB/file. (File PDF cần chuyển sang ảnh PNG/JPEG trước khi tải lên).
                     </p>
                     <div className="mt-4 flex items-center justify-center gap-3">
                       <button

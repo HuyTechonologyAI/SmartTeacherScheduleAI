@@ -1,8 +1,8 @@
-// ============================================================================
+﻿// ============================================================================
 // EDUVIET AI GRADING - OPTICAL MARK RECOGNITION (OMR) ENGINE (REMEDIATION R3)
-// Thuật toán nhận dạng quang học điểm ảnh thực tế (Pixel-Density OMR)
-// Chuẩn phiếu thi Bộ Giáo Dục & Đào Tạo Việt Nam (GDPT 2025 / TT 22)
-// Bản quyền: Huy Technology AI Hub (HAC-EDUVIET-R3-20261031)
+// Thuáº­t toÃ¡n nháº­n dáº¡ng quang há»c Ä‘iá»ƒm áº£nh thá»±c táº¿ (Pixel-Density OMR)
+// Chuáº©n phiáº¿u thi Bá»™ GiÃ¡o Dá»¥c & ÄÃ o Táº¡o Viá»‡t Nam (GDPT 2025 / TT 22)
+// Báº£n quyá»n: Huy Technology AI Hub (HAC-EDUVIET-R3-20261031)
 // ============================================================================
 
 export type SupportedFileFormat = 'PNG' | 'JPEG' | 'WEBP' | 'PDF' | 'UNKNOWN';
@@ -27,14 +27,15 @@ export interface SheetCornerMarkers {
   topRight: { x: number; y: number };
   bottomLeft: { x: number; y: number };
   bottomRight: { x: number; y: number };
+  detected: boolean;
   isAligned: boolean;
   skewAngleDegrees: number;
 }
 
 export interface BubbleMeasurement {
-  fillRatio: number;      // 0.0 -> 1.0 (Tỷ lệ pixel tối so với toàn bộ diện tích trong vòng)
-  darkness: number;       // 0.0 -> 1.0 (Độ tối trung bình)
-  meanLuminance: number;  // 0 -> 255 (Độ sáng trung bình)
+  fillRatio: number;      // 0.0 -> 1.0 (Tá»· lá»‡ pixel tá»‘i so vá»›i toÃ n bá»™ diá»‡n tÃ­ch trong vÃ²ng)
+  darkness: number;       // 0.0 -> 1.0 (Äá»™ tá»‘i trung bÃ¬nh)
+  meanLuminance: number;  // 0 -> 255 (Äá»™ sÃ¡ng trung bÃ¬nh)
   totalPixels: number;
   darkPixelCount: number;
 }
@@ -50,7 +51,7 @@ export interface OmrQuestionScan {
 
 export interface OmrPart2SubItemScan {
   item: 'a' | 'b' | 'c' | 'd';
-  detectedChoice: 'D' | 'S' | null; // D = Đúng, S = Sai
+  detectedChoice: 'D' | 'S' | null; // D = ÄÃºng, S = Sai
   status: 'VALID' | 'MULTIPLE_MARKS' | 'BLANK' | 'UNCERTAIN';
   confidence: number;
 }
@@ -76,12 +77,13 @@ export interface OfficialAnswerKeyTemplate {
   approvedBy: string;
   approvedAt: number;
   part1Key: Record<number, 'A' | 'B' | 'C' | 'D'>;
-  part2Key: Record<number, Record<'a' | 'b' | 'c' | 'd', boolean>>; // true = Đúng, false = Sai
-  part3Key: Record<number, string>; // Giá trị đáp án dạng chuỗi số ('2.5', '-15', '0.05')
+  part2Key: Record<number, Record<'a' | 'b' | 'c' | 'd', boolean>>; // true = ÄÃºng, false = Sai
+  part3Key: Record<number, string>; // GiÃ¡ trá»‹ Ä‘Ã¡p Ã¡n dáº¡ng chuá»—i sá»‘ ('2.5', '-15', '0.05')
 }
 
 export interface OmrSheetScanResult {
   isReadable: boolean;
+  unreadableReason?: string;
   format: SupportedFileFormat;
   detectedStudentCode: string;
   detectedExamCode: string;
@@ -98,21 +100,21 @@ export interface OmrSheetScanResult {
 export interface ExamGradingResult {
   studentCode: string;
   examCode: string;
-  part1Score: number;     // Tối đa 40 x 0.25 = 10.0đ (nếu đề chỉ có P1) hoặc 4.0đ
-  part2Score: number;     // Biểu điểm lũy tiến THPT 2025: 1 ý = 0.1đ, 2 ý = 0.25đ, 3 ý = 0.5đ, 4 ý = 1.0đ
-  part3Score: number;     // 6 câu trả lời ngắn
+  part1Score: number;     // Tá»‘i Ä‘a 40 x 0.25 = 10.0Ä‘ (náº¿u Ä‘á» chá»‰ cÃ³ P1) hoáº·c 4.0Ä‘
+  part2Score: number;     // Biá»ƒu Ä‘iá»ƒm lÅ©y tiáº¿n THPT 2025: 1 Ã½ = 0.1Ä‘, 2 Ã½ = 0.25Ä‘, 3 Ã½ = 0.5Ä‘, 4 Ã½ = 1.0Ä‘
+  part3Score: number;     // 6 cÃ¢u tráº£ lá»i ngáº¯n
   totalRawScore: number;
-  totalScoreScaled: number; // Thang điểm 10 làm tròn 2 chữ số thập phân theo TT22
+  totalScoreScaled: number; // Thang Ä‘iá»ƒm 10 lÃ m trÃ²n 2 chá»¯ sá»‘ tháº­p phÃ¢n theo TT22
   mcqCorrectCount: number;
   mcqTotal: number;
-  part2CorrectCounts: number[]; // Số ý đúng cho 8 câu phần II
+  part2CorrectCounts: number[]; // Sá»‘ Ã½ Ä‘Ãºng cho 8 cÃ¢u pháº§n II
   part3CorrectCount: number;
   flags: string[];
   passedPolicy: boolean;
 }
 
 // ----------------------------------------------------------------------------
-// 1. KIỂM TRA MAGIC BYTES TỆP NHỊ PHÂN
+// 1. KIá»‚M TRA MAGIC BYTES Tá»†P NHá»Š PHÃ‚N
 // ----------------------------------------------------------------------------
 
 export function validateFileMagicBytes(
@@ -128,7 +130,7 @@ export function validateFileMagicBytes(
       format: 'UNKNOWN',
       byteLength: len,
       mimeType: declaredMime,
-      error: 'Tệp rỗng hoặc kích thước quá nhỏ (< 8 bytes) để xác định định dạng'
+      error: 'Tá»‡p rá»—ng hoáº·c kÃ­ch thÆ°á»›c quÃ¡ nhá» (< 8 bytes) Ä‘á»ƒ xÃ¡c Ä‘á»‹nh Ä‘á»‹nh dáº¡ng'
     };
   }
 
@@ -164,12 +166,12 @@ export function validateFileMagicBytes(
     format: 'UNKNOWN',
     byteLength: len,
     mimeType: declaredMime,
-    error: 'Định dạng tệp không hợp lệ hoặc cấu trúc nhị phân bị hỏng (Không khớp chữ ký magic bytes chuẩn)'
+    error: 'Äá»‹nh dáº¡ng tá»‡p khÃ´ng há»£p lá»‡ hoáº·c cáº¥u trÃºc nhá»‹ phÃ¢n bá»‹ há»ng (KhÃ´ng khá»›p chá»¯ kÃ½ magic bytes chuáº©n)'
   };
 }
 
 // ----------------------------------------------------------------------------
-// 2. TIỀN XỬ LÝ MA TRẬN ĐIỂM ẢNH (PIXEL MATRIX PREPROCESSING)
+// 2. TIá»€N Xá»¬ LÃ MA TRáº¬N ÄIá»‚M áº¢NH (PIXEL MATRIX PREPROCESSING)
 // ----------------------------------------------------------------------------
 
 export function getPixelLuminance(matrix: PixelMatrix, x: number, y: number): number {
@@ -184,7 +186,7 @@ export function getPixelLuminance(matrix: PixelMatrix, x: number, y: number): nu
   const r = matrix.data[idx];
   const g = matrix.data[idx + 1];
   const b = matrix.data[idx + 2];
-  // Công thức chuẩn nhận thức độ sáng ITU-R BT.601
+  // CÃ´ng thá»©c chuáº©n nháº­n thá»©c Ä‘á»™ sÃ¡ng ITU-R BT.601
   return 0.299 * r + 0.587 * g + 0.114 * b;
 }
 
@@ -218,14 +220,14 @@ export function sampleLocalBackground(
 }
 
 // ----------------------------------------------------------------------------
-// 3. NHẬN DIỆN ĐIỂM CHUẨN GÓC PHIẾU THI (FIDUCIAL CORNER DETECTION & ALIGNMENT)
+// 3. NHáº¬N DIá»†N ÄIá»‚M CHUáº¨N GÃ“C PHIáº¾U THI (FIDUCIAL CORNER DETECTION & ALIGNMENT)
 // ----------------------------------------------------------------------------
 
 export function detectCornerMarkers(matrix: PixelMatrix): SheetCornerMarkers {
   const w = matrix.width;
   const h = matrix.height;
 
-  // Vùng biên tìm kiếm 4 dấu chuẩn đen góc phiếu thi (khoảng 10% kích thước)
+  // VÃ¹ng biÃªn tÃ¬m kiáº¿m 4 dáº¥u chuáº©n Ä‘en gÃ³c phiáº¿u thi (khoáº£ng 10% kÃ­ch thÆ°á»›c)
   const marginX = Math.floor(w * 0.12);
   const marginY = Math.floor(h * 0.12);
 
@@ -256,19 +258,29 @@ export function detectCornerMarkers(matrix: PixelMatrix): SheetCornerMarkers {
   const bl = findDarkCenter(0, marginX, h - marginY, h);
   const br = findDarkCenter(w - marginX, w, h - marginY, h);
 
-  // Tính góc nghiêng (skew angle) dựa trên cạnh trên
+  // TÃ­nh gÃ³c nghiÃªng (skew angle) dá»±a trÃªn cáº¡nh trÃªn
   const dx = tr.x - tl.x;
   const dy = tr.y - tl.y;
   const angleRad = Math.atan2(dy, dx);
   const skewAngleDegrees = Math.round((angleRad * 180 / Math.PI) * 100) / 100;
 
-  const isAligned = Math.abs(skewAngleDegrees) <= 12.0 && tl.count > 0 && tr.count > 0;
+  // R4: fail-closed marker validation (all 4 present, plausible geometry) â€” no silent nominal fallback
+  const minCount = Math.max(30, Math.round(0.0002 * (w * h) / 4));
+  const allPresent = tl.count >= minCount && tr.count >= minCount && bl.count >= minCount && br.count >= minCount;
+  const geometryOk =
+    tl.x < w * 0.5 && bl.x < w * 0.5 && tr.x > w * 0.5 && br.x > w * 0.5 &&
+    tl.y < h * 0.5 && tr.y < h * 0.5 && bl.y > h * 0.5 && br.y > h * 0.5 &&
+    (tr.x - tl.x) >= 0.6 * w && (br.x - bl.x) >= 0.6 * w &&
+    (bl.y - tl.y) >= 0.6 * h && (br.y - tr.y) >= 0.6 * h;
+  const detected = allPresent && geometryOk;
+  const isAligned = detected && Math.abs(skewAngleDegrees) <= 12.0;
 
   return {
     topLeft: { x: tl.x, y: tl.y },
     topRight: { x: tr.x, y: tr.y },
     bottomLeft: { x: bl.x, y: bl.y },
     bottomRight: { x: br.x, y: br.y },
+    detected,
     isAligned,
     skewAngleDegrees
   };
@@ -279,17 +291,17 @@ export function transformNormalizedCoordinate(
   v: number,
   markers: SheetCornerMarkers
 ): { x: number; y: number } {
-  // Tọa độ danh định của 4 dấu chuẩn góc (Nominal Fiducial Positions)
+  // Tá»a Ä‘á»™ danh Ä‘á»‹nh cá»§a 4 dáº¥u chuáº©n gÃ³c (Nominal Fiducial Positions)
   const nomU1 = 0.0417; // 50 / 1200
   const nomU2 = 0.9583; // 1150 / 1200
   const nomV1 = 0.0294; // 50 / 1700
   const nomV2 = 0.9706; // 1650 / 1700
 
-  // Chuẩn hóa tọa độ (u, v) vào khoảng [0, 1] giữa 4 điểm chuẩn
+  // Chuáº©n hÃ³a tá»a Ä‘á»™ (u, v) vÃ o khoáº£ng [0, 1] giá»¯a 4 Ä‘iá»ƒm chuáº©n
   const nu = (u - nomU1) / (nomU2 - nomU1);
   const nv = (v - nomV1) / (nomV2 - nomV1);
 
-  // Phép nội suy song tuyến (Bilinear coordinate transform)
+  // PhÃ©p ná»™i suy song tuyáº¿n (Bilinear coordinate transform)
   const topX = (1 - nu) * markers.topLeft.x + nu * markers.topRight.x;
   const topY = (1 - nu) * markers.topLeft.y + nu * markers.topRight.y;
 
@@ -303,7 +315,7 @@ export function transformNormalizedCoordinate(
 }
 
 // ----------------------------------------------------------------------------
-// 4. ĐO MẬT ĐỘ QUANG HỌC Ô TÔ CHÌ (BUBBLE OPTICAL DENSITY MEASUREMENT)
+// 4. ÄO Máº¬T Äá»˜ QUANG Há»ŒC Ã” TÃ” CHÃŒ (BUBBLE OPTICAL DENSITY MEASUREMENT)
 // ----------------------------------------------------------------------------
 
 export function measureBubbleOpticalDensity(
@@ -318,7 +330,7 @@ export function measureBubbleOpticalDensity(
     : { x: centerU * matrix.width, y: centerV * matrix.height };
 
   const rPixels = Math.max(3, Math.round(radiusU * matrix.width));
-  // Bỏ qua 20% vòng ngoài để không tính đường in viền ô tròn
+  // Bá» qua 20% vÃ²ng ngoÃ i Ä‘á»ƒ khÃ´ng tÃ­nh Ä‘Æ°á»ng in viá»n Ã´ trÃ²n
   const innerR = Math.max(2, Math.round(rPixels * 0.80));
 
   let totalLuminance = 0;
@@ -326,7 +338,7 @@ export function measureBubbleOpticalDensity(
   let totalPixels = 0;
 
   const bgLum = sampleLocalBackground(matrix, pt.x, pt.y, rPixels * 2.2);
-  // Ngưỡng tối thích nghi cục bộ (Adaptive Threshold)
+  // NgÆ°á»¡ng tá»‘i thÃ­ch nghi cá»¥c bá»™ (Adaptive Threshold)
   const adaptiveThreshold = Math.max(40, Math.min(210, bgLum * 0.72));
 
   for (let dy = -innerR; dy <= innerR; dy++) {
@@ -360,7 +372,7 @@ export function measureBubbleOpticalDensity(
 }
 
 // ----------------------------------------------------------------------------
-// 5. THUẬT TOÁN ĐÁNH GIÁ PHẦN I (40 CÂU TRẮC NGHIỆM KHÁCH QUAN)
+// 5. THUáº¬T TOÃN ÄÃNH GIÃ PHáº¦N I (40 CÃ‚U TRáº®C NGHIá»†M KHÃCH QUAN)
 // ----------------------------------------------------------------------------
 
 export function evaluateMcqQuestionRow(
@@ -385,7 +397,7 @@ export function evaluateMcqQuestionRow(
   const MULTI_THRESH = 0.35;
   const MARGIN_THRESH = 0.12;
 
-  // 1. Để trống
+  // 1. Äá»ƒ trá»‘ng
   if (topFill < BLANK_THRESH) {
     return {
       questionNumber,
@@ -393,11 +405,11 @@ export function evaluateMcqQuestionRow(
       status: 'BLANK',
       confidence: Math.round((1.0 - topFill) * 100) / 100,
       candidates,
-      flagMessage: `Câu ${questionNumber}: Thí sinh để trống (chưa tô đáp án)`
+      flagMessage: `CÃ¢u ${questionNumber}: ThÃ­ sinh Ä‘á»ƒ trá»‘ng (chÆ°a tÃ´ Ä‘Ã¡p Ã¡n)`
     };
   }
 
-  // 2. Tô đè nhiều phương án
+  // 2. TÃ´ Ä‘Ã¨ nhiá»u phÆ°Æ¡ng Ã¡n
   if (topFill >= MULTI_THRESH && secondFill >= MULTI_THRESH && (topFill - secondFill) < MARGIN_THRESH) {
     return {
       questionNumber,
@@ -405,11 +417,11 @@ export function evaluateMcqQuestionRow(
       status: 'MULTIPLE_MARKS',
       confidence: 0.30,
       candidates,
-      flagMessage: `Câu ${questionNumber}: Phát hiện tô đè nhiều phương án (${topOpt} và ${secondOpt})`
+      flagMessage: `CÃ¢u ${questionNumber}: PhÃ¡t hiá»‡n tÃ´ Ä‘Ã¨ nhiá»u phÆ°Æ¡ng Ã¡n (${topOpt} vÃ  ${secondOpt})`
     };
   }
 
-  // 3. Nét chì quá mờ hoặc nghi ngờ
+  // 3. NÃ©t chÃ¬ quÃ¡ má» hoáº·c nghi ngá»
   if (topFill >= BLANK_THRESH && topFill < FILLED_THRESH) {
     return {
       questionNumber,
@@ -417,11 +429,11 @@ export function evaluateMcqQuestionRow(
       status: 'UNCERTAIN',
       confidence: 0.50,
       candidates,
-      flagMessage: `Câu ${questionNumber}: Nét chì mờ (${topOpt}), cần giám khảo xác thực`
+      flagMessage: `CÃ¢u ${questionNumber}: NÃ©t chÃ¬ má» (${topOpt}), cáº§n giÃ¡m kháº£o xÃ¡c thá»±c`
     };
   }
 
-  // 4. Hợp lệ
+  // 4. Há»£p lá»‡
   const margin = topFill - secondFill;
   const confidence = Math.min(0.99, Math.round((0.75 + margin * 0.25) * 100) / 100);
   return {
@@ -434,7 +446,7 @@ export function evaluateMcqQuestionRow(
 }
 
 // ----------------------------------------------------------------------------
-// 6. THUẬT TOÁN ĐỌC MÃ SBD (6 CHỮ SỐ) VÀ MÃ ĐỀ (3 CHỮ SỐ)
+// 6. THUáº¬T TOÃN Äá»ŒC MÃƒ SBD (6 CHá»® Sá») VÃ€ MÃƒ Äá»€ (3 CHá»® Sá»)
 // ----------------------------------------------------------------------------
 
 export function decodeNumericBubbleGrid(
@@ -494,7 +506,7 @@ export function decodeNumericBubbleGrid(
 }
 
 // ----------------------------------------------------------------------------
-// 7. QUÉT TOÀN BỘ PHIẾU BÀI THI TỪ MA TRẬN ĐIỂM ẢNH THỰC TẾ
+// 7. QUÃ‰T TOÃ€N Bá»˜ PHIáº¾U BÃ€I THI Tá»ª MA TRáº¬N ÄIá»‚M áº¢NH THá»°C Táº¾
 // ----------------------------------------------------------------------------
 
 export function scanExamSheetPixelMatrix(
@@ -504,31 +516,49 @@ export function scanExamSheetPixelMatrix(
   const cornerMarkers = detectCornerMarkers(matrix);
   const flags: string[] = [];
 
+  // R4 FAIL-CLOSED: without 4 verified fiducials (or with extreme skew) we do NOT guess positions.
   if (!cornerMarkers.isAligned) {
-    flags.push(`CẢNH BÁO: Phiếu thi bị lệch góc (${cornerMarkers.skewAngleDegrees}°). Đã kích hoạt căn chỉnh phối cảnh tự động.`);
+    const reason = !cornerMarkers.detected
+      ? 'KhÃ´ng phÃ¡t hiá»‡n Ä‘á»§ 4 dáº¥u chuáº©n gÃ³c phiáº¿u (áº£nh sai phiáº¿u/cáº¯t gÃ³c/quÃ¡ tá»‘i)'
+      : `Phiáº¿u nghiÃªng ${cornerMarkers.skewAngleDegrees}Â° vÆ°á»£t giá»›i háº¡n Â±12Â°`;
+    return {
+      isReadable: false,
+      unreadableReason: reason,
+      format,
+      detectedStudentCode: 'HS-UNKNOWN',
+      detectedExamCode: 'UNKNOWN',
+      part1Scans: [],
+      part2Scans: [],
+      part3Scans: [],
+      overallConfidence: 0,
+      flags: [`Tá»ª CHá»I QUÃ‰T: ${reason}`],
+      processedAt: Date.now(),
+      checksum: `chk_unreadable_${matrix.width}x${matrix.height}`,
+      cornerMarkers
+    };
   }
 
-  // 1. Nhận dạng Mã SBD (6 chữ số)
+  // 1. Nháº­n dáº¡ng MÃ£ SBD (6 chá»¯ sá»‘)
   const sbdResult = decodeNumericBubbleGrid(
     matrix,
     0.52, 0.10, 0.038, 0.024, 6, 0.010, cornerMarkers
   );
   const detectedStudentCode = sbdResult.complete ? `HS-${sbdResult.code}` : `HS-UNKNOWN`;
   if (!sbdResult.complete) {
-    flags.push(`Không nhận diện được đầy đủ Số báo danh (đọc được: ${sbdResult.code})`);
+    flags.push(`KhÃ´ng nháº­n diá»‡n Ä‘Æ°á»£c Ä‘áº§y Ä‘á»§ Sá»‘ bÃ¡o danh (Ä‘á»c Ä‘Æ°á»£c: ${sbdResult.code})`);
   }
 
-  // 2. Nhận dạng Mã đề thi (3 chữ số)
+  // 2. Nháº­n dáº¡ng MÃ£ Ä‘á» thi (3 chá»¯ sá»‘)
   const examResult = decodeNumericBubbleGrid(
     matrix,
     0.80, 0.10, 0.038, 0.024, 3, 0.010, cornerMarkers
   );
   const detectedExamCode = examResult.complete ? examResult.code : 'UNKNOWN';
   if (!examResult.complete) {
-    flags.push(`Không nhận diện được đầy đủ Mã đề thi (đọc được: ${examResult.code})`);
+    flags.push(`KhÃ´ng nháº­n diá»‡n Ä‘Æ°á»£c Ä‘áº§y Ä‘á»§ MÃ£ Ä‘á» thi (Ä‘á»c Ä‘Æ°á»£c: ${examResult.code})`);
   }
 
-  // 3. Quét Phần I: 40 câu trắc nghiệm 4 lựa chọn (A, B, C, D)
+  // 3. QuÃ©t Pháº§n I: 40 cÃ¢u tráº¯c nghiá»‡m 4 lá»±a chá»n (A, B, C, D)
   const part1Scans: OmrQuestionScan[] = [];
   const radiusU = 0.010;
 
@@ -548,11 +578,11 @@ export function scanExamSheetPixelMatrix(
     part1Scans.push(scan);
 
     if (scan.status === 'MULTIPLE_MARKS' || scan.status === 'UNCERTAIN') {
-      flags.push(scan.flagMessage || `Câu ${q}: Cần xác thực quang học`);
+      flags.push(scan.flagMessage || `CÃ¢u ${q}: Cáº§n xÃ¡c thá»±c quang há»c`);
     }
   }
 
-  // 4. Quét Phần II: 8 câu Đúng / Sai (mỗi câu 4 ý a, b, c, d)
+  // 4. QuÃ©t Pháº§n II: 8 cÃ¢u ÄÃºng / Sai (má»—i cÃ¢u 4 Ã½ a, b, c, d)
   const part2Scans: OmrPart2QuestionScan[] = [];
   const subOptions: ('a' | 'b' | 'c' | 'd')[] = ['a', 'b', 'c', 'd'];
 
@@ -606,11 +636,11 @@ export function scanExamSheetPixelMatrix(
     });
   }
 
-  // 5. Quét Phần III: 6 câu Trả lời ngắn
+  // 5. QuÃ©t Pháº§n III: 6 cÃ¢u Tráº£ lá»i ngáº¯n
   const part3Scans: OmrPart3QuestionScan[] = [];
   for (let q = 1; q <= 6; q++) {
     const v = 0.72 + (q - 1) * 0.038;
-    // Đọc ô dấu âm '-' và 4 chữ số
+    // Äá»c Ã´ dáº¥u Ã¢m '-' vÃ  4 chá»¯ sá»‘
     const measMinus = measureBubbleOpticalDensity(matrix, 0.50, v, radiusU, cornerMarkers);
     const hasMinus = measMinus.fillRatio >= 0.40;
 
@@ -628,7 +658,7 @@ export function scanExamSheetPixelMatrix(
   const validP1 = part1Scans.filter(s => s.status === 'VALID').length;
   const overallConfidence = Math.round((validP1 / 40) * 100) / 100;
 
-  // Checksum toàn vẹn
+  // Checksum toÃ n váº¹n
   let hash = 0;
   for (let i = 0; i < Math.min(matrix.data.length, 2048); i += 4) {
     hash = ((hash << 5) - hash) + matrix.data[i];
@@ -652,115 +682,102 @@ export function scanExamSheetPixelMatrix(
   };
 }
 
+
 // ----------------------------------------------------------------------------
-// 8. ĐỐI SOÁT VÀ CHẤM ĐIỂM THEO ĐÁP ÁN CHUẨN ĐƯỢC GIÁO VIÊN PHÊ DUYỆT (GDPT 2025)
+// 8. CHẤM ĐIỂM THEO ĐÁP ÁN CHUẨN ĐÃ DUYỆT TỪ MÁY CHỦ (R4: blueprint, fail-closed, không fallback)
 // ----------------------------------------------------------------------------
+import { validateAnswerKey, blueprintMaxPoints } from './gradingKey';
+import type { Blueprint } from './gradingServer/types';
 
-export function gradeExamSheet(
-  scanResult: OmrSheetScanResult,
-  approvedKey: OfficialAnswerKeyTemplate
-): ExamGradingResult {
-  // NGUYÊN TẮC FAIL-CLOSED: Bắt buộc có đáp án chuẩn đã được giáo viên ký duyệt
-  if (!approvedKey) {
-    throw new Error('FAIL-CLOSED: Thiếu bộ đáp án chuẩn được giáo viên phê duyệt. Không thể chấm bài!');
+/** Key as delivered by the server for an APPROVED, versioned exam. Never construct this client-side for REAL mode. */
+export interface ApprovedAnswerKey {
+  examCode: string;
+  version: number;
+  status: 'APPROVED';
+  blueprint: Blueprint;
+  part1Key: Record<string, 'A' | 'B' | 'C' | 'D'>;
+  part2Key: Record<string, Record<'a' | 'b' | 'c' | 'd', boolean>>;
+  part3Key: Record<string, string>;
+}
+
+const PART2_SCHEME: Record<number, number> = { 0: 0, 1: 0.10, 2: 0.25, 3: 0.50, 4: 1.00 };
+
+export class GradingRejection extends Error {
+  constructor(public code: string, message: string) {
+    super(`${code}: ${message}`);
+    this.name = 'GradingRejection';
   }
-  if (!approvedKey.teacherApproved) {
-    throw new Error(`FAIL-CLOSED: Bộ đáp án cho mã đề ${approvedKey.examCode} chưa được phê duyệt bởi giáo viên.`);
+}
+
+export function gradeExamSheet(scan: OmrSheetScanResult, key: ApprovedAnswerKey): ExamGradingResult {
+  if (!key || key.status !== 'APPROVED') throw new GradingRejection('KEY_NOT_APPROVED', 'Thiếu đáp án chuẩn đã duyệt');
+  const keyErrors = validateAnswerKey(key);
+  if (keyErrors.length) throw new GradingRejection('KEY_INVALID', keyErrors.slice(0, 5).join('; '));
+  if (!scan.isReadable) throw new GradingRejection('SHEET_UNREADABLE', scan.unreadableReason || 'Phiếu không đọc được');
+  if (scan.detectedExamCode === 'UNKNOWN') throw new GradingRejection('EXAM_CODE_UNREADABLE', 'Không đọc được mã đề — không tự gán mã đề mặc định');
+  if (scan.detectedStudentCode === 'HS-UNKNOWN') throw new GradingRejection('STUDENT_CODE_UNREADABLE', 'Không đọc được SBD');
+  if (scan.detectedExamCode !== key.examCode) {
+    throw new GradingRejection('EXAM_CODE_MISMATCH', `Phiếu mã đề ${scan.detectedExamCode} ≠ đáp án ${key.examCode}`);
   }
-  if (scanResult.detectedExamCode !== 'UNKNOWN' && approvedKey.examCode !== scanResult.detectedExamCode) {
-    throw new Error(`MÃ ĐỀ KHÔNG KHỚP: Phiếu thi nhận diện mã đề [${scanResult.detectedExamCode}] nhưng bộ đáp án được chọn là [${approvedKey.examCode}].`);
+
+  const b = key.blueprint;
+  const flags: string[] = [...scan.flags];
+
+  let p1Correct = 0;
+  for (let q = 1; q <= b.part1.count; q++) {
+    const s = scan.part1Scans.find(x => x.questionNumber === q);
+    if (!s) { flags.push(`Phần I câu ${q}: không có dữ liệu quét`); continue; }
+    if (s.status === 'VALID' && s.detectedOption === key.part1Key[q]) p1Correct++;
+    else if (s.status === 'UNCERTAIN' || s.status === 'MULTIPLE_MARKS') flags.push(`Phần I câu ${q}: ${s.status} — cần giáo viên xác thực`);
   }
+  const part1Score = p1Correct * b.part1.pointsEach;
 
-  const flags: string[] = [...scanResult.flags];
-
-  // 1. Chấm Phần I (Trắc nghiệm 4 lựa chọn)
-  let mcqCorrectCount = 0;
-  const mcqTotal = 40;
-
-  scanResult.part1Scans.forEach(scan => {
-    const expected = approvedKey.part1Key[scan.questionNumber];
-    if (expected && scan.detectedOption === expected && scan.status === 'VALID') {
-      mcqCorrectCount++;
-    }
-  });
-
-  // Thang điểm Phần I: Mỗi câu 0.25đ nếu đề 40 câu
-  const part1Score = Math.round((mcqCorrectCount * 0.25) * 100) / 100;
-
-  // 2. Chấm Phần II (Đúng / Sai 4 ý theo biểu điểm lũy tiến Thông tư 22 & GDPT 2025)
-  // Quy tắc: 1 ý đúng = 0.1đ; 2 ý đúng = 0.25đ; 3 ý đúng = 0.5đ; 4 ý đúng = 1.0đ
   const part2CorrectCounts: number[] = [];
   let part2Score = 0;
-
-  scanResult.part2Scans.forEach(scan => {
-    const expectedObj = approvedKey.part2Key[scan.questionNumber];
-    let correctInQ = 0;
-
-    if (expectedObj) {
-      (['a', 'b', 'c', 'd'] as const).forEach(sub => {
-        const itemScan = scan.items[sub];
-        const expBool = expectedObj[sub];
-        const isExpTrue = expBool === true;
-        const studentChoiceTrue = itemScan.detectedChoice === 'D';
-
-        if (itemScan.status === 'VALID' && itemScan.detectedChoice && (studentChoiceTrue === isExpTrue)) {
-          correctInQ++;
-        }
-      });
+  for (let q = 1; q <= b.part2.count; q++) {
+    const s = scan.part2Scans.find(x => x.questionNumber === q);
+    let ok = 0;
+    for (const sub of ['a', 'b', 'c', 'd'] as const) {
+      const item = s?.items[sub];
+      if (!item) { flags.push(`Phần II câu ${q}${sub}: không có dữ liệu quét`); continue; }
+      if (item.status === 'VALID' && item.detectedChoice && (item.detectedChoice === 'D') === key.part2Key[q][sub]) ok++;
+      else if (item.status === 'UNCERTAIN' || item.status === 'MULTIPLE_MARKS') flags.push(`Phần II câu ${q}${sub}: ${item.status} — cần xác thực`);
     }
+    part2CorrectCounts.push(ok);
+    part2Score += PART2_SCHEME[ok];
+  }
 
-    part2CorrectCounts.push(correctInQ);
-
-    // Biểu điểm lũy tiến chính thức của Bộ GD&ĐT
-    if (correctInQ === 1) part2Score += 0.10;
-    else if (correctInQ === 2) part2Score += 0.25;
-    else if (correctInQ === 3) part2Score += 0.50;
-    else if (correctInQ === 4) part2Score += 1.00;
-  });
-
-  part2Score = Math.round(part2Score * 100) / 100;
-
-  // 3. Chấm Phần III (Trả lời ngắn)
-  let part3CorrectCount = 0;
-  scanResult.part3Scans.forEach(scan => {
-    const expected = approvedKey.part3Key[scan.questionNumber];
-    if (expected && scan.detectedText) {
-      // Chuẩn hóa so sánh số học (ví dụ: '2.5' === '2,50' === '2.5')
-      const normExp = expected.trim().replace(',', '.');
-      const normDet = scan.detectedText.trim().replace(',', '.');
-
-      const numExp = parseFloat(normExp);
-      const numDet = parseFloat(normDet);
-
-      if (!isNaN(numExp) && !isNaN(numDet) && Math.abs(numExp - numDet) < 0.001) {
-        part3CorrectCount++;
-      } else if (normExp.toLowerCase() === normDet.toLowerCase()) {
-        part3CorrectCount++;
-      }
+  let p3Correct = 0;
+  for (let q = 1; q <= b.part3.count; q++) {
+    const s = scan.part3Scans.find(x => x.questionNumber === q);
+    if (!s) { flags.push(`Phần III câu ${q}: không có dữ liệu quét`); continue; }
+    if (s.status !== 'VALID') {
+      if (s.status === 'UNCERTAIN') flags.push(`Phần III câu ${q}: đọc chưa chắc chắn ("${s.detectedText}") — cần xác thực`);
+      continue; // BLANK or UNCERTAIN never scores
     }
-  });
+    if (Number(s.detectedText) === Number(key.part3Key[q].replace(',', '.'))) p3Correct++;
+  }
+  const part3Score = p3Correct * b.part3.pointsEach;
 
-  // Phần III: 0.25đ / câu (tối đa 1.5đ)
-  const part3Score = Math.round((part3CorrectCount * 0.25) * 100) / 100;
-
-  // Tổng điểm thô & Điểm quy đổi thang 10
-  const totalRawScore = Math.round((part1Score + part2Score + part3Score) * 100) / 100;
-  // Làm tròn chuẩn TT22 (1 hoặc 2 chữ số thập phân)
-  const totalScoreScaled = Math.min(10.0, Math.round(totalRawScore * 10) / 10);
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+  const total = round2(part1Score + part2Score + part3Score);
+  if (total > blueprintMaxPoints(b) + 1e-9 || total < 0) {
+    throw new GradingRejection('SCORE_OUT_OF_RANGE', `Tổng điểm ${total} vượt thang ${blueprintMaxPoints(b)}`);
+  }
 
   return {
-    studentCode: scanResult.detectedStudentCode,
-    examCode: approvedKey.examCode,
-    part1Score,
-    part2Score,
-    part3Score,
-    totalRawScore,
-    totalScoreScaled,
-    mcqCorrectCount,
-    mcqTotal,
+    studentCode: scan.detectedStudentCode,
+    examCode: key.examCode,
+    part1Score: round2(part1Score),
+    part2Score: round2(part2Score),
+    part3Score: round2(part3Score),
+    totalRawScore: total,
+    totalScoreScaled: total, // blueprint is validated to sum to exactly 10 => no clamping/rescaling
+    mcqCorrectCount: p1Correct,
+    mcqTotal: b.part1.count,
     part2CorrectCounts,
-    part3CorrectCount,
+    part3CorrectCount: p3Correct,
     flags,
-    passedPolicy: totalScoreScaled >= 5.0
+    passedPolicy: total >= 5.0
   };
 }

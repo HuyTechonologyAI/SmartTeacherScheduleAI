@@ -11187,30 +11187,33 @@ export default function UnifiedTeacherScheduleApp() {
               gradebook.records = updatedRecords;
               gradebook.updatedAt = Date.now();
 
-              // 4. Xác minh kết quả trên máy chủ (Server-side Score Verification - R3)
+              // 4. Bắt buộc xác minh & ghi nhận điểm nguyên tử trên máy chủ (R4 Fail-Closed)
+              let commitRes: Response;
               try {
-                const verifyRes = await fetch('/api/grading/verify-sync', {
+                commitRes = await fetch('/api/grading/commit-scores', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer tk_teacher_gvbm_auth'
+                  },
                   body: JSON.stringify({
                     classId: payload.className,
                     subjectId: payload.subject,
-                    assessmentId: payload.assessmentId,
+                    assessmentId: asmId,
                     records: payload.records.map(r => ({
                       studentCode: r.studentCode,
-                      fullName: r.fullName,
                       score: r.score,
-                      auditHash: r.auditHash,
-                      examCode: r.examCode
+                      auditEntryHash: r.auditHash
                     }))
                   })
                 });
-                if (!verifyRes.ok) {
-                  const errJson = await verifyRes.json().catch(() => ({}));
-                  console.warn('[Sync Gradebook] Cảnh báo xác minh máy chủ:', errJson.error);
-                }
-              } catch (srvErr) {
-                console.warn('[Sync Gradebook] Máy chủ offline hoặc lỗi mạng khi gọi verify-sync:', srvErr);
+              } catch (srvErr: any) {
+                throw new Error(`CHẶN GIAO DỊCH (Fail-closed): Không kết nối được máy chủ xác thực điểm (${srvErr?.message || 'Network error'})`);
+              }
+
+              if (!commitRes.ok) {
+                const errJson = await commitRes.json().catch(() => ({}));
+                throw new Error(`CHẶN GIAO DỊCH (Fail-closed): ${errJson.error || 'Xác minh nhật ký kiểm toán trên máy chủ thất bại'}`);
               }
 
               // 5. Ghi bền vững vào IndexedDB / localStorage có bắt lỗi
